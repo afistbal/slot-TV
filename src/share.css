@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@keyframes indicator {
+    40% {
+        transform: translateY(24px);
+    }
+    50% {
+        transform: translateY(0px);
+    }
+    60% {
+        transform: translateY(24px);
+    }
+    70% {
+        transform: translateY(0px);
+    }
+}

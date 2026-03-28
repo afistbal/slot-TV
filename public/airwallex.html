@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favorite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>YogoTV</title>
+    <style>
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        html,
+        body,
+        .root {
+            margin: 0;
+            height: 100%;
+        }
+
+        .root {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .rotate {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            box-sizing: border-box;
+            border-top: 2px solid #aaa;
+            border-left: 2px solid #aaa;
+            border-right: 2px solid transparent;
+            border-bottom: 2px solid #aaa;
+            animation: rotate 1s linear infinite;
+        }
+
+        .result {
+            display: none;
+            background-color: #b5a3e4;
+            width: 96px;
+            height: 96px;
+            justify-content: center;
+            align-items: center;
+            border-radius: 48px;
+            color: white;
+        }
+
+        .message {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.25;
+            padding: 0 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="root">
+        <div id="rotate" class="rotate"></div>
+        <div id="result" class="result">
+            <svg id="result-success" style="display: none" xmlns="http://www.w3.org/2000/svg" width="48" height="48"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="lucide lucide-check-icon lucide-check">
+                <path d="M20 6 9 17l-5-5" />
+            </svg>
+            <svg id="result-failed" style="display: none" xmlns="http://www.w3.org/2000/svg" width="48" height="48"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+            </svg>
+        </div>
+        <div id="message" class="message"></div>
+    </div>
+    <script src="https://static.airwallex.com/components/sdk/v1/index.js"></script>
+    <script>
+        const search = new URLSearchParams(window.location.search);
+        const rotate = document.querySelector('#rotate');
+        const result = document.querySelector('#result');
+        const resultSuccess = document.querySelector('#result-success');
+        const resultFailed = document.querySelector('#result-failed');
+        const message = document.querySelector('#message');
+
+        rotate.style.display = 'none';
+
+        if (search.get('message')) {
+            message.innerText = search.get('message');
+        }
+
+        switch (search.get('action')) {
+            case 'success':
+                result.style.display = 'flex';
+                resultSuccess.style.display = '';
+                break;
+            case 'failed':
+                result.style.display = 'flex';
+                resultFailed.style.display = '';
+                break;
+            default:
+                if (!search.get('customer_id')) {
+                    break;
+                }
+                AirwallexComponentsSDK.init({
+                    env: search.get('env') ?? 'prod',
+                    enabledElements: ['payments'],
+                }).then(res => {
+                    res.payments.redirectToCheckout({
+                        intent_id: search.get('pi'),
+                        mode: 'recurring',
+                        recurringOptions: {
+                            next_triggered_by: 'merchant',
+                            merchant_trigger_reason: 'scheduled',
+                        },
+                        customer_id: search.get('customer_id'),
+                        client_secret: search.get('client_secret'),
+                        currency: search.get('currency'),
+                        successUrl: search.get('success_url'),
+                        failUrl: search.get('fail_url'),
+                        methods: ['card', 'googlepay', 'applepay'],
+                        applePayRequestOptions: {
+                            buttonType: 'subscribe',
+                            countryCode: 'HK',
+                        },
+                    });
+                });
+        }
+    </script>
+</body>
+
+</html>
