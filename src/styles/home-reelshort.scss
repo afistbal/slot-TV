@@ -1,0 +1,300 @@
+/**
+ * ReelShort 首页主内容区 — 对标 `44bb0e7b9e0672c8.css` 中 `.HomePage_main__*`、`.BookItem_*`。
+ * DOM class 名与镜像一致（含 hash 后缀），便于对照镜像 HTML。
+ */
+
+// --- BookItem（对标镜像）---
+.BookItem_bookItem__wWmbf {
+    width: 36.8vw;
+    flex-shrink: 0;
+    position: relative;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+
+    .BookItem_expoItem__EbMPA {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+    }
+
+    .BookItem_cover__W2qbR {
+        width: 36.8vw;
+        height: 49.06667vw;
+        background: #fff;
+        border-radius: 1.6vw;
+        overflow: hidden;
+        position: relative;
+
+        img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        .BookItem_mask__bz19c {
+            width: 100%;
+            height: 9.06667vw;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(0deg, #000, transparent);
+            pointer-events: none;
+        }
+
+        .BookItem_playMask__lJJFO {
+            background: rgba(0, 0, 0, 0.16);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+
+            .BookItem_playIconBg__pZ9wk {
+                background: rgba(0, 0, 0, 0.72);
+                position: absolute;
+                width: 12.8vw;
+                height: 12.8vw;
+                top: 50%;
+                left: 50%;
+                transform: translateX(-50%) translateY(-50%);
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .BookItem_playIcon__ObTw9 {
+                width: 0;
+                height: 0;
+                margin-left: 1.6vw;
+                border-top: 2.4vw solid transparent;
+                border-bottom: 2.4vw solid transparent;
+                border-left: 4.8vw solid #fff;
+            }
+        }
+
+        .BookItem_read_progress_bar__5HCyD {
+            background-color: hsla(0, 0%, 100%, 0.16);
+            height: 0.53333vw;
+            isolation: isolate;
+            overflow: hidden;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+
+            .BookItem_read_progress__q_bYT {
+                background-color: #fe4167;
+                height: 0.53333vw;
+                border-top-right-radius: 8vw;
+                border-bottom-right-radius: 8vw;
+            }
+        }
+    }
+
+    &.BookItem_bookStyle5__Hn17I {
+        width: 43.2vw;
+
+        .BookItem_cover__W2qbR {
+            width: 43.2vw;
+            height: 57.6vw;
+        }
+    }
+
+    .BookItem_bookInfo__RMtO7 {
+        width: 100%;
+        flex-shrink: 0;
+    }
+
+    .BookItem_title__85fqs {
+        width: 100%;
+        color: #fff;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        word-wrap: break-word;
+        overflow: hidden;
+        font-size: 3.73333vw;
+        margin: 0;
+        margin-top: 2.13333vw;
+        line-height: 5.6vw;
+        font-weight: 400;
+    }
+
+    .BookItem_chapter__8RIez {
+        font-size: 3.2vw;
+        color: #999;
+        margin-top: 0.8vw;
+    }
+
+    .BookItem_chapter_progress__Ev8ed {
+        color: #d5495b;
+    }
+
+    .BookItem_playCount__klKNX {
+        display: flex;
+        align-items: center;
+        position: absolute;
+        color: #fff;
+        font-size: 2.93333vw;
+        right: 1.33333vw;
+        bottom: 1.33333vw;
+        height: 3.73333vw;
+        pointer-events: none;
+
+        .BookItem_icon__mPHYB {
+            width: 2.93333vw;
+            height: 2.93333vw;
+            flex-shrink: 0;
+            margin-bottom: 0.53333vw;
+            margin-right: 0.53333vw;
+            background: url('https://v-mps.crazymaplestudios.com/images/cb15a110-82c3-11ee-aed2-cfe3d80f70eb.png')
+                no-repeat 0 / contain;
+        }
+    }
+}
+
+// --- HomePage 主区 ---
+.HomePage_main__BzEnK {
+    padding-left: 4.8vw;
+    padding-top: 6.13333vw;
+    padding-bottom: 15.46667vw;
+
+    .HomePage_bookShelf__W2tPD {
+        margin-bottom: 3.2vw;
+
+        h2 {
+            font-size: 4.26667vw;
+            color: hsla(0, 0%, 100%, 0.92);
+            font-weight: 700;
+            line-height: normal;
+            margin: 0;
+
+            a {
+                color: inherit;
+                text-decoration: none;
+            }
+        }
+
+        // 对标 Uno：`flex items-center justify-between text-white/90 mb-12/vw`
+        .HomePage_shelfHead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: hsla(0, 0%, 100%, 0.9);
+            margin-bottom: calc(12 / 375 * 100vw);
+
+            .HomePage_shelfHead__more {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                margin-right: calc(14 / 375 * 100vw);
+                font-size: calc(14 / 375 * 100vw);
+                line-height: 1;
+                color: inherit;
+                text-decoration: none;
+
+                /* 对标镜像 class：`rotate--90 ml-2/vw w-12/vw` */
+                svg.rotate--90 {
+                    transform: rotate(-90deg);
+                }
+
+                svg.ml-2\/vw {
+                    margin-left: calc(2 / 375 * 100vw);
+                }
+
+                svg.w-12\/vw {
+                    width: calc(12 / 375 * 100vw);
+                    height: calc(12 / 375 * 100vw);
+                    flex-shrink: 0;
+                }
+            }
+        }
+    }
+
+    .HomePage_content__DZ4dU {
+        padding-bottom: 3.2vw;
+
+        &.HomePage_type_1__uTWfT {
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+
+            .book-item {
+                margin-right: 4.26667vw;
+
+                &:last-child {
+                    margin-right: 0;
+                }
+            }
+
+            /**
+             * ReelShort 镜像 CSS 本身没有尾部 padding，但体验上横滑到末端需要留白；
+             * 用尾部 spacer 对齐左侧 `HomePage_main` 的 4.8vw。
+             */
+            &::after {
+                content: '';
+                flex: 0 0 4.8vw;
+            }
+        }
+
+        &.HomePage_type_5__SK5Rv {
+            display: flex;
+
+            .book-item {
+                margin-bottom: 7.46667vw;
+            }
+
+            .HomePage_colunm__1XbhV {
+                display: flex;
+                flex-direction: column;
+                margin-right: 4.26667vw;
+            }
+        }
+    }
+}
+
+/* type_5 书架底部按钮（镜像：More Movies） */
+.HomePage_more_movies_btn__z0biE {
+    border-radius: 1.6vw;
+    border: 1px solid hsla(0, 0%, 100%, 0.2);
+    background: hsla(0, 0%, 100%, 0.06);
+    margin: 2.66667vw auto 0;
+    width: 57.6vw;
+    height: 11.2vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-size: 4.8vw;
+    font-style: normal;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+// --- 底部加载 / 无更多（可选，对齐镜像字号）---
+.HomePage_listLoader__rs {
+    margin-top: 2.66667vw;
+    text-align: center;
+    color: hsla(0, 0%, 100%, 0.5);
+    min-height: 11.2vw;
+    line-height: 11.2vw;
+    font-size: 3.2vw;
+    cursor: pointer;
+}

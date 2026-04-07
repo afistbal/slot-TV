@@ -53,7 +53,7 @@
 - **顶栏导航（ReelShort 式）**：**透明 sticky 双行**——上行：左侧 **汉堡 SVG**（与镜像内联图一致）+ **圆形头像位**（链到 `/profile`）、中间 **Logo + 字标**、右侧留白；下行：**Home / Categories / Fandom / Brand** 文本链（下划线激活态）。汉堡打开 **左侧抽屉**（Radix `Dialog` 定制全高左栏），内含搜索、个人、语言、关于。字标图 **`/brand-wordmark.png`**，缺失时自动回退为 `site_name` 文案。实现：`src/components/ReelShortTopNav.tsx`；文案键 `nav_*` 见 `src/locales/*.json`。
 - **默认字体**：镜像全站为 `html { font-family: var(--fontFamily) }`（具体栈由 Next/Ant 注入，与中文移动 Web 常见 **PingFang SC / -apple-system / Helvetica Neue / 微软雅黑** 一致）。本项目在 `src/index.css` 的 `:root` 使用 **`--app-font-sans`**，并赋给 `html, body, #root` 与 Tailwind `@theme` 的 **`--font-sans`**。
 - **侧栏 `bg-app-surface` 内边距**：抽屉顶栏（关按钮一行）为 **`padding: 16px 24px`**（竖 16px、横 24px，与对标侧栏顶区一致）；列表主区仍为 **`min(6.4vw, 1.5rem)`**，`md` 为 **24px**。样式在 **`src/styles/reelshort.scss`** 的 **`.reelshort-nav-drawer__header` / `__scroll` / `__content`**；结构见 `src/components/ReelShortNavDrawer.tsx`。
-- **侧栏关闭按钮**：结构对标 Ant **`.ant-drawer-close`**（`margin-inline-end: 12px`、`font-weight: 600`、`line-height: 1` 等）；图标 **`min(6.4vw, 1.5rem)`** + SVG `1em`。白色为 **`path { fill: #fff }`**，可见度用 SVG **`opacity: 0.45`**、悬停 **`0.85`**（避免 `currentColor` 在 button 上继承失效）。类名 **`button.reelshort-nav-drawer__close`**（`src/styles/reelshort.scss`）。
+- **侧栏关闭按钮**：结构对标 Ant **`.ant-drawer-close`**（`margin-inline-end: 12px`、`font-weight: 600`、`line-height: 1` 等）；图标 **`min(6.4vw, 1.5rem)`** + SVG `1em`。SVG 无 `fill="currentColor"`，**`path { fill: #fff }`**（默认与悬停均为纯白）。类名 **`button.reelshort-nav-drawer__close`**（`src/styles/reelshort.scss`）。
 - **底栏 Tab**：与顶栏同色系 **`#12081b`**、白字/半透、激活态纯白（`src/layouts/user.tsx`）。图标暂为 **lucide-react**（Home / ListVideo / User），若要对齐 ReelShort 官方矢量资源，可替换为自有 SVG/PNG 并保持 20×20dp 量级。
 - **本地参考**：若存在镜像目录 `D:\JJ-TV\reelshort\www.reelshort.com\`，仅作 **HTML/CSS 结构、head preload、资源策略** 的参考，**不**维护对方打包 JS 逻辑。对方站点为 **Next.js + React**；Banner 切换为 **CSS `transition` + 叠层 `opacity`**，非独立轮播插件。
 
@@ -83,10 +83,10 @@
 | 视频详情 mock | `src/mocks/videoOffline.ts`，`src/types/videoPlayer.ts` |
 | 我的列表 mock | `src/mocks/myListOffline.ts` |
 | 视频页 | `src/pages/user/Video.tsx`（含离线分支） |
-| 首页 | `src/pages/user/Home.tsx`（Banner + 内嵌顶栏叠层） |
+| 首页 | `src/pages/user/Home.tsx`（Banner + 内嵌顶栏叠层 + **ReelShort 式书架** `HomePage_main__BzEnK` / `HomeBookShelf`） |
 | 首页顶栏 | `src/components/ReelShortTopNav.tsx`（汉堡、字标、二级导航、侧栏） |
 | 用户壳层 | `src/layouts/user.tsx`（底栏 Tab + `Page` 内页顶栏） |
-| 全局样式 | `src/index.css`（Tailwind、`@theme`、`@layer`、`.home-hero-shell`、渐变、`.reelshort-footer*` 等）+ **`src/styles/reelshort.scss`**（`.home-hero-banner-dots`、`.reelshort-nav-drawer__*`，`main.tsx` 引入） |
+| 全局样式 | `src/index.css`（Tailwind、`@theme`、`@layer`、`.home-hero-shell`、渐变、`.reelshort-footer*` 等）+ **`src/styles/reelshort.scss`** + **`src/styles/home-reelshort.scss`**（镜像 class：`HomePage_main__*`、`BookItem_*`、`HomePage_type_1` / `type_5`） |
 | 首页页脚 | `src/components/ReelShortFooter.tsx`（折叠区 + COMMUNITY + 版权，结构对齐镜像 Footer） |
 | Vite 代理 | `vite.config.ts` → `server.proxy['/api']` |
 
@@ -153,6 +153,9 @@
 | 2026-03-28 | 首页 Banner 指示点改为 `button > span` + `index.css` 层级嵌套样式（`.home-hero-banner-dots`），选中态 `aria-selected` 控制 |
 | 2026-03-28 | Banner 指示点选中态改为纯色 `#fff`（去掉尾部半透明渐变） |
 | 2026-03-28 | 增加 **`sass`**，新增 **`src/styles/reelshort.scss`**（Banner 点 + 侧栏抽屉），`main.tsx` 在 `index.css` 后引入 |
+| 2026-03-28 | 侧栏关闭图标：去 SVG `fill="currentColor"`，改 `path` 的 `fill: rgba(白,α)`（替代 SVG `opacity`） |
+| 2026-03-28 | 侧栏关闭图标默认 **`#fff`**（SCSS + `<path fill="#fff">` 双保险） |
+| 2026-03-28 | 首页影视书架对标 ReelShort：`HomeBookShelf` / `HomeBookItem` + `home-reelshort.scss`；首栏标题 **`home_shelf_drama_world`（觀劇寰宇）** |
 
 ---
 

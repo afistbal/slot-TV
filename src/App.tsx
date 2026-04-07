@@ -31,6 +31,8 @@ import UserProfile from './pages/user/Profile';
 import UserVideo from './pages/user/Video';
 import UserAirwallex from './pages/user/Airwallex';
 import UserTest from './pages/user/Test';
+import UserShelf from './pages/user/Shelf';
+import UserEpisodes from './pages/user/Episodes';
 
 import UserFeedback from './pages/user/Feedback';
 import UserLanguage from './pages/user/Language';
@@ -90,6 +92,30 @@ const router = createBrowserRouter([
             {
                 index: true,
                 element: <UserHome />,
+            },
+            {
+                path: 'shelf/:slug',
+                element: <UserShelf />,
+            },
+            {
+                path: ':locale/shelf/:slug',
+                element: <UserShelf />,
+            },
+            {
+                path: 'shelf/:slug/:page',
+                element: <UserShelf />,
+            },
+            {
+                path: ':locale/shelf/:slug/:page',
+                element: <UserShelf />,
+            },
+            {
+                path: 'episodes/:slug',
+                element: <UserEpisodes />,
+            },
+            {
+                path: ':locale/episodes/:slug',
+                element: <UserEpisodes />,
             },
             {
                 path: 'my-list',

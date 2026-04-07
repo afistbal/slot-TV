@@ -90,12 +90,14 @@ const HEADER_SCROLL_SOLID_THRESHOLD = 4;
 export type ReelShortTopNavProps = {
     /** 实际滚动的祖先节点（如首页 `overflow-y-auto` 容器）；在顶部透明，滚动后出现画布背景 */
     scrollParentRef?: RefObject<HTMLElement | null>;
+    /** 是否展示二级横向导航（默认不展示；首页传 true） */
+    showPrimaryNav?: boolean;
 };
 
 /**
  * 顶栏单行：汉堡 → Logo + 项目名 → 搜索 → 我的（Google 登录后展示头像）
  */
-export function ReelShortTopNav({ scrollParentRef }: ReelShortTopNavProps = {}) {
+export function ReelShortTopNav({ scrollParentRef, showPrimaryNav = false }: ReelShortTopNavProps = {}) {
     const intl = useIntl();
     const [menuOpen, setMenuOpen] = useState(false);
     const [brandVideoOpen, setBrandVideoOpen] = useState(false);
@@ -132,10 +134,10 @@ export function ReelShortTopNav({ scrollParentRef }: ReelShortTopNavProps = {}) 
                         <ReelShortMenuIcon className="h-6 w-6" />
                     </button>
 
-                    <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-2.5 justify-center">
+                    <Link to="/" className="flex min-w-0 flex-1 items-center gap-2 sm:gap-2.5 justify-center">
                         <img src={BRAND_LOGO_SRC} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
                         <BrandWordmark />
-                    </div>
+                    </Link>
 
                     <div className="flex shrink-0 items-center gap-1 md:gap-2">
                         <div className="ant-space-item">
@@ -145,27 +147,29 @@ export function ReelShortTopNav({ scrollParentRef }: ReelShortTopNavProps = {}) 
                     </div>
                 </div>
 
-                <nav
-                    className="flex justify-center gap-4 overflow-x-auto px-3 pb-2 pt-1 md:gap-10 md:px-6 [&::-webkit-scrollbar]:hidden"
-                    style={{ scrollbarWidth: 'none' }}
-                    aria-label="Primary"
-                >
-                    <NavLink to="/" end className={subNavLinkClass}>
-                        <FormattedMessage id="home" />
-                    </NavLink>
-                    <NavLink to="/page/search" className={subNavLinkClass}>
-                        <FormattedMessage id="nav_categories" />
-                    </NavLink>
-                    <button
-                        type="button"
-                        onClick={() => setBrandVideoOpen(true)}
-                        className={cn(
-                            'whitespace-nowrap border-b-2 border-transparent px-0.5 pb-1 text-sm font-medium text-white/70 transition-colors hover:text-white',
-                        )}
+                {showPrimaryNav ? (
+                    <nav
+                        className="flex justify-center gap-4 overflow-x-auto px-3 pb-2 pt-1 md:gap-10 md:px-6 [&::-webkit-scrollbar]:hidden"
+                        style={{ scrollbarWidth: 'none' }}
+                        aria-label="Primary"
                     >
-                        <FormattedMessage id="nav_brand" />
-                    </button>
-                </nav>
+                        <NavLink to="/" end className={subNavLinkClass}>
+                            <FormattedMessage id="home" />
+                        </NavLink>
+                        <NavLink to="/page/search" className={subNavLinkClass}>
+                            <FormattedMessage id="nav_categories" />
+                        </NavLink>
+                        <button
+                            type="button"
+                            onClick={() => setBrandVideoOpen(true)}
+                            className={cn(
+                                'whitespace-nowrap border-b-2 border-transparent px-0.5 pb-1 text-sm font-medium text-white/70 transition-colors hover:text-white',
+                            )}
+                        >
+                            <FormattedMessage id="nav_brand" />
+                        </button>
+                    </nav>
+                ) : null}
             </header>
 
             <ReelShortNavDrawer open={menuOpen} onOpenChange={setMenuOpen} />

@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 import { useCallback, useEffect, useRef } from 'react';
 import { api, type IPagination } from '@/api';
 import { cn } from '@/lib/utils';
-import Image from '@/components/Image';
 import { LoaderCircle } from 'lucide-react';
 import { FormattedMessage } from 'react-intl';
 import { InView } from 'react-intersection-observer';
@@ -15,6 +14,8 @@ import { useConfigStore } from '@/stores/config';
 import Loader from '@/components/Loader';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
+import { HomeBookShelf } from '@/components/home/HomeBookShelf';
+import type { HomeBookItemData } from '@/components/home/HomeBookItem';
 
 const HERO_FADE_MS = 600;
 const HERO_AUTOPLAY_MS = 5000;
@@ -24,6 +25,56 @@ function heroImageUrl(staticBase: string, imagePath: string) {
         return imagePath;
     }
     return `${staticBase}/${imagePath}`;
+}
+
+function itemsFromHomeRail(
+    items: {
+        id: number;
+        title: string;
+        image: string;
+        episodeSlug?: string;
+        episode_slug?: string;
+        movieSlug?: string;
+        movie_slug?: string;
+        views?: string;
+        currentEp?: number;
+        totalEp?: number;
+        progressPercent?: number;
+        showPlayMask?: boolean;
+        showExpo?: boolean;
+    }[],
+): HomeBookItemData[] {
+    return items.map((v) => ({
+        id: v.id,
+        title: v.title,
+        image: v.image,
+        episodeSlug: v.episodeSlug ?? v.episode_slug,
+        movieSlug: v.movieSlug ?? v.movie_slug,
+        views: v.views,
+        currentEp: v.currentEp,
+        totalEp: v.totalEp,
+        progressPercent: v.progressPercent,
+        showPlayMask: v.showPlayMask,
+        showExpo: v.showExpo,
+    }));
+}
+
+function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
+    return item.episodeSlug ? `/episodes/${item.episodeSlug}` : `/video/${item.id}`;
+}
+
+function normalizeReelShortHref(href: string) {
+    if (!href) return '/';
+    // 支持传入完整 URL：`https://www.reelshort.com/zh-TW/shelf/...`
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+        try {
+            const u = new URL(href);
+            return u.pathname + u.search + u.hash;
+        } catch {
+            return href;
+        }
+    }
+    return href;
 }
 
 /** ReelShort 首页 Banner 播放按钮内联三角图标（与镜像 HTML 一致） */
@@ -63,6 +114,10 @@ export default function Component() {
             return;
         }
 
+        loadLatest(homeStore.page + 1);
+    }
+
+    function handleManualLoadMore() {
         loadLatest(homeStore.page + 1);
     }
 
@@ -108,7 +163,7 @@ export default function Component() {
         } else {
             loadLatest();
         }
-    }, []);
+    }, [homeStore.list.length, homeStore.scrollTop]);
 
     const topList = homeStore.data?.top ?? [];
     const topLen = topList.length;
@@ -177,16 +232,17 @@ export default function Component() {
     }
 
     useEffect(() => {
+        const state = useHomeStore.getState();
         if (skipRemoteApi) {
-            homeStore.setData(offlineHomeData);
-            homeStore.setLoading(false);
+            state.setData(offlineHomeData);
+            state.setLoading(false);
             return;
         }
         api<IData>('home', {
             loading: false,
         }).then(res => {
-            homeStore.setData(res.d);
-            homeStore.setLoading(false);
+            state.setData(res.d);
+            state.setLoading(false);
         });
     }, []);
 
@@ -216,7 +272,7 @@ export default function Component() {
 
     return <div className='flex h-full flex-col bg-app-canvas'>
         {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.rank.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div className='overflow-y-auto flex-1' ref={scrollRef} onScrollEnd={handleScrollEnd}>
-            <ReelShortTopNav scrollParentRef={scrollRef} />
+            <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
             <div className="relative z-10 -mt-[min(22vw,5.5rem)] md:-mt-[66px]">
                 <div className="home-hero-shell w-full overflow-hidden" style={{ direction: 'ltr' }}>
                     <div
@@ -241,7 +297,7 @@ export default function Component() {
                                     aria-hidden={!active}
                                 >
                                     <Link
-                                        to={`/video/${v.id}`}
+                                        to={toEpisodeOrVideoHref(v)}
                                         className="relative block h-full min-h-0 w-full overflow-hidden"
                                     >
                                         <img
@@ -297,7 +353,7 @@ export default function Component() {
                                                     {currentHero.title}
                                                 </h2>
                                                 <Link
-                                                    to={`/video/${currentHero.id}`}
+                                                    to={toEpisodeOrVideoHref(currentHero)}
                                                     className={cn(
                                                         'flex cursor-pointer items-center justify-center bg-white font-bold text-black',
                                                         'h-[calc(40/375*100vw)] w-[calc(168/375*100vw)] rounded-[calc(4/375*100vw)] py-[calc(11/375*100vw)] text-[calc(16/375*100vw)]',
@@ -348,38 +404,51 @@ export default function Component() {
                     </div>
                 </div>
             </div>
-            <div className='mb-2 mt-4 flex items-center gap-2 px-4 text-lg font-bold text-white'>
-                <div><FormattedMessage id="for_you" /></div>
-            </div>
-            <div className='mx-4 flex w-[calc(100%-theme(spacing.8))] gap-4 overflow-x-auto'>
-                {homeStore.data?.recommend.map(v => <Link to={`/video/${v.id}`} key={v.id} className='w-3/12 flex flex-col gap-1'>
-                    <Image height={1.3325} width={`${window.document.body.clientWidth / 4}px`} alt={v.title as string} src={`${configStore.config['static']}/${v.image}`} />
-                    <div className='w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-white/90'>{v.title}</div>
-                </Link>)}
-            </div>
-            <div className='mb-2 mt-6 flex items-center gap-2 px-4 text-lg font-bold text-white'>
-                <div><FormattedMessage id="rankings" /></div>
-            </div>
-            <div className='mx-4 flex w-[calc(100%-theme(spacing.8))] gap-4 overflow-x-auto'>
-                {homeStore.data?.rank.map(v => <Link to={`/video/${v.id}`} key={v.id} className='w-3/12 flex flex-col gap-1'>
-                    <Image height={1.3325} width={`${window.document.body.clientWidth / 4}px`} alt={v.title as string} src={`${configStore.config['static']}/${v.image}`} />
-                    <div className='w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-white/90'>{v.title}</div>
-                </Link>)}
-            </div>
-            <div className='mb-2 mt-6 flex items-center gap-2 px-4 text-lg font-bold text-white'>
-                <div><FormattedMessage id="latest_updates" /></div>
-            </div>
-            {!homeStore.loading && homeStore.list.length === 0 ? <NoContent /> : <div className={cn('flex-1 grid grid-cols-3 gap-4 px-4 pb-4 auto-rows-max')}>
-                {homeStore.loading ? <div /> : homeStore.list.map(v => <Link to={`/video/${v['id']}`} key={v['id'] as string}>
-                    <Image height={1.3325} width={`${(window.document.body.clientWidth - 64) / 3}px`} alt={v['title'] as string} src={`${configStore.config['static']}/${v['image']}`} />
-                    <div className='p-1'>
-                        <div className='line-clamp-2 overflow-hidden text-ellipsis text-sm leading-[18px] text-white/90'>{`${v['title']}`}</div>
-                    </div>
-                </Link>)}
-                <InView as="div" onChange={handleMoreChange} className="col-span-full flex h-12 items-center justify-center">
-                    {homeStore.more ? <LoaderCircle className="h-8 w-8 animate-[spin_1.5s_ease_infinite] text-white/45" /> : <div className='text-white/45'><FormattedMessage id="no_more" /></div>}
+            <div className="HomePage_main__BzEnK">
+                {homeStore.data?.shelves?.map((shelf) => (
+                    <HomeBookShelf
+                        key={shelf.titleMessageId}
+                        titleMessageId={shelf.titleMessageId}
+                        titleHref={normalizeReelShortHref(shelf.titleHref ?? '/')}
+                        viewAllHref={normalizeReelShortHref(shelf.viewAllHref ?? '/')}
+                        staticBase={configStore.config['static'] as string}
+                        items={itemsFromHomeRail(shelf.items)}
+                    />
+                ))}
+
+                {/* 观剧寰宇：要求最后一个书架 */}
+                <HomeBookShelf
+                    titleMessageId="home_shelf_drama_world"
+                    titleHref="/"
+                    viewAllHref="/"
+                    staticBase={configStore.config['static'] as string}
+                    items={itemsFromHomeRail(homeStore.data?.recommend ?? [])}
+                    type="type_5"
+                    showMoreMoviesButton
+                />
+                <InView
+                    as="div"
+                    onChange={handleMoreChange}
+                    className="HomePage_listLoader__rs"
+                    onClick={handleManualLoadMore}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleManualLoadMore();
+                        }
+                    }}
+                >
+                    {homeStore.more ? (
+                        <LoaderCircle className="inline-block h-8 w-8 animate-[spin_1.5s_ease_infinite] align-middle text-white/45" />
+                    ) : homeStore.list.length > 0 ? (
+                        <span className="text-white/45">
+                            <FormattedMessage id="no_more" />
+                        </span>
+                    ) : null}
                 </InView>
-            </div>}
+            </div>
             <ReelShortFooter />
         </div>}
     </div>

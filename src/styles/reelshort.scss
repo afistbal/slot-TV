@@ -89,16 +89,11 @@ button.reelshort-nav-drawer__close {
         flex-shrink: 0;
         width: 1em;
         height: 1em;
-        opacity: 0.45;
-        transition: opacity 0.2s;
+        color: #fff;
 
         path {
             fill: #fff;
         }
-    }
-
-    &:hover svg {
-        opacity: 0.85;
     }
 }
 
