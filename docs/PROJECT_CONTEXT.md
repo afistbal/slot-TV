@@ -10,7 +10,7 @@
 |----|------|
 | 名称 | 前端项目（产品名常见为 **YogoTV**） |
 | 路径 | `slot-TV` 仓库根目录 |
-| 技术栈 | **Vite 6** + **React** + **TypeScript** + **Tailwind CSS v4** + **PWA**（vite-plugin-pwa） |
+| 技术栈 | **Vite 6** + **React** + **TypeScript** + **Tailwind CSS v4** + **Sass（SCSS）** + **PWA**（vite-plugin-pwa） |
 | 路由 | React Router 7 |
 | 国际化 | react-intl，文案在 `src/locales/*.json` |
 | 状态 | Zustand（如 `stores/home`、`stores/config`、`stores/user`） |
@@ -49,8 +49,11 @@
 
 ### 3.2 已明确的取向
 
-- **首页 Banner**：全宽深色氛围（`#12081b`）、全幅 `object-cover`、**多层 `absolute` 叠图 + `opacity` 淡入淡出（约 600ms，`transition-all ease`）**（与 ReelShort 同款 crossfade，非横向滑动）、自动轮播、指示点与轻扫切帧、左右黑色渐变、Banner 上方 **顶栏叠层 + 负 margin 与顶部渐变**（与 ReelShort 叠在首图上的观感一致）、首图 preload/LCP 优化（实现见 `src/pages/user/Home.tsx` + `src/index.css` 中 `.home-hero-*`）。
+- **首页 Banner**：全宽深色氛围（`#12081b`）、全幅 `object-cover`、**多层 `absolute` 叠图 + `opacity` 淡入淡出（约 600ms，`transition-all ease`）**（与 ReelShort 同款 crossfade，非横向滑动）、自动轮播、指示点与轻扫切帧、左右黑色渐变、Banner 上方 **顶栏叠层 + 负 margin 与顶部渐变**（与 ReelShort 叠在首图上的观感一致）、首图 preload/LCP 优化（实现见 `src/pages/user/Home.tsx` + `src/index.css` 中 `.home-hero-*`）。**底部指示点**：`role="tablist"` 容器 **`home-hero-banner-dots`**，每项为 **`button.home-hero-banner-dots__tab` > `span.home-hero-banner-dots__thumb`**；未选为小圆渐变，**选中为纯白 `#fff` 圆角 pill** + 轻阴影，写在 **`src/styles/reelshort.scss`**（`button[aria-selected="true"] span`），勿在 TSX 堆 Tailwind。
 - **顶栏导航（ReelShort 式）**：**透明 sticky 双行**——上行：左侧 **汉堡 SVG**（与镜像内联图一致）+ **圆形头像位**（链到 `/profile`）、中间 **Logo + 字标**、右侧留白；下行：**Home / Categories / Fandom / Brand** 文本链（下划线激活态）。汉堡打开 **左侧抽屉**（Radix `Dialog` 定制全高左栏），内含搜索、个人、语言、关于。字标图 **`/brand-wordmark.png`**，缺失时自动回退为 `site_name` 文案。实现：`src/components/ReelShortTopNav.tsx`；文案键 `nav_*` 见 `src/locales/*.json`。
+- **默认字体**：镜像全站为 `html { font-family: var(--fontFamily) }`（具体栈由 Next/Ant 注入，与中文移动 Web 常见 **PingFang SC / -apple-system / Helvetica Neue / 微软雅黑** 一致）。本项目在 `src/index.css` 的 `:root` 使用 **`--app-font-sans`**，并赋给 `html, body, #root` 与 Tailwind `@theme` 的 **`--font-sans`**。
+- **侧栏 `bg-app-surface` 内边距**：抽屉顶栏（关按钮一行）为 **`padding: 16px 24px`**（竖 16px、横 24px，与对标侧栏顶区一致）；列表主区仍为 **`min(6.4vw, 1.5rem)`**，`md` 为 **24px**。样式在 **`src/styles/reelshort.scss`** 的 **`.reelshort-nav-drawer__header` / `__scroll` / `__content`**；结构见 `src/components/ReelShortNavDrawer.tsx`。
+- **侧栏关闭按钮**：结构对标 Ant **`.ant-drawer-close`**（`margin-inline-end: 12px`、`font-weight: 600`、`line-height: 1` 等）；图标 **`min(6.4vw, 1.5rem)`** + SVG `1em`。白色为 **`path { fill: #fff }`**，可见度用 SVG **`opacity: 0.45`**、悬停 **`0.85`**（避免 `currentColor` 在 button 上继承失效）。类名 **`button.reelshort-nav-drawer__close`**（`src/styles/reelshort.scss`）。
 - **底栏 Tab**：与顶栏同色系 **`#12081b`**、白字/半透、激活态纯白（`src/layouts/user.tsx`）。图标暂为 **lucide-react**（Home / ListVideo / User），若要对齐 ReelShort 官方矢量资源，可替换为自有 SVG/PNG 并保持 20×20dp 量级。
 - **本地参考**：若存在镜像目录 `D:\JJ-TV\reelshort\www.reelshort.com\`，仅作 **HTML/CSS 结构、head preload、资源策略** 的参考，**不**维护对方打包 JS 逻辑。对方站点为 **Next.js + React**；Banner 切换为 **CSS `transition` + 叠层 `opacity`**，非独立轮播插件。
 
@@ -60,7 +63,7 @@
 
 1. **DOM 结构**：`reelshort/www.reelshort.com/index.html` 中对应区块的 **类名层级**（如 `Footer_footer__*`、`Footer_community__*`）。
 2. **具体数值**：`reelshort/www.reelshort.com/_next/static/css/` 下打包 CSS（常为单文件超长行）里 **搜索同一类名字符串**，读出 `padding`、`border`、`font-size`（多为 **vw**，375 设计稿）、`flex`/`text-align` 等。
-3. **落到本项目**：在 `slot-TV` 用 **语义化 class**（如 `.reelshort-footer`）写在 `src/index.css`，组件里保持与镜像相同的 **父子结构**，避免只用 `mt-8 bg-app-surface px-4` 等近似值替代。
+3. **落到本项目**：用 **语义化 class**，写在 **`src/styles/reelshort.scss`**（层级嵌套、Banner 点、侧栏抽屉）或 **`src/index.css`**（Tailwind、`@theme`、`@layer`、`.reelshort-footer*` 等仍放此文件）；组件里 **只写类名**。AI **grep `reelshort-`、`home-hero-banner-dots`**。若要用 **Less**：`npm i -D less`，新建 `.less` 并在 `main.tsx` 中 `import` 即可（与 SCSS 可并存）。
 
 - **页脚（移动）**：`src/components/ReelShortFooter.tsx` + `src/index.css` 中 `.reelshort-footer*` 已对齐全站镜像里 `.Footer_footer__wSzLt`、`.Footer_community__p3HfK` 等规则（半透明顶栏底、顶边框、折叠行 vw 内边距、COMMUNITY 标题居中 + 图标行 `justify-content:center` 与链接 `8.53333vw` 等）。
 
@@ -83,7 +86,7 @@
 | 首页 | `src/pages/user/Home.tsx`（Banner + 内嵌顶栏叠层） |
 | 首页顶栏 | `src/components/ReelShortTopNav.tsx`（汉堡、字标、二级导航、侧栏） |
 | 用户壳层 | `src/layouts/user.tsx`（底栏 Tab + `Page` 内页顶栏） |
-| 全局样式 | `src/index.css`（含 `.home-hero-shell`、左右渐变、`.reelshort-footer*` 页脚对标样式） |
+| 全局样式 | `src/index.css`（Tailwind、`@theme`、`@layer`、`.home-hero-shell`、渐变、`.reelshort-footer*` 等）+ **`src/styles/reelshort.scss`**（`.home-hero-banner-dots`、`.reelshort-nav-drawer__*`，`main.tsx` 引入） |
 | 首页页脚 | `src/components/ReelShortFooter.tsx`（折叠区 + COMMUNITY + 版权，结构对齐镜像 Footer） |
 | Vite 代理 | `vite.config.ts` → `server.proxy['/api']` |
 
@@ -129,6 +132,7 @@
 1. **新开任务或大改前**，先说明：「请阅读 `docs/PROJECT_CONTEXT.md`」。
 2. **计划有变**时，直接改本文档的「§5 改造计划」或「§3 目的」，避免口头约定丢失。
 3. **重大决策**（例如：完全暗色顶栏、是否放弃桌面窄屏模式）记在 §3 或 §5 下单独小节。
+4. **改 ReelShort 对标样式时**：搜 **`src/styles/reelshort.scss`** 与 **`src/index.css`** 中的 **`reelshort-`** / **`home-hero-banner-dots`**，避免在 TSX 堆叠长串 Tailwind。
 
 ---
 
@@ -140,6 +144,15 @@
 | 2026-03-28 | 补充：Banner crossfade、ReelShort 式顶栏（`ReelShortTopNav`）、底栏深色 Tab、字标资源说明、阶段 A/B 部分勾选 |
 | 2026-03-28 | PWA 安装弹窗改为 `VITE_PWA_INSTALL_PROMPT` 开关（默认隐藏） |
 | 2026-03-28 | 补充：对标 ReelShort 页脚（`.reelshort-footer*` + `ReelShortFooter` DOM）及 §3.2「对标执行优先级」 |
+| 2026-03-28 | 补充：`--app-font-sans` 默认字体栈；`ReelShortNavDrawer` 顶栏/内容区 padding 对标 `Nav_navContainer` 4.8vw 与 6.4vw（24px） |
+| 2026-03-28 | 约定：对标块布局用 `src/index.css` 语义 class（`.reelshort-nav-drawer__*`）；抽屉滚动区等与 TSX 内联 style 合并进 CSS |
+| 2026-03-28 | 抽屉顶栏 `.reelshort-nav-drawer__header` 改为固定 `padding: 16px 24px`（替代 4.8vw / 18px 横向） |
+| 2026-03-28 | 抽屉关闭钮 `.reelshort-nav-drawer__close` 对标 Ant `.ant-drawer-close`（深色用白通道透明度） |
+| 2026-03-28 | 抽屉关闭图标改为 `min(6.4vw, 1.5rem)` + `rgb(255 255 255 / …)`，对齐镜像 SVG 尺寸与 Uno 白字透明度 |
+| 2026-03-28 | 抽屉关闭图标改为 `#fff` + SVG `opacity`（显式 `fill`，修复白字未生效） |
+| 2026-03-28 | 首页 Banner 指示点改为 `button > span` + `index.css` 层级嵌套样式（`.home-hero-banner-dots`），选中态 `aria-selected` 控制 |
+| 2026-03-28 | Banner 指示点选中态改为纯色 `#fff`（去掉尾部半透明渐变） |
+| 2026-03-28 | 增加 **`sass`**，新增 **`src/styles/reelshort.scss`**（Banner 点 + 侧栏抽屉），`main.tsx` 在 `index.css` 后引入 |
 
 ---
 

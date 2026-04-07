@@ -1,0 +1,125 @@
+/**
+ * ReelShort 对标与首页 Banner 指示点 — 用 SCSS 层级嵌套维护。
+ * 入口：`main.tsx` 在 `index.css` 之后 `import './styles/reelshort.scss'`。
+ * grep：`reelshort-`、`home-hero-banner-dots`
+ */
+
+// --- 首页 Banner 指示点（Home.tsx tablist）---
+.home-hero-banner-dots {
+    button.home-hero-banner-dots__tab {
+        position: relative;
+        flex-shrink: 0;
+        cursor: pointer;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        line-height: 0;
+        -webkit-tap-highlight-color: transparent;
+
+        span.home-hero-banner-dots__thumb {
+            display: block;
+            height: max(4px, calc(4 / 375 * 100vw));
+            width: max(4px, calc(4 / 375 * 100vw));
+            border-radius: 9999px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18));
+            box-shadow:
+                0 1px 3px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            transition:
+                width 0.3s ease-out,
+                background 0.3s ease-out,
+                box-shadow 0.3s ease-out,
+                border-radius 0.3s ease-out;
+        }
+
+        &[aria-selected='true'] span.home-hero-banner-dots__thumb {
+            width: calc(24 / 375 * 100vw);
+            border-radius: calc(5 / 375 * 100vw);
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+        }
+    }
+
+    @media (min-width: 768px) {
+        button.home-hero-banner-dots__tab {
+            span.home-hero-banner-dots__thumb {
+                height: 6px;
+                width: 6px;
+            }
+
+            &[aria-selected='true'] span.home-hero-banner-dots__thumb {
+                width: 32px;
+                border-radius: 5px;
+            }
+        }
+    }
+}
+
+// --- 侧栏抽屉（ReelShortNavDrawer.tsx）---
+.reelshort-nav-drawer__header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px 24px;
+}
+
+button.reelshort-nav-drawer__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-inline-end: 12px;
+    padding: 0;
+    color: #fff;
+    font-weight: 600;
+    font-size: min(6.4vw, 1.5rem);
+    font-style: normal;
+    line-height: 1;
+    text-align: center;
+    text-transform: none;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    svg {
+        display: block;
+        flex-shrink: 0;
+        width: 1em;
+        height: 1em;
+        opacity: 0.45;
+        transition: opacity 0.2s;
+
+        path {
+            fill: #fff;
+        }
+    }
+
+    &:hover svg {
+        opacity: 0.85;
+    }
+}
+
+.reelshort-nav-drawer__scroll {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 0%;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reelshort-nav-drawer__content {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: min(6.4vw, 1.5rem);
+    padding: min(6.4vw, 1.5rem);
+
+    @media (min-width: 768px) {
+        padding: 1.5rem;
+    }
+}

@@ -224,10 +224,6 @@ export default function Component() {
                         onTouchStart={handleHeroTouchStart}
                         onTouchEnd={handleHeroTouchEnd}
                     >
-                        <div
-                            className="pointer-events-none absolute left-0 right-0 top-0 z-[5] h-[40%] max-h-[170px] bg-gradient-to-b from-black to-transparent md:max-h-[170px]"
-                            aria-hidden
-                        />
                         <div className="absolute inset-0 z-0 bg-black" aria-hidden />
                         {topList.map((v, i) => {
                             const active = i === homeStore.current;
@@ -260,98 +256,98 @@ export default function Component() {
                                 </div>
                             );
                         })}
-                        <div className="pointer-events-none absolute inset-0 z-[2] home-hero-radial-glow" aria-hidden />
-                        <div
-                            className="pointer-events-none absolute inset-y-0 left-0 z-[3] w-[19%] home-hero-gradient-l"
-                            aria-hidden
-                        />
-                        <div
-                            className="pointer-events-none absolute inset-y-0 right-0 z-[3] w-[19%] home-hero-gradient-r"
-                            aria-hidden
-                        />
-                        {topLen > 0 ? (
-                            <div className="pointer-events-none absolute inset-0 z-[4] flex flex-col">
-                                <div className="pointer-events-auto absolute left-1/2 top-0 h-full w-full max-w-full -translate-x-1/2 md:max-w-[1636px]">
-
-                                    {currentHero ? (
-                                        <div
-                                            className={cn(
-                                                'absolute bottom-[calc(16/375*100vw)] left-0 flex w-full flex-col items-center justify-center',
-                                                'md:bottom-[40px] md:left-[72px] md:items-start md:bottom-[40px] md:left-[80px]',
-                                                'lg:left-[110px] xl:left-[130px] 2xl:left-[108px]',
-                                            )}
-                                        >
-                                            <h2
+                        <div className="pointer-events-none absolute inset-0 z-[2] isolate">
+                            <div
+                                className="absolute bottom-0 left-0 right-0 z-[-1] h-[40%] max-h-[170px] bg-gradient-to-t from-black to-transparent md:max-h-[170px]"
+                                aria-hidden
+                            />
+                            <div className="absolute inset-0 z-0 home-hero-radial-glow" aria-hidden />
+                            <div
+                                className="absolute inset-y-0 left-0 z-[1] w-[19%] home-hero-gradient-l"
+                                aria-hidden
+                            />
+                            <div
+                                className="absolute inset-y-0 right-0 z-[1] w-[19%] home-hero-gradient-r"
+                                aria-hidden
+                            />
+                            <div
+                                className="absolute left-0 right-0 top-0 z-[2] h-[40%] max-h-[170px] bg-gradient-to-b from-black to-transparent md:max-h-[170px]"
+                                aria-hidden
+                            />
+                            {topLen > 0 ? (
+                                <div className="pointer-events-none absolute inset-0 z-[3] flex flex-col">
+                                    <div className="pointer-events-auto absolute left-1/2 top-0 h-full w-full max-w-full -translate-x-1/2 md:max-w-[1636px]">
+                                        {currentHero ? (
+                                            <div
                                                 className={cn(
-                                                    'mb-[calc(16/375*100vw)] w-[calc(343/375*100vw)] max-w-full break-words text-center font-bold leading-[120%] text-white/90',
-                                                    'text-[calc(24/375*100vw)] md:mb-3 md:w-[280px] md:max-w-[280px] md:text-start md:text-[20px]',
-                                                    'lg:mb-5 lg:w-[400px] lg:max-w-[400px] lg:text-[28px]',
-                                                    'xl:w-[480px] xl:max-w-[480px] xl:text-[32px]',
-                                                    '2xl:mb-6 2xl:w-[560px] 2xl:max-w-[560px] 2xl:text-[40px]',
+                                                    'absolute bottom-[calc(16/375*100vw)] left-0 flex w-full flex-col items-center justify-center',
+                                                    'md:bottom-[40px] md:left-[72px] md:items-start md:bottom-[40px] md:left-[80px]',
+                                                    'lg:left-[110px] xl:left-[130px] 2xl:left-[108px]',
                                                 )}
                                             >
-                                                {currentHero.title}
-                                            </h2>
-                                            <Link
-                                                to={`/video/${currentHero.id}`}
-                                                className={cn(
-                                                    'flex cursor-pointer items-center justify-center bg-white font-bold text-black',
-                                                    'h-[calc(40/375*100vw)] w-[calc(168/375*100vw)] rounded-[calc(4/375*100vw)] py-[calc(11/375*100vw)] text-[calc(16/375*100vw)]',
-                                                    'md:h-9 md:w-[168px] md:rounded-[4px] md:py-[9px] md:text-[16px]',
-                                                    'lg:h-12 lg:w-[200px] lg:py-[13px] lg:text-[18px]',
-                                                    'xl:h-14 xl:py-[17px]',
-                                                    '2xl:h-[60px] 2xl:w-[240px] 2xl:py-[18px] 2xl:text-[20px]',
-                                                )}
-                                            >
-                                                <HeroPlayIcon className="mr-[calc(4/375*100vw)] h-[calc(16/375*100vw)] w-[calc(16/375*100vw)] shrink-0 md:mr-2 md:h-6 md:w-6" />
-                                                <FormattedMessage id="play" />
-                                            </Link>
-                                        </div>
-                                    ) : null}
+                                                <h2
+                                                    className={cn(
+                                                        'mb-[calc(16/375*100vw)] w-[calc(343/375*100vw)] max-w-full break-words text-center font-bold leading-[120%] text-white/90',
+                                                        'text-[calc(24/375*100vw)] md:mb-3 md:w-[280px] md:max-w-[280px] md:text-start md:text-[20px]',
+                                                        'lg:mb-5 lg:w-[400px] lg:max-w-[400px] lg:text-[28px]',
+                                                        'xl:w-[480px] xl:max-w-[480px] xl:text-[32px]',
+                                                        '2xl:mb-6 2xl:w-[560px] 2xl:max-w-[560px] 2xl:text-[40px]',
+                                                    )}
+                                                >
+                                                    {currentHero.title}
+                                                </h2>
+                                                <Link
+                                                    to={`/video/${currentHero.id}`}
+                                                    className={cn(
+                                                        'flex cursor-pointer items-center justify-center bg-white font-bold text-black',
+                                                        'h-[calc(40/375*100vw)] w-[calc(168/375*100vw)] rounded-[calc(4/375*100vw)] py-[calc(11/375*100vw)] text-[calc(16/375*100vw)]',
+                                                        'md:h-9 md:w-[168px] md:rounded-[4px] md:py-[9px] md:text-[16px]',
+                                                        'lg:h-12 lg:w-[200px] lg:py-[13px] lg:text-[18px]',
+                                                        'xl:h-14 xl:py-[17px]',
+                                                        '2xl:h-[60px] 2xl:w-[240px] 2xl:py-[18px] 2xl:text-[20px]',
+                                                    )}
+                                                >
+                                                    <HeroPlayIcon className="mr-[calc(4/375*100vw)] h-[calc(16/375*100vw)] w-[calc(16/375*100vw)] shrink-0 md:mr-2 md:h-6 md:w-6" />
+                                                    <FormattedMessage id="play" />
+                                                </Link>
+                                            </div>
+                                        ) : null}
+                                    </div>
                                 </div>
+                            ) : null}
+                        </div>
+                        {topLen > 0 ? (
+                            <div
+                                className={cn(
+                                    'home-hero-banner-dots pointer-events-auto absolute bottom-0 left-0 right-0 z-[4] flex w-full justify-center gap-[calc(6/375*100vw)]',
+                                    'bg-gradient-to-b from-transparent via-black/30 to-app-canvas',
+                                    'md:bottom-[40px] md:right-[250px] md:w-auto md:justify-end md:gap-2',
+                                )}
+                                role="tablist"
+                                aria-label="Banner"
+                            >
+                                {topList.map((v, i) => {
+                                    const dotActive = i === homeStore.current;
+                                    return (
+                                        <button
+                                            key={v.id}
+                                            type="button"
+                                            role="tab"
+                                            className="home-hero-banner-dots__tab"
+                                            aria-selected={dotActive}
+                                            aria-current={dotActive ? 'true' : undefined}
+                                            aria-label={`Slide ${i + 1}`}
+                                            onClick={() => goHeroIndex(i)}
+                                        >
+                                            <span className="home-hero-banner-dots__thumb" aria-hidden />
+                                        </button>
+                                    );
+                                })}
                             </div>
                         ) : null}
-
                     </div>
                 </div>
             </div>
-            {topLen > 0 ? (
-                <div
-                    className={cn(
-                        'flex w-full justify-center gap-[calc(6/375*100vw)] px-4',
-                        'bg-gradient-to-b from-transparent via-black/30 to-app-canvas',
-                        'pb-[calc(10/375*100vw)] pt-[calc(14/375*100vw)]',
-                        'md:justify-end md:gap-2 md:pr-[250px] md:pb-3 md:pt-3',
-                    )}
-                    role="tablist"
-                    aria-label="Banner"
-                >
-                    {topList.map((v, i) => {
-                        const dotActive = i === homeStore.current;
-                        return (
-                            <button
-                                key={v.id}
-                                type="button"
-                                role="tab"
-                                aria-selected={dotActive}
-                                aria-current={dotActive ? 'true' : undefined}
-                                aria-label={`Slide ${i + 1}`}
-                                className={cn(
-                                    'relative shrink-0 cursor-pointer rounded-full',
-                                    'h-[calc(4/375*100vw)] min-h-[4px] w-[calc(4/375*100vw)] min-w-[4px]',
-                                    'bg-gradient-to-b from-white/[0.52] to-white/[0.18]',
-                                    'shadow-[0_1px_3px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.35)]',
-                                    'md:h-[6px] md:w-[6px]',
-                                    'transition-[width,background,box-shadow,border-radius] duration-300 ease-out',
-                                    dotActive &&
-                                        'w-[calc(24/375*100vw)] rounded-[calc(5/375*100vw)] bg-gradient-to-r from-white from-[20%] via-white to-white/[0.72] shadow-[0_1px_4px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.9)] md:w-[32px] md:rounded-[5px]',
-                                )}
-                                onClick={() => goHeroIndex(i)}
-                            />
-                        );
-                    })}
-                </div>
-            ) : null}
             <div className='mb-2 mt-4 flex items-center gap-2 px-4 text-lg font-bold text-white'>
                 <div><FormattedMessage id="for_you" /></div>
             </div>

@@ -87,23 +87,18 @@ export function ReelShortNavDrawer({
                     'max-w-none sm:max-w-none',
                 )}
             >
-                <div className="flex shrink-0 items-center border-b border-white/10 px-4 py-3">
+                <div className="reelshort-nav-drawer__header">
                     <DialogClose
                         type="button"
                         aria-label={intl.formatMessage({ id: 'cancel' })}
-                        className="flex h-10 w-10 items-center justify-center text-[min(6.4vw,1.5rem)] text-white hover:opacity-80"
+                        className="reelshort-nav-drawer__close"
                     >
-                        <span role="img" aria-label="close" className="inline-flex">
-                            <AntDrawerCloseIcon />
-                        </span>
+                        <AntDrawerCloseIcon />
                     </DialogClose>
                 </div>
 
-                <div
-                    className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain border-t border-white/[0.1]"
-                    style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
-                >
-                    <div className="flex w-full flex-col gap-[min(6.4vw,1.5rem)] px-3 py-4">
+                <div className="reelshort-nav-drawer__scroll">
+                    <div className="reelshort-nav-drawer__content">
                         <div>
                             <button
                                 type="button"

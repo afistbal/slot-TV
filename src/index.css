@@ -19,6 +19,11 @@ body,
     -webkit-text-size-adjust: 100%;
     font-size: 16px;
     width: inherit;
+    /**
+     * 对标 ReelShort：镜像为 html { font-family: var(--fontFamily) }，与 Ant/站内组件常用栈一致
+     *（-apple-system、PingFang SC、Helvetica Neue、微软雅黑等；xgplayer 等 chunk 亦出现 PingFangSC-Regular / Helvetica）
+     */
+    font-family: var(--app-font-sans);
 }
 
 .root {
@@ -91,36 +96,14 @@ video::cue {
     }
 }
 
-/**
- * ReelShort 式 Banner「中心略暖/略亮、向四周收进纯黑」的叠层（在剧照之上、左右暗角之下）
- * 对应对方首屏深紫底 #12081b 氛围，非整屏平涂黑。
- */
-.home-hero-radial-glow {
-    background: radial-gradient(
-        ellipse 96% 78% at 50% 44%,
-        rgba(18, 8, 27, 0.58) 0%,
-        rgba(18, 8, 27, 0.22) 36%,
-        rgba(0, 0, 0, 0) 68%
-    );
-}
-
-@media (min-width: 768px) {
-    .home-hero-radial-glow {
-        background: radial-gradient(
-            ellipse 88% 70% at 50% 42%,
-            rgba(18, 8, 27, 0.5) 0%,
-            rgba(18, 8, 27, 0.16) 40%,
-            rgba(0, 0, 0, 0) 66%
-        );
-    }
-}
-
 .home-hero-gradient-l {
     background: linear-gradient(90deg, var(--app-canvas) 0%, rgba(0, 0, 0, 0) 100%);
 }
 .home-hero-gradient-r {
     background: linear-gradient(270deg, var(--app-canvas) 0%, rgba(0, 0, 0, 0) 100%);
 }
+
+/* Banner 指示点、侧栏抽屉对标样式见 `src/styles/reelshort.scss`（SCSS，main.tsx 引入） */
 
 /**
  * 移动底栏：对齐 reelshort `_next/static/css` 中 `.Footer_footer__wSzLt` 及子选择器
@@ -345,10 +328,13 @@ a.reelshort-footer__collapse-item {
     /* 全站底色与会面色（只改 :root 中数值即可同步整站） */
     --color-app-canvas: var(--app-canvas);
     --color-app-surface: var(--app-surface);
+    --font-sans: var(--app-font-sans);
 }
 
 :root {
     --radius: 0.625rem;
+    --app-font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB",
+        "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei", "微软雅黑", sans-serif;
     /**
      * 视觉分层 — 只在此处改色：
      * --app-canvas  页面/遮罩整体打底（默认纯黑）
