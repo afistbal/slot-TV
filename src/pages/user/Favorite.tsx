@@ -13,6 +13,8 @@ import Loader from "@/components/Loader";
 import { useGesture } from '@use-gesture/react';
 import FlixActionSheet from "@/widgets/FlixActionSheet";
 import { useConfigStore } from "@/stores/config";
+import { skipRemoteApi } from '@/env';
+import { offlineFavoriteList } from '@/mocks/myListOffline';
 
 export default function Component() {
     const configStore = useConfigStore();
@@ -50,14 +52,16 @@ export default function Component() {
     }
 
     function handleCancelFavorite(id: number) {
-        api('movie/favorite', {
-            method: 'post',
-            data: {
-                id,
-                time: 0,
-            },
-            loading: false,
-        });
+        if (!skipRemoteApi) {
+            api('movie/favorite', {
+                method: 'post',
+                data: {
+                    id,
+                    time: 0,
+                },
+                loading: false,
+            });
+        }
 
         setList(list.filter(v => v['movie_id'] !== id));
     }
@@ -69,12 +73,14 @@ export default function Component() {
     function handleSheetAction(type: string) {
         switch (type) {
             case 'delete':
-                api('movie/favorite/delete', {
-                    method: 'post',
-                    data: {
-                        id: sheetAction,
-                    },
-                });
+                if (!skipRemoteApi) {
+                    api('movie/favorite/delete', {
+                        method: 'post',
+                        data: {
+                            id: sheetAction,
+                        },
+                    });
+                }
                 setList([...list.filter(v => v.id !== sheetAction)]);
                 break;
         }
@@ -86,6 +92,13 @@ export default function Component() {
             return;
         }
         requesting.current = true;
+        if (skipRemoteApi) {
+            setPage(p);
+            setList((prev) => [...prev, ...offlineFavoriteList]);
+            setMore(false);
+            requesting.current = false;
+            return;
+        }
         const result = await api<IPagination>('movie/my-list', {
             loading: false,
             data: {

@@ -17,6 +17,10 @@ import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
 import {init as initPixel} from './hooks/usePixel';
+import { showPwaInstallPrompt, skipRemoteApi } from './env';
+import { offlineImageBasePath } from './mocks/homeOffline';
+import enMessages from './locales/en.json';
+import zhMessages from './locales/zh.json';
 
 import LayoutUser from './layouts/user';
 import UserHome from './pages/user/Home';
@@ -52,6 +56,12 @@ import AdminOrders from './pages/admin/Order';
 import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminActivityLog from './pages/admin/ActivityLog';
 import Loader from "./components/Loader";
+
+/** Chromium `beforeinstallprompt`（部分 TS lib 未声明） */
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 function ErrorBoundary() {
     const error = useRouteError();
@@ -241,16 +251,37 @@ const router = createBrowserRouter([
     },
 ]);
 
+type TIntlMessages = Record<string, string>;
+
+/** 避免 IntlProvider 首屏 messages 为 undefined（异步 import 未完成时整表缺失会报 MISSING_TRANSLATION） */
+function syncMessagesForLocale(code: string): TIntlMessages {
+    const c = code.toLowerCase();
+    if (
+        c === 'zh' ||
+        c === 'zh-hans' ||
+        c === 'zh-hant' ||
+        c === 'zh-tw' ||
+        c === 'zh-cn'
+    ) {
+        return zhMessages as TIntlMessages;
+    }
+    return enMessages as TIntlMessages;
+}
+
+function getInitialIntlMessages(): TIntlMessages {
+    return syncMessagesForLocale(useRootStore.getState().locale);
+}
+
 function App() {
     const rootStore = useRootStore();
     const configStore = useConfigStore();
     const loadingStore = useLoadingStore();
     const userStore = useUserStore();
     const confirmStore = useConfirmStore();
-    const installPrompt = useRef<any>(null);
+    const installPrompt = useRef<BeforeInstallPromptEvent | null>(null);
     const [checked, setChecked] = useState(false);
     const [install, setInstall] = useState(0);
-    const [messages, setMessages] = useState<Record<string, string>>();
+    const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
 
     function handleCancelInstall() {
         setInstall(0);
@@ -268,6 +299,25 @@ function App() {
     }
 
     async function loadData() {
+        if (skipRemoteApi) {
+            const mockConfig: TData = {
+                static: offlineImageBasePath,
+                support: '—',
+            };
+            configStore.setConfig(mockConfig);
+            await initPixel(mockConfig);
+            userStore.signin({
+                anonymous: 1,
+                name: 'Dev',
+                is_vip: false,
+                admin: 0,
+                avatar: '',
+                email: '',
+            });
+            setChecked(true);
+            return;
+        }
+
         const query = new URLSearchParams(window.location.search);
         const token = query.get('_token') || localStorage.getItem('token');
         const config = await api<TData>('config', {
@@ -412,12 +462,14 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (!checked) {
+        if (!checked || !showPwaInstallPrompt) {
             return;
         }
 
-        const listener = (event: any) => {
-            installPrompt.current = event;
+        const listener = (event: Event) => {
+            const e = event as BeforeInstallPromptEvent;
+            e.preventDefault();
+            installPrompt.current = e;
             setInstall(1);
         };
 
@@ -425,14 +477,14 @@ function App() {
 
         const installedListener = () => {
             setInstall(0);
-        }
+        };
 
         window.addEventListener('appinstalled', installedListener);
 
         return () => {
             window.removeEventListener('beforeinstallprompt', listener);
             window.removeEventListener('appinstalled', installedListener);
-        }
+        };
     }, [checked]);
 
     useEffect(() => {
@@ -470,6 +522,10 @@ function App() {
                 break;
             case 'zh-hans':
             case 'zh-hant':
+            case 'zh-TW':
+            case 'zh-CN':
+            case 'zh-tw':
+            case 'zh-cn':
             case 'zh':
                 locale = import('./locales/zh.json');
                 break;
@@ -477,14 +533,16 @@ function App() {
                 locale = import('./locales/en.json');
         }
 
-        locale.then(res => {
-            setMessages(res.default);
+        locale.then((res: unknown) => {
+            const mod = res as { default?: TIntlMessages };
+            const next = mod.default ?? (res as TIntlMessages);
+            setMessages(next);
         });
 
     }, [rootStore.locale]);
 
     useEffect(() => {
-        if (!checked) {
+        if (!checked || skipRemoteApi) {
             return;
         }
         api('stat', {
@@ -509,7 +567,7 @@ function App() {
     }, [checked]);
 
     useEffect(() => {
-        if (!checked) {
+        if (!checked || skipRemoteApi) {
             return;
         }
         const query = new URLSearchParams(window.location.search);
@@ -529,15 +587,34 @@ function App() {
 
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
         <div className={cn('root', `root-${rootStore.theme}`)}>
-            {install > 0 && <div id="install" className="fixed bg-white shadow-2xl m-auto top-20 z-10 left-0 right-0 w-4/5 max-w-96 rounded-md flex flex-col items-start gap-2 p-4">
-                <div className="text-lg text-slate-700">
-                    <FormattedMessage id={install == 1 ? 'add_desktop' : 'installing'} />
+            {showPwaInstallPrompt && install > 0 && (
+                <div
+                    id="install"
+                    className="fixed z-10 m-auto flex w-4/5 max-w-96 flex-col items-start gap-2 rounded-md bg-white p-4 shadow-2xl left-0 right-0 top-20"
+                >
+                    <div className="text-lg text-slate-700">
+                        <FormattedMessage id={install === 1 ? 'add_desktop' : 'installing'} />
+                    </div>
+                    {install === 1 && (
+                        <div className="mt-2 flex w-full justify-end gap-2 text-sm">
+                            <button
+                                type="button"
+                                className="cursor-pointer rounded-md bg-slate-400 px-4 py-1 text-white"
+                                onClick={handleCancelInstall}
+                            >
+                                <FormattedMessage id="cancel" />
+                            </button>
+                            <button
+                                type="button"
+                                className="cursor-pointer rounded-md bg-red-400 px-4 py-1 text-white"
+                                onClick={handleExecuteInstall}
+                            >
+                                <FormattedMessage id="install_app" />
+                            </button>
+                        </div>
+                    )}
                 </div>
-                {install == 1 && <div className="flex justify-end gap-2 w-full mt-2 text-sm">
-                    <button className="bg-slate-400 px-4 py-1 rounded-md text-white cursor-pointer" onClick={handleCancelInstall}><FormattedMessage id="cancel" /></button>
-                    <button className="bg-red-400 px-4 py-1 rounded-md text-white cursor-pointer" onClick={handleExecuteInstall}><FormattedMessage id="install_app" /></button>
-                </div>}
-            </div>}
+            )}
             {checked ? <RouterProvider router={router} /> : <Loader />}
         </div>
         <Dialog open={loadingStore.status}>

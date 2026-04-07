@@ -21,6 +21,9 @@ import Vip from '@/widgets/Vip';
 import { FormattedMessage } from 'react-intl';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '@/api';
+import { skipRemoteApi } from '@/env';
+import { offlinePlayerData, offlinePlayerEpisode } from '@/mocks/videoOffline';
+import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import Loader from '@/components/Loader';
 import { useUserStore } from '@/stores/user';
 import { useConfigStore } from '@/stores/config';
@@ -89,6 +92,11 @@ export default function Component() {
     }
 
     async function loadData() {
+        if (skipRemoteApi) {
+            setData(offlinePlayerData);
+            setLoading(false);
+            return;
+        }
         let result = await api<IPlayerData>('movie/info', {
             data: {
                 id: params['id'],
@@ -156,37 +164,6 @@ export default function Component() {
             ))}
         </Swiper>
     );
-}
-
-interface IPlayerData {
-    info: {
-        id: number;
-        title: string;
-        image: string;
-        favorite: number;
-        is_favorite: number;
-        introduction: string;
-    };
-    tags: {
-        name: string;
-        unique_id: string;
-    }[];
-    episodes: {
-        id: number;
-        episode: number;
-        vip: number;
-        locked: number;
-    }[];
-}
-
-interface IPlayerEpisode {
-    id: number;
-    episode: number;
-    video: string;
-    subtitle: string;
-    lock: boolean;
-    unlock_coins: number;
-    can_unlock: boolean;
 }
 
 function Player({
@@ -305,6 +282,71 @@ function Player({
     }
 
     async function loadData(id: number, loading = false) {
+        const applyEpisode = async (d: IPlayerEpisode) => {
+            setLoading(false);
+            setEpisode(d);
+
+            if (!d.video) {
+                setWaiting(false);
+                return;
+            }
+
+            if (d.subtitle) {
+                const subUrl =
+                    d.subtitle.startsWith('http://') || d.subtitle.startsWith('https://')
+                        ? d.subtitle
+                        : `${configStore.config['static']}/${d.subtitle}`;
+                await fetch(subUrl)
+                    .then((res) => res.text())
+                    .then((text) => {
+                        const parser = new WebVTT.Parser(window, WebVTT.StringDecoder());
+                        const cues: VTTCue[] = [];
+                        parser.oncue = (cue) => {
+                            cues.push(cue);
+                        };
+                        parser.onflush = () => {
+                            subtitlesRef.current = cues;
+                        };
+                        parser.parse(text);
+                        parser.flush();
+                    });
+            }
+
+            if (!videoRef.current) {
+                return;
+            }
+
+            const src =
+                d.video.startsWith('http://') || d.video.startsWith('https://')
+                    ? d.video
+                    : `${configStore.config['static']}/${d.video}`;
+            videoRef.current.src = src;
+            videoRef.current.currentTime = 0;
+            videoRef.current.playbackRate = SPEED[speed];
+            if (location.search.indexOf('auto_play=0') === -1) {
+                videoRef.current
+                    .play()
+                    .then(() => {
+                        setPlaying(true);
+                    })
+                    .catch(() => {
+                        console.log('自动播放失败');
+                        showController(false);
+                        setWaiting(false);
+                        setCanPlay(true);
+                    });
+            }
+
+            controllerTimerRef.current = window.setTimeout(() => {
+                hideController();
+            }, 10000);
+        };
+
+        if (skipRemoteApi) {
+            await applyEpisode(offlinePlayerEpisode(id));
+            return;
+        }
+
         const result = await api<IPlayerEpisode>('movie/episode', {
             data: {
                 id,
@@ -317,55 +359,7 @@ function Player({
             return;
         }
 
-        setLoading(false);
-        setEpisode(result.d);
-
-        if (!result.d.video) {
-            setWaiting(false);
-            return;
-        }
-
-        if (result.d.subtitle) {
-            await fetch(`${configStore.config['static']}/${result.d.subtitle}`)
-                .then((res) => res.text())
-                .then((text) => {
-                    const parser = new WebVTT.Parser(window, WebVTT.StringDecoder());
-                    const cues: VTTCue[] = [];
-                    parser.oncue = (cue) => {
-                        cues.push(cue);
-                    };
-                    parser.onflush = () => {
-                        subtitlesRef.current = cues;
-                    };
-                    parser.parse(text);
-                    parser.flush();
-                });
-        }
-
-        if (!videoRef.current) {
-            return;
-        }
-
-        videoRef.current.src = `${configStore.config['static']}/${result.d.video}`;
-        videoRef.current.currentTime = 0;
-        videoRef.current.playbackRate = SPEED[speed];
-        if (location.search.indexOf('auto_play=0') === -1) {
-            videoRef.current
-                .play()
-                .then(() => {
-                    setPlaying(true);
-                })
-                .catch(() => {
-                    console.log('自动播放失败');
-                    showController(false);
-                    setWaiting(false);
-                    setCanPlay(true);
-                });
-        }
-
-        controllerTimerRef.current = window.setTimeout(() => {
-            hideController();
-        }, 10000);
+        await applyEpisode(result.d);
     }
 
     function handleSetEpisode(index: number) {
@@ -393,14 +387,16 @@ function Player({
             return;
         }
 
-        api('movie/favorite', {
-            method: 'post',
-            data: {
-                id: data.info.id,
-                time: videoRef.current?.currentTime,
-            },
-            loading: false,
-        });
+        if (!skipRemoteApi) {
+            api('movie/favorite', {
+                method: 'post',
+                data: {
+                    id: data.info.id,
+                    time: videoRef.current?.currentTime,
+                },
+                loading: false,
+            });
+        }
 
         setFavorite(!favorite);
     }

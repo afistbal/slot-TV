@@ -2,7 +2,7 @@ import { api, type IPagination, type TData } from '@/api';
 import NoContent from '@/components/NoContent';
 import { Page } from '@/layouts/user';
 import { cn } from '@/lib/utils';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { Link } from 'react-router';
 import Image from '@/components/Image';
@@ -97,6 +97,17 @@ export default function Component() {
             }
             scrollRef.current.scrollTop = searchStore.scrollTop;
         }
+    }, []);
+
+    useLayoutEffect(() => {
+        const q = new URLSearchParams(window.location.search).get('q');
+        if (!q) {
+            return;
+        }
+        const decoded = decodeURIComponent(q.replace(/\+/g, ' '));
+        const s = useSearchStore.getState();
+        s.setKeyword(decoded);
+        s.setPage(1);
     }, []);
 
     useEffect(() => {

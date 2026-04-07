@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Suspense, useEffect } from "react";
 import Loader from "@/components/Loader";
 import usePixel from "@/hooks/usePixel";
+import { showBottomTabBar } from "@/env";
 
 export default function Component() {
     const pixel = usePixel();
@@ -20,26 +21,53 @@ export default function Component() {
                 <Outlet key={location.key} />
             </Suspense>
         </div>
-        <div className="p-2 grid grid-cols-3 border-t border-slate-200 bg-white text-xs text-slate-500">
-            <NavLink className="flex flex-col items-center gap-0.5" to="/">
-                <IconHome className="w-5 h-5" />
-                <div>
-                    <FormattedMessage id="home" />
-                </div>
-            </NavLink>
-            <NavLink className="flex flex-col items-center gap-0.5" to="/my-list">
-                <ListVideo className="w-5 h-5" />
-                <div>
-                    <FormattedMessage id="my_list" />
-                </div>
-            </NavLink>
-            <NavLink className="flex flex-col items-center gap-0.5" to="/profile">
-                <IconProfile className="w-5 h-5" />
-                <div>
-                    <FormattedMessage id="profile" />
-                </div>
-            </NavLink>
-        </div>
+        {/* ReelShort 无底部三栏 Tab；需要旧版时设 `VITE_BOTTOM_TAB_BAR=true`（见 `src/env.ts`） */}
+        {showBottomTabBar ? (
+            <div className="grid grid-cols-3 border-t border-white/10 bg-app-surface px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 text-[11px]">
+                <NavLink
+                    to="/"
+                    className={({ isActive }) =>
+                        cn(
+                            'flex flex-col items-center gap-0.5 rounded-md py-1',
+                            isActive ? 'text-white' : 'text-white/55',
+                        )
+                    }
+                >
+                    <IconHome className="h-5 w-5 shrink-0" />
+                    <div>
+                        <FormattedMessage id="home" />
+                    </div>
+                </NavLink>
+                <NavLink
+                    to="/my-list"
+                    className={({ isActive }) =>
+                        cn(
+                            'flex flex-col items-center gap-0.5 rounded-md py-1',
+                            isActive ? 'text-white' : 'text-white/55',
+                        )
+                    }
+                >
+                    <ListVideo className="h-5 w-5 shrink-0" />
+                    <div>
+                        <FormattedMessage id="my_list" />
+                    </div>
+                </NavLink>
+                <NavLink
+                    to="/profile"
+                    className={({ isActive }) =>
+                        cn(
+                            'flex flex-col items-center gap-0.5 rounded-md py-1',
+                            isActive ? 'text-white' : 'text-white/55',
+                        )
+                    }
+                >
+                    <IconProfile className="h-5 w-5 shrink-0" />
+                    <div>
+                        <FormattedMessage id="profile" />
+                    </div>
+                </NavLink>
+            </div>
+        ) : null}
     </div>;
 }
 
