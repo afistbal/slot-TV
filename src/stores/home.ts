@@ -51,7 +51,7 @@ interface IHome {
     setPage: (page: number) => void,
     setMore: (more: boolean) => void,
     setScrollTop: (scrollTop: number) => void,
-    setData: (data: IData) => void,
+    setData: (data?: IData) => void,
     setCurrent: (current: number) => void,
 }
 
@@ -69,6 +69,6 @@ export const useHomeStore = create<IHome>((set) => ({
     setPage: (page: number) => set({ page }),
     setMore: (more: boolean) => set({ more }),
     setScrollTop: (scrollTop: number) => set({ scrollTop }),
-    setData: (data: IData) => set({data}),
+    setData: (data?: IData) => set({ data }),
     setCurrent: (current: number) => set({current}),
 }));

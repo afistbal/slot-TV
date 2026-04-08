@@ -3,7 +3,6 @@ import { Link, useLocation, useParams } from 'react-router';
 import { api, type IPagination, type TData } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
-import { offlineHomeData } from '@/mocks/homeOffline';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 
@@ -149,20 +148,12 @@ export default function Component() {
         async function load() {
             setLoading(true);
             try {
+                // 不再使用离线 mock：skipRemoteApi 时保持空列表
                 if (skipRemoteApi) {
-                    const base =
-                        offlineHomeData.shelves?.flatMap((s) => s.items) ??
-                        offlineHomeData.recommend ??
-                        [];
-                    const normalized = base
-                        .map((v) => toShelfItemData(v as unknown as TData))
-                        .filter(Boolean) as ShelfItemData[];
-                    const start = (page - 1) * 12;
-                    const end = start + 12;
                     if (!alive) return;
-                    setItems(normalized.slice(start, end));
-                    setMore(end < normalized.length);
-                    setTotalPage(Math.max(1, Math.ceil(normalized.length / 12)));
+                    setItems([]);
+                    setMore(false);
+                    setTotalPage(1);
                     return;
                 }
 

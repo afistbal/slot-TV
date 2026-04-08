@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
 import {init as initPixel} from './hooks/usePixel';
 import { showPwaInstallPrompt, skipRemoteApi } from './env';
-import { offlineImageBasePath } from './mocks/homeOffline';
 import enMessages from './locales/en.json';
 import zhMessages from './locales/zh.json';
 
@@ -331,12 +330,10 @@ function App() {
 
     async function loadData() {
         if (skipRemoteApi) {
-            const mockConfig: TData = {
-                static: offlineImageBasePath,
-                support: '—',
-            };
-            configStore.setConfig(mockConfig);
-            await initPixel(mockConfig);
+            // 不再注入离线 mock 资源：仅设置最小 config，保证 App 可运行
+            const minimalConfig: TData = { static: '', support: '—' };
+            configStore.setConfig(minimalConfig);
+            await initPixel(minimalConfig);
             userStore.signin({
                 anonymous: 1,
                 name: 'Dev',

@@ -9,7 +9,6 @@ import { InView } from 'react-intersection-observer';
 import NoContent from '@/components/NoContent';
 import { useHomeStore, type IData } from '@/stores/home';
 import { skipRemoteApi } from '@/env';
-import { offlineHomeData, offlineHomeList } from '@/mocks/homeOffline';
 import { useConfigStore } from '@/stores/config';
 import Loader from '@/components/Loader';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
@@ -126,15 +125,8 @@ export default function Component() {
     }
 
     async function loadLatest(p = 1) {
-        if (skipRemoteApi) {
-            const state = useHomeStore.getState();
-            state.setList(offlineHomeList);
-            state.setPage(1);
-            state.setMore(false);
-            requesting.current = false;
-            searching.current = false;
-            return;
-        }
+        // 首页不再使用离线 mock 数据：skipRemoteApi 时不加载列表，保持空态
+        if (skipRemoteApi) return;
         const state = useHomeStore.getState();
         if (p <= state.page || !state.more || requesting.current) {
             return;
@@ -234,13 +226,11 @@ export default function Component() {
     useEffect(() => {
         const state = useHomeStore.getState();
         if (skipRemoteApi) {
-            state.setData(offlineHomeData);
+            state.setData(undefined);
             state.setLoading(false);
             return;
         }
-        api<IData>('home', {
-            loading: false,
-        }).then(res => {
+        api<IData>('home', { loading: false }).then((res) => {
             state.setData(res.d);
             state.setLoading(false);
         });
