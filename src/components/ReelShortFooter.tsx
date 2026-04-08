@@ -4,12 +4,11 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { cn } from '@/lib/utils';
 import { BRAND_DISPLAY_NAME } from '@/constants/brand';
 
-const FOOTER_CHEVRON =
-    'https://v-mps.crazymaplestudios.com/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png';
+const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png', import.meta.url).toString();
 
 function IconFacebook() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
             <g transform="translate(-1199 -3564)">
                 <circle cx="16" cy="16" r="16" style={{ fill: '#fff', opacity: 0.2 }} transform="translate(1199 3564)" />
                 <g style={{ opacity: 0.5 }}>
@@ -26,7 +25,7 @@ function IconFacebook() {
 
 function IconYoutube() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
             <g transform="translate(-1243 -3564)">
                 <circle cx="16" cy="16" r="16" style={{ fill: '#fff', opacity: 0.2 }} transform="translate(1243 3564)" />
                 <path
@@ -41,7 +40,7 @@ function IconYoutube() {
 
 function IconInstagram() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
             <defs>
                 <style>{`.rs-ig{fill:#fff}`}</style>
             </defs>
@@ -65,7 +64,7 @@ function IconInstagram() {
 
 function IconTiktok() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
             <defs>
                 <style>{`.rs-tt{fill:rgba(255,255,255,.66)}`}</style>
             </defs>
@@ -93,7 +92,7 @@ function IconTiktok() {
 
 function IconFandom() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" aria-hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" aria-hidden="true">
             <path fill="#fff" d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16" opacity="0.2" />
             <path
                 fill="#fff"

@@ -33,6 +33,7 @@ import UserAirwallex from './pages/user/Airwallex';
 import UserTest from './pages/user/Test';
 import UserShelf from './pages/user/Shelf';
 import UserEpisodes from './pages/user/Episodes';
+import UserShopping from './pages/user/Shopping';
 
 import UserFeedback from './pages/user/Feedback';
 import UserLanguage from './pages/user/Language';
@@ -116,6 +117,14 @@ const router = createBrowserRouter([
             {
                 path: ':locale/episodes/:slug',
                 element: <UserEpisodes />,
+            },
+            {
+                path: 'shopping',
+                element: <UserShopping />,
+            },
+            {
+                path: ':locale/shopping',
+                element: <UserShopping />,
             },
             {
                 path: 'my-list',

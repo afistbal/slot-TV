@@ -40,12 +40,16 @@
     font-size: 12px;
     color: rgba(255, 255, 255, 0.55);
     pointer-events: none;
-    padding: 12px 16px 16px;
+    margin: 16px;
 }
 
 .rs-episodes__crumb--active {
     color: rgba(255, 255, 255, 0.9);
     font-weight: 700;
+}
+
+.rs-episodes__epBtn--active {
+    background-image: radial-gradient(116.67% 135.17% at 95.16% 96%, rgba(255, 61, 93, 0.32) 0, rgba(45, 45, 45, 0) 80%) !important;
 }
 
 .rs-episodes__playerShell {
@@ -56,6 +60,10 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    /* 对标 ReelShort：播放器上半区占满视口宽度，抵消外层内容 padding */
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    overflow: hidden;
 }
 
 .rs-episodes__player {
@@ -67,8 +75,11 @@
 
 /* 你要的：vadio 高度 50vh */
 .h-50vh {
+    /* 移动端对标 ReelShort：用 svh 避免地址栏导致 vh 变小 */
     height: 50vh !important;
     max-height: 50vh !important;
+    height: 50svh !important;
+    max-height: 50svh !important;
 }
 
 .rs-episodes__videoStage {
@@ -134,13 +145,13 @@
     display: block;
     position: absolute;
     visibility: visible;
-    height: 48px;
+    height: 49px;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: -2px;
     opacity: 1;
     z-index: 10;
-    background-image: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.37), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75));
+    background: #000;
     transition: opacity 0.5s ease, visibility 0.5s ease;
 }
 
@@ -1006,20 +1017,22 @@
     }
 }
 
-/* DialogContent 默认 tailwind 样式覆盖：保证 paywall 弹窗 1:1 */
-.rs-paywall__dialog[data-slot='dialog-content'] {
+/* DrawerContent 覆盖：保证 paywall 抽屉 1:1 */
+.rs-paywall__dialog[data-slot='drawer-content'] {
     padding: 0 !important;
     border: 0 !important;
     box-shadow: none !important;
     background: transparent !important;
     border-radius: 0 !important;
-    max-width: min(96vw, 920px) !important;
-    width: min(96vw, 920px) !important;
+    max-width: none !important;
+    width: 100vw !important;
+    /* 覆盖 vaul 默认 bottom max-h-[80vh] 限制 */
+    max-height: 85svh !important;
     display: block !important;
     gap: 0 !important;
 }
 
-.rs-paywall__dialog[data-slot='dialog-content'] > * {
+.rs-paywall__dialog[data-slot='drawer-content'] > * {
     width: 100%;
 }
 
@@ -1033,15 +1046,27 @@
 }
 
 .rs-paywall {
-    height: min(80vh, 720px);
+    /* 贴近移动端 Drawer 行为 */
+    height: min(85svh, 740px);
 }
 
 .rs-paywall__inner {
     height: 100%;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     border-radius: 16px 16px 0 0;
     background: #141414;
     color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-paywall__bodyScroll {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 底部安全区 + 让内容可滚到最底 */
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 .rs-paywall__stickyHead {
@@ -1141,7 +1166,7 @@
     top: 16px;
     width: 113px;
     height: 78px;
-    background-image: url('https://v-mps.crazymaplestudios.com/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png');
+    background-image: url('../assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png');
     background-repeat: no-repeat;
     background-size: contain;
     z-index: 0;
@@ -1361,7 +1386,7 @@
     flex: 1 1 0%;
     min-height: 0;
     overflow: auto; /* 只有下面可滚动 */
-    padding: 16px;
+    padding: 0 16px 16px;
     color: rgba(255, 255, 255, 0.92);
 }
 
@@ -1496,12 +1521,14 @@
 }
 
 .rs-episodes__actions {
-    margin-top: 18px;
     display: flex;
     align-items: center;
-    justify-content: space-around;
+    justify-content: center;
+    width: 100%;
+    /* 对标 ReelShort：w-full h-90/vw（90/vw = 24vw） */
+    height: 24vw;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
-    padding-top: 14px;
+    padding-top: 0;
 }
 
 .rs-episodes__actionBtn {
@@ -1511,6 +1538,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    flex: 1 1 0%;
+    height: 100%;
     gap: 6px;
     cursor: pointer;
 }
@@ -1521,8 +1551,14 @@
 }
 
 .rs-episodes__actionText {
-    font-size: 12px;
+    font-size: 3.733333333333334vw;
     color: rgba(255, 255, 255, 0.7);
+}
+
+@media (min-width: 768px) {
+    .rs-episodes__actionText {
+        font-size: 14px;
+    }
 }
 
 /* ===== ReelShort tabs + episode list utility subset ===== */

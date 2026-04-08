@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { Dialog, DialogClose, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
@@ -83,12 +83,16 @@ export function ReelShortNavDrawer({
                 hideCloseButton
                 aria-describedby={undefined}
                 className={cn(
-                    'fixed left-0 top-0 z-50 flex h-full max-h-none w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 border-r border-white/10 bg-app-surface p-0 text-white shadow-xl',
+                    // 必须盖过顶部导航（topnav z-index:100）
+                    'fixed left-0 top-0 z-[200] flex h-full max-h-none w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 border-r border-white/10 bg-app-surface p-0 text-white shadow-xl',
                     'data-[state=closed]:slide-out-to-left-0 data-[state=open]:slide-in-from-left-0',
                     'data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100',
                     'max-w-none sm:max-w-none',
                 )}
             >
+                <DialogTitle className="sr-only">
+                    <FormattedMessage id="nav_menu" defaultMessage="Menu" />
+                </DialogTitle>
                 <div className="reelshort-nav-drawer__header">
                     <DialogClose
                         type="button"

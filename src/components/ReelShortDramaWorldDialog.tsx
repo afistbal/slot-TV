@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { BRAND_DISPLAY_NAME } from '@/constants/brand';
 
 const DRAMA_WORLD_VIDEO = 'https://v-mps.crazymaplestudios.com/activity/mp4/10001_0100.mp4';
-const DRAMA_WORLD_LOGO = 'https://v-mps.crazymaplestudios.com/images/211d3420-d721-11f0-84ad-6b5693b490dc.png';
+const DRAMA_WORLD_LOGO = new URL('../assets/images/211d3420-d721-11f0-84ad-6b5693b490dc.png', import.meta.url).toString();
 
 export function ReelShortDramaWorldDialog({
     open,
