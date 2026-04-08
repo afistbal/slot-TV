@@ -25,12 +25,11 @@ body,
     font-family: var(--app-font-sans);
 }
 
-html {
-    /**
-     * rem 基准（移动端按 375 设计稿：1rem=16px；更小屏不低于 14px；更大屏封顶 16px）
-     * 后续你可以逐步把 vw 换成 rem（例如 16px -> 1rem，12px -> 0.75rem）。
-     */
-    font-size: clamp(14px, 4.26667vw, 16px);
+html,
+body,
+#root {
+    /* 对齐 slot_old：统一用固定基准，避免桌面端/宽屏 rem 随 vw 变化导致整体缩放错乱 */
+    font-size: 16px;
 }
 
 .root {
@@ -93,14 +92,9 @@ video::cue {
  */
 .home-hero-viewport {
     width: 100%;
-    height: 122.667vw;
+    /* PC 宽屏下用 min(100vw, 480px) 锁定为移动端视觉宽度，避免 vw 过大导致高度被撑爆 */
+    height: calc(min(100vw, 480px) * 1.22667);
     max-width: 100%;
-}
-
-@media (min-width: 768px) {
-    .home-hero-viewport {
-        height: min(122.667vw, min(85vh, 48rem));
-    }
 }
 
 .home-hero-gradient-l {
@@ -417,6 +411,20 @@ a.reelshort-footer__collapse-item {
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* 禁用浏览器 search input 自带的“清除(蓝色叉)”按钮（使用我们自定义的 rs-search-clear） */
+.rs-search-input::-webkit-search-cancel-button,
+.rs-search-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
+.rs-search-input::-ms-clear,
+.rs-search-input::-ms-reveal {
+    display: none;
+    width: 0;
+    height: 0;
 }
 
 @layer base {

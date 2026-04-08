@@ -18,7 +18,7 @@ export function ReelShortMenuIcon({ className }: { className?: string }) {
             viewBox="0 0 24 24"
             width="1em"
             height="1em"
-            className={cn('text-white', className)}
+            className={cn('reelshort-topnav__menu-icon', className)}
             aria-hidden
         >
             <rect width="16" height="2" x="20" y="19" fill="currentColor" rx="1" transform="rotate(-180 20 19)" />
@@ -32,7 +32,7 @@ function BrandWordmark() {
     const [useText, setUseText] = useState(false);
     if (useText) {
         return (
-            <span className="min-w-0 truncate text-base font-bold tracking-tight text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] sm:text-lg">
+            <span className="reelshort-topnav__brand-text">
                 {BRAND_DISPLAY_NAME}
             </span>
         );
@@ -41,7 +41,7 @@ function BrandWordmark() {
         <img
             src={BRAND_WORDMARK_SRC}
             alt=""
-            className="h-6 max-w-[min(42vw,200px)] object-contain object-left sm:h-7"
+            className="reelshort-topnav__brand-wordmark"
             onError={() => setUseText(true)}
         />
     );
@@ -60,30 +60,25 @@ function NavProfileAvatar() {
     return (
         <Link
             to="/profile"
-            className="ml-0.5 shrink-0 md:ml-1"
+            className="reelshort-topnav__profile-link"
             aria-label={intl.formatMessage({ id: 'profile' })}
         >
             {hasPhoto ? (
                 <img
                     src={avatar}
                     alt=""
-                    className="h-8 w-8 rounded-full border border-white/30 object-cover"
+                    className="reelshort-topnav__profile-avatar"
                     referrerPolicy="no-referrer"
                 />
             ) : (
-                <div className="h-8 w-8 rounded-full border border-white/30 bg-white/10" />
+                <div className="reelshort-topnav__profile-avatar--placeholder" />
             )}
         </Link>
     );
 }
 
 const subNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-    cn(
-        'whitespace-nowrap border-b-2 px-0.5 pb-1 text-sm font-medium transition-colors',
-        isActive
-            ? 'border-white text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
-            : 'border-transparent text-white/70 hover:text-white',
-    );
+    cn('reelshort-topnav__primary-link', isActive && 'is-active');
 
 const HEADER_SCROLL_SOLID_THRESHOLD = 4;
 
@@ -120,27 +115,27 @@ export function ReelShortTopNav({ scrollParentRef, showPrimaryNav = false }: Ree
         <>
             <header
                 className={cn(
-                    'sticky top-0 z-30 w-full transition-[background-color] duration-200',
-                    headerSolid ? 'bg-app-canvas' : 'bg-transparent',
+                    'reelshort-topnav',
+                    headerSolid ? 'reelshort-topnav--solid' : 'reelshort-topnav--transparent',
                 )}
             >
-                <div className="pointer-events-auto flex w-full items-center gap-2 px-3 pb-1 pt-2 md:gap-3 md:px-6">
+                <div className="reelshort-topnav__row">
                     <button
                         type="button"
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white"
+                        className="reelshort-topnav__menu-btn"
                         onClick={() => setMenuOpen(true)}
                         aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
                     >
-                        <ReelShortMenuIcon className="h-6 w-6" />
+                        <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
                     </button>
 
-                    <Link to="/" className="flex min-w-0 flex-1 items-center gap-2 sm:gap-2.5 justify-center">
-                        <img src={BRAND_LOGO_SRC} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                    <Link to="/" className="reelshort-topnav__brand-link">
+                        <img src={BRAND_LOGO_SRC} alt="" className="reelshort-topnav__brand-logo" />
                         <BrandWordmark />
                     </Link>
 
-                    <div className="flex shrink-0 items-center gap-1 md:gap-2">
-                        <div className="ant-space-item">
+                    <div className="reelshort-topnav__actions">
+                        <div className="reelshort-topnav__search">
                             <ReelShortNavSearch />
                         </div>
                         <NavProfileAvatar />
@@ -149,22 +144,20 @@ export function ReelShortTopNav({ scrollParentRef, showPrimaryNav = false }: Ree
 
                 {showPrimaryNav ? (
                     <nav
-                        className="flex justify-center gap-4 overflow-x-auto px-3 pb-2 pt-1 md:gap-10 md:px-6 [&::-webkit-scrollbar]:hidden"
+                        className="reelshort-topnav__primary-nav"
                         style={{ scrollbarWidth: 'none' }}
                         aria-label="Primary"
                     >
                         <NavLink to="/" end className={subNavLinkClass}>
                             <FormattedMessage id="home" />
                         </NavLink>
-                        <NavLink to="/page/search" className={subNavLinkClass}>
+                        <NavLink to="/search" className={subNavLinkClass}>
                             <FormattedMessage id="nav_categories" />
                         </NavLink>
                         <button
                             type="button"
                             onClick={() => setBrandVideoOpen(true)}
-                            className={cn(
-                                'whitespace-nowrap border-b-2 border-transparent px-0.5 pb-1 text-sm font-medium text-white/70 transition-colors hover:text-white',
-                            )}
+                            className="reelshort-topnav__primary-brand-btn"
                         >
                             <FormattedMessage id="nav_brand" />
                         </button>

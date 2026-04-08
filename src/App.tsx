@@ -44,6 +44,8 @@ import UserMembership from './pages/user/Membership';
 import UserSearch from './pages/user/Search';
 import UserMyBalance from './pages/user/MyBanlance';
 
+import UserReelShortSearch from './pages/user/ReelShortSearch';
+
 import LayoutAdmin from './layouts/admin';
 import AdminHome from './pages/admin/Home';
 import AdminManagement from './pages/admin/Management';
@@ -92,6 +94,14 @@ const router = createBrowserRouter([
             {
                 index: true,
                 element: <UserHome />,
+            },
+            {
+                path: 'search',
+                element: <UserReelShortSearch />,
+            },
+            {
+                path: ':locale/search',
+                element: <UserSearch />,
             },
             {
                 path: 'shelf/:slug',
@@ -198,7 +208,8 @@ const router = createBrowserRouter([
             },
             {
                 path: 'search',
-                element: <UserSearch />,
+                // 兼容后端/旧入口仍跳 /page/search：统一使用 ReelShort 搜索页（含新 Header/搜索框结构）
+                element: <UserReelShortSearch />,
             },
             {
                 path: 'my-balance',
@@ -460,6 +471,13 @@ function App() {
 `;
             }
             if (!isMobile()) {
+                const meta = document.querySelector('meta[name="viewport"]');
+                if (meta) {
+                    meta.setAttribute(
+                        'content',
+                        'width=480, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
+                    );
+                }
                 document.documentElement.style.width = '480px';
                 document.documentElement.style.marginLeft = 'auto';
                 document.documentElement.style.marginRight = 'auto';
@@ -468,6 +486,13 @@ function App() {
                     document.head.appendChild(css);
                 }
             } else {
+                const meta = document.querySelector('meta[name="viewport"]');
+                if (meta) {
+                    meta.setAttribute(
+                        'content',
+                        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
+                    );
+                }
                 document.documentElement.style.width = 'auto';
                 document.documentElement.style.marginLeft = 'auto';
                 document.documentElement.style.marginRight = 'auto';
@@ -624,24 +649,24 @@ function App() {
                 <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] md:hidden">
                     <div
                         id="install"
-                        className="pointer-events-auto flex h-[60px] w-full items-center justify-between bg-[#292929] px-16/vw shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+                        className="pwa-install"
                     >
-                        <div className="flex w-0 flex-1 items-center overflow-hidden">
-                            <div className="flex h-[32px] w-[32px] flex-shrink-0 items-center justify-center rounded-full">
+                        <div className="pwa-install__left">
+                            <div className="pwa-install__logoWrap">
                                 <img
                                     alt="logo"
                                     src="/logo.png"
-                                    className="h-20/vw w-20/vw object-contain"
+                                    className="pwa-install__logo"
                                     loading="lazy"
                                 />
                             </div>
-                            <div className="ml-8/vw truncate text-[12px] font-medium leading-[130%] text-white">
+                            <div className="pwa-install__text">
                                 <FormattedMessage id="add_desktop" />
                             </div>
                         </div>
                         <button
                             type="button"
-                            className="ml-10/vw flex h-[36px] min-w-[96px] items-center justify-center rounded-40/vw bg-[#FF3D5D] px-24/vw text-[14px] font-700 text-white"
+                            className="pwa-install__btn pwa-install-open-btn"
                             onClick={handleExecuteInstall}
                         >
                             <FormattedMessage id="pwa_open" />

@@ -201,7 +201,7 @@ export default function Component() {
         <div className="rs-shelf">
             <div className="rs-shelf__scroll" ref={scrollRef}>
                 <div className="rs-shelf__topnav">
-                    <ReelShortTopNav scrollParentRef={scrollRef} />
+                    <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
                 </div>
                 <div className="rs-shelf__main">
                     <div className="rs-shelf__container">

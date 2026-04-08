@@ -2,6 +2,32 @@ import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
 
+function normalizeEpisodeSlug(raw?: string) {
+    if (!raw) return undefined;
+    let v = String(raw).trim();
+    if (!v) return undefined;
+
+    if (v.startsWith('http://') || v.startsWith('https://')) {
+        try {
+            const u = new URL(v);
+            v = u.pathname;
+        } catch {
+            // ignore
+        }
+    }
+
+    v = v.replace(/^[#/]/, '');
+    const m = v.match(/(?:^|\/)episodes\/([^/?#]+)$/i);
+    if (m) return decodeURIComponent(m[1]);
+    if (v.startsWith('episodes/')) return decodeURIComponent(v.slice('episodes/'.length));
+    return decodeURIComponent(v);
+}
+
+function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
+    const slug = normalizeEpisodeSlug(item.episodeSlug);
+    return slug ? `/episodes/${slug}` : `/video/${item.id}`;
+}
+
 function ShelfChevron() {
     return (
         <svg
@@ -67,7 +93,7 @@ export function HomeBookShelf({
                             {items.filter((_, idx) => idx % 2 === 0).map((item) => (
                                 <HomeBookItem
                                     key={item.id}
-                                    to={item.episodeSlug ? `/episodes/${item.episodeSlug}` : `/video/${item.id}`}
+                                    to={toEpisodeOrVideoHref(item)}
                                     staticBase={staticBase}
                                     item={{ ...item, showExpo: true, showPlayMask: false }}
                                     variant="style5"
@@ -78,7 +104,7 @@ export function HomeBookShelf({
                             {items.filter((_, idx) => idx % 2 === 1).map((item) => (
                                 <HomeBookItem
                                     key={item.id}
-                                    to={item.episodeSlug ? `/episodes/${item.episodeSlug}` : `/video/${item.id}`}
+                                    to={toEpisodeOrVideoHref(item)}
                                     staticBase={staticBase}
                                     item={{ ...item, showExpo: true, showPlayMask: false }}
                                     variant="style5"
@@ -102,7 +128,7 @@ export function HomeBookShelf({
                     {items.map((item) => (
                         <HomeBookItem
                             key={item.id}
-                            to={item.episodeSlug ? `/episodes/${item.episodeSlug}` : `/video/${item.id}`}
+                            to={toEpisodeOrVideoHref(item)}
                             staticBase={staticBase}
                             item={item}
                         />

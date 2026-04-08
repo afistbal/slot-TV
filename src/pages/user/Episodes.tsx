@@ -506,7 +506,7 @@ export default function Component() {
         <div className="rs-episodes">
             <div className="rs-episodes__scroll" ref={scrollRef}>
                 <div className="rs-episodes__topnav">
-                    <ReelShortTopNav scrollParentRef={scrollRef} />
+                    <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
                 </div>
 
                 <main className="rs-episodes__main">

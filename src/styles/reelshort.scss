@@ -118,3 +118,208 @@ button.reelshort-nav-drawer__close {
         padding: 1.5rem;
     }
 }
+
+// --- 顶栏（ReelShortTopNav.tsx）---
+.reelshort-topnav {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    width: 100%;
+    transition: background-color 0.2s ease;
+
+    &--transparent {
+        background: transparent;
+    }
+
+    &--solid {
+        background: var(--app-canvas);
+    }
+}
+
+.reelshort-topnav__row {
+    pointer-events: auto;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px 4px;
+
+    @media (min-width: 768px) {
+        gap: 12px;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+}
+
+button.reelshort-topnav__menu-btn {
+    display: flex;
+    height: 40px;
+    width: 40px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    color: #fff;
+}
+
+.reelshort-topnav__menu-icon {
+    color: #fff;
+}
+
+.reelshort-topnav__menu-btn-icon {
+    width: 24px;
+    height: 24px;
+}
+
+a.reelshort-topnav__brand-link {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 0%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+@media (min-width: 640px) {
+    a.reelshort-topnav__brand-link {
+        gap: 10px;
+    }
+}
+
+.reelshort-topnav__brand-logo {
+    height: 32px;
+    width: 32px;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    object-fit: cover;
+}
+
+.reelshort-topnav__brand-wordmark {
+    height: 24px;
+    max-width: min(42vw, 200px);
+    object-fit: contain;
+    object-position: left;
+}
+
+@media (min-width: 640px) {
+    .reelshort-topnav__brand-wordmark {
+        height: 28px;
+    }
+}
+
+.reelshort-topnav__brand-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+@media (min-width: 640px) {
+    .reelshort-topnav__brand-text {
+        font-size: 18px;
+    }
+}
+
+.reelshort-topnav__actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 20px;
+
+    @media (min-width: 768px) {
+        gap: 8px;
+    }
+}
+
+.reelshort-topnav__search {
+    /* 兼容历史结构（之前包了一层 ant-space-item） */
+    display: block;
+}
+
+a.reelshort-topnav__profile-link {
+    margin-left: 2px;
+    flex-shrink: 0;
+    text-decoration: none;
+
+    @media (min-width: 768px) {
+        margin-left: 4px;
+    }
+}
+
+.reelshort-topnav__profile-avatar,
+.reelshort-topnav__profile-avatar--placeholder {
+    height: 32px;
+    width: 32px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.reelshort-topnav__profile-avatar {
+    object-fit: cover;
+}
+
+.reelshort-topnav__profile-avatar--placeholder {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.reelshort-topnav__primary-nav {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 4px 12px 8px;
+
+    &::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
+
+    @media (min-width: 768px) {
+        gap: 40px;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+}
+
+a.reelshort-topnav__primary-link,
+button.reelshort-topnav__primary-brand-btn {
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    padding: 0 2px 4px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.15s ease, border-color 0.15s ease, text-shadow 0.15s ease;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button.reelshort-topnav__primary-brand-btn {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 0 2px 4px;
+}
+
+a.reelshort-topnav__primary-link:hover,
+button.reelshort-topnav__primary-brand-btn:hover {
+    color: #fff;
+}
+
+a.reelshort-topnav__primary-link.is-active {
+    border-bottom-color: #fff;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}

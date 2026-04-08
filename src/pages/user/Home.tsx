@@ -31,6 +31,10 @@ function itemsFromHomeRail(
         image: string;
         episodeSlug?: string;
         episode_slug?: string;
+        episodeHref?: string;
+        episode_href?: string;
+        episodeUrl?: string;
+        episode_url?: string;
         movieSlug?: string;
         movie_slug?: string;
         views?: string;
@@ -45,7 +49,14 @@ function itemsFromHomeRail(
         id: v.id,
         title: v.title,
         image: v.image,
-        episodeSlug: v.episodeSlug ?? v.episode_slug,
+        episodeSlug: normalizeEpisodeSlug(
+            v.episodeSlug ??
+                v.episode_slug ??
+                v.episodeHref ??
+                v.episode_href ??
+                v.episodeUrl ??
+                v.episode_url,
+        ),
         movieSlug: v.movieSlug ?? v.movie_slug,
         views: v.views,
         currentEp: v.currentEp,
@@ -75,7 +86,8 @@ function itemsFromMovieList(list: { [key: string]: unknown }[]): HomeBookItemDat
 }
 
 function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
-    return item.episodeSlug ? `/episodes/${item.episodeSlug}` : `/video/${item.id}`;
+    const slug = normalizeEpisodeSlug(item.episodeSlug);
+    return slug ? `/episodes/${slug}` : `/video/${item.id}`;
 }
 
 function normalizeReelShortHref(href: string) {
@@ -90,6 +102,31 @@ function normalizeReelShortHref(href: string) {
         }
     }
     return href;
+}
+
+function normalizeEpisodeSlug(raw?: string) {
+    if (!raw) return undefined;
+    let v = String(raw).trim();
+    if (!v) return undefined;
+
+    // 允许传入完整 URL，取 pathname
+    if (v.startsWith('http://') || v.startsWith('https://')) {
+        try {
+            const u = new URL(v);
+            v = u.pathname;
+        } catch {
+            // ignore
+        }
+    }
+
+    // 允许传入 `/episodes/<slug>` 或 `episodes/<slug>`，提取 slug
+    v = v.replace(/^[#/]/, '');
+    const m = v.match(/(?:^|\/)episodes\/([^/?#]+)$/i);
+    if (m) return decodeURIComponent(m[1]);
+    if (v.startsWith('episodes/')) return decodeURIComponent(v.slice('episodes/'.length));
+
+    // 最常见：直接就是 `episode-2-...`
+    return decodeURIComponent(v);
 }
 
 /** ReelShort 首页 Banner 播放按钮内联三角图标（与镜像 HTML 一致） */
@@ -303,7 +340,7 @@ export default function Component() {
                                             decoding="async"
                                             loading={i === 0 ? 'eager' : 'lazy'}
                                             {...(i === 0 ? { fetchPriority: 'high' as const } : {})}
-                                            className="absolute inset-0 h-full w-full object-cover object-[67%_center]"
+                                            className="absolute inset-0 h-full w-full object-cover object-[55%_center]"
                                         />
                                     </Link>
                                 </div>
@@ -334,17 +371,12 @@ export default function Component() {
                                             <div
                                                 className={cn(
                                                     'absolute bottom-[calc(16/375*100vw)] left-0 flex w-full flex-col items-center justify-center',
-                                                    'md:bottom-[40px] md:left-[72px] md:items-start md:bottom-[40px] md:left-[80px]',
-                                                    'lg:left-[110px] xl:left-[130px] 2xl:left-[108px]',
                                                 )}
                                             >
                                                 <h2
                                                     className={cn(
                                                         'mb-[calc(16/375*100vw)] w-[calc(343/375*100vw)] max-w-full break-words text-center font-bold leading-[120%] text-white/90',
-                                                        'text-[calc(24/375*100vw)] md:mb-3 md:w-[280px] md:max-w-[280px] md:text-start md:text-[20px]',
-                                                        'lg:mb-5 lg:w-[400px] lg:max-w-[400px] lg:text-[28px]',
-                                                        'xl:w-[480px] xl:max-w-[480px] xl:text-[32px]',
-                                                        '2xl:mb-6 2xl:w-[560px] 2xl:max-w-[560px] 2xl:text-[40px]',
+                                                        'text-[calc(24/375*100vw)]',
                                                     )}
                                                 >
                                                     {currentHero.title}
@@ -354,13 +386,9 @@ export default function Component() {
                                                     className={cn(
                                                         'flex cursor-pointer items-center justify-center bg-white font-bold text-black',
                                                         'h-[calc(40/375*100vw)] w-[calc(168/375*100vw)] rounded-[calc(4/375*100vw)] py-[calc(11/375*100vw)] text-[calc(16/375*100vw)]',
-                                                        'md:h-9 md:w-[168px] md:rounded-[4px] md:py-[9px] md:text-[16px]',
-                                                        'lg:h-12 lg:w-[200px] lg:py-[13px] lg:text-[18px]',
-                                                        'xl:h-14 xl:py-[17px]',
-                                                        '2xl:h-[60px] 2xl:w-[240px] 2xl:py-[18px] 2xl:text-[20px]',
                                                     )}
                                                 >
-                                                    <HeroPlayIcon className="mr-[calc(4/375*100vw)] h-[calc(16/375*100vw)] w-[calc(16/375*100vw)] shrink-0 md:mr-2 md:h-6 md:w-6" />
+                                                    <HeroPlayIcon className="mr-[calc(4/375*100vw)] h-[calc(16/375*100vw)] w-[calc(16/375*100vw)] shrink-0" />
                                                     <FormattedMessage id="play" />
                                                 </Link>
                                             </div>
@@ -374,7 +402,6 @@ export default function Component() {
                                 className={cn(
                                     'home-hero-banner-dots pointer-events-auto absolute bottom-0 left-0 right-0 z-[4] flex w-full justify-center gap-[calc(6/375*100vw)]',
                                     'bg-gradient-to-b from-transparent via-black/30 to-app-canvas',
-                                    'md:bottom-[40px] md:right-[250px] md:w-auto md:justify-end md:gap-2',
                                 )}
                                 role="tablist"
                                 aria-label="Banner"
@@ -406,8 +433,20 @@ export default function Component() {
                     <HomeBookShelf
                         key={shelf.titleMessageId}
                         titleMessageId={shelf.titleMessageId}
-                        titleHref={normalizeReelShortHref(shelf.titleHref ?? '/')}
-                        viewAllHref={normalizeReelShortHref(shelf.viewAllHref ?? '/')}
+                        titleHref={normalizeReelShortHref(
+                            shelf.titleHref ??
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (shelf as any).title_href ??
+                                '/',
+                        )}
+                        viewAllHref={normalizeReelShortHref(
+                            shelf.viewAllHref ??
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (shelf as any).view_all_href ??
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                (shelf as any).view_all ??
+                                '/',
+                        )}
                         staticBase={configStore.config['static'] as string}
                         items={itemsFromHomeRail(shelf.items)}
                     />
