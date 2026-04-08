@@ -212,6 +212,7 @@
     "install_app": "アプリをインストール",
     "add_desktop": "このアプリをデスクトップに追加",
     "installing": "インストール中…",
+    "pwa_open": "開く",
     "analysis": "分析",
     "all": "すべて",
     "week": "週",

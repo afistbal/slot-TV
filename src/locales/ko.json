@@ -212,6 +212,7 @@
     "install_app": "앱 설치",
     "add_desktop": "이 앱을 데스크톱에 추가",
     "installing": "설치 중…",
+    "pwa_open": "열기",
     "analysis": "분석",
     "all": "모두",
     "week": "주",

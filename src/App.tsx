@@ -318,10 +318,6 @@ function App() {
     const [install, setInstall] = useState(0);
     const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
 
-    function handleCancelInstall() {
-        setInstall(0);
-    }
-
     async function handleExecuteInstall() {
         if (!installPrompt.current) {
             return;
@@ -620,34 +616,40 @@ function App() {
 
     }, [checked]);
 
+    const showInstallPrompt = showPwaInstallPrompt && install > 0;
+
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
-        <div className={cn('root', `root-${rootStore.theme}`)}>
+        <div
+            className={cn('root', `root-${rootStore.theme}`)}
+            style={showInstallPrompt ? { paddingBottom: '60px' } : undefined}
+        >
             {showPwaInstallPrompt && install > 0 && (
-                <div
-                    id="install"
-                    className="fixed z-10 m-auto flex w-4/5 max-w-96 flex-col items-start gap-2 rounded-md bg-white p-4 shadow-2xl left-0 right-0 top-20"
-                >
-                    <div className="text-lg text-slate-700">
-                        <FormattedMessage id={install === 1 ? 'add_desktop' : 'installing'} />
-                    </div>
-                    {install === 1 && (
-                        <div className="mt-2 flex w-full justify-end gap-2 text-sm">
-                            <button
-                                type="button"
-                                className="cursor-pointer rounded-md bg-slate-400 px-4 py-1 text-white"
-                                onClick={handleCancelInstall}
-                            >
-                                <FormattedMessage id="cancel" />
-                            </button>
-                            <button
-                                type="button"
-                                className="cursor-pointer rounded-md bg-red-400 px-4 py-1 text-white"
-                                onClick={handleExecuteInstall}
-                            >
-                                <FormattedMessage id="install_app" />
-                            </button>
+                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] md:hidden">
+                    <div
+                        id="install"
+                        className="pointer-events-auto flex h-[60px] w-full items-center justify-between bg-[#292929] px-16/vw shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+                    >
+                        <div className="flex w-0 flex-1 items-center overflow-hidden">
+                            <div className="flex h-[32px] w-[32px] flex-shrink-0 items-center justify-center rounded-full">
+                                <img
+                                    alt="logo"
+                                    src="/logo.png"
+                                    className="h-20/vw w-20/vw object-contain"
+                                    loading="lazy"
+                                />
+                            </div>
+                            <div className="ml-8/vw truncate text-[12px] font-medium leading-[130%] text-white">
+                                <FormattedMessage id="add_desktop" />
+                            </div>
                         </div>
-                    )}
+                        <button
+                            type="button"
+                            className="ml-10/vw flex h-[36px] min-w-[96px] items-center justify-center rounded-40/vw bg-[#FF3D5D] px-24/vw text-[14px] font-700 text-white"
+                            onClick={handleExecuteInstall}
+                        >
+                            <FormattedMessage id="pwa_open" />
+                        </button>
+                    </div>
                 </div>
             )}
             {checked ? <RouterProvider router={router} /> : <Loader />}

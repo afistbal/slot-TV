@@ -213,6 +213,7 @@
     "install_app": "Install app",
     "add_desktop": "Add this app to the desktop",
     "installing": "Installing…",
+    "pwa_open": "Open",
     "analysis": "Analysis",
     "all": "All",
     "week": "Week",

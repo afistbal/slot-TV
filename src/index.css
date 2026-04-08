@@ -17,13 +17,20 @@ body,
 #root {
     height: 100%;
     -webkit-text-size-adjust: 100%;
-    font-size: 16px;
     width: inherit;
     /**
      * 对标 ReelShort：镜像为 html { font-family: var(--fontFamily) }，与 Ant/站内组件常用栈一致
      *（-apple-system、PingFang SC、Helvetica Neue、微软雅黑等；xgplayer 等 chunk 亦出现 PingFangSC-Regular / Helvetica）
      */
     font-family: var(--app-font-sans);
+}
+
+html {
+    /**
+     * rem 基准（移动端按 375 设计稿：1rem=16px；更小屏不低于 14px；更大屏封顶 16px）
+     * 后续你可以逐步把 vw 换成 rem（例如 16px -> 1rem，12px -> 0.75rem）。
+     */
+    font-size: clamp(14px, 4.26667vw, 16px);
 }
 
 .root {
