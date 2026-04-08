@@ -30,6 +30,7 @@ export function HomeBookShelf({
     staticBase,
     type = 'type_1',
     showMoreMoviesButton,
+    onMoreMoviesClick,
 }: {
     titleMessageId: string;
     titleHref: string;
@@ -38,6 +39,7 @@ export function HomeBookShelf({
     staticBase: string;
     type?: 'type_1' | 'type_5';
     showMoreMoviesButton?: boolean;
+    onMoreMoviesClick?: () => void;
 }) {
     if (items.length === 0) {
         return null;
@@ -85,9 +87,14 @@ export function HomeBookShelf({
                         </div>
                     </div>
                     {showMoreMoviesButton ? (
-                        <div className="HomePage_more_movies_btn__z0biE">
+                        <button
+                            type="button"
+                            className="HomePage_more_movies_btn__z0biE"
+                            onClick={onMoreMoviesClick}
+                            disabled={!onMoreMoviesClick}
+                        >
                             <FormattedMessage id="home_more_movies" />
-                        </div>
+                        </button>
                     ) : null}
                 </div>
             ) : (

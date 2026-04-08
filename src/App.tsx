@@ -490,9 +490,9 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (!checked || !showPwaInstallPrompt) {
-            return;
-        }
+        // PWA 安装条依赖浏览器触发 beforeinstallprompt。
+        // 不要依赖 checked（接口初始化可能失败/变慢），否则会错过事件，导致“不展示”。
+        if (!showPwaInstallPrompt) return;
 
         const listener = (event: Event) => {
             const e = event as BeforeInstallPromptEvent;
@@ -513,7 +513,7 @@ function App() {
             window.removeEventListener('beforeinstallprompt', listener);
             window.removeEventListener('appinstalled', installedListener);
         };
-    }, [checked]);
+    }, []);
 
     useEffect(() => {
         let locale;

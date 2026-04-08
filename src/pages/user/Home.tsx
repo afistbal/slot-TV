@@ -3,9 +3,7 @@ import { Link } from 'react-router';
 import { useCallback, useEffect, useRef } from 'react';
 import { api, type IPagination } from '@/api';
 import { cn } from '@/lib/utils';
-import { LoaderCircle } from 'lucide-react';
 import { FormattedMessage } from 'react-intl';
-import { InView } from 'react-intersection-observer';
 import NoContent from '@/components/NoContent';
 import { useHomeStore, type IData } from '@/stores/home';
 import { skipRemoteApi } from '@/env';
@@ -58,6 +56,24 @@ function itemsFromHomeRail(
     }));
 }
 
+function itemsFromMovieList(list: { [key: string]: unknown }[]): HomeBookItemData[] {
+    return list
+        .map((v) => {
+            const id = Number(v['id']);
+            if (!Number.isFinite(id)) return null;
+            const title = String(v['title'] ?? v['book_title'] ?? v['name'] ?? '');
+            const image = String(v['image'] ?? v['cover'] ?? v['poster'] ?? '');
+            const views = v['views'] ?? v['play_count'] ?? v['view_count'];
+            return {
+                id,
+                title,
+                image,
+                views: views ? String(views) : undefined,
+            } satisfies HomeBookItemData;
+        })
+        .filter(Boolean) as HomeBookItemData[];
+}
+
 function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
     return item.episodeSlug ? `/episodes/${item.episodeSlug}` : `/video/${item.id}`;
 }
@@ -102,25 +118,15 @@ export default function Component() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const searching = useRef(false);
     const requesting = useRef(false);
+    const didRestoreScrollRef = useRef(false);
     const heroTouchStartX = useRef(0);
     const heroAutoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-    function handleMoreChange(visible: boolean) {
-        if (searching.current) {
-            return;
-        }
-        if (!visible) {
-            return;
-        }
-
-        loadLatest(homeStore.page + 1);
-    }
 
     function handleManualLoadMore() {
         loadLatest(homeStore.page + 1);
     }
 
-    function handleScrollEnd(e: React.UIEvent<HTMLDivElement>) {
+    function handleScroll(e: React.UIEvent<HTMLDivElement>) {
         homeStore.setScrollTop(e.currentTarget.scrollTop);
     }
 
@@ -147,15 +153,16 @@ export default function Component() {
     }
 
     useEffect(() => {
+        // 仅在“返回首页且已有缓存列表”时恢复滚动；分页追加时不要反复重置 scrollTop（会跳回某个标题位置）
         if (homeStore.list.length > 0) {
-            if (!scrollRef.current) {
-                return;
-            }
-            scrollRef.current.scrollTop = homeStore.scrollTop;
-        } else {
-            loadLatest();
+            if (didRestoreScrollRef.current) return;
+            if (!scrollRef.current) return;
+            scrollRef.current.scrollTop = useHomeStore.getState().scrollTop;
+            didRestoreScrollRef.current = true;
+            return;
         }
-    }, [homeStore.list.length, homeStore.scrollTop]);
+        loadLatest();
+    }, [homeStore.list.length]);
 
     const topList = homeStore.data?.top ?? [];
     const topLen = topList.length;
@@ -261,7 +268,7 @@ export default function Component() {
     }, [firstHeroSrc]);
 
     return <div className='flex h-full flex-col bg-app-canvas'>
-        {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.rank.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div className='overflow-y-auto flex-1' ref={scrollRef} onScrollEnd={handleScrollEnd}>
+        {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div className='overflow-y-auto flex-1' ref={scrollRef} onScroll={handleScroll}>
             <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
             <div className="relative z-10 -mt-[min(22vw,5.5rem)] md:-mt-[66px]">
                 <div className="home-hero-shell w-full overflow-hidden" style={{ direction: 'ltr' }}>
@@ -406,38 +413,38 @@ export default function Component() {
                     />
                 ))}
 
-                {/* 观剧寰宇：要求最后一个书架 */}
+                {homeStore.data?.rank?.length ? (
+                    <HomeBookShelf
+                        titleMessageId="rankings"
+                        titleHref="/"
+                        viewAllHref="/"
+                        staticBase={configStore.config['static'] as string}
+                        items={itemsFromHomeRail(homeStore.data.rank)}
+                    />
+                ) : null}
+
+                {/* 为您推荐：来自 home.recommend（不做分页追加） */}
                 <HomeBookShelf
-                    titleMessageId="home_shelf_drama_world"
+                    titleMessageId="for_you"
                     titleHref="/"
                     viewAllHref="/"
                     staticBase={configStore.config['static'] as string}
                     items={itemsFromHomeRail(homeStore.data?.recommend ?? [])}
-                    type="type_5"
-                    showMoreMoviesButton
                 />
-                <InView
-                    as="div"
-                    onChange={handleMoreChange}
-                    className="HomePage_listLoader__rs"
-                    onClick={handleManualLoadMore}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleManualLoadMore();
-                        }
-                    }}
-                >
-                    {homeStore.more ? (
-                        <LoaderCircle className="inline-block h-8 w-8 animate-[spin_1.5s_ease_infinite] align-middle text-white/45" />
-                    ) : homeStore.list.length > 0 ? (
-                        <span className="text-white/45">
-                            <FormattedMessage id="no_more" />
-                        </span>
-                    ) : null}
-                </InView>
+
+                {/* 最近更新：来自 movie 列表分页（More Movies 追加到同一栏） */}
+                {homeStore.list.length ? (
+                    <HomeBookShelf
+                        titleMessageId="latest_updates"
+                        titleHref="/"
+                        viewAllHref="/"
+                        staticBase={configStore.config['static'] as string}
+                        items={itemsFromMovieList(homeStore.list as { [key: string]: unknown }[])}
+                        type="type_5"
+                        showMoreMoviesButton={homeStore.more}
+                        onMoreMoviesClick={handleManualLoadMore}
+                    />
+                ) : null}
             </div>
             <ReelShortFooter />
         </div>}
