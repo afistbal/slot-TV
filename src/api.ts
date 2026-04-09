@@ -42,6 +42,7 @@ export async function api<T = TData>(path: string, options?: { loading?: boolean
 
     try {
         const response = await ky(path, {
+            // Use same-origin `/api` so Vite/Nginx can proxy and avoid CORS in browsers.
             prefixUrl: '/api',
             method: options?.method,
             headers: {
@@ -156,7 +157,7 @@ export async function upload(file: File): Promise<string> {
 
     const formData = result.d['form'] as TData;
 
-    for (let key in formData) {
+    for (const key in formData) {
         form.append(key, formData[key] as string);
     }
 
