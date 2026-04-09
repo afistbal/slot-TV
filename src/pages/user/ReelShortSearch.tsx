@@ -32,6 +32,19 @@ function normalizeMovieItem(v: TData): { id: number; title: string } | null {
     return { id, title };
 }
 
+function formatTagLabelFromUniqueId(uniqueId: unknown) {
+    const raw = String(uniqueId ?? '').trim();
+    if (!raw) return '';
+    return raw
+        .split('')
+        .map((ch, idx) => {
+            if (idx === 0) return ch.toUpperCase();
+            if (ch === '_') return ' ';
+            return ch;
+        })
+        .join('');
+}
+
 export default function Component() {
     useParams(); // 保留以触发 locale 路由变化时的重新渲染（无需显式读取）
     const location = useLocation();
@@ -184,32 +197,36 @@ export default function Component() {
                     </div>
                 </div>
 
-                <div className="rs-tagbar flex gap-2 flex-wrap p-4 border-b justify-center">
+                <div className="rs-tagbar">
                     {tags.slice(0, 10).map((t) => {
-                        const name = String(t['name'] ?? '');
+                        // old 项目逻辑：筛选参数用 name；展示用 unique_id（更可读）
+                        const name = String(t['name'] ?? '').trim();
                         if (!name) return null;
+                        const uniqueId = t['unique_id'];
+                        const label = formatTagLabelFromUniqueId(uniqueId) || name;
                         const active = name === tag;
                         return (
                             <div
                                 key={name}
                                 onClick={() => setTag((prev) => (prev === name ? '' : name))}
                                 className={cn(
-                                    'rs-tag bg-slate-200 cursor-pointer hover:bg-slate-300 hover:border-slate-400 border border-transparent text-gray-500 px-2 py-1 text-sm rounded',
+                                    'rs-tag',
+                                    'bg-white/12',
                                     active && 'rs-tag--active',
                                 )}
                                 data-active={active ? 'true' : 'false'}
                             >
-                                {name}
+                                {label}
                             </div>
                         );
                     })}
-                    <div className="rs-tagbar__more flex justify-center items-center bg-red-100 cursor-pointer hover:bg-red-200 hover:border-red-400 border border-transparent text-red-500 px-2 py-1 text-sm rounded">
+                    {/* <div className="rs-tagbar__more">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <circle cx="12" cy="12" r="1"></circle>
                             <circle cx="19" cy="12" r="1"></circle>
                             <circle cx="5" cy="12" r="1"></circle>
                         </svg>
-                    </div>
+                    </div> */}
                 </div>
 
             </div>

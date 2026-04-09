@@ -120,25 +120,29 @@ export function ReelShortTopNav({ scrollParentRef, showPrimaryNav = false }: Ree
                 )}
             >
                 <div className="reelshort-topnav__row">
-                    <button
-                        type="button"
-                        className="reelshort-topnav__menu-btn"
-                        onClick={() => setMenuOpen(true)}
-                        aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
-                    >
-                        <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
-                    </button>
+                    <div className="reelshort-topnav__left">
+                        <button
+                            type="button"
+                            className="reelshort-topnav__menu-btn"
+                            onClick={() => setMenuOpen(true)}
+                            aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
+                        >
+                            <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
+                        </button>
+                    </div>
 
                     <Link to="/" className="reelshort-topnav__brand-link">
                         <img src={BRAND_LOGO_SRC} alt="" className="reelshort-topnav__brand-logo" />
                         <BrandWordmark />
                     </Link>
 
-                    <div className="reelshort-topnav__actions">
-                        <div className="reelshort-topnav__search">
-                            <ReelShortNavSearch />
+                    <div className="reelshort-topnav__right">
+                        <div className="reelshort-topnav__actions">
+                            <div className="reelshort-topnav__search">
+                                <ReelShortNavSearch />
+                            </div>
+                            <NavProfileAvatar />
                         </div>
-                        <NavProfileAvatar />
                     </div>
                 </div>
 

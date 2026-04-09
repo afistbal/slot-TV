@@ -442,6 +442,14 @@ function App() {
         if (s !== '') {
             localStorage.setItem('source', s);
         }
+        // 关键：有些后端会按 X-Source/X-Test 做分流/开关；直接访问 /search 时若为空，可能返回空 tags。
+        // 老站通常通过落地页/投放链接把 s/_t 带进来；这里补一个兜底，保证请求头稳定有值。
+        if (!localStorage.getItem('source')) {
+            localStorage.setItem('source', window.location.hostname || 'web');
+        }
+        if (!localStorage.getItem('test')) {
+            localStorage.setItem('test', '');
+        }
         loadData();
 
     }, []);

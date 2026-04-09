@@ -138,16 +138,42 @@ button.reelshort-nav-drawer__close {
 
 .reelshort-topnav__row {
     pointer-events: auto;
+    position: relative;
     display: flex;
     width: 100%;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
     padding: 8px 12px 4px;
 
     @media (min-width: 768px) {
-        gap: 12px;
         padding-left: 24px;
         padding-right: 24px;
+    }
+}
+
+.reelshort-topnav__left {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+
+    @media (min-width: 768px) {
+        left: 24px;
+    }
+}
+
+.reelshort-topnav__right {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+
+    @media (min-width: 768px) {
+        right: 24px;
     }
 }
 
@@ -177,9 +203,8 @@ button.reelshort-topnav__menu-btn {
 }
 
 a.reelshort-topnav__brand-link {
-    display: flex;
+    display: inline-flex;
     min-width: 0;
-    flex: 1 1 0%;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -322,4 +347,64 @@ a.reelshort-topnav__primary-link.is-active {
     border-bottom-color: #fff;
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+// --- 搜索页 TagBar（ReelShortSearch.tsx）---
+.rs-tagbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rs-tagbar {
+    .rs-tag {
+        cursor: pointer;
+        border: 1px solid transparent;
+        color: #fff; // gray-500
+        padding: 4px 8px;
+        font-size: 14px;
+        border-radius: 6px;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+        &:hover {
+            background: rgb(203 213 225); // slate-300
+            border-color: rgb(148 163 184); // slate-400
+        }
+
+        &--active {
+            border-color: rgb(165 180 252); // indigo-300
+            background: rgb(199 210 254); // indigo-200
+            color: rgb(129 140 248); // indigo-400
+        }
+    }
+
+    .rs-tagbar__more {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgb(254 226 226); // red-100
+        cursor: pointer;
+        border: 1px solid transparent;
+        color: rgb(239 68 68); // red-500
+        padding: 4px 8px;
+        font-size: 14px;
+        border-radius: 6px;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+        &:hover {
+            background: rgb(254 202 202); // red-200
+            border-color: rgb(248 113 113); // red-400
+        }
+
+        svg {
+            display: block;
+            flex-shrink: 0;
+        }
+    }
 }
