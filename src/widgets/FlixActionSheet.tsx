@@ -19,7 +19,7 @@ export default function FlixActionSheet({ open, onOpenChange, onAction }: { open
                 <Button onClick={() => onAction('delete')}>
                     <FormattedMessage id="delete" />
                 </Button>
-                <Button className="bg-slate-400" onClick={() => onOpenChange(false)}>
+                <Button className="bg-[#94a3b8]" onClick={() => onOpenChange(false)}>
                     <FormattedMessage id="cancel" />
                 </Button>
             </div>

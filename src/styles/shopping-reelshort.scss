@@ -1,0 +1,395 @@
+/**
+ * /shopping（RadixRc）订阅页 — 整页样式集中在此修改。
+ * 入口：`main.tsx` import './styles/shopping-reelshort.scss'
+ */
+
+.rs-shopping {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    background-color: var(--app-canvas);
+    color: #fff;
+
+    &__scroll {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow-y: auto;
+    }
+
+    &__main {
+        padding: calc(16 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+    }
+
+    &__intro {
+        margin-bottom: 1rem;
+    }
+
+    &__introTitle {
+        margin-bottom: calc(2 / 375 * var(--app-vw));
+        font-size: calc(16 / 375 * var(--app-vw));
+        font-weight: 700;
+        line-height: calc(22 / 375 * var(--app-vw));
+        color: rgba(255, 255, 255, 0.9);
+
+        @media (min-width: 768px) {
+            margin-bottom: 2px;
+            font-size: 16px;
+            line-height: 22px;
+        }
+    }
+
+    &__introSub {
+        font-size: calc(12 / 375 * var(--app-vw));
+        font-weight: 400;
+        line-height: calc(16 / 375 * var(--app-vw));
+        color: rgba(255, 255, 255, 0.5);
+
+        @media (min-width: 768px) {
+            font-size: 12px;
+            line-height: 16px;
+        }
+    }
+
+    /* 与 VIP 弹窗 `widgets/Countdown` 同款粉块倒计时，外层仅负责间距与居中 */
+    &__countdown {
+        margin-bottom: calc(12 / 375 * var(--app-vw));
+        display: flex;
+        justify-content: center;
+
+        @media (min-width: 768px) {
+            margin-bottom: 12px;
+        }
+    }
+
+    &__plans {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+
+        @media (min-width: 768px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    &__plan {
+        position: relative;
+        box-sizing: border-box;
+        width: 100%;
+        cursor: pointer;
+        overflow: hidden;
+        border-radius: calc(4 / 375 * var(--app-vw));
+        background: linear-gradient(180deg, #ffedd5 0%, #f3cb93 49.68%);
+        -webkit-tap-highlight-color: transparent;
+
+        @media (min-width: 768px) {
+            border-radius: 4px;
+        }
+
+    }
+
+    /* 与 `widgets/Vip.tsx` 角标一致：Limited-Time Offer xx% */
+    &__planOfferBadge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 2;
+        max-width: 58%;
+        padding: calc(2 / 375 * var(--app-vw)) calc(8 / 375 * var(--app-vw));
+        border-bottom-left-radius: calc(6 / 375 * var(--app-vw));
+        border-top-right-radius: calc(4 / 375 * var(--app-vw));
+        background: #f87171;
+        font-size: calc(10 / 375 * var(--app-vw));
+        font-weight: 600;
+        line-height: 1.25;
+        color: #fff;
+        text-align: right;
+
+        @media (min-width: 768px) {
+            max-width: 70%;
+            padding: 2px 8px;
+            border-bottom-left-radius: 6px;
+            border-top-right-radius: 4px;
+            font-size: 12px;
+        }
+    }
+
+    &__planBg {
+        position: absolute;
+        right: calc(8 / 375 * var(--app-vw));
+        top: calc(16 / 375 * var(--app-vw));
+        z-index: 0;
+        height: calc(78 / 375 * var(--app-vw));
+        width: calc(113 / 375 * var(--app-vw));
+        background-repeat: no-repeat;
+        background-size: contain;
+
+        @media (min-width: 768px) {
+            right: 8px;
+            top: 29px;
+            height: 78px;
+            width: 113px;
+        }
+    }
+
+    &__planBody {
+        position: relative;
+        z-index: 1;
+        box-sizing: content-box;
+        display: flex;
+        align-items: center;
+        padding: calc(16 / 375 * var(--app-vw));
+        color: #401a06;
+
+        @media (min-width: 768px) {
+            padding: 16px;
+        }
+    }
+
+    &__planText {
+        width: 100%;
+    }
+
+    &__planName {
+        font-size: calc(14 / 375 * var(--app-vw));
+        font-weight: 400;
+
+        @media (min-width: 768px) {
+            font-size: 16px;
+        }
+    }
+
+    &__planPriceRow {
+        display: flex;
+        align-items: baseline;
+    }
+
+    &__planPrice {
+        font-size: calc(20 / 375 * var(--app-vw));
+        font-weight: 700;
+
+        @media (min-width: 768px) {
+            font-size: 24px;
+        }
+    }
+
+    &__planRenew {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        font-size: calc(10 / 375 * var(--app-vw));
+        font-weight: 400;
+        color: rgba(64, 26, 6, 0.7);
+
+        @media (min-width: 768px) {
+            font-size: 12px;
+        }
+    }
+
+    &__planBenefits {
+        position: relative;
+        z-index: 1;
+        box-sizing: content-box;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.2);
+        padding: calc(8 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw));
+        font-size: calc(10 / 375 * var(--app-vw));
+        font-weight: 500;
+        line-height: normal;
+        color: #401a06;
+
+        @media (min-width: 768px) {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+    }
+
+    &__planBenefit {
+        display: flex;
+        width: 100%;
+        align-items: center;
+    }
+
+    &__planBenefitIcon {
+        margin-right: calc(1 / 375 * var(--app-vw));
+        height: calc(16 / 375 * var(--app-vw));
+        width: calc(16 / 375 * var(--app-vw));
+        flex-shrink: 0;
+
+        @media (min-width: 768px) {
+            margin-right: 4px;
+            height: 16px;
+            width: 16px;
+        }
+    }
+
+    /* 套餐列表加载：对标 ReelShort StoreInfo 骨架（两块大卡 + 支付方式条） */
+    &__plansSkeleton {
+        grid-column: 1 / -1;
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        pointer-events: none;
+    }
+
+    @keyframes rs-shopping-skeleton-shimmer {
+        0% {
+            background-position: 100% 0;
+        }
+
+        100% {
+            background-position: -100% 0;
+        }
+    }
+
+    &__skeletonBar {
+        width: 100%;
+        flex-shrink: 0;
+        border-radius: calc(4 / 375 * var(--app-vw));
+        background-color: hsla(0, 0%, 100%, 0.1);
+        background-image: linear-gradient(
+            90deg,
+            hsla(0, 0%, 100%, 0.1) 25%,
+            hsla(0, 0%, 100%, 0.3) 37%,
+            hsla(0, 0%, 100%, 0.1) 63%
+        );
+        background-size: 400% 100%;
+        animation: rs-shopping-skeleton-shimmer 1.4s ease infinite;
+
+        @media (min-width: 768px) {
+            border-radius: 4px;
+        }
+
+        &--vip {
+            height: calc(140 / 375 * var(--app-vw));
+            margin-top: calc(24 / 375 * var(--app-vw));
+
+            @media (min-width: 768px) {
+                height: 197px;
+                margin-top: 24px;
+            }
+        }
+
+        &--vipFirst {
+            height: calc(140 / 375 * var(--app-vw));
+            margin-top: calc(30 / 375 * var(--app-vw));
+
+            @media (min-width: 768px) {
+                height: 197px;
+                margin-top: 50px;
+            }
+        }
+
+        &--payRow {
+            height: calc(80 / 375 * var(--app-vw));
+            margin-top: calc(24 / 375 * var(--app-vw));
+
+            @media (min-width: 768px) {
+                height: 80px;
+                margin-top: 24px;
+            }
+        }
+    }
+
+    &__terms {
+        margin-top: 1.5rem;
+        font-size: 12px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.5);
+
+        @media (min-width: 768px) {
+            margin-top: 24px;
+        }
+    }
+
+    &__pay {
+        margin-top: calc(24 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 24px;
+        }
+    }
+
+    &__payTitle {
+        margin-bottom: 1rem;
+        font-size: calc(16 / 375 * var(--app-vw));
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.9);
+
+        @media (min-width: 768px) {
+            font-size: 16px;
+        }
+    }
+
+    &__payGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+
+        @media (min-width: 768px) {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    &__payBtn {
+        position: relative;
+        box-sizing: border-box;
+        display: flex;
+        height: calc(40 / 375 * var(--app-vw));
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: calc(4 / 375 * var(--app-vw));
+        background: #141414;
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+
+        @media (min-width: 768px) {
+            height: 48px;
+            border-radius: 4px;
+            background: #292929;
+        }
+
+        &--active {
+            border-color: rgba(255, 255, 255, 0.9);
+        }
+
+        &--cardPair {
+            gap: 8px;
+        }
+    }
+
+    &__payLogo {
+        display: block;
+        flex-shrink: 0;
+
+        &--apple {
+            height: 21px;
+            width: auto;
+        }
+
+        &--google {
+            height: 18px;
+            width: auto;
+        }
+
+        &--visa {
+            height: 11px;
+            width: auto;
+        }
+
+        &--master {
+            height: 19px;
+            width: auto;
+        }
+    }
+}

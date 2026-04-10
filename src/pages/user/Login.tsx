@@ -1,12 +1,15 @@
-import { Page } from "@/layouts/user";
 import { FormattedMessage, useIntl } from "react-intl";
 // import facebook from '@/assets/facebook.svg';
 import google from '@/assets/google.svg';
 import mail from '@/assets/email.svg';
+import bg from '@/assets/images/ec9725d0-83b2-11ee-aed2-cfe3d80f70eb.png';
+import closeIcon from '@/assets/images/icon_close.webp';
+import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { Mail, Shield, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import type React from "react";
 import { toast } from "sonner";
 import { api, report, type TData } from "@/api";
 import { useUserStore } from "@/stores/user";
@@ -15,12 +18,14 @@ import { useLoadingStore } from "@/stores/loading";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/firebase";
 import usePixel from "@/hooks/usePixel";
+import { Link, useNavigate } from "react-router";
 
 export default function Component() {
     const intl = useIntl();
     const pixel = usePixel();
     const userStore = useUserStore();
     const loadingStore = useLoadingStore();
+    const navigate = useNavigate();
     const [emailOpen, setEmailOpen] = useState(false);
     const [time, setTime] = useState(0);
     const [email, setEmail] = useState(localStorage.getItem('email') ?? '');
@@ -84,9 +89,11 @@ export default function Component() {
         localStorage.setItem('token', result.d['token'] as string);
         localStorage.setItem('email', email.trim());
         localStorage.setItem('login-method', 'email');
+        localStorage.removeItem('user-avatar');
         userStore.signin(result.d['info'] as { [key: string]: unknown });
         pixel.track('Register');
 
+        navigate('/profile', { replace: true });
         loadingStore.hide();
     }
 
@@ -137,68 +144,6 @@ export default function Component() {
         setCode(e.currentTarget.value);
     }
 
-    async function handleLogout() {
-        loadingStore.show();
-        /* @ts-ignore */
-        if (window.flutter_inappwebview) {
-            /* @ts-ignore */
-            await window.flutter_inappwebview.callHandler('logout');
-            /* @ts-ignore */
-            await window.flutter_inappwebview.callHandler('currentUser').then((detail: { uid: string, avatar: string, email: string, name: string, anonymous: boolean, }) => {
-                api('login/uid', {
-                    method: 'post',
-                    data: {
-                        uid: detail.uid,
-                    },
-                    loading: false,
-                }).then(result => {
-                    localStorage.setItem('token', result.d['token'] as string);
-                    const info = result.d['info'] as TData;
-                    info['name'] = detail.name ? detail.name : 'No Name';
-                    info['avatar'] = detail.avatar;
-                    info['email'] = detail.email;
-                    info['anonymous'] = detail.anonymous ? 1 : 0;
-                    userStore.signin(info);
-                }).finally(() => {
-                    loadingStore.hide();
-                })
-            });
-        } else {
-            await auth.signOut();
-            // const credential = await signInAnonymously(auth);
-
-            // api('login/uid', {
-            //     method: 'post',
-            //     data: {
-            //         uid: credential.user.uid,
-            //     },
-            //     loading: false,
-            // }).then(result => {
-            //     localStorage.setItem('token', result.d['token'] as string);
-            //     const info = result.d['info'] as TData;
-            //     info['name'] = credential.user.displayName;
-            //     info['avatar'] = credential.user.photoURL;
-            //     info['email'] = credential.user.email;
-            //     info['anonymous'] = credential.user.isAnonymous ? 1 : 0;
-            //     userStore.signin(info);
-            // }).finally(() => {
-            //     loadingStore.hide();
-            // });
-            await api<TData>('login/anonymous', {
-                loading: false,
-            }).then(result => {
-                if (result.c !== 0) {
-                    localStorage.removeItem('token');
-                    return;
-                }
-                localStorage.setItem('token', result.d['token'] as string);
-                userStore.signin(result.d['info'] as TData);
-            }).finally(() => {
-                loadingStore.hide();
-            });
-        }
-    }
-
     async function handleGoogleSignin() {
         try {
             loadingStore.show();
@@ -226,6 +171,11 @@ export default function Component() {
 
             localStorage.setItem('token', result.d['token'] as string);
             localStorage.setItem('login-method', 'google');
+            if (detail.avatar) {
+                localStorage.setItem('user-avatar', detail.avatar);
+            } else {
+                localStorage.removeItem('user-avatar');
+            }
             const info = result.d['info'] as TData;
             info['name'] = detail.name ? detail.name : 'No Name';
             info['avatar'] = detail.avatar;
@@ -234,6 +184,7 @@ export default function Component() {
             userStore.signin(info);
             loadingStore.hide();
             pixel.track('Register');
+            navigate('/profile', { replace: true });
         } catch (e) {
             loadingStore.hide();
         }
@@ -281,12 +232,19 @@ export default function Component() {
                 loading: false,
             }).then(result2 => {
                 localStorage.setItem('token', result2.d['token'] as string);
+                const photo = result.user.photoURL || '';
+                if (photo) {
+                    localStorage.setItem('user-avatar', photo);
+                } else {
+                    localStorage.removeItem('user-avatar');
+                }
                 const info = result2.d['info'] as TData;
                 info['name'] = result.user.displayName || 'No Name';
                 info['avatar'] = result.user.photoURL || '';
                 info['email'] = result.user.email || '';
                 info['anonymous'] = result.user.isAnonymous ? 1 : 0;
                 userStore.signin(info);
+                navigate('/profile', { replace: true });
             });
 
         } catch (error) {
@@ -301,11 +259,6 @@ export default function Component() {
         } finally {
             loadingStore.hide();
         }
-    }
-
-    function handleCopyId() {
-        navigator.clipboard.writeText(userStore.info!['unique_id'] as string);
-        toast.success(intl.formatMessage({ id: 'copied' }));
     }
 
     useEffect(() => {
@@ -329,48 +282,61 @@ export default function Component() {
         };
     }, []);
 
-    return <Page title={userStore.signed && userStore.info!['anonymous'] !== 1 ? 'account_infomation' : 'login'}>
-        {userStore.signed && userStore.info!['anonymous'] !== 1 ? <>
-            <div className="m-4 rounded-md bg-white">
-                <div className="flex gap-2 justify-between items-center p-4 border-t border-muted" onClick={handleCopyId}>
-                    <div className="flex gap-1 text-gray-600 items-center">
-                        <div className="text-md"><FormattedMessage id="user_id" /></div>
+    return (
+        <div className="rs-login">
+            <div className="rs-login__bg" style={{ backgroundImage: `url(${bg})` }} />
+            <div className="rs-login__shade" />
+            <div className="rs-login__panel">
+                <button type="button" className="rs-login__close" onClick={() => navigate(-1)} aria-label="Close">
+                    <img src={closeIcon} alt="" />
+                </button>
+
+                <div className="LoginPage_login_body___4R_e rs-login__body">
+                    <div className="LoginPage_logo__mi0_p rs-login__logoWrap">
+                        <img src={BRAND_LOGO_SRC} alt="" />
                     </div>
-                    <div>{userStore.info!['unique_id'] as string}</div>
-                </div>
-                <div className="flex gap-2 justify-between items-center p-4">
-                    <div className="flex gap-1 text-gray-600 items-center">
-                        <div className="text-md"><FormattedMessage id="user_name" /></div>
+                    <div className="LoginPage_title__cjdzC rs-login__title">{BRAND_DISPLAY_NAME}</div>
+                    <p className="LoginPage_text__J0MII rs-login__subtitle">
+                        <FormattedMessage id="welcome_to_site" values={{ site: BRAND_DISPLAY_NAME }} />
+                    </p>
+
+                    <div className="LoginPage_login_btn_box__mdGH7 rs-login__btns">
+                        <div
+                            id="google"
+                            className="LoginPage_login_btn_item__OkeV1 rs-login__btn"
+                            onClick={(window as any).flutter_inappwebview !== undefined ? handleGoogleSignin : handleGoogleSigninPopup}
+                        >
+                            <div className="LoginPage_login_icon__XK3jz">
+                                <img src={google} alt="" />
+                            </div>
+                            <div className="LoginPage_login_text__NWSSM">
+                                <FormattedMessage id="login_google" />
+                            </div>
+                        </div>
+                        <div
+                            id="email"
+                            className="LoginPage_login_btn_item__OkeV1 rs-login__btn"
+                            onClick={handleToggleEmailLogin}
+                        >
+                            <div className="LoginPage_login_icon__XK3jz">
+                                <img src={mail} alt="" />
+                            </div>
+                            <div className="LoginPage_login_text__NWSSM">
+                                <FormattedMessage id="login_email" />
+                            </div>
+                        </div>
                     </div>
-                    <div>{userStore.info!['name'] as string}</div>
-                </div>
-                <div className="flex gap-2 justify-between items-center p-4 border-t border-muted">
-                    <div className="flex gap-1 text-gray-600 items-center">
-                        <div className="text-md"><FormattedMessage id="user_type" /></div>
+
+                    <div className="LoginPage_protocol__aQxLZ rs-login__protocol">
+                        <FormattedMessage
+                            id="protocol"
+                            values={{
+                                tos: (parts: React.ReactNode[]) => <Link to="/page/text?title=user_agreement">{parts}</Link>,
+                                pp: (parts: React.ReactNode[]) => <Link to="/page/text?title=privacy_policy">{parts}</Link>,
+                            }}
+                        />
                     </div>
-                    <div><FormattedMessage id={`vip_${userStore.info!['vip'] as number}`} /></div>
                 </div>
-            </div>
-            <div className="p-4 flex flex-col gap-4">
-                <Button onClick={handleLogout} className="bg-slate-500"><FormattedMessage id="logout" /></Button>
-            </div>
-        </> : <div className="p-8 w-full h-full">
-            <div className="p-4 text-2xl font-bold text-center pb-8 text-slate-700"><FormattedMessage id="domain" /></div>
-            <div className="flex gap-4 flex-col">
-                {/* <div className="h-15 rounded-full border flex justify-center items-center text-lg gap-2 bg-gray-300 text-gray-400">
-                    <img src={facebook} className="w-6 h-6" />
-                    <FormattedMessage id="login_facebook" />
-                </div> */}
-                <div className="h-15 rounded-full bg-gray-50 border flex justify-center items-center text-lg gap-2" onClick={(window as any).flutter_inappwebview !== undefined ? handleGoogleSignin : handleGoogleSigninPopup}>
-                    <img src={google} className="w-6 h-6" />
-                    <FormattedMessage id="login_google" />
-                </div>
-                <div className="h-15 rounded-full bg-gray-50 border flex justify-center items-center text-lg gap-2" onClick={handleToggleEmailLogin}>
-                    <img src={mail} className="w-6 h-6" />
-                    <FormattedMessage id="login_email" />
-                </div>
-            </div>
-        </div>}
         <Drawer open={emailOpen} onOpenChange={handleToggleEmailLogin}>
             <DrawerContent className="bg-linear-to-b from-[#ffe9d1] to-white" aria-describedby="login">
                 <DrawerTitle className="flex items-center gap-4 px-4 pt-4 mb-4">
@@ -382,14 +348,31 @@ export default function Component() {
                     </div>
                 </DrawerTitle>
                 <div className="border-t p-8 flex flex-col gap-4">
-                    <div className="h-15 rounded-full bg-gray-50 border flex justify-center items-center text-lg gap-2 px-5">
-                        <Mail className="w-6 h-6 shrink-0 text-slate-500" />
-                        <input onChange={handleEmailChange} value={email} type="email" autoFocus maxLength={30} className="w-full h-full outline-none border-none px-2" placeholder={intl.formatMessage({ id: 'email_placeholder' })} />
+                    <div className="rs-login__drawerField">
+                        <input
+                            onChange={handleEmailChange}
+                            value={email}
+                            type="email"
+                            autoFocus
+                            maxLength={30}
+                            className="rs-login__drawerInput"
+                            placeholder={intl.formatMessage({ id: 'email_placeholder' })}
+                        />
                     </div>
-                    <div className="h-15 rounded-full bg-gray-50 border flex justify-center items-center text-lg gap-2 pl-5">
-                        <Shield className="w-6 h-6 shrink-0 text-slate-500" />
-                        <input onChange={handleCodeChange} value={code} type="number" maxLength={6} className="w-full h-full outline-none border-none px-2" placeholder={intl.formatMessage({ id: 'code_placeholder' })} />
-                        <div className="shrink-0 text-red-400 h-full flex items-center justify-center px-5" onClick={handleSendCode} onMouseDown={e => e.preventDefault()}>
+                    <div className="rs-login__drawerField">
+                        <input
+                            onChange={handleCodeChange}
+                            value={code}
+                            type="number"
+                            maxLength={6}
+                            className="rs-login__drawerInput"
+                            placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                        />
+                        <div
+                            className="rs-login__drawerSend"
+                            onClick={handleSendCode}
+                            onMouseDown={e => e.preventDefault()}
+                        >
                             {time > 0 ? `${time.toString().padStart(2, '0')}s` : <FormattedMessage id="send_code" />}
                         </div>
                     </div>
@@ -399,5 +382,7 @@ export default function Component() {
                 </div>
             </DrawerContent>
         </Drawer>
-    </Page>;
+            </div>
+        </div>
+    );
 }

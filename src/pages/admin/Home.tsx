@@ -38,55 +38,55 @@ export default function Component() {
                     />
                 </div>
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="uv_today" />
                     </div>
                     <div className="text-2xl text-blue-400">{data!['uv'] as number}</div>
                 </div>
                 {/* <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                <div className="text-slate-400">
+                <div className="text-slate-500">
                     <FormattedMessage id="uv_weekly" />
                 </div>
                 <div className="text-3xl text-blue-400">{data!['uv_weekly'] as number}</div>
             </div> */}
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="pv_today" />
                     </div>
                     <div className="text-2xl text-blue-400">{data!['pv'] as number}</div>
                 </div>
                 {/* <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                <div className="text-slate-400">
+                <div className="text-slate-500">
                     <FormattedMessage id="pv_weekly" />
                 </div>
                 <div className="text-3xl text-pink-400">{data!['pv_weekly'] as number}</div>
             </div> */}
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="unlock_today" />
                     </div>
                     <div className="text-2xl text-purple-400">{data!['unlock'] as number}</div>
                 </div>
                 {/* <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                <div className="text-slate-400">
+                <div className="text-slate-500">
                     <FormattedMessage id="unlock_weekly" />
                 </div>
                 <div className="text-3xl text-red-400">{data!['unlock_weekly'] as number}</div>
             </div> */}
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="play_today" />
                     </div>
                     <div className="text-2xl text-purple-400">{data!['play'] as number}</div>
                 </div>
                 {/* <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                <div className="text-slate-400">
+                <div className="text-slate-500">
                     <FormattedMessage id="play_weekly" />
                 </div>
                 <div className="text-3xl text-purple-400">{data!['play_weekly'] as number}</div>
             </div> */}
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="registered_user" />
                     </div>
                     <div className="text-2xl text-cyan-400">
@@ -94,25 +94,25 @@ export default function Component() {
                     </div>
                 </div>
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="unpaid_orders" />
                     </div>
                     <div className="text-2xl text-cyan-400">{data!['unpaid_order'] as number}</div>
                 </div>
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="paid_orders" />
                     </div>
                     <div className="text-2xl text-red-400">{data!['paid_order'] as number}</div>
                 </div>
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="subscription" />
                     </div>
                     <div className="text-2xl text-red-400">{data!['subscription'] as number}</div>
                 </div>
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="retention_time" />(<FormattedMessage id="hour" />)
                     </div>
                     <div className="text-2xl text-orange-400">
@@ -120,7 +120,7 @@ export default function Component() {
                     </div>
                 </div>
                 <div className="bg-white rounded-md p-4 flex flex-col gap-2 border">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         <FormattedMessage id="average_retention" />(<FormattedMessage id="minute" />)
                     </div>
                     <div className="text-2xl text-orange-400">
@@ -130,7 +130,7 @@ export default function Component() {
             </div>
             <div className="p-4 pt-0">
                 <div className="bg-white rounded-md p-4 border">
-                    <div className="text-slate-400 text-sm mb-2">
+                    <div className="text-slate-500 text-sm mb-2">
                         <FormattedMessage id="play_ranking" />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -169,7 +169,7 @@ export default function Component() {
             </div>
             <div className="p-4 pt-0">
                 <div className="bg-white rounded-md p-4 border">
-                    <div className="text-slate-400 text-sm mb-2">
+                    <div className="text-slate-500 text-sm mb-2">
                         <FormattedMessage id="retention_ranking" />(<FormattedMessage id="minute" />)
                     </div>
                     <div className="flex flex-col gap-2">

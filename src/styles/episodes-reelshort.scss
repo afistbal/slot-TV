@@ -1,0 +1,1893 @@
+/**
+ * ReelShort Episodes 详情页（简化但可控 SCSS）。
+ * 目标：结构/交互对齐 `pages/episodes/[slug]`，你可以在这里直接改样式。
+ */
+
+.rs-episodes {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-episodes__scroll {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: hidden; /* 上半区固定，下半区单独滚动 */
+    display: flex;
+    flex-direction: column;
+}
+
+.rs-episodes__topnav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.rs-episodes__main {
+    display: flex;
+    flex: 1 1 0%;
+    min-height: 0;
+}
+
+.rs-episodes__breadcrumb {
+    position: relative; /* 参与 h-50vh 高度计算 */
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+    margin: 16px;
+}
+
+.rs-episodes__crumb--active {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 700;
+}
+
+.rs-episodes__epBtn--active {
+    background-image: radial-gradient(116.67% 135.17% at 95.16% 96%, rgba(255, 61, 93, 0.32) 0, rgba(45, 45, 45, 0) 80%) !important;
+}
+
+.rs-episodes__playerShell {
+    position: relative;
+    flex: 1 1 0%;
+    min-width: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    /* 对标 ReelShort：播放器上半区占满视口宽度，抵消外层内容 padding */
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    overflow: hidden;
+}
+
+.rs-episodes__player {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+}
+
+/* 你要的：vadio 高度 50vh */
+.h-50vh {
+    /* 移动端对标 ReelShort：用 svh 避免地址栏导致 vh 变小 */
+    height: 50vh !important;
+    max-height: 50vh !important;
+    height: 50svh !important;
+    max-height: 50svh !important;
+}
+
+.rs-episodes__videoStage {
+    position: relative;
+    flex: 1 1 0%;
+    min-height: 0;
+}
+
+.rs-episodes__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* 对标：video 本身 class 可能为空，样式由父容器控制 */
+.rs-episodes__xgWrap video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    outline: none;
+    object-fit: contain;
+}
+
+.rs-episodes__xgWrap {
+    position: absolute;
+    inset: 0;
+}
+
+/* controls 左侧“下一集”按钮：锁定到源站 controls(40px) 高度，避免变巨大 */
+.rs-episodes__xgWrap .rs-xg-next {
+    height: 40px;
+    width: 40px;
+    flex: 0 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rs-episodes__xgWrap .rs-xg-next img {
+    width: 25px;
+    height: 25px;
+}
+
+/* ===== xgplayer controls：直接对齐 ReelShort 源站（来自 b505199e82b03f7d.css） ===== */
+.xgplayer-controls,
+.xgplayer-music {
+    border-radius: 4px;
+}
+
+.xgplayer.not-allow-autoplay .xgplayer-controls,
+.xgplayer.xgplayer-inactive .controls-autohide,
+.xgplayer.xgplayer-nostart .xgplayer-controls {
+    pointer-events: none;
+    visibility: hidden;
+    cursor: default;
+    opacity: 0;
+}
+
+.xgplayer .xgplayer-controls {
+    display: block;
+    position: absolute;
+    visibility: visible;
+    height: 49px;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    opacity: 1;
+    z-index: 10;
+    background: #000;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.xgplayer .xgplayer-controls.show {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.xgplayer .xg-inner-controls {
+    position: absolute;
+    height: 40px;
+    bottom: 0;
+    justify-content: space-between;
+    display: flex;
+}
+
+.xgplayer .xg-left-grid,
+.xgplayer .xg-right-grid {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 1;
+    height: 100%;
+    z-index: 1;
+}
+
+.xgplayer .xg-right-grid {
+    flex-direction: row-reverse;
+}
+
+.xgplayer .xg-right-grid > :first-child {
+    margin-right: 0;
+}
+
+.xgplayer .xg-left-grid > :first-child,
+.xgplayer .xg-right-grid xg-icon {
+    margin-left: 0;
+}
+
+.xgplayer .xg-left-grid xg-icon {
+    margin-right: 0;
+}
+
+.xgplayer .xg-center-grid {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    outline: none;
+    top: -20px;
+    padding: 5px 0;
+    text-align: center;
+}
+
+.xgplayer .xg-pos {
+    left: 10px;
+    right: 10px;
+}
+
+.xgplayer xg-icon {
+    position: relative;
+    box-sizing: border-box;
+    height: 40px;
+    margin-left: 16px;
+    margin-right: 16px;
+    cursor: pointer;
+    color: hsla(0, 0%, 100%, 0.8);
+    fill: #fff;
+}
+
+.xgplayer xg-icon .xgplayer-icon {
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.xgplayer xg-icon img,
+.xgplayer xg-icon svg {
+    height: 100%;
+    display: block;
+}
+
+/* play / pause：严格按 data-state 二选一（防止同时展示 2 个 img） */
+.xgplayer .xgplayer-play .xg-icon-play,
+.xgplayer .xgplayer-play .xg-icon-pause {
+    display: none !important;
+}
+
+.xgplayer .xgplayer-play[data-state='play'] .xg-icon-play {
+    display: block !important;
+}
+
+.xgplayer .xgplayer-play[data-state='pause'] .xg-icon-pause {
+    display: block !important;
+}
+
+/* 源站的通用规则会把 img 拉到 40px；这里按你给的 17x17 强制对齐 */
+.xgplayer .xgplayer-play .xgplayer-icon img.xg-icon-play,
+.xgplayer .xgplayer-play .xgplayer-icon img.xg-icon-pause {
+    width: 17px !important;
+    height: 17px !important;
+    max-width: 17px !important;
+    max-height: 17px !important;
+}
+
+/* 源站：音量三态只显示一个（避免堆叠展示 3-4 个 svg） */
+.xgplayer .xgplayer-volume[data-state='normal'] .xg-volume {
+    display: block;
+}
+
+.xgplayer .xgplayer-volume[data-state='normal'] .xg-volume-mute,
+.xgplayer .xgplayer-volume[data-state='normal'] .xg-volume-small,
+.xgplayer .xgplayer-volume[data-state='small'] .xg-volume {
+    display: none;
+}
+
+.xgplayer .xgplayer-volume[data-state='small'] .xg-volume-small {
+    display: block;
+}
+
+.xgplayer .xgplayer-volume[data-state='mute'] .xg-volume,
+.xgplayer .xgplayer-volume[data-state='mute'] .xg-volume-small,
+.xgplayer .xgplayer-volume[data-state='small'] .xg-volume-mute {
+    display: none;
+}
+
+.xgplayer .xgplayer-volume[data-state='mute'] .xg-volume-mute {
+    display: block;
+}
+
+.xgplayer .xg-tips {
+    display: none;
+    position: absolute;
+    padding: 4px 6px;
+    background: rgba(0, 0, 0, 0.54);
+    border-radius: 4px;
+    font-size: 11px;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    opacity: 0.85;
+}
+
+.xgplayer xg-icon .xg-tips {
+    top: -30px;
+    left: 50%;
+    transform: translate(-50%);
+}
+
+.xgplayer xg-icon:active .xg-tips,
+.xgplayer xg-icon:hover .xg-tips {
+    display: block;
+}
+
+/* 删掉我们自加的“圆角边框按钮”样式：源站 xg-icon 自己管尺寸/间距 */
+
+.xgplayer .xgplayer-time {
+    min-width: 30px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.54);
+    white-space: nowrap;
+}
+
+.xgplayer .xgplayer-time.xg-time-left {
+    margin-left: 2px;
+}
+
+.xgplayer .xgplayer-time.xg-time-right {
+    margin-left: 6px;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.xgplayer .xg-right-grid {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.xgplayer .xgplayer-definition {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.xgplayer .xgplayer-definition-btn {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.25);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.xgplayer .xgplayer-definition-menu {
+    position: absolute;
+    right: 0;
+    bottom: 40px;
+    width: 120px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(30, 30, 32, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+}
+
+.xgplayer .xgplayer-definition-item {
+    width: 100%;
+    height: 34px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+}
+
+.xgplayer .xgplayer-definition-item:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.xgplayer .xgplayer-definition-item.is-active {
+    color: #fff;
+    font-weight: 800;
+}
+
+.xgplayer .xgplayer-progress {
+    display: flex;
+    align-items: center;
+    position: relative;
+    min-width: 50px;
+    height: 12px;
+    left: 0;
+    right: 0;
+    top: 0;
+    outline: none;
+    flex: 1;
+    cursor: pointer;
+}
+
+.xgplayer .xgplayer-progress-outer {
+    position: relative;
+    width: 100%;
+    height: 2px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.xgplayer .progress-list {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    border-radius: inherit;
+}
+
+.xgplayer .xgplayer-progress-inner {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    background: hsla(0, 0%, 100%, 0.3);
+    transition: height 0.2s ease-in, opacity 0.2s ease-out;
+    border-radius: inherit;
+    margin-right: 2px;
+    pointer-events: none;
+}
+
+.xgplayer .xgplayer-progress-inner:last-child,
+.xgplayer .xgplayer-progress-inner:only-child {
+    margin-right: 0;
+}
+
+.xgplayer .xgplayer-progress-cache,
+.xgplayer .xgplayer-progress-played {
+    display: block;
+    height: 100%;
+    width: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: inherit;
+}
+
+.xgplayer .xgplayer-progress-played {
+    background: linear-gradient(-90deg, #fa1f41, #e31106);
+}
+
+.xgplayer .xgplayer-progress-cache {
+    background: hsla(0, 0%, 100%, 0.5);
+}
+
+.xgplayer .xgplayer-progress-btn {
+    display: block;
+    background: rgba(255, 94, 94, 0.304);
+    border: 0.5px solid rgba(255, 94, 94, 0.057);
+    box-shadow: 0 0 1px rgba(255, 0, 0, 0.384);
+    width: 20px;
+    height: 20px;
+    border-radius: 30px;
+    left: 0;
+    top: 50%;
+    position: absolute;
+    z-index: 1;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.xgplayer .xgplayer-progress-btn:before {
+    content: ' ';
+    display: block;
+    position: relative;
+    width: 12px;
+    height: 12px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 30px;
+    background: #fff;
+}
+
+/* xg-trigger / time-preview 这套按 ReelShort(xgplayer) DOM 复刻 */
+.xgplayer xg-trigger {
+    user-select: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+}
+
+.xgplayer xg-trigger .time-preview {
+    display: none;
+    position: absolute;
+    width: 200px;
+    margin: 0 auto;
+    padding: 0 20px 30px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.54);
+    font-size: 18px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.xgplayer xg-trigger .time-preview span {
+    line-height: 24px;
+}
+
+.xgplayer xg-trigger .time-preview .xg-separator {
+    font-size: 14px;
+}
+
+.xgplayer xg-trigger .time-preview .xg-seek-show {
+    transform: translate(-10px);
+}
+
+.xgplayer xg-trigger .time-preview .xg-bar {
+    width: 96px;
+    height: 2px;
+    margin: 8px auto 0;
+    border-radius: 10px;
+    box-sizing: content-box;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.xgplayer xg-trigger .time-preview .xg-bar .xg-curbar {
+    width: 0;
+    height: 100%;
+    border-radius: 10px;
+}
+
+.xgplayer xg-trigger .xg-top-note {
+    position: absolute;
+    height: 32px;
+    width: 135px;
+    top: 26px;
+    left: 50%;
+    margin-left: -78px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 100px;
+    color: #fff;
+}
+
+.xgplayer xg-trigger .xg-top-note span {
+    display: block;
+    line-height: 32px;
+    height: 32px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.xgplayer xg-trigger .xg-top-note i {
+    color: #3469ff;
+    margin: 0 5px;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.xgplayer xg-trigger .xg-playbackrate {
+    display: none;
+}
+
+.xgplayer xg-trigger[data-xg-action='playbackrate'] .xg-playbackrate,
+.xgplayer xg-trigger[data-xg-action='seeking'] .time-preview {
+    display: block;
+}
+
+.xgplayer .gradient {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+    background-image: linear-gradient(
+        rgba(0, 0, 0, 0.6),
+        rgba(0, 0, 0, 0.36) 20%,
+        transparent 36%,
+        transparent 70%,
+        rgba(0, 0, 0, 0.24) 77%,
+        rgba(0, 0, 0, 0.36) 83%,
+        rgba(0, 0, 0, 0.6)
+    );
+}
+
+.rs-episodes__centerPlay {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 88px;
+    height: 88px;
+    border-radius: 9999px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+
+/* ===== xgplayer-start：1:1 复刻 b505199e82b03f7d.css ===== */
+@keyframes playPause {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    99% {
+        transform: scale(1.3);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+.xgplayer xg-start-inner {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.38);
+}
+
+.xgplayer .xgplayer-start {
+    width: 70px;
+    height: 70px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 5;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+}
+
+.xgplayer .xgplayer-start svg {
+    width: 100%;
+    height: 100%;
+}
+
+.xgplayer .xgplayer-start.focus-hide,
+.xgplayer .xgplayer-start.hide {
+    display: none;
+    pointer-events: none;
+}
+
+.xgplayer .xgplayer-start:hover {
+    opacity: 0.85;
+}
+
+.xgplayer .xgplayer-start .xg-icon-play {
+    display: block;
+}
+
+.xgplayer .xgplayer-start .xg-icon-pause,
+.xgplayer .xgplayer-start[data-state='pause'] .xg-icon-play {
+    display: none;
+}
+
+.xgplayer .xgplayer-start.interact,
+.xgplayer .xgplayer-start[data-state='pause'] .xg-icon-pause {
+    display: block;
+}
+
+.xgplayer .xgplayer-start.interact xg-start-inner {
+    animation: playPause 0.4s ease-out 0.1s forwards;
+}
+
+.xgplayer .xgplayer-start.show {
+    display: block;
+}
+
+.xgplayer.xgplayer-mobile xg-start-inner {
+    background: initial;
+    border-radius: 0;
+}
+
+/* Episodes 对标：中心按钮底色/圆角由 SVG 自己画（rect rx=30），这里不额外铺底 */
+.rs-episodes__xgWrap xg-start-inner {
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+
+.xgplayer.xgplayer-mobile .xgplayer-start {
+    height: 50px;
+    width: 50px;
+}
+
+.xgplayer.xgplayer-mobile .xgplayer-start:hover {
+    opacity: 1;
+}
+
+.xgplayer.xgplayer-inactive .xgplayer-start.auto-hide,
+.xgplayer.xgplayer-is-enter .xgplayer-start,
+.xgplayer.xgplayer-is-enter .xgplayer-start.auto-hide,
+.xgplayer.xgplayer-is-enter .xgplayer-start.show,
+.xgplayer.xgplayer-is-error .xgplayer-start,
+.xgplayer.xgplayer-is-error .xgplayer-start.show,
+.xgplayer.xgplayer-isloading.xgplayer-playing .xgplayer-start {
+    display: none;
+}
+
+/* ===== 清晰度抽屉（按你提供的 ReelShort DOM 类名做 1:1 外观） ===== */
+.BasicsDrawerModalMB_drawer_modal_shadow__uoreT {
+    z-index: 10;
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    margin: 0 auto;
+    top: 0;
+    left: 0;
+    touch-action: none;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.BasicsDrawerModalMB_drawer_modal__1xjka {
+    height: max-content;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 300;
+    background-color: #fff;
+    transform: translateY(100%);
+    border-radius: 4.8vw 4.8vw 0 0;
+}
+
+.BasicsDrawerModalMB_open__JkqYQ {
+    display: block;
+    transform: translateY(0);
+}
+
+.BasicsDrawerModalMB_is_dark__5DmSr {
+    background-color: #222;
+}
+
+.VideoDefinitionPanel_container__am5_4 {
+    padding: 0;
+    color: #fff;
+}
+
+.VideoDefinitionPanel_panel_header__KR0xv {
+    height: 11.73333vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 2.66667vw;
+    padding: 0 2.93333vw;
+    font-weight: 700;
+    font-size: 4.8vw;
+    border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
+}
+
+.VideoDefinitionPanel_panel_content__wnzog {
+    padding: 2.66667vw 5.6vw 6.4vw;
+    display: flex;
+    flex-direction: column;
+    gap: 2.66667vw;
+}
+
+.VideoDefinitionPanel_definition_item__L7S9r {
+    height: 11.73333vw;
+    border-radius: 2.13333vw;
+    background: hsla(0, 0%, 100%, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4.26667vw;
+    color: hsla(0, 0%, 100%, 0.9);
+}
+
+.VideoDefinitionPanel_current_definition_itme__Zxu30 {
+    background: rgba(229, 46, 46, 0.25);
+    color: #fff;
+    outline: 1px solid rgba(229, 46, 46, 0.3);
+}
+
+.rs-episodes__centerPlay svg {
+    display: block;
+}
+
+.rs-episodes__rightTools {
+    position: absolute;
+    right: 12px;
+    bottom: 48px;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rs-episodes__toolBtn {
+    width: 44px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(0, 0, 0, 0.35);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.rs-episodes__loading {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.rs-episodes__subtitle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 64px;
+    display: flex;
+    justify-content: center;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.rs-episodes__seekBar {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 14px;
+    height: 18px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    touch-action: none;
+}
+
+.rs-episodes__seekTrack {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.rs-episodes__seekPlayed {
+    position: absolute;
+    left: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: #3469ff;
+}
+
+.rs-episodes__lockMask {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 4;
+}
+
+/* 锁集遮罩里用的是原版 utility class，这里补齐关键样式（scss 可调） */
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-\[\#E52E2E\] {
+    background: #e52e2e;
+}
+
+.text-white\/90 {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.text-14\/vw {
+    font-size: 3.7333vw;
+}
+
+.text-18\/vw {
+    font-size: 4.8vw;
+}
+
+/* actions 区图标：与 ReelShort text-24/vw + md:text-32px 对齐 */
+.text-24\/vw {
+    font-size: 6.4vw;
+}
+
+.mt-4\/vw {
+    margin-top: 1.0667vw;
+}
+
+.mt-16\/vw {
+    margin-top: 4.2667vw;
+}
+
+.mb-32\/vw {
+    margin-bottom: 8.5333vw;
+}
+
+.px-32\/vw {
+    padding-left: 8.5333vw;
+    padding-right: 8.5333vw;
+}
+
+.mb-6\/vw {
+    margin-bottom: 1.6vw;
+}
+
+.w-64px {
+    width: 64px;
+}
+
+.h-64px {
+    height: 64px;
+}
+
+.h-48px,
+.min-h-48px {
+    height: 48px;
+    min-height: 48px;
+}
+
+.rounded-4px {
+    border-radius: 4px;
+}
+
+.font-700 {
+    font-weight: 700;
+}
+
+.leading-normal {
+    line-height: 1.4;
+}
+
+.bg-cover {
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.mr-4px {
+    margin-right: 4px;
+}
+
+.w-16\/vw {
+    width: 4.2667vw;
+}
+
+.h-16\/vw {
+    height: 4.2667vw;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.hidden {
+    display: none;
+}
+
+.border {
+    border-width: 1px;
+}
+
+.border-solid {
+    border-style: solid;
+}
+
+.border-white\/90 {
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+@media (min-width: 768px) {
+    .md\:flex {
+        display: flex;
+    }
+    .md\:px-70px {
+        padding-left: 70px;
+        padding-right: 70px;
+    }
+    .md\:text-16px {
+        font-size: 16px;
+    }
+    .md\:text-20px {
+        font-size: 20px;
+    }
+    .md\:text-32px {
+        font-size: 32px;
+    }
+    .md\:text-14px {
+        font-size: 14px;
+    }
+    .md\:mt-4px {
+        margin-top: 4px;
+    }
+    .md\:mt-24px {
+        margin-top: 24px;
+    }
+    .md\:mb-40px {
+        margin-bottom: 40px;
+    }
+    .md\:w-320px {
+        width: 320px;
+    }
+    .md\:w-20px {
+        width: 20px;
+    }
+    .md\:h-20px {
+        height: 20px;
+    }
+    .md\:w-24px {
+        width: 24px;
+    }
+    .md\:h-24px {
+        height: 24px;
+    }
+    .md\:h-48px {
+        height: 48px;
+    }
+    .md\:w-320px {
+        width: 320px;
+    }
+}
+
+/* DrawerContent 覆盖：保证 paywall 抽屉 1:1 */
+.rs-paywall__dialog[data-slot='drawer-content'] {
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    max-width: none !important;
+    width: 100vw !important;
+    /* 覆盖 vaul 默认 bottom max-h-[80vh] 限制 */
+    max-height: 85svh !important;
+    display: block !important;
+    gap: 0 !important;
+}
+
+.rs-paywall__dialog[data-slot='drawer-content'] > * {
+    width: 100%;
+}
+
+
+/* Paywall dialog (VIP/Coins/Payments) */
+.rs-paywall__dialog {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    max-width: min(96vw, 920px);
+}
+
+.rs-paywall {
+    /* 贴近移动端 Drawer 行为 */
+    height: min(85svh, 740px);
+}
+
+.rs-paywall__inner {
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px 16px 0 0;
+    background: #141414;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-paywall__bodyScroll {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 底部安全区 + 让内容可滚到最底 */
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.rs-paywall__stickyHead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: #141414;
+}
+
+.rs-paywall__headLeft {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.rs-paywall__kv {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.rs-paywall__coin {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.rs-paywall__sep {
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.rs-paywall__close {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.rs-paywall__closeImg {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.rs-paywall__divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.rs-paywall__section {
+    padding: 16px;
+    overflow: hidden;
+}
+
+.rs-paywall__vipTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-paywall__vipSub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.rs-paywall__vipGrid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.rs-paywall__vipCard {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 0;
+    cursor: pointer;
+    background: linear-gradient(180deg, #ffedd5 0%, #f3cb93 49.68%);
+    text-align: left;
+    padding: 0;
+}
+
+.rs-paywall__vipBg {
+    position: absolute;
+    right: 8px;
+    top: 16px;
+    width: 113px;
+    height: 78px;
+    background-image: url('../assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png');
+    background-repeat: no-repeat;
+    background-size: contain;
+    z-index: 0;
+    opacity: 0.95;
+}
+
+.rs-paywall__vipBody {
+    position: relative;
+    z-index: 1;
+    padding: 16px;
+    color: #401a06;
+}
+
+.rs-paywall__vipName {
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.rs-paywall__vipPrice {
+    margin-top: 2px;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.rs-paywall__vipNote {
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(64, 26, 6, 0.7);
+}
+
+.rs-paywall__vipFoot {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 10px 16px;
+    color: #401a06;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.rs-paywall__vipFeat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.rs-paywall__featIcon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+.rs-paywall__secTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-paywall__coinGrid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.rs-paywall__coinCard {
+    position: relative;
+    border: 0;
+    border-radius: 8px;
+    background: #292929;
+    padding: 16px;
+    cursor: pointer;
+    text-align: left;
+    min-height: 110px;
+}
+
+.rs-paywall__coinRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.rs-paywall__coinBig {
+    width: 22px;
+    height: 22px;
+}
+
+.rs-paywall__coinDesc {
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.3;
+    min-height: 34px;
+}
+
+.rs-paywall__coinPrice {
+    margin-top: 10px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 700;
+    text-align: right;
+}
+
+.rs-paywall__coinBonus {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 0 8px;
+    height: 16px;
+    line-height: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    background: linear-gradient(90deg, #e52e2e 0%, #eb4c46 100%);
+    color: #fff;
+}
+
+.rs-paywall__more {
+    margin: 16px auto 0;
+    background: transparent;
+    border: 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.rs-paywall__chev {
+    display: inline-flex;
+    width: 12px;
+    height: 12px;
+    opacity: 0.6;
+    font-size: 18px;
+    line-height: 12px;
+}
+
+.rs-paywall__payGrid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.rs-paywall__payBtn {
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: #292929;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.rs-paywall__payBtn.is-active {
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-paywall__payIcon {
+    width: 18px;
+    height: 14px;
+    object-fit: contain;
+}
+
+.rs-paywall__payIconWide {
+    width: 50px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.rs-paywall__payLabel {
+    font-size: 14px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+@media (min-width: 768px) {
+    .rs-paywall__vipGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .rs-paywall__coinGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .rs-paywall__payGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.rs-episodes__subtitleText {
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    text-shadow: 0 0 4px #000;
+    max-width: min(92vw, 860px);
+}
+
+.rs-episodes__below {
+    position: relative;
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: auto; /* 只有下面可滚动 */
+    padding: 0 16px 16px;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-episodes__h1Mobile {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-episodes__episodePager {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow-x: auto;
+}
+
+.rs-episodes__range {
+    display: none;
+}
+
+.rs-episodes__rangeBtn {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 14px;
+    white-space: nowrap;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.rs-episodes__pages {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+.rs-episodes__pageBtn {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.9);
+    border: 0;
+    font-size: 16px;
+}
+
+.rs-episodes__pageBtn.is-active {
+    background: rgba(255, 61, 93, 0.2);
+    color: #ff3d5d;
+    outline: 1px solid rgba(255, 61, 93, 0.15);
+}
+
+.rs-episodes__full {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.rs-episodes__fullBtn {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 14px;
+    white-space: nowrap;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.rs-episodes__allDialog {
+    background: #0b0b0b;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 14px;
+    max-width: min(92vw, 720px);
+}
+
+.rs-episodes__allHead {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 4px 0 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.rs-episodes__allTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-episodes__allClose {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rs-episodes__allGrid {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    max-height: min(70vh, 520px);
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.rs-episodes__allEpBtn {
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+}
+
+.rs-episodes__allEpBtn.is-active {
+    background: rgba(255, 61, 93, 0.18);
+    border-color: rgba(255, 61, 93, 0.22);
+    color: #ff3d5d;
+}
+
+.rs-episodes__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* 对标 ReelShort：w-full h-90/vw（90/vw = 24vw） */
+    height: 24vw;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 0;
+}
+
+.rs-episodes__actionBtn {
+    background: transparent;
+    border: 0;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 0%;
+    height: 100%;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.rs-episodes__actionIcon {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.rs-episodes__actionText {
+    font-size: 3.733333333333334vw;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+@media (min-width: 768px) {
+    .rs-episodes__actionText {
+        font-size: 14px;
+    }
+}
+
+/* ===== ReelShort tabs + episode list utility subset ===== */
+.shrink-1 {
+    flex-shrink: 1;
+}
+
+.touch-none {
+    touch-action: none;
+}
+
+.overflow-auto {
+    overflow: auto;
+}
+
+.mx-16\/vw {
+    margin-left: 4.2667vw;
+    margin-right: 4.2667vw;
+}
+
+.pb-25\/vw {
+    padding-bottom: 6.6667vw;
+}
+
+.mt-32\/vw {
+    margin-top: 8.5333vw;
+}
+
+.mt-24\/vw {
+    margin-top: 6.4vw;
+}
+
+.mb-6\/vw {
+    margin-bottom: 1.6vw;
+}
+
+.h-20\/vw {
+    height: 5.3333vw;
+}
+
+.min-w-24\/vw {
+    min-width: 6.4vw;
+}
+
+.mr-15\/vw {
+    margin-right: 4vw;
+}
+
+.text-12\/vw {
+    font-size: 3.2vw;
+}
+
+.text-14\/vw {
+    font-size: 3.7333vw;
+}
+
+.text-16\/vw {
+    font-size: 4.2667vw;
+}
+
+.text-18\/vw {
+    font-size: 4.8vw;
+}
+
+.text-23\/vw {
+    font-size: 6.1333vw;
+}
+
+.bg-black {
+    background: #000;
+}
+
+.text-white {
+    color: #fff;
+}
+
+.text-white\/50 {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.text-white\/90 {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.bg-white\/10 {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.bg-white\/20 {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.border {
+    border-width: 1px;
+}
+
+.border-solid {
+    border-style: solid;
+}
+
+.border-black {
+    border-color: #000;
+}
+
+.rounded-4\/vw {
+    border-radius: 1.0667vw;
+}
+
+.rounded-lb-6px {
+    border-bottom-left-radius: 6px;
+}
+
+.rounded-rt-6px {
+    border-top-right-radius: 6px;
+}
+
+.w-62\/vw {
+    width: 16.5333vw;
+}
+
+.h-46\/vw {
+    height: 12.2667vw;
+}
+
+.w-18\/vw {
+    width: 4.8vw;
+}
+
+.h-14\/vw {
+    height: 3.7333vw;
+}
+
+.w-12\/vw {
+    width: 3.2vw;
+}
+
+.h-12\/vw {
+    height: 3.2vw;
+}
+
+.right-2\/vw {
+    right: 0.5333vw;
+}
+
+.bottom-2\/vw {
+    bottom: 0.5333vw;
+}
+
+.mr--6\/vw {
+    margin-right: -1.6vw;
+}
+
+.gap-4\/vw {
+    gap: 1.0667vw;
+}
+
+.overflow-x-auto {
+    overflow-x: auto;
+}
+
+.overscroll-x-contain {
+    overscroll-behavior-x: contain;
+}
+
+.overscroll-y-none {
+    overscroll-behavior-y: none;
+}
+
+.touch-pan-x {
+    touch-action: pan-x;
+}
+
+.flex {
+    display: flex;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.leading-normal {
+    line-height: 1.4;
+}
+
+.break-words {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.p-0 {
+    padding: 0;
+}
+
+.px-0 {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.py-1\.5 {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+}
+
+.rounded-md {
+    border-radius: 0.375rem;
+}
+
+.tracking-wide {
+    letter-spacing: 0.025em;
+}
+
+.relative {
+    position: relative;
+}
+
+.absolute {
+    position: absolute;
+}
+
+.right-0 {
+    right: 0;
+}
+
+.top-0 {
+    top: 0;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hidden {
+    display: none;
+}
+
+/* data-state variants */
+.data-\[state\=active\]\:text-white[data-state='active'] {
+    color: #fff;
+}
+.data-\[state\=inactive\]\:text-white\/50[data-state='inactive'] {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* radial bg utility used by current episode */
+.bg-\[radial-gradient\(116\.67\%_135\.17\%_at_95\.16\%_96\%\,rgba\(255\,61\,93\,0\.32\)_0\%\,rgba\(45\,45\,45\,0\.00\)_80\%\)\] {
+    background: radial-gradient(116.67% 135.17% at 95.16% 96%, rgba(255, 61, 93, 0.32) 0%, rgba(45, 45, 45, 0) 80%);
+}
+
+.font-SofiaSemiBold {
+    font-weight: 700;
+}
+
+.rs-episodes__panel {
+    width: 480px;
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    background: #000;
+    display: none;
+}
+
+.rs-episodes__panelInner {
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 30px 30px;
+}
+
+.rs-episodes__h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-episodes__h3 {
+    margin: 24px 0 0;
+    font-size: 18px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-episodes__plot {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+    .rs-episodes__player {
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    .rs-episodes__panel {
+        display: block;
+    }
+
+    .rs-episodes__allGrid {
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+    }
+}
+

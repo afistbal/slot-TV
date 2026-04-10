@@ -71,7 +71,7 @@ export default function Component() {
                     <FormattedMessage id="keyword" />
                 </div>
                 <div className='flex bg-slate-50 border border-slate-300 rounded-md overflow-hidden'>
-                    <input value={id} type='text' onChange={handleIdChange} onKeyDown={handleIdKeyDown} className='focus:bg-slate-100 focus:border-slate-400 w-full leading-4 px-3 h-12 m-0 outline-none text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400' placeholder={intl.formatMessage({ id: 'magnet_placeholder' })} />
+                    <input value={id} type='text' onChange={handleIdChange} onKeyDown={handleIdKeyDown} className='focus:bg-slate-100 focus:border-[#94a3b8] w-full leading-4 px-3 h-12 m-0 outline-none text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400' placeholder={intl.formatMessage({ id: 'magnet_placeholder' })} />
                     <button onClick={handleSubmit} className='border-l border-slate-300 w-16 text-slate-500 flex justify-center items-center'>
                         <Search />
                     </button>
@@ -87,7 +87,7 @@ export default function Component() {
                         </div>
                         <div className='flex flex-col gap-2 justify-between flex-1'>
                             <div className='text-bold text-slate-500'>{v.type}</div>
-                            <div className='text-slate-400 text-sm'>{v.id}</div>
+                            <div className='text-slate-500 text-sm'>{v.id}</div>
                             <div className="wrap-anywhere">{v.name}</div>
                         </div>
                         {v.status === 0 && <button onClick={() => handleDownload(v)} className='w-10 h-10 absolute top-4 right-4 rounded-full bg-linear-to-tr from-cyan-200 to-emerald-300 flex justify-center items-center'>

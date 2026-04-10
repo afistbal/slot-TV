@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { FormattedMessage } from "react-intl";
 import Forward from "@/components/Forward";
 import { toast } from "sonner";
+import { BRAND_LOGO_SRC } from "@/constants/brand";
 
 export default function Component() {
     function handleVersion() {
@@ -12,7 +13,7 @@ export default function Component() {
     return <Page title="about_us">
         <div className="flex flex-col gap-4 h-full w-full py-8">
             <div className="flex justify-center items-center flex-col gap-2">
-                <img src="/logo.png" className="text-white w-12 h-12 rounded-md" />
+                <img src={BRAND_LOGO_SRC} className="text-white w-12 h-12 rounded-md" alt="" />
                 <div><FormattedMessage id="domain" /></div>
             </div>
             <div className="m-4 rounded-md bg-white">

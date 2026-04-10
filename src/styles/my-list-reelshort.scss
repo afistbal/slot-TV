@@ -1,0 +1,105 @@
+/**
+ * /my-list、/my-list/history（MyList + Favorite + History）
+ * 入口：main.tsx import
+ */
+
+/* --- Tab 选中：对标 LibraryPage_activeKey ::after 横条 --- */
+.rs-my-list__tabTrigger {
+    position: relative;
+    border-bottom: 0 !important;
+
+    &[data-state='active']::after {
+        content: '';
+        position: absolute;
+        bottom: calc(-1.6 / 100 * var(--app-vw));
+        left: 50%;
+        width: calc(8.8 / 100 * var(--app-vw));
+        height: calc(0.8 / 100 * var(--app-vw));
+        background-color: #e83a57;
+        transform: translateX(-50%);
+    }
+
+    @media (min-width: 768px) {
+        &[data-state='active']::after {
+            bottom: -6px;
+            width: 33px;
+            height: 3px;
+        }
+    }
+}
+
+/* --- 列表封面：24vw × 32vw，圆角 1.6vw，右侧间距 4vw --- */
+.rs-my-list__cover {
+    position: relative;
+    flex-shrink: 0;
+    width: calc(24 / 100 * var(--app-vw));
+    height: calc(32 / 100 * var(--app-vw));
+    margin-right: calc(4 / 100 * var(--app-vw));
+    overflow: hidden;
+    border-radius: calc(1.6 / 100 * var(--app-vw));
+
+    @media (min-width: 768px) {
+        width: 90px;
+        height: 120px;
+        margin-right: 15px;
+        border-radius: 6px;
+    }
+}
+
+.rs-my-list__cover .lazy-load-image-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    overflow: hidden;
+}
+
+.rs-my-list__cover .lazy-load-image-wrapper img,
+.rs-my-list__cover > img {
+    border-radius: inherit;
+}
+
+/* 与骨架层叠：无 wrapper 时 img 与 Skeleton 为兄弟节点 */
+.rs-my-list__cover > img {
+    z-index: 1;
+}
+
+/* 骨架屏占位内文案（与封面同圆角） */
+.rs-my-list__coverSkeleton {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.rs-my-list__coverSkeletonInner {
+    color: hsla(0, 0%, 91%, 0.62);
+}
+
+/* Episodes / 副文案 */
+.rs-my-list__meta {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: hsla(0, 0%, 91%, 0.62);
+}
+
+/* 列表行 */
+.rs-my-list__row {
+    display: flex;
+    align-items: flex-start;
+    touch-action: none;
+    user-select: none;
+}
+
+.rs-my-list__grid {
+    display: grid;
+    gap: 1rem;
+    padding: calc(4 / 100 * var(--app-vw));
+
+    @media (min-width: 768px) {
+        padding: 1rem;
+    }
+}

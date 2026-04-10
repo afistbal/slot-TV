@@ -63,7 +63,7 @@ export default function Component() {
             <Loader />
         </div> : <>
             <div className="m-4 flex flex-col">
-                <div className="text-slate-400 mb-2">
+                <div className="text-slate-500 mb-2">
                     <FormattedMessage id="user_basic_info" />
                 </div>
                 <div className="flex gap-2 justify-between border-b border-gray-100 p-4 bg-white rounded-t-md">
@@ -135,7 +135,7 @@ export default function Component() {
                 </Link>
             </div>
             <div className="m-4 flex flex-col">
-                <div className="text-slate-400 mb-2">
+                <div className="text-slate-500 mb-2">
                     <FormattedMessage id="user_settings" />
                 </div>
                 <div className="flex gap-2 justify-between border-b border-gray-100 p-4 bg-white rounded-t-md">

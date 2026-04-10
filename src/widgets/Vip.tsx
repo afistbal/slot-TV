@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { useUserStore } from "@/stores/user";
 // import paypal from "@/assets/paypal.svg";
 import { api, type TData } from "@/api";
 import Loader from "@/components/Loader";
@@ -23,6 +24,7 @@ interface Product {
 }
 
 export default function Vip({ open, from, onOpenChange }: { open: boolean, from: string, onOpenChange?: (open: boolean) => void }) {
+    const isVipUser = useUserStore((s) => s.signed && Boolean(s.info?.['is_vip']));
     const pixel = usePixel();
     const intl = useIntl();
     const [current, setCurrent] = useState(1);
@@ -123,6 +125,12 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
             },
         });
     }
+
+    useEffect(() => {
+        if (open && isVipUser) {
+            onOpenChange?.(false);
+        }
+    }, [open, isVipUser, onOpenChange]);
 
     useEffect(() => {
         if (!open || product.length > 0) {

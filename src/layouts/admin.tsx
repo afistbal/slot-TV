@@ -102,7 +102,7 @@ const Page = forwardRef<HTMLDivElement, IPage>(({ title, titleClassName, menu, m
                     }}>
                         <FormattedMessage id={v.name} />
                     </Button>)}
-                    <Button className="bg-slate-400" onClick={handleToggleMenu}>
+                    <Button className="bg-[#94a3b8]" onClick={handleToggleMenu}>
                         <FormattedMessage id="cancel" />
                     </Button>
                 </div>
@@ -120,7 +120,7 @@ const Page = forwardRef<HTMLDivElement, IPage>(({ title, titleClassName, menu, m
                     <Button className="w-32" onClick={handleOk}>
                         <FormattedMessage id="ok" />
                     </Button>
-                    <Button className="bg-slate-400 w-32" onClick={handleConfirmToggle}>
+                    <Button className="bg-[#94a3b8] w-32" onClick={handleConfirmToggle}>
                         <FormattedMessage id="cancel" />
                     </Button>
                 </DialogFooter>

@@ -120,7 +120,7 @@ export default function Component() {
                         <div className="flex flex-col justify-center">
                             <div className="text-lg leading-[18px]">{v['id'] as number}</div>
                             <div className="text-sm text-slate-500 leading-4 py-1.5">{v['unique_id'] as string}</div>
-                            <div className="text-xs text-slate-400 leading-3" title={v['created_at'] as string}><FormattedMessage id="created_at" /> <FormattedDate value={v['created_at'] as string} /> <FormattedMessage id="login_at" /> <FormattedDate value={v['created_at'] as string} /></div>
+                            <div className="text-xs text-slate-500 leading-3" title={v['created_at'] as string}><FormattedMessage id="created_at" /> <FormattedDate value={v['created_at'] as string} /> <FormattedMessage id="login_at" /> <FormattedDate value={v['created_at'] as string} /></div>
                         </div>
                         <div className="absolute top-0 right-0 flex text-xs text-white rounded-bl-md overflow-hidden">
                             {v['vip'] as number > 0 && <div className="bg-orange-300 px-2 py-1">
@@ -133,7 +133,7 @@ export default function Component() {
                     </div>
                 </Link>)}
                 <InView as="div" onChange={handleMoreChange} className="h-12 flex justify-center items-center col-span-full">
-                    {userListStore.more ? <LoaderCircle className="w-8 h-8 text-slate-500 animate-[spin_1.5s_ease_infinite]" /> : <div className='text-slate-400'><FormattedMessage id="no_more" /></div>}
+                    {userListStore.more ? <LoaderCircle className="w-8 h-8 text-slate-500 animate-[spin_1.5s_ease_infinite]" /> : <div className='text-slate-500'><FormattedMessage id="no_more" /></div>}
                 </InView>
             </div>}
         </div>

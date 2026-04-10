@@ -89,13 +89,13 @@ export default function Component() {
                         <div className="flex flex-col justify-center">
                             <div className="flex items-center">
                                 <div className="text-lg font-bold">{v['id'] as number}</div>
-                                <div className="text-xs px-1 py-0.5 border-slate-400 border rounded-sm text-slate-500 ml-1">{v['product_name'] as string}</div>
+                                <div className="text-xs px-1 py-0.5 border-[#94a3b8] border rounded-sm text-slate-500 ml-1">{v['product_name'] as string}</div>
                                 {v['type'] === 2 && <div className="text-xs px-1 py-0.5 border-lime-500 border rounded-sm text-lime-600 ml-1">
                                     <FormattedMessage id="renewal"/>
                                 </div>}
                             </div>
                             <div className="text-sm text-slate-500 leading-4 py-3">{v['platform_sn'] as string}</div>
-                            <div className="text-xs text-slate-400 leading-3" title={v['created_at'] as string}><FormattedMessage id="created_at" /> <FormattedDate value={v['created_at'] as string} /> <FormattedMessage id="updated_at" /> <FormattedDate value={v['updated_at'] as string} /></div>
+                            <div className="text-xs text-slate-500 leading-3" title={v['created_at'] as string}><FormattedMessage id="created_at" /> <FormattedDate value={v['created_at'] as string} /> <FormattedMessage id="updated_at" /> <FormattedDate value={v['updated_at'] as string} /></div>
                         </div>
                         <div className="flex flex-col gap-2 items-center">
                             <div className="flex items-center text-red-400">
@@ -103,7 +103,7 @@ export default function Component() {
                                 <span className="text-2xl">{v['amount'] as string}</span>
                             </div>
 
-                            <div className={cn("rounded-sm text-sm px-2 py-1.5 text-white leading-3", v['status'] as number === 0 && 'bg-slate-400', v['status'] as number === 1 && 'bg-orange-400', v['status'] as number === 2 && 'bg-purple-400',)}>
+                            <div className={cn("rounded-sm text-sm px-2 py-1.5 text-white leading-3", v['status'] as number === 0 && 'bg-[#94a3b8]', v['status'] as number === 1 && 'bg-orange-400', v['status'] as number === 2 && 'bg-purple-400',)}>
                                 {(v['status'] as number) === 0 && <FormattedMessage id="unpaid" />}
                                 {(v['status'] as number) === 1 && <FormattedMessage id="paid" />}
                                 {(v['status'] as number) === 2 && <FormattedMessage id="refunded" />}
@@ -112,7 +112,7 @@ export default function Component() {
                     </div>
                 </Link>)}
                 <InView as="div" onChange={handleMoreChange} className="h-12 flex justify-center items-center col-span-full">
-                    {store.more ? <LoaderCircle className="w-8 h-8 text-slate-500 animate-[spin_1.5s_ease_infinite]" /> : <div className='text-slate-400'><FormattedMessage id="no_more" /></div>}
+                    {store.more ? <LoaderCircle className="w-8 h-8 text-slate-500 animate-[spin_1.5s_ease_infinite]" /> : <div className='text-slate-500'><FormattedMessage id="no_more" /></div>}
                 </InView>
             </div>}
         </div>

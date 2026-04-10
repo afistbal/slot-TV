@@ -1,5 +1,5 @@
 import { FormattedMessage } from 'react-intl';
-import empty from '@/assets/empty.svg';
+import empty from '@/assets/images/empty.webp';
 import { cn } from '@/lib/utils';
 
 export default function NoContent({ className }: { className?: string }) {

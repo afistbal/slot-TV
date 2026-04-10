@@ -88,7 +88,7 @@ export default function Component() {
                                         </div>
                                         <div className="flex flex-col gap-2 p-4">
                                             <div className="flex gap-2 justify-between">
-                                                <div className="text-slate-400">
+                                                <div className="text-slate-500">
                                                     <FormattedMessage id="target" />
                                                 </div>
                                                 {v['action'] === 'play' ? (
@@ -112,25 +112,25 @@ export default function Component() {
                                                 )}
                                             </div>
                                             <div className="flex gap-2 justify-between">
-                                                <div className="text-slate-400">
+                                                <div className="text-slate-500">
                                                     <FormattedMessage id="source" />
                                                 </div>
                                                 <div>{v['source'] as string}</div>
                                             </div>
                                             <div className="flex gap-2 justify-between">
-                                                <div className="text-slate-400">
+                                                <div className="text-slate-500">
                                                     <FormattedMessage id="ip" />
                                                 </div>
                                                 <div>{v['ip'] as string}</div>
                                             </div>
                                             <div className="flex gap-2 justify-between">
-                                                <div className="text-slate-400">
+                                                <div className="text-slate-500">
                                                     <FormattedMessage id="country" />
                                                 </div>
                                                 <div>{v['country'] as string}</div>
                                             </div>
                                             <div className="flex gap-2 justify-between">
-                                                <div className="text-slate-400">
+                                                <div className="text-slate-500">
                                                     <FormattedMessage id="remark" />
                                                 </div>
                                                 <div>{v['remark'] as string}</div>

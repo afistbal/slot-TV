@@ -1,35 +1,49 @@
-import { CircleUser, Globe, Info, MessageCircle, User } from 'lucide-react';
+import { CircleUser } from 'lucide-react';
 import gift from '@/assets/gift.svg';
 import gem from '@/assets/gem.svg';
+import iconHead from '@/assets/images/icon_head.739421aa.png';
+// import iconMyList from '@/assets/images/04905690-876c-11ee-aed2-cfe3d80f70eb.png';
+import iconFeedback from '@/assets/images/59f06ad0-876c-11ee-aed2-cfe3d80f70eb.png';
+import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
 import { Link, useNavigate } from 'react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Vip from '@/widgets/Vip';
 import { FormattedMessage } from 'react-intl';
 import { useUserStore } from '@/stores/user';
 import { cn } from '@/lib/utils';
-import Forward from '@/components/Forward';
+import { ReelShortTopNav } from '@/components/ReelShortTopNav';
+import { ReelShortFooter } from '@/components/ReelShortFooter';
 // import { Button } from '@/components/ui/button';
 // import coinIcon from '@/assets/coin.svg';
 // import Coin from '@/widgets/Coin';
-import { api } from '@/api';
+import { api, type TData } from '@/api';
+import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
+import { useLoadingStore } from '@/stores/loading';
+import { auth } from '@/firebase';
 
 export default function Component() {
     const userStore = useUserStore();
     const navigate = useNavigate();
+    const loadingStore = useLoadingStore();
     const [vip, setVip] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
     // const [coin, setCoin] = useState(false);
 
     function handleToggleVip() {
         setVip(!vip);
     }
 
+    function handleVipCardClick() {
+        if (!userStore.isVIP()) {
+            navigate('/shopping');
+            return;
+        }
+        navigate('/page/membership');
+    }
+
     // function handleToggleCoin() {
     //     setCoin(!coin);
     // }
-
-    function handleGoMembership() {
-        navigate('/page/membership');
-    }
 
     // function handleGoMyBalance() {
     //     navigate('/page/my-balance');
@@ -43,61 +57,106 @@ export default function Component() {
         });
     }, []);
 
+    async function handleLogout() {
+        try {
+            loadingStore.show();
+            navigate('/page/login');
+            localStorage.removeItem('token');
+            localStorage.removeItem('login-method');
+            localStorage.removeItem('user-avatar');
+
+            // @ts-expect-error - injected by Flutter InAppWebView
+            if (window.flutter_inappwebview) {
+                // @ts-expect-error - injected by Flutter InAppWebView
+                await window.flutter_inappwebview.callHandler('logout');
+            } else {
+                await auth.signOut();
+            }
+
+            const result = await api<{ token: string; info: { [key: string]: unknown } }>('login/anonymous', {
+                loading: false,
+            });
+
+            if (result.c !== 0) {
+                return;
+            }
+
+            localStorage.setItem('token', result.d['token'] as string);
+            userStore.signin(result.d['info'] as { [key: string]: unknown });
+        } finally {
+            loadingStore.hide();
+        }
+    }
+
+    const uniqueId = (userStore.info?.['unique_id'] as string | undefined) ?? '';
+    const avatarUrl =
+        userStore.signed && !userStore.isAnonymous()
+            ? getUserAvatarDisplayUrl(userStore.info as TData | undefined)
+            : undefined;
+
     return (
-        <div className="h-full relative">
-            <div
-                className={cn(
-                    'flex gap-2 px-4 justify-between h-16 items-center border-b border-slate-200 text-slate-600 bg-white',
-                )}
-            >
-                <div className="text-lg font-bold text-ellipsis flex-1 whitespace-nowrap overflow-hidden">
-                    <FormattedMessage id="profile" />
-                </div>
-                <div />
-            </div>
-            <div className="absolute w-full">
-                <Link
-                    to="/page/login"
-                    className="p-4 flex gap-4 items-center bg-white m-4 rounded-md"
-                >
-                    <div
-                        className={cn(
-                            'w-16 h-16 rounded-full flex justify-center items-center overflow-hidden',
-                            !userStore.isAnonymous()
-                                ? 'bg-red-300 text-white'
-                                : 'bg-slate-200 text-slate-500',
-                        )}
-                    >
-                        {!userStore.isAnonymous() && userStore.info!['avatar'] ? (
-                            <img src={userStore.info!['avatar'] as string} />
-                        ) : (
-                            <User className="w-8 h-8" />
-                        )}
-                    </div>
-                    <div className="flex justify-between gap-4 items-center flex-1">
-                        <div>
-                            <div className="text-xl text-slate-700">
-                                {!userStore.isAnonymous() ? (
-                                    <div>{userStore.info!['name'] as string}</div>
-                                ) : (
-                                    <FormattedMessage id="check_login" />
-                                )}
-                            </div>
-                            <div className="text-slate-500 text-sm">
-                                <FormattedMessage
-                                    id={`vip_${
-                                        !userStore.isAnonymous()
-                                            ? (userStore.info!['vip'] as number)
-                                            : 0
-                                    }`}
+        <div className="rs-profile">
+            <div ref={scrollRef} className="rs-profile__scroll">
+                <ReelShortTopNav
+                    scrollParentRef={scrollRef}
+                    showPrimaryNav={false}
+                    showSearch={true}
+                    showProfile={false}
+                    showLeftAction
+                />
+                <div className="rs-profile__content">
+                {userStore.signed && !userStore.isAnonymous() ? (
+                    <Link to="/user/detail" className="rs-profile__loginCard">
+                        <div className="rs-profile__avatarWrap">
+                            {avatarUrl ? (
+                                <img
+                                    className="rs-profile__avatarImg"
+                                    src={avatarUrl}
+                                    referrerPolicy="no-referrer"
+                                    onError={() => {
+                                        localStorage.removeItem('user-avatar');
+                                        userStore.update({ avatar: '' });
+                                    }}
+                                    alt=""
                                 />
+                            ) : (
+                                <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
+                            )}
+                        </div>
+                        <div className="rs-profile__loginCardMain">
+                            <div>
+                                <div className="rs-profile__name">
+                                    <div>{userStore.info!['name'] as string}</div>
+                                </div>
+                                <div className="rs-profile__vip">
+                                    {uniqueId ? (
+                                        <>
+                                            <span className="rs-profile__uidLabel">UID:</span>
+                                            <span className="rs-profile__uidValue">{uniqueId}</span>
+                                        </>
+                                    ) : null}
+                                </div>
+                            </div>
+                            <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                        </div>
+                    </Link>
+                ) : (
+                    <div className="rs-profile__loginCard">
+                        <div className="rs-profile__avatarWrap">
+                            <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
+                        </div>
+                        <div className="rs-profile__loginCardMain">
+                            <div>
+                                <div className="rs-profile__name">
+                                    <FormattedMessage id="guest" />
+                                </div>
+                                <div className="rs-profile__vip">
+                                    <FormattedMessage id="vip_0" />
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <Forward className="text-slate-500" />
-                        </div>
                     </div>
-                </Link>
+                )}
                 {/* <div className="rounded-md p-4 m-4 flex flex-col gap-2 bg-[#ff7575] text-white">
                     <div className="flex gap-1 text-red-100" onClick={handleGoMyBalance}>
                         <div>
@@ -122,10 +181,12 @@ export default function Component() {
                         </div>
                     </div>
                 </div> */}
-                <div
-                    className="rounded-md h-26 mx-4 shadow bg-[#d48aff] relative flex items-center p-4"
-                    onClick={userStore.isVIP() ? handleGoMembership : handleToggleVip}
-                >
+                <div className="rs-profile__vipCard" onClick={handleVipCardClick} role="button" tabIndex={0} onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleVipCardClick();
+                    }
+                }}>
                     <img
                         src={gift}
                         className={cn(
@@ -140,69 +201,64 @@ export default function Component() {
                             document.body.style.direction === 'ltr' ? 'right-10' : 'left-10',
                         )}
                     />
-                    <div className="flex gap-2 flex-col text-center">
-                        <div className="rounded-full px-6 py-1 bg-gray-700">
-                            <div className="font-bold text text-white">
-                                <FormattedMessage id={userStore.isVIP() ? 'is_vip' : 'vip'} />
-                            </div>
+                    <div className="rs-profile__vipCardText">
+                        <div className="rs-profile__vipPill">
+                            <FormattedMessage id={userStore.isVIP() ? 'is_vip' : 'vip'} />
                         </div>
-                        <div className="text-gray-100 text-xs leading-3">
+                        <div className="rs-profile__vipHint">
                             <FormattedMessage id="enjoy" />
                         </div>
                     </div>
                 </div>
-                <div className="m-4 mt-4 rounded-md bg-white">
+                <div className="rs-profile__menu">
                     {userStore.isAdmin() && (
-                        <Link to="/z" className="flex gap-2 justify-between items-center p-4">
-                            <div className="flex gap-2 text-gray-600 items-center">
+                        <Link to="/z" className="rs-profile__menuItem">
+                            <div className="rs-profile__menuLeft">
                                 <CircleUser className="w-5 h-5" />
-                                <div className="text-md">
+                                <div className="rs-profile__menuText">
                                     <FormattedMessage id="admin" />
                                 </div>
                             </div>
-                            <Forward className="text-slate-400" />
+                            <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
                         </Link>
                     )}
+                    {/* <Link to="/my-list" className="rs-profile__menuItem">
+                        <div className="rs-profile__menuLeft">
+                            <img src={iconMyList} alt="" className="rs-profile__menuIcon" />
+                            <div className="rs-profile__menuText">
+                                <FormattedMessage id="my_list" />
+                            </div>
+                        </div>
+                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                    </Link> */}
                     <Link
                         to="/page/feedback"
-                        className="flex gap-2 justify-between items-center p-4"
+                        className="rs-profile__menuItem"
                     >
-                        <div className="flex gap-2 text-gray-600 items-center">
-                            <MessageCircle className="w-5 h-5" />
-                            <div className="text-md">
+                        <div className="rs-profile__menuLeft">
+                            <img src={iconFeedback} alt="" className="rs-profile__menuIcon" />
+                            <div className="rs-profile__menuText">
                                 <FormattedMessage id="feedback_help" />
                             </div>
                         </div>
-                        <Forward className="text-slate-400" />
-                    </Link>
-                    <Link
-                        to="/page/language"
-                        className="flex gap-2 justify-between items-center p-4 border-t border-muted"
-                    >
-                        <div className="flex gap-2 text-gray-600 items-center">
-                            <Globe className="w-5 h-5" />
-                            <div className="text-md">
-                                <FormattedMessage id="language" />
-                            </div>
-                        </div>
-                        <Forward className="text-slate-400" />
-                    </Link>
-                    <Link
-                        to="/page/about"
-                        className="flex gap-2 justify-between items-center p-4 border-t border-muted"
-                    >
-                        <div className="flex gap-2 text-gray-600 items-center">
-                            <Info className="w-5 h-5" />
-                            <div className="text-md">
-                                <FormattedMessage id="about_us" />
-                            </div>
-                        </div>
-                        <Forward className="text-slate-400" />
+                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
                     </Link>
                 </div>
+
+                {userStore.isAnonymous() ? (
+                    <Link to="/page/login" className="rs-profile__btnLogin">
+                        <FormattedMessage id="login" />
+                    </Link>
+                ) : (
+                    <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>
+                        <FormattedMessage id="logout" />
+                    </button>
+                )}
+                    <ReelShortFooter />
+                </div>
+                <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
+                {/* <Coin open={coin} from="profile" onOpenChange={handleToggleCoin} /> */}
             </div>
-            <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
-            {/* <Coin open={coin} from="profile" onOpenChange={handleToggleCoin} /> */}
         </div>
     );
 }

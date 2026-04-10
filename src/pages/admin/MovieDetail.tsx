@@ -437,8 +437,8 @@ export default function Component() {
             <div key={v.episode} className="flex gap-4 justify-between items-center p-4 leading-4 border border-slate-300 bg-slate-50 rounded-sm" onClick={() => setEpisodeMore(k)}>
                 <div className="font-bold w-full overflow-hidden whitespace-nowrap text-ellipsis text-slate-700">{`${v.episode.toString().padStart(3, '0')}`}</div>
                 <div className="flex gap-2 items-center">
-                    {!v.file && !v.video ? <VideoOff className="w-5 h-5 text-red-400" /> : <Video className="w-5 h-5 text-slate-400" />}
-                    {!v.subtitle || (!v.subtitle.file && !v.subtitle.url) ? <CaptionsOff className="w-5 h-5 text-red-400" /> : <Subtitles className="w-5 h-5 text-slate-400" />}
+                    {!v.file && !v.video ? <VideoOff className="w-5 h-5 text-red-400" /> : <Video className="w-5 h-5 text-slate-500" />}
+                    {!v.subtitle || (!v.subtitle.file && !v.subtitle.url) ? <CaptionsOff className="w-5 h-5 text-red-400" /> : <Subtitles className="w-5 h-5 text-slate-500" />}
                     {v.vip > 0 ? <Lock className="w-5 h-5 text-amber-400" /> : <Unlock className="w-5 h-5 text-slate-300" />}
                 </div>
             </div>);
@@ -517,7 +517,7 @@ export default function Component() {
                 <div className='text-sm text-muted-foreground'>
                     <FormattedMessage id="flix_sort" />
                 </div>
-                <input value={sort} onChange={handleSortChange} className='focus:bg-slate-100 focus:border-slate-400 bg-slate-50 w-full leading-4 p-4 rounded-sm m-0 outline-none border border-slate-300 text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400' placeholder={intl.formatMessage({ id: 'flix_sort_placeholder' })} />
+                <input value={sort} onChange={handleSortChange} className='focus:bg-slate-100 focus:border-[#94a3b8] bg-slate-50 w-full leading-4 p-4 rounded-sm m-0 outline-none border border-slate-300 text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400' placeholder={intl.formatMessage({ id: 'flix_sort_placeholder' })} />
             </div>}
             <div className='flex flex-col gap-2'>
                 <div className='text-sm text-muted-foreground'>
@@ -554,7 +554,7 @@ export default function Component() {
                     <FormattedMessage id="tag" /> ({tagSelected.length})
                 </div>
                 <div className="flex gap-2">
-                    <div className="flex-1"><input value={tagSearch} onChange={handleTagSearchChange} placeholder={intl.formatMessage({ id: 'search' })} className="h-10 focus:bg-slate-100 focus:border-slate-400 bg-slate-50 w-full leading-4 p-2 rounded-sm m-0 outline-none border border-slate-300 text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400" /></div>
+                    <div className="flex-1"><input value={tagSearch} onChange={handleTagSearchChange} placeholder={intl.formatMessage({ id: 'search' })} className="h-10 focus:bg-slate-100 focus:border-[#94a3b8] bg-slate-50 w-full leading-4 p-2 rounded-sm m-0 outline-none border border-slate-300 text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400" /></div>
                     <div className="border-slate-300 border rounded-sm bg-slate-100 w-10 flex justify-center items-center" onClick={() => setHideTag(!hideTag)}>
                         {hideTag ? <ChevronsDown className="w-5 h-5 text-slate-500" /> : <ChevronsUp className="w-5 h-5 text-slate-500" />}
                     </div>
@@ -574,7 +574,7 @@ export default function Component() {
                 <div className='text-sm text-muted-foreground'>
                     <FormattedMessage id="flix_title" />
                 </div>
-                <input value={title} onChange={handleTitleChange} className='focus:bg-slate-100 focus:border-slate-400 bg-slate-50 w-full leading-4 p-4 rounded-sm m-0 outline-none border border-slate-300 text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400' placeholder={intl.formatMessage({ id: 'flix_title_placeholder' })} />
+                <input value={title} onChange={handleTitleChange} className='focus:bg-slate-100 focus:border-[#94a3b8] bg-slate-50 w-full leading-4 p-4 rounded-sm m-0 outline-none border border-slate-300 text-md placeholder:leading-4 placeholder:text-md placeholder-gray-400' placeholder={intl.formatMessage({ id: 'flix_title_placeholder' })} />
             </div>
             <div className='flex flex-col gap-2'>
                 <div className='text-sm text-muted-foreground'>
@@ -591,7 +591,7 @@ export default function Component() {
                 <div className='text-sm text-muted-foreground'>
                     <FormattedMessage id="flix_episodes" />
                 </div>
-                <div className="flex justify-between items-center p-4 border border-slate-300 rounded-sm bg-black/5 text-slate-400 mb-2">
+                <div className="flex justify-between items-center p-4 border border-slate-300 rounded-sm bg-black/5 text-slate-500 mb-2">
                     <div>
                         <FormattedMessage id="flix_episodes_info" values={{
                             episodes: episode.length,
@@ -658,7 +658,7 @@ export default function Component() {
                     {/* <Button onClick={handleDeleteEpisode}>
                         <FormattedMessage id="delete" />
                     </Button> */}
-                    <Button className="bg-slate-400" onClick={handleToggleEpisodeMore}>
+                    <Button className="bg-[#94a3b8]" onClick={handleToggleEpisodeMore}>
                         <FormattedMessage id="cancel" />
                     </Button>
                 </div>
@@ -687,7 +687,7 @@ export default function Component() {
                     <Button onClick={() => handleSetStatus(3)}>
                         <FormattedMessage id="movie_delete" />
                     </Button>
-                    <Button className="bg-slate-400" onClick={handleToggleDrawer}>
+                    <Button className="bg-[#94a3b8]" onClick={handleToggleDrawer}>
                         <FormattedMessage id="cancel" />
                     </Button>
                 </div>
@@ -711,7 +711,7 @@ export default function Component() {
                         <Button className="flex-1" onClick={handleSaveEpisodeName}>
                             <FormattedMessage id="ok" />
                         </Button>
-                        <Button className="flex-1 bg-slate-400" onClick={handleEpisodeNameToggle}>
+                        <Button className="flex-1 bg-[#94a3b8]" onClick={handleEpisodeNameToggle}>
                             <FormattedMessage id="cancel" />
                         </Button>
                     </div>
@@ -734,7 +734,7 @@ export default function Component() {
                         <Button className="flex-1" onClick={handleSaveTag}>
                             <FormattedMessage id="ok" />
                         </Button>
-                        <Button className="flex-1 bg-slate-400" onClick={() => handleOpenAddTag('')}>
+                        <Button className="flex-1 bg-[#94a3b8]" onClick={() => handleOpenAddTag('')}>
                             <FormattedMessage id="cancel" />
                         </Button>
                     </div>

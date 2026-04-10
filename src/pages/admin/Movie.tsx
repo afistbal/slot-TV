@@ -271,7 +271,7 @@ export default function Component() {
                             {movieListStore.more ? (
                                 <LoaderCircle className="w-8 h-8 text-slate-500 animate-[spin_1.5s_ease_infinite]" />
                             ) : (
-                                <div className="text-slate-400">
+                                <div className="text-slate-500">
                                     <FormattedMessage id="no_more" />
                                 </div>
                             )}
@@ -319,7 +319,7 @@ export default function Component() {
                         <Button onClick={() => handleAction('delete')}>
                             <FormattedMessage id="delete" />
                         </Button>
-                        <Button className="bg-slate-400" onClick={() => handleActionOpenChange(-1)}>
+                        <Button className="bg-[#94a3b8]" onClick={() => handleActionOpenChange(-1)}>
                             <FormattedMessage id="cancel" />
                         </Button>
                     </div>

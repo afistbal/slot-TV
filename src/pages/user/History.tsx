@@ -13,6 +13,8 @@ import Loader from "@/components/Loader";
 import { useGesture } from '@use-gesture/react';
 import FlixActionSheet from "@/widgets/FlixActionSheet";
 import { useConfigStore } from "@/stores/config";
+import { skipRemoteApi } from '@/env';
+import { offlineHistoryList } from '@/mocks/myListOffline';
 
 
 export default function Component() {
@@ -50,14 +52,16 @@ export default function Component() {
     }
 
     function handleToggleFavorite(id: number) {
-        api('movie/favorite', {
-            method: 'post',
-            data: {
-                id,
-                time: 0,
-            },
-            loading: false,
-        });
+        if (!skipRemoteApi) {
+            api('movie/favorite', {
+                method: 'post',
+                data: {
+                    id,
+                    time: 0,
+                },
+                loading: false,
+            });
+        }
 
         setList([...list.map(v => {
             if (v['movie_id'] === id) {
@@ -75,12 +79,14 @@ export default function Component() {
     function handleSheetAction(type: string) {
         switch (type) {
             case 'delete':
-                api('movie/history/delete', {
-                    method: 'post',
-                    data: {
-                        id: sheetAction,
-                    },
-                });
+                if (!skipRemoteApi) {
+                    api('movie/history/delete', {
+                        method: 'post',
+                        data: {
+                            id: sheetAction,
+                        },
+                    });
+                }
                 setList([...list.filter(v => v.id !== sheetAction)]);
                 break;
         }
@@ -92,6 +98,13 @@ export default function Component() {
             return;
         }
         requesting.current = true;
+        if (skipRemoteApi) {
+            setPage(p);
+            setList((prev) => [...prev, ...offlineHistoryList]);
+            setMore(false);
+            requesting.current = false;
+            return;
+        }
         const result = await api<IPagination>('movie/history', {
             loading: false,
             data: {
@@ -113,26 +126,51 @@ export default function Component() {
 
     return loading ? <div className="w-full h-full flex justify-center items-center">
         <Loader />
-    </div> : (list.length > 0 ? <div className="p-4 grid gap-4">
-        {list.map(v => <div key={v['id'] as number} className="flex gap-2 h-40 touch-none select-none" data-id={v['id']} {...gesture()}>
-            <Link to={`/video/${v['movie_id']}`} className="relative h-full w-[calc(theme(spacing.40)/1.3325)]">
-                <Skeleton className='bg-slate-300 absolute w-full top-0 left-0 h-full rounded-md'>
-                    <div className='absolute w-full h-full flex justify-center items-center font-bold text-xl text-slate-400'>
+    </div> : (list.length > 0 ? <div className="rs-my-list__grid">
+        {list.map(v => <div key={v['id'] as number} className="rs-my-list__row" data-id={v['id']} {...gesture()}>
+            <Link to={`/video/${v['movie_id']}`} className="rs-my-list__cover block">
+                <Skeleton className="rs-my-list__coverSkeleton rounded-[inherit] bg-white/10">
+                    <div className="rs-my-list__coverSkeletonInner flex h-full w-full items-center justify-center p-1 text-center font-bold text-xl">
                         <FormattedMessage id="site_name" />
                     </div>
                 </Skeleton>
-                <LazyLoadImage alt={''} src={`${configStore.config['static']}/${v['image'] as number}`} onLoad={e => e.currentTarget.style.opacity = '1'} className='top-0 left-0 absolute w-full rounded-md transition-opacity duration-1000 opacity-0' />
+                <LazyLoadImage
+                    alt=""
+                    src={`${configStore.config['static']}/${v['image'] as number}`}
+                    onLoad={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                    }}
+                    className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-1000"
+                />
             </Link>
-            <div className='flex flex-col justify-between flex-1'>
-                <div className="p-1">
-                    <Link to={`/video/${v['movie_id']}`} className='text-ellipsis overflow-hidden line-clamp-2 leading-[18px]'>{v['title'] as string}</Link>
-                    <div className="text-slate-400 mt-2 text-sm">Episodes {v['episodes'] as number}</div>
-                </div>
-                <div className="flex justify-between">
-                    <div className="flex-1" />
-                    <div onClick={() => handleToggleFavorite(v['movie_id'] as number)}>
-                        <IconStar className={cn("w-6 h-6", v['is_favorite'] === 0 ? 'text-slate-400' : 'text-amber-500 fill-amber-500')} />
+            <div className="flex min-w-0 flex-1 flex-col">
+                <div className="min-w-0 flex-1 p-1">
+                    <div className="flex items-start gap-2">
+                        <Link
+                            to={`/video/${v['movie_id']}`}
+                            className="min-w-0 flex-1 line-clamp-2 overflow-hidden text-ellipsis leading-[18px] text-white"
+                        >
+                            {v['title'] as string}
+                        </Link>
+                        <button
+                            type="button"
+                            className="shrink-0 rounded-md p-0.5 text-inherit [-webkit-tap-highlight-color:transparent]"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleToggleFavorite(v['movie_id'] as number);
+                            }}
+                        >
+                            <IconStar
+                                className={cn(
+                                    'h-6 w-6',
+                                    v['is_favorite'] === 0 ? 'text-slate-400' : 'fill-amber-500 text-amber-500',
+                                )}
+                                aria-hidden
+                            />
+                        </button>
                     </div>
+                    <div className="rs-my-list__meta">Episodes {v['episodes'] as number}</div>
                 </div>
             </div>
         </div>)}

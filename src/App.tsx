@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, useRouteError } from "react-router"
+import { createBrowserRouter, Navigate, RouterProvider, useRouteError } from "react-router"
 import { FormattedMessage, IntlProvider } from 'react-intl';
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "./components/ui/sonner";
@@ -17,6 +17,8 @@ import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
 import {init as initPixel} from './hooks/usePixel';
+import enMessages from './locales/en.json';
+import zhMessages from './locales/zh.json';
 
 import LayoutUser from './layouts/user';
 import UserHome from './pages/user/Home';
@@ -27,6 +29,8 @@ import UserProfile from './pages/user/Profile';
 import UserVideo from './pages/user/Video';
 import UserAirwallex from './pages/user/Airwallex';
 import UserTest from './pages/user/Test';
+import UserShelf from './pages/user/Shelf';
+import UserEpisodes from './pages/user/Episodes';
 
 import UserFeedback from './pages/user/Feedback';
 import UserLanguage from './pages/user/Language';
@@ -37,6 +41,8 @@ import UserPay from './pages/user/Pay';
 import UserMembership from './pages/user/Membership';
 import UserSearch from './pages/user/Search';
 import UserMyBalance from './pages/user/MyBanlance';
+import UserDetail from './pages/user/UserDetail';
+import UserRadixRc from './pages/user/RadixRc';
 
 import LayoutAdmin from './layouts/admin';
 import AdminHome from './pages/admin/Home';
@@ -52,6 +58,22 @@ import AdminOrders from './pages/admin/Order';
 import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminActivityLog from './pages/admin/ActivityLog';
 import Loader from "./components/Loader";
+import NotFound from './pages/NotFound';
+
+/** config/登录完成前全屏占位 */
+function InitialBootLoading() {
+    return (
+        <div className="fixed inset-0 z-10 flex bg-app-canvas">
+            <Loader color="light" />
+        </div>
+    );
+}
+
+/** Chromium `beforeinstallprompt`（部分 TS lib 未声明） */
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 function ErrorBoundary() {
     const error = useRouteError();
@@ -82,6 +104,46 @@ const router = createBrowserRouter([
                 element: <UserHome />,
             },
             {
+                path: 'search',
+                element: <UserSearch />,
+            },
+            {
+                path: ':locale/search',
+                element: <UserSearch />,
+            },
+            {
+                path: 'shelf/:slug',
+                element: <UserShelf />,
+            },
+            {
+                path: ':locale/shelf/:slug',
+                element: <UserShelf />,
+            },
+            {
+                path: 'shelf/:slug/:page',
+                element: <UserShelf />,
+            },
+            {
+                path: ':locale/shelf/:slug/:page',
+                element: <UserShelf />,
+            },
+            {
+                path: 'episodes/:slug',
+                element: <UserEpisodes />,
+            },
+            {
+                path: ':locale/episodes/:slug',
+                element: <UserEpisodes />,
+            },
+            {
+                path: 'shopping',
+                element: <UserRadixRc />,
+            },
+            {
+                path: ':locale/shopping',
+                element: <UserRadixRc />,
+            },
+            {
                 path: 'my-list',
                 element: <UserMyList />,
                 children: [
@@ -98,6 +160,14 @@ const router = createBrowserRouter([
             {
                 path: 'profile',
                 element: <UserProfile />,
+            },
+            {
+                path: 'user/detail',
+                element: <UserDetail />,
+            },
+            {
+                path: 'radix-rc',
+                element: <Navigate to="/shopping" replace />,
             },
 
         ],
@@ -239,7 +309,32 @@ const router = createBrowserRouter([
             },
         ],
     },
+    {
+        path: '*',
+        element: <NotFound />,
+    },
 ]);
+
+type TIntlMessages = Record<string, string>;
+
+/** 避免 IntlProvider 首屏 messages 为 undefined（异步 import 未完成时整表缺失会报 MISSING_TRANSLATION） */
+function syncMessagesForLocale(code: string): TIntlMessages {
+    const c = code.toLowerCase();
+    if (
+        c === 'zh' ||
+        c === 'zh-hans' ||
+        c === 'zh-hant' ||
+        c === 'zh-tw' ||
+        c === 'zh-cn'
+    ) {
+        return zhMessages as TIntlMessages;
+    }
+    return enMessages as TIntlMessages;
+}
+
+function getInitialIntlMessages(): TIntlMessages {
+    return syncMessagesForLocale(useRootStore.getState().locale);
+}
 
 function App() {
     const rootStore = useRootStore();
@@ -247,14 +342,10 @@ function App() {
     const loadingStore = useLoadingStore();
     const userStore = useUserStore();
     const confirmStore = useConfirmStore();
-    const installPrompt = useRef<any>(null);
+    const installPrompt = useRef<BeforeInstallPromptEvent | null>(null);
     const [checked, setChecked] = useState(false);
     const [install, setInstall] = useState(0);
-    const [messages, setMessages] = useState<Record<string, string>>();
-
-    function handleCancelInstall() {
-        setInstall(0);
-    }
+    const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
 
     async function handleExecuteInstall() {
         if (!installPrompt.current) {
@@ -303,7 +394,10 @@ function App() {
                     return;
                 }
                 localStorage.setItem('token', token);
-                userStore.signin(result.d);
+                const raw = result.d as TData;
+                // login/token 可能与 login/anonymous 一致为 { info }，也可能直接下发用户扁平字段
+                const info = (raw['info'] as TData | undefined) ?? raw;
+                userStore.signin(info);
                 setChecked(true);
             });
         } else {
@@ -353,6 +447,14 @@ function App() {
         if (s !== '') {
             localStorage.setItem('source', s);
         }
+        // 关键：有些后端会按 X-Source/X-Test 做分流/开关；直接访问 /search 时若为空，可能返回空 tags。
+        // 老站通常通过落地页/投放链接把 s/_t 带进来；这里补一个兜底，保证请求头稳定有值。
+        if (!localStorage.getItem('source')) {
+            localStorage.setItem('source', window.location.hostname || 'web');
+        }
+        if (!localStorage.getItem('test')) {
+            localStorage.setItem('test', '');
+        }
         loadData();
 
     }, []);
@@ -367,38 +469,20 @@ function App() {
 
     useEffect(() => {
         const listener = () => {
-            let css = document.head.querySelector('#desktop-css');
-            if (!css) {
-                css = document.createElement('style');
-                css.textContent = `
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.1);
-}
-`;
-            }
             if (!isMobile()) {
                 document.documentElement.style.width = '480px';
                 document.documentElement.style.marginLeft = 'auto';
                 document.documentElement.style.marginRight = 'auto';
                 document.documentElement.style.boxShadow = '0 0 1px #888';
-                if (!document.head.querySelector('#desktop-css')) {
-                    document.head.appendChild(css);
-                }
             } else {
                 document.documentElement.style.width = 'auto';
                 document.documentElement.style.marginLeft = 'auto';
                 document.documentElement.style.marginRight = 'auto';
                 document.documentElement.style.boxShadow = 'none';
-                css = document.head.querySelector('#desktop-css');
-                if (css) {
-                    document.head.removeChild(css);
-                    css.remove();
-                }
+            }
+            const legacyDesktopCss = document.head.querySelector('#desktop-css');
+            if (legacyDesktopCss?.parentNode) {
+                legacyDesktopCss.parentNode.removeChild(legacyDesktopCss);
             }
         }
 
@@ -412,12 +496,11 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (!checked) {
-            return;
-        }
 
-        const listener = (event: any) => {
-            installPrompt.current = event;
+        const listener = (event: Event) => {
+            const e = event as BeforeInstallPromptEvent;
+            e.preventDefault();
+            installPrompt.current = e;
             setInstall(1);
         };
 
@@ -425,62 +508,69 @@ function App() {
 
         const installedListener = () => {
             setInstall(0);
-        }
+        };
 
         window.addEventListener('appinstalled', installedListener);
 
         return () => {
             window.removeEventListener('beforeinstallprompt', listener);
             window.removeEventListener('appinstalled', installedListener);
-        }
-    }, [checked]);
+        };
+    }, []);
 
     useEffect(() => {
-        let locale;
+        const applyModule = (res: unknown) => {
+            const mod = res as { default?: TIntlMessages };
+            setMessages(mod.default ?? (res as TIntlMessages));
+        };
+
         switch (rootStore.locale) {
-            case 'ar':
-                locale = import('./locales/ar.json');
-                break;
-            case 'de':
-                locale = import('./locales/de.json');
-                break;
-            case 'id':
-                locale = import('./locales/id.json');
-                break;
-            case 'ja':
-                locale = import('./locales/ja.json');
-                break;
-            case 'ko':
-                locale = import('./locales/ko.json');
-                break;
-            case 'ms':
-                locale = import('./locales/ms.json');
-                break;
-            case 'pt':
-                locale = import('./locales/pt.json');
-                break;
-            case 'th':
-                locale = import('./locales/th.json');
-                break;
-            case 'tr':
-                locale = import('./locales/tr.json');
-                break;
-            case 'vi':
-                locale = import('./locales/vi.json');
-                break;
             case 'zh-hans':
             case 'zh-hant':
+            case 'zh-TW':
+            case 'zh-CN':
+            case 'zh-tw':
+            case 'zh-cn':
             case 'zh':
-                locale = import('./locales/zh.json');
-                break;
+                // 与顶部静态 import 共用同一份，避免 dev 下再发 en.json?import / zh.json?import 重复请求
+                setMessages(zhMessages as TIntlMessages);
+                return;
+            case 'en':
+                setMessages(enMessages as TIntlMessages);
+                return;
+            case 'ar':
+                void import('./locales/ar.json').then(applyModule);
+                return;
+            case 'de':
+                void import('./locales/de.json').then(applyModule);
+                return;
+            case 'id':
+                void import('./locales/id.json').then(applyModule);
+                return;
+            case 'ja':
+                void import('./locales/ja.json').then(applyModule);
+                return;
+            case 'ko':
+                void import('./locales/ko.json').then(applyModule);
+                return;
+            case 'ms':
+                void import('./locales/ms.json').then(applyModule);
+                return;
+            case 'pt':
+                void import('./locales/pt.json').then(applyModule);
+                return;
+            case 'th':
+                void import('./locales/th.json').then(applyModule);
+                return;
+            case 'tr':
+                void import('./locales/tr.json').then(applyModule);
+                return;
+            case 'vi':
+                void import('./locales/vi.json').then(applyModule);
+                return;
             default:
-                locale = import('./locales/en.json');
+                setMessages(enMessages as TIntlMessages);
         }
-
-        locale.then(res => {
-            setMessages(res.default);
-        });
-
     }, [rootStore.locale]);
 
     useEffect(() => {
@@ -527,18 +617,43 @@ function App() {
 
     }, [checked]);
 
+    const showInstallPrompt = install > 0;
+
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
-        <div className={cn('root', `root-${rootStore.theme}`)}>
-            {install > 0 && <div id="install" className="fixed bg-white shadow-2xl m-auto top-20 z-10 left-0 right-0 w-4/5 max-w-96 rounded-md flex flex-col items-start gap-2 p-4">
-                <div className="text-lg text-slate-700">
-                    <FormattedMessage id={install == 1 ? 'add_desktop' : 'installing'} />
+        <div
+            className={cn('root', `root-${rootStore.theme}`)}
+            style={showInstallPrompt ? { paddingBottom: '60px' } : undefined}
+        >
+            {install > 0 && (
+                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center">
+                    <div
+                        id="install"
+                        className="pwa-install w-full max-w-[480px]"
+                    >
+                        <div className="pwa-install__left">
+                            <div className="pwa-install__logoWrap">
+                                <img
+                                    alt="logo"
+                                    src="/logo.png"
+                                    className="pwa-install__logo"
+                                    loading="lazy"
+                                />
+                            </div>
+                            <div className="pwa-install__text">
+                                <FormattedMessage id="add_desktop" />
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            className="pwa-install__btn pwa-install-open-btn"
+                            onClick={handleExecuteInstall}
+                        >
+                            <FormattedMessage id="pwa_open" />
+                        </button>
+                    </div>
                 </div>
-                {install == 1 && <div className="flex justify-end gap-2 w-full mt-2 text-sm">
-                    <button className="bg-slate-400 px-4 py-1 rounded-md text-white cursor-pointer" onClick={handleCancelInstall}><FormattedMessage id="cancel" /></button>
-                    <button className="bg-red-400 px-4 py-1 rounded-md text-white cursor-pointer" onClick={handleExecuteInstall}><FormattedMessage id="install_app" /></button>
-                </div>}
-            </div>}
-            {checked ? <RouterProvider router={router} /> : <Loader />}
+            )}
+            {checked ? <RouterProvider router={router} /> : <InitialBootLoading />}
         </div>
         <Dialog open={loadingStore.status}>
             <DialogContent className="bg-transparent [&>button]:hidden flex flex-col justify-center items-center shadow-none outline-none" aria-describedby={undefined}>
@@ -558,7 +673,7 @@ function App() {
                         <FormattedMessage id="confirm_description" />
                     </DialogDescription>
                     <DialogFooter>
-                        <Button className="bg-slate-400 flex-1" onClick={confirmStore.cancel}>
+                        <Button className="bg-[#94a3b8] flex-1" onClick={confirmStore.cancel}>
                             <FormattedMessage id="cancel" />
                         </Button>
                         <Button className="flex-1" onClick={confirmStore.ok}>

@@ -1,0 +1,291 @@
+/**
+ * 登录页（/page/login）对标 ReelShort LoginPage 弹层视觉：全屏背景 + 右上角关闭 + Logo + 三方登录按钮。
+ * 注意：仅负责 DOM/样式；登录逻辑仍沿用现有实现。
+ */
+
+.rs-login {
+    min-height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: #000;
+}
+
+.rs-login__bg {
+    position: fixed;
+    inset: 0;
+    background: url('../assets/images/ec9725d0-83b2-11ee-aed2-cfe3d80f70eb.png') center / cover no-repeat;
+    z-index: 0;
+}
+
+.rs-login__shade {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1;
+}
+
+.rs-login__panel {
+    position: relative;
+    z-index: 2;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: calc(28 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+}
+
+.rs-login__close {
+    position: absolute;
+    top: calc(28 / 375 * var(--app-vw));
+    right: calc(20 / 375 * var(--app-vw));
+    width: calc(20 / 375 * var(--app-vw));
+    height: calc(20 / 375 * var(--app-vw));
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-login__close img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.rs-login__body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(12 / 375 * var(--app-vw));
+    padding-top: calc(115 / 375 * var(--app-vw));
+}
+
+.rs-login__logoWrap {
+    width: calc(96 / 375 * var(--app-vw));
+    height: calc(96 / 375 * var(--app-vw));
+    border-radius: 9999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rs-login__logoWrap img {
+    width: calc(72 / 375 * var(--app-vw));
+    height: calc(72 / 375 * var(--app-vw));
+    object-fit: contain;
+    display: block;
+}
+
+.rs-login__title {
+    font-size: calc(24 / 375 * var(--app-vw));
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-login__subtitle {
+    font-size: calc(16 / 375 * var(--app-vw));
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: calc(2 / 375 * var(--app-vw));
+}
+
+.rs-login__btns {
+    width: 100%;
+    margin-top: calc(18 / 375 * var(--app-vw));
+    display: flex;
+    flex-direction: column;
+    gap: calc(12 / 375 * var(--app-vw));
+}
+
+.rs-login__btn {
+    height: calc(48 / 375 * var(--app-vw));
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(10 / 375 * var(--app-vw));
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: calc(16 / 375 * var(--app-vw));
+    font-weight: 500;
+}
+
+.LoginPage_login_icon__XK3jz,
+.LoginPage_login_text__NWSSM {
+    display: flex;
+    align-items: center;
+}
+
+.rs-login__btn img {
+    width: calc(22 / 375 * var(--app-vw));
+    height: calc(22 / 375 * var(--app-vw));
+    display: block;
+}
+
+.rs-login__protocol {
+    margin-top: calc(150 / 375 * var(--app-vw));
+    font-size: calc(12 / 375 * var(--app-vw));
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    line-height: 1.4;
+}
+
+.rs-login__protocol a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: underline;
+}
+
+/**
+ * 邮箱登录 Drawer（不改 TSX，仅用选择器覆盖样式）
+ * 目标：按截图的深色弹窗、圆角、输入框与主按钮风格，并把左侧 icon 统一替换为 icon_otp.png。
+ */
+/* DrawerContent（邮箱登录弹窗，Portal 渲染在 body 下） */
+[data-slot='drawer-content'][aria-describedby='login'] {
+    /* DrawerContent */
+    background: #1e1f21 !important;
+    color: rgba(255, 255, 255, 0.92);
+    border-top-left-radius: 18px !important;
+    border-top-right-radius: 18px !important;
+    border: 0 !important;
+
+    [data-radix-collection-item],
+    [data-radix-scroll-area-viewport] {
+        color: inherit;
+    }
+
+    h2,
+    [role='heading'] {
+        color: rgba(255, 255, 255, 0.92);
+        font-weight: 500;
+    }
+
+    .border-t {
+        border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    /* 输入行（邮箱/验证码） */
+    .rs-login__drawerField,
+    .h-15.rounded-full {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
+        color: rgba(255, 255, 255, 0.92);
+        position: relative;
+        padding-left: 52px; /* 给左侧 icon 留空间 */
+        height: 60px;
+        border-radius: 9999px;
+        border-width: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding-right: 20px;
+
+        /* 隐藏 lucide svg，改用图片 icon */
+        > svg.lucide {
+            opacity: 0 !important;
+        }
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 22px;
+            /* 默认先用邮箱 icon；验证码行下面会覆盖成 otp */
+            background: url('../assets/images/icon_mail.png') center / contain no-repeat;
+            opacity: 0.9;
+            pointer-events: none;
+        }
+
+        input,
+        .rs-login__drawerInput {
+            background: transparent !important;
+            color: rgba(255, 255, 255, 0.92) !important;
+            /* 焦点光标与正文同色，不用品牌粉 */
+            caret-color: currentColor;
+            width: 100%;
+            height: 100%;
+            outline: none;
+            border: 0;
+            padding: 0 8px;
+
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.35);
+            }
+
+            &:focus {
+                outline: none;
+            }
+
+            &:focus-visible {
+                outline: 2px solid rgba(255, 255, 255, 0.45);
+                outline-offset: 2px;
+                border-radius: 6px;
+            }
+        }
+
+        &:focus-within {
+            border-color: rgba(255, 255, 255, 0.22) !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* 去掉 number input 自带上下箭头（Chrome/Edge/Safari + Firefox） */
+        input[type='number'] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        input[type='number']::-webkit-outer-spin-button,
+        input[type='number']::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* 发送按钮（右侧红字） */
+        .text-red-400,
+        .rs-login__drawerSend {
+            color: #ff3b5c !important;
+            font-weight: 500;
+            flex-shrink: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 20px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+    }
+
+    /**
+     * 约定：Drawer 内容里 `.border-t` 这一段内部有两行 `.h-15.rounded-full`
+     * 第 1 行：邮箱；第 2 行：验证码（OTP）
+     */
+    .border-t {
+        .h-15.rounded-full:nth-of-type(2)::before,
+        .rs-login__drawerField:nth-of-type(2)::before {
+            background-image: url('../assets/images/icon_otp.png');
+        }
+    }
+
+    /* 主按钮：登录 */
+    button[data-slot='button'] {
+        border-radius: 9999px !important;
+        height: 52px;
+        font-size: 18px;
+        font-weight: 500;
+        background: linear-gradient(90deg, #ff3b5c 0%, #ff4b6e 100%) !important;
+        box-shadow: 0 10px 24px rgba(255, 59, 92, 0.22);
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+}
+

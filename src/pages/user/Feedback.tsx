@@ -1,72 +1,106 @@
 import { api } from "@/api";
-import { Button } from "@/components/ui/button";
 import { Page } from "@/layouts/user";
 import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { toast } from "sonner";
 
-
 export default function Component() {
     const intl = useIntl();
-    const [content, setContent] = useState('');
-    const [email, setEmail] = useState('');
+    const [content, setContent] = useState("");
+    const [email, setEmail] = useState("");
     const [submitted, setSubmitted] = useState(false);
+    const [sending, setSending] = useState(false);
 
     function handleSubmit() {
         if (content.trim().length < 5) {
-            toast.warning(intl.formatMessage({ id: 'feedback_content_invalid' }));
+            toast.warning(intl.formatMessage({ id: "feedback_content_invalid" }));
             return;
         }
-        if (content.trim().length < 5) {
-            toast.warning(intl.formatMessage({ id: 'feedback_content_invalid' }));
+        if (sending) {
             return;
         }
-
-        api('feedback', {
-            method: 'post',
+        setSending(true);
+        api("feedback", {
+            method: "post",
             data: {
                 email: email.trim(),
                 content: content.trim(),
             },
-        }).then(result => {
-            if (result.c === 0) {
-                setSubmitted(true);
-            }
-        });
+        })
+            .then((result) => {
+                if (result.c === 0) {
+                    setSubmitted(true);
+                }
+            })
+            .finally(() => {
+                setSending(false);
+            });
     }
 
-    function handleContentChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-        setContent(e.currentTarget.value);
-    }
+    return (
+        <Page title="feedback_help">
+            <div className="rs-feedback">
+                {submitted ? (
+                    <div className="rs-feedback__success">
+                        <CheckCircle2
+                            className="rs-feedback__successIcon"
+                            strokeWidth={1.5}
+                            aria-hidden
+                        />
+                        <p className="rs-feedback__successText">
+                            <FormattedMessage id="feedback_submitted" />
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <label className="rs-feedback__field">
+                            <textarea
+                                value={content}
+                                onChange={(e) => setContent(e.currentTarget.value)}
+                                className="rs-feedback__textarea"
+                                maxLength={2000}
+                                rows={8}
+                                placeholder={intl.formatMessage({
+                                    id: "feedback_placeholder",
+                                })}
+                            />
+                        </label>
 
-    function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
-        setEmail(e.currentTarget.value);
-    }
+                        <label className="rs-feedback__field">
+                            <div className="rs-feedback__labelRow">
+                                <span className="rs-feedback__req" aria-hidden>
+                                    *
+                                </span>
+                                <FormattedMessage id="email" />
+                            </div>
+                            <div className="rs-feedback__emailRow">
+                                <input
+                                    type="email"
+                                    inputMode="email"
+                                    autoComplete="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.currentTarget.value)}
+                                    className="rs-feedback__input"
+                                    maxLength={30}
+                                    placeholder={intl.formatMessage({
+                                        id: "email_placeholder",
+                                    })}
+                                />
+                            </div>
+                        </label>
 
-    return <Page title="feedback_help">
-        {submitted ? <div className="w-full h-full flex justify-center items-center flex-col gap-4">
-            <div>
-                <CheckCircle2 className="w-24 h-24 text-green-400" />
+                        <button
+                            type="button"
+                            className="rs-feedback__submit"
+                            onClick={handleSubmit}
+                            disabled={sending}
+                        >
+                            <FormattedMessage id="submit" />
+                        </button>
+                    </>
+                )}
             </div>
-            <div className="text-slate-500 text-lg">
-                <FormattedMessage id="feedback_submitted" />
-            </div>
-        </div> : <div>
-            <label className="m-4 rounded-md bg-white p-4 block">
-                <textarea value={content} onChange={handleContentChange} className="border-none outline-none w-full p-0 m-0 h-60 placeholder-gray-400" maxLength={2000} placeholder={intl.formatMessage({
-                    id: 'feedback_placeholder'
-                })} />
-            </label>
-            <label className="m-4 rounded-md bg-white p-4 flex gap-2 items-center">
-                <div className="text-muted-foreground"><span className="text-red-400">*</span> <FormattedMessage id="email" /></div>
-                <input value={email} onChange={handleEmailChange} className="flex-1 outline-none border-none p-0 h-6 placeholder-gray-400" maxLength={30} placeholder={intl.formatMessage({
-                    id: 'email_placeholder'
-                })} />
-            </label>
-            <div className="m-4 mt-8">
-                <Button className="select-none" onClick={handleSubmit}><FormattedMessage id="submit" /></Button>
-            </div>
-        </div>}
-    </Page>;
+        </Page>
+    );
 }
