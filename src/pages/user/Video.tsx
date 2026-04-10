@@ -91,13 +91,14 @@ export default function Component() {
             setLoading(false);
             return;
         }
-        let result = await api<IPlayerData>('movie/info', {
+        const result = await api<IPlayerData>('movie/info', {
             data: {
                 id: params['id'],
             },
             loading: false,
         });
         if (result.c !== 0) {
+            setLoading(false);
             return;
         }
         setData(result.d);

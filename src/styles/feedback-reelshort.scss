@@ -1,15 +1,14 @@
 /**
- * /page/feedback — 与登录页邮箱 Drawer 同一套色值（见 login-reelshort.scss）
- * 弹窗底 #1e1f21；输入槽 rgba(255,255,255,0.08) + 细白边；正文/placeholder 与 .rs-login__drawerInput 一致。
+ * /page/feedback — 与 ReelShort 深色壳一致（恢复到原来的那套）
  */
+
 .rs-feedback {
     box-sizing: border-box;
     min-height: 100%;
-    /* 与 [data-slot='drawer-content'][aria-describedby='login'] 一致 */
-    background-color: #1e1f21;
+    background-color: var(--app-canvas);
     padding: calc(16 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw))
         calc(24 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw));
-    color: rgba(255, 255, 255, 0.92);
+    color: rgba(255, 255, 255, 0.9);
 
     @media (min-width: 768px) {
         padding: 16px 18px 32px;
@@ -18,27 +17,25 @@
         margin-right: auto;
     }
 
-    /* 同 .rs-login__drawerField：槽底色 + 边框（多行用圆角矩形，非全圆药丸） */
     &__field {
         display: block;
         margin-bottom: calc(12 / 375 * var(--app-vw));
-        border-radius: calc(16 / 375 * var(--app-vw));
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.08);
+        border-radius: calc(8 / 375 * var(--app-vw));
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.06);
         padding: calc(12 / 375 * var(--app-vw)) calc(14 / 375 * var(--app-vw));
-        color: rgba(255, 255, 255, 0.92);
         transition:
             border-color 0.15s ease,
             background-color 0.15s ease;
 
         &:focus-within {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.22);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         @media (min-width: 768px) {
             margin-bottom: 12px;
-            border-radius: 16px;
+            border-radius: 8px;
             padding: 12px 14px;
         }
     }
@@ -47,7 +44,7 @@
         margin-bottom: calc(6 / 375 * var(--app-vw));
         font-size: calc(12 / 375 * var(--app-vw));
         font-weight: 600;
-        color: rgba(255, 255, 255, 0.92);
+        color: rgba(255, 255, 255, 0.75);
 
         @media (min-width: 768px) {
             margin-bottom: 6px;
@@ -56,11 +53,10 @@
     }
 
     &__req {
-        color: #ff3b5c;
+        color: #f87171;
         margin-right: 2px;
     }
 
-    /* 同 .rs-login__drawerInput */
     &__textarea {
         display: block;
         box-sizing: border-box;
@@ -74,27 +70,24 @@
         font-size: calc(15 / 375 * var(--app-vw));
         line-height: 1.45;
         color: rgba(255, 255, 255, 0.92);
-        caret-color: currentColor;
-        color-scheme: dark;
         -webkit-appearance: none;
         appearance: none;
+        outline: none;
+        box-shadow: none;
 
         &::placeholder {
             color: rgba(255, 255, 255, 0.35);
             opacity: 1;
         }
 
-        &::-webkit-input-placeholder {
-            color: rgba(255, 255, 255, 0.35);
-        }
-
         &:focus {
-            outline: none;
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         &:focus-visible {
-            outline: 2px solid rgba(255, 255, 255, 0.45);
-            outline-offset: 2px;
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         @media (min-width: 768px) {
@@ -116,100 +109,82 @@
     &__input {
         flex: 1;
         min-width: 0;
-        height: calc(44 / 375 * var(--app-vw));
+        height: calc(40 / 375 * var(--app-vw));
         margin: 0;
-        padding: 0 8px;
+        padding: 0;
         border: 0;
-        border-radius: 0;
-        background: transparent !important;
-        font-size: calc(16 / 375 * var(--app-vw));
-        color: rgba(255, 255, 255, 0.92) !important;
-        caret-color: currentColor;
-        color-scheme: dark;
+        background: transparent;
+        font-size: calc(15 / 375 * var(--app-vw));
+        color: rgba(255, 255, 255, 0.92);
         -webkit-appearance: none;
         appearance: none;
+        outline: none;
+        box-shadow: none;
 
         &::placeholder {
             color: rgba(255, 255, 255, 0.35);
             opacity: 1;
         }
 
-        &::-webkit-input-placeholder {
-            color: rgba(255, 255, 255, 0.35);
-        }
-
         &:focus {
-            outline: none;
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         &:focus-visible {
-            outline: 2px solid rgba(255, 255, 255, 0.45);
-            outline-offset: 2px;
+            outline: none !important;
+            box-shadow: none !important;
         }
 
+        /* Chrome/Edge 自动填充会强行塞白/黄底：覆盖成 field 的半透明底 */
         &:-webkit-autofill,
         &:-webkit-autofill:hover,
-        &:-webkit-autofill:focus {
+        &:-webkit-autofill:focus,
+        &:-webkit-autofill:active {
             -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
-            box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.08) inset !important;
+            border: 0 !important;
+            box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.06) inset !important;
             transition: background-color 99999s ease-out 0s;
         }
 
         @media (min-width: 768px) {
-            height: 44px;
-            font-size: 16px;
+            height: 40px;
+            font-size: 15px;
         }
     }
 
-    /**
-     * 提交按钮 — 与登录 Drawer `button[data-slot='button']` 同色（粉红渐变 + 阴影）
-     * 使用 background-image 并加 fallback，避免全局 button reset 盖掉渐变。
-     */
     &__submit {
         margin-top: calc(24 / 375 * var(--app-vw));
         width: 100%;
-        height: calc(52 / 375 * var(--app-vw));
+        height: calc(48 / 375 * var(--app-vw));
         cursor: pointer;
         border: 0;
-        border-radius: 9999px;
-        -webkit-appearance: none;
-        appearance: none;
-        background-color: #ff3b5c;
-        background-image: linear-gradient(90deg, #ff3b5c 0%, #ff4b6e 100%);
-        box-shadow: 0 10px 24px rgba(255, 59, 92, 0.22);
-        font-size: calc(18 / 375 * var(--app-vw));
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.9);
+        border-radius: calc(8 / 375 * var(--app-vw));
+        background: linear-gradient(90deg, #e52e2e 0%, #c41e1e 100%);
+        font-size: calc(16 / 375 * var(--app-vw));
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
         -webkit-tap-highlight-color: transparent;
-        transition:
-            opacity 0.15s ease,
-            filter 0.15s ease,
-            box-shadow 0.15s ease;
+        transition: opacity 0.15s ease;
 
-        &:hover:not(:disabled) {
-            opacity: 0.95;
-            filter: brightness(1.03);
+        &:hover {
+            opacity: 0.92;
         }
 
-        &:active:not(:disabled) {
-            opacity: 0.9;
-            filter: brightness(0.97);
-            box-shadow: 0 6px 16px rgba(255, 59, 92, 0.18);
+        &:active {
+            opacity: 0.85;
         }
 
         &:disabled {
             cursor: not-allowed;
-            background-color: rgba(255, 255, 255, 0.12);
-            background-image: none;
-            box-shadow: none;
-            color: rgba(255, 255, 255, 0.45);
-            opacity: 1;
+            opacity: 0.45;
         }
 
         @media (min-width: 768px) {
             margin-top: 24px;
-            height: 52px;
-            font-size: 18px;
+            height: 48px;
+            border-radius: 8px;
+            font-size: 16px;
         }
     }
 

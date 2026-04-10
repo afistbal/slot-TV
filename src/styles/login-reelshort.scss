@@ -210,26 +210,42 @@
         .rs-login__drawerInput {
             background: transparent !important;
             color: rgba(255, 255, 255, 0.92) !important;
+            /* 压掉原生输入框自带的边框/内阴影（你截图里那圈矩形就是它） */
+            -webkit-appearance: none;
+            appearance: none;
+            border: 0 !important;
+            box-shadow: none !important;
             /* 焦点光标与正文同色，不用品牌粉 */
             caret-color: currentColor;
             width: 100%;
             height: 100%;
             outline: none;
-            border: 0;
             padding: 0 8px;
 
             &::placeholder {
                 color: rgba(255, 255, 255, 0.35);
             }
 
+            /* Chrome 自动填充会强行塞白底/黄底：用 inset 覆盖成“输入槽”的灰色 */
+            &:-webkit-autofill,
+            &:-webkit-autofill:hover,
+            &:-webkit-autofill:focus,
+            &:-webkit-autofill:active {
+                -webkit-text-fill-color: rgba(255, 255, 255, 0.92) !important;
+                caret-color: currentColor;
+                border: 0 !important;
+                box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.08) inset !important;
+                transition: background-color 99999s ease-out 0s;
+            }
+
             &:focus {
-                outline: none;
+                outline: none !important;
+                box-shadow: none !important;
             }
 
             &:focus-visible {
-                outline: 2px solid rgba(255, 255, 255, 0.45);
-                outline-offset: 2px;
-                border-radius: 6px;
+                outline: none !important;
+                box-shadow: none !important;
             }
         }
 
