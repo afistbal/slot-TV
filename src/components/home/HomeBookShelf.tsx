@@ -29,6 +29,9 @@ function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
     return slug ? `/episodes/${slug}` : `/video/${item.id}`;
 }
 
+/** 从封面 Link 上拖：超过该阈值才算横向拖拽，避免误伤点击跳转 */
+const TYPE1_LINK_DRAG_THRESHOLD_PX = 8;
+
 export function HomeBookShelf({
     titleMessageId,
     titleHref,
@@ -54,7 +57,21 @@ export function HomeBookShelf({
         startX: number;
         startScroll: number;
         moved: boolean;
+        startedOnLink: boolean;
     } | null>(null);
+    const type1UnbindDocDragRef = useRef<(() => void) | null>(null);
+
+    const blockShelfMisclick = useCallback((shelf: HTMLDivElement) => {
+        const blockMisclick = (ev: MouseEvent) => {
+            if (!shelf.contains(ev.target as Node)) {
+                return;
+            }
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.stopImmediatePropagation();
+        };
+        window.addEventListener('click', blockMisclick, { capture: true, once: true });
+    }, []);
 
     const handleType1PointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         if (e.button !== 0) {
@@ -64,18 +81,69 @@ export function HomeBookShelf({
         if (!el || el.scrollWidth <= el.clientWidth + 2) {
             return;
         }
+        const t = e.target as HTMLElement | null;
+        const startedOnLink = !!t?.closest('a[href], button');
+
         type1DragRef.current = {
             pointerId: e.pointerId,
             startX: e.clientX,
             startScroll: el.scrollLeft,
             moved: false,
+            startedOnLink,
         };
-        el.setPointerCapture(e.pointerId);
-    }, []);
+
+        if (!startedOnLink) {
+            el.setPointerCapture(e.pointerId);
+            return;
+        }
+
+        type1UnbindDocDragRef.current?.();
+
+        const onDocMove = (ev: PointerEvent) => {
+            const d = type1DragRef.current;
+            if (!d || ev.pointerId !== d.pointerId || !d.startedOnLink) {
+                return;
+            }
+            const shelf = type1ScrollRef.current;
+            if (!shelf) {
+                return;
+            }
+            const dx = ev.clientX - d.startX;
+            if (Math.abs(dx) < TYPE1_LINK_DRAG_THRESHOLD_PX) {
+                return;
+            }
+            d.moved = true;
+            shelf.scrollLeft = d.startScroll - dx;
+            ev.preventDefault();
+        };
+
+        const onDocEnd = (ev: PointerEvent) => {
+            const d = type1DragRef.current;
+            if (!d || ev.pointerId !== d.pointerId || !d.startedOnLink) {
+                return;
+            }
+            type1UnbindDocDragRef.current?.();
+            type1UnbindDocDragRef.current = null;
+            type1DragRef.current = null;
+            const shelf = type1ScrollRef.current;
+            if (d.moved && shelf) {
+                blockShelfMisclick(shelf);
+            }
+        };
+
+        document.addEventListener('pointermove', onDocMove, { capture: true, passive: false });
+        document.addEventListener('pointerup', onDocEnd, { capture: true });
+        document.addEventListener('pointercancel', onDocEnd, { capture: true });
+        type1UnbindDocDragRef.current = () => {
+            document.removeEventListener('pointermove', onDocMove, { capture: true });
+            document.removeEventListener('pointerup', onDocEnd, { capture: true });
+            document.removeEventListener('pointercancel', onDocEnd, { capture: true });
+        };
+    }, [blockShelfMisclick]);
 
     const handleType1PointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         const d = type1DragRef.current;
-        if (!d || e.pointerId !== d.pointerId) {
+        if (!d || e.pointerId !== d.pointerId || d.startedOnLink) {
             return;
         }
         const el = type1ScrollRef.current;
@@ -89,27 +157,21 @@ export function HomeBookShelf({
         el.scrollLeft = d.startScroll - dx;
     }, []);
 
-    const endType1Drag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-        const d = type1DragRef.current;
-        if (!d || e.pointerId !== d.pointerId) {
-            return;
-        }
-        const el = type1ScrollRef.current;
-        type1DragRef.current = null;
-        el?.releasePointerCapture(e.pointerId);
-        if (d.moved && el) {
-            const shelf = el;
-            const blockMisclick = (ev: MouseEvent) => {
-                if (!shelf.contains(ev.target as Node)) {
-                    return;
-                }
-                ev.preventDefault();
-                ev.stopPropagation();
-                ev.stopImmediatePropagation();
-            };
-            window.addEventListener('click', blockMisclick, { capture: true, once: true });
-        }
-    }, []);
+    const endType1Drag = useCallback(
+        (e: React.PointerEvent<HTMLDivElement>) => {
+            const d = type1DragRef.current;
+            if (!d || e.pointerId !== d.pointerId || d.startedOnLink) {
+                return;
+            }
+            const el = type1ScrollRef.current;
+            type1DragRef.current = null;
+            el?.releasePointerCapture(e.pointerId);
+            if (d.moved && el) {
+                blockShelfMisclick(el);
+            }
+        },
+        [blockShelfMisclick],
+    );
 
     useEffect(() => {
         if (type !== 'type_1') {
@@ -146,6 +208,14 @@ export function HomeBookShelf({
         el.addEventListener('wheel', onWheel, { passive: false });
         return () => el.removeEventListener('wheel', onWheel);
     }, [type, items.length]);
+
+    useEffect(() => {
+        return () => {
+            type1UnbindDocDragRef.current?.();
+            type1UnbindDocDragRef.current = null;
+            type1DragRef.current = null;
+        };
+    }, []);
 
     if (items.length === 0) {
         return null;

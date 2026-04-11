@@ -4,6 +4,7 @@ import gem from '@/assets/gem.svg';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 // import iconMyList from '@/assets/images/04905690-876c-11ee-aed2-cfe3d80f70eb.png';
 import iconFeedback from '@/assets/images/59f06ad0-876c-11ee-aed2-cfe3d80f70eb.png';
+import iconHistory from '@/assets/images/history.png';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
 import { Link, useNavigate } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
@@ -231,6 +232,15 @@ export default function Component() {
                         </div>
                         <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
                     </Link> */}
+                    <Link to="/my-list/history" className="rs-profile__menuItem">
+                        <div className="rs-profile__menuLeft">
+                            <img src={iconHistory} alt="" className="rs-profile__menuIcon" />
+                            <div className="rs-profile__menuText">
+                                <FormattedMessage id="history" />
+                            </div>
+                        </div>
+                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                    </Link>
                     <Link
                         to="/page/feedback"
                         className="rs-profile__menuItem"

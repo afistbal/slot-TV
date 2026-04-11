@@ -272,6 +272,9 @@ export default function Component() {
         if (topLen <= 1) return;
         // only handle mouse/pen; touch is handled by onTouchStart/End
         if (e.pointerType === 'touch') return;
+        // 不要在封面/播放等 Link 或圆点上 capture，否则 PC 上子级收不到 click，无法跳转
+        const t = e.target as HTMLElement | null;
+        if (t?.closest('a[href], button')) return;
         heroPointer.current = { id: e.pointerId, startX: e.clientX };
         e.currentTarget.setPointerCapture(e.pointerId);
     }
