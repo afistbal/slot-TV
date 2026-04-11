@@ -16,12 +16,6 @@ export function parsePaymentMethod(raw: string | null): number {
   return n === 1 || n === 2 || n === 3 ? n : 1;
 }
 
-/**
- * 后端 `pay/create` 的 `payment`：本页 Drop-in 固定含银行卡 + Google Pay + Apple Pay。
- * URL `?payment=1|2` 仅表示购物页偏好；创建 intent 应传 **3**（与 HPP `methods: card/googlepay/applepay` 一致）。
- */
-export const PAY_CREATE_FULL_CHECKOUT = 3;
-
 const ZERO_DECIMAL_CURRENCY = new Set([
   "BIF",
   "CLP",
@@ -163,7 +157,6 @@ function mountToRef(
 
 export type CheckoutAirwallexPanelProps = {
   productId: number;
-  /** 来自 URL，仅作展示/日志；`pay/create` 固定用 {@link PAY_CREATE_FULL_CHECKOUT} */
   payment: number;
   /** `pay/create` 的 `redirect`，须与当前业务回跳一致 */
   redirectHref: string;
@@ -217,8 +210,7 @@ export function CheckoutAirwallexPanel({
     async function run() {
       checkoutDbg("0 Airwallex 面板", {
         productId,
-        paymentFromUrl: payment,
-        payCreatePayment: PAY_CREATE_FULL_CHECKOUT,
+        payment,
         redirectHref,
       });
 
