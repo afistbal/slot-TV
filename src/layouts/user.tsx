@@ -86,7 +86,20 @@ export default function Component() {
     </div>;
 }
 
-export function Page({ title, titleClassName, children, action }: { title: string, titleClassName?: string, children?: React.ReactNode, action?: React.ReactNode }) {
+export function Page({
+    title,
+    titleClassName,
+    bodyClassName,
+    children,
+    action,
+}: {
+    title: string;
+    titleClassName?: string;
+    /** 标题下方主滚动区 class（如收银台铺满深色底） */
+    bodyClassName?: string;
+    children?: React.ReactNode;
+    action?: React.ReactNode;
+}) {
     const navigate = useNavigate();
 
     function handleBack() {
@@ -128,7 +141,7 @@ export function Page({ title, titleClassName, children, action }: { title: strin
                 </div>
             </div>
         )}
-        <div className="flex-1 overflow-auto">
+        <div className={cn('flex-1 overflow-auto', bodyClassName)}>
             {children}
         </div>
     </div>

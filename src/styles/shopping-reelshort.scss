@@ -27,7 +27,7 @@
     &__introTitle {
         margin-bottom: calc(2 / 375 * var(--app-vw));
         font-size: calc(16 / 375 * var(--app-vw));
-        font-weight: 700;
+        font-weight: 500;
         line-height: calc(22 / 375 * var(--app-vw));
         color: rgba(255, 255, 255, 0.9);
 
@@ -59,6 +59,16 @@
         @media (min-width: 768px) {
             margin-bottom: 12px;
         }
+    }
+
+    /** 嵌入抽屉顶栏：限时略缩小，便于与标题同排（约 12%） */
+    &__countdown--inDrawerHead {
+        margin-bottom: 0;
+        flex: 1 1 auto;
+        justify-content: flex-start;
+        min-width: 0;
+        transform: scale(0.88);
+        transform-origin: left center;
     }
 
     &__plans {
@@ -295,17 +305,6 @@
         }
     }
 
-    &__terms {
-        margin-top: 1.5rem;
-        font-size: 12px;
-        font-weight: 400;
-        color: rgba(255, 255, 255, 0.5);
-
-        @media (min-width: 768px) {
-            margin-top: 24px;
-        }
-    }
-
     &__pay {
         margin-top: calc(24 / 375 * var(--app-vw));
 
@@ -317,7 +316,7 @@
     &__payTitle {
         margin-bottom: 1rem;
         font-size: calc(16 / 375 * var(--app-vw));
-        font-weight: 700;
+        font-weight: 500;
         color: rgba(255, 255, 255, 0.9);
 
         @media (min-width: 768px) {
@@ -328,10 +327,11 @@
     &__payGrid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
+        gap: 6px;
 
         @media (min-width: 768px) {
             grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 7px;
         }
     }
 
@@ -339,7 +339,7 @@
         position: relative;
         box-sizing: border-box;
         display: flex;
-        height: calc(40 / 375 * var(--app-vw));
+        height: calc(34 / 375 * var(--app-vw));
         flex-shrink: 0;
         align-items: center;
         justify-content: center;
@@ -348,13 +348,13 @@
         border-radius: calc(4 / 375 * var(--app-vw));
         background: #141414;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 500;
         color: rgba(255, 255, 255, 0.9);
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
 
         @media (min-width: 768px) {
-            height: 48px;
+            height: 40px;
             border-radius: 4px;
             background: #292929;
         }
@@ -364,7 +364,7 @@
         }
 
         &--cardPair {
-            gap: 8px;
+            gap: 6px;
         }
     }
 
@@ -373,23 +373,311 @@
         flex-shrink: 0;
 
         &--apple {
-            height: 21px;
-            width: auto;
-        }
-
-        &--google {
             height: 18px;
             width: auto;
         }
 
+        &--google {
+            height: 15px;
+            width: auto;
+        }
+
         &--visa {
-            height: 11px;
+            height: 9px;
             width: auto;
         }
 
         &--master {
-            height: 19px;
+            height: 16px;
             width: auto;
         }
     }
+
+    /** 与 Video 页右侧 VIP 同款入口：打开底部 Drawer 收银台 */
+    &__vipFab {
+        position: fixed;
+        right: calc(12 / 375 * var(--app-vw));
+        bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+        z-index: 55;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 8px;
+        border: 0;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.35);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+
+        &:active {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        @media (min-width: 768px) {
+            right: 1.25rem;
+            bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+        }
+    }
+}
+
+.rs-shopping-checkout-drawer__title {
+    flex-shrink: 0;
+    padding: 14px 18px 12px;
+    font-size: calc(17 / 375 * var(--app-vw));
+    font-weight: 500;
+    line-height: 1.35;
+    color: #f5f6f7;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    @media (min-width: 768px) {
+        padding: 16px 20px 14px;
+        font-size: 17px;
+    }
+}
+
+/** 弹窗底：与 Uno/Tailwind 一致 `rgb(20 20 20 / var(--un-bg-opacity))` */
+.rs-shopping-drawer-bg {
+    --un-bg-opacity: 1;
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+}
+
+/** ReelShort 剧集付费弹层；内边距与整页 `rs-shopping__main` 对齐 */
+.rs-shopping-drawer-sheet {
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: hidden;
+    --un-bg-opacity: 1;
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    color: rgba(255, 255, 255, 0.9);
+    padding-left: calc(18 / 375 * var(--app-vw));
+    padding-right: calc(18 / 375 * var(--app-vw));
+    padding-bottom: max(calc(12 / 375 * var(--app-vw)), env(safe-area-inset-bottom, 0px));
+
+    @media (min-width: 768px) {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    }
+
+    /** 弹窗：标题 / 分割线与正文间距收紧 */
+    .rs-shopping-drawer-head--reelshort {
+        padding-top: calc(12 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            padding-top: 16px;
+        }
+    }
+
+    .rs-shopping-drawer-head__divider {
+        margin-top: calc(6 / 375 * var(--app-vw));
+        margin-bottom: calc(6 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+    }
+
+    /** 与整页纵向底部一致；顶距缩小，紧贴分割线下沿 */
+    .rs-shopping__main {
+        padding-top: calc(8 / 375 * var(--app-vw));
+        padding-left: 0;
+        padding-right: 0;
+        padding-bottom: calc(12 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            padding-top: 10px;
+            padding-bottom: 16px;
+        }
+    }
+
+    .rs-shopping__intro {
+        margin-bottom: calc(8 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-bottom: 10px;
+        }
+    }
+
+    /** 套餐区上下收紧，便于一屏内展示 */
+    .rs-shopping__plans {
+        padding-top: calc(4 / 375 * var(--app-vw));
+        padding-bottom: calc(4 / 375 * var(--app-vw));
+        gap: 6px;
+
+        @media (min-width: 768px) {
+            padding-top: 6px;
+            padding-bottom: 6px;
+            gap: 8px;
+        }
+    }
+
+    .rs-shopping__pay {
+        margin-top: calc(12 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 14px;
+        }
+    }
+
+    /** 弹窗底与按钮同为 #141414 级深灰时，支付方式按钮需略亮底才看得见（对齐整页 md 的 #292929） */
+    .rs-shopping__payBtn {
+        background: #292929;
+        border-color: rgba(255, 255, 255, 0.06);
+
+        @media (min-width: 768px) {
+            background: #292929;
+        }
+
+        &--active {
+            border-color: rgba(255, 255, 255, 0.9);
+        }
+    }
+}
+
+/** 顶栏：左侧 kv 区（有倒计时时只显示倒计时，否则 VIP 解锁）+ 右侧关闭图 */
+.rs-shopping-drawer-head--reelshort {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: calc(16 / 375 * var(--app-vw));
+    padding-bottom: 0;
+    --un-bg-opacity: 1;
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+
+    @media (min-width: 768px) {
+        padding-top: 24px;
+    }
+}
+
+.rs-shopping-drawer-head__kvGroup {
+    display: flex;
+    align-items: center;
+    gap: calc(8 / 375 * var(--app-vw));
+    flex: 1 1 auto;
+    min-width: 0;
+
+    @media (min-width: 768px) {
+        gap: 10px;
+    }
+}
+
+.rs-shopping-drawer-head__vipUnlock {
+    flex-shrink: 0;
+    min-width: 0;
+    font-size: calc(17 / 375 * var(--app-vw));
+    font-weight: 500;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.92);
+
+    @media (min-width: 768px) {
+        font-size: 17px;
+    }
+}
+
+.rs-shopping-drawer-head__closeImgBtn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-shopping-drawer-head__closePixel {
+    display: block;
+    width: calc(24 / 375 * var(--app-vw));
+    height: calc(24 / 375 * var(--app-vw));
+    object-fit: contain;
+
+    @media (min-width: 768px) {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.rs-shopping-drawer-head__divider {
+    width: 100%;
+    height: 1px;
+    margin-top: calc(16 / 375 * var(--app-vw));
+    margin-bottom: calc(12 / 375 * var(--app-vw));
+    background: rgba(255, 255, 255, 0.1);
+
+    @media (min-width: 768px) {
+        margin-top: 16px;
+        margin-bottom: 24px;
+    }
+}
+
+/** Drawer 内嵌 shopping 主体：不强制 100% 视口高度，由外层滚动 */
+.rs-shopping.rs-shopping--drawerEmbed {
+    height: auto;
+    min-height: 0;
+    --un-bg-opacity: 1;
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+}
+
+/** 购物页 Drawer 内仅支付面板（无站点顶栏/底栏） */
+.rs-shopping-checkout-drawer__scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    max-height: min(85vh, 860px);
+}
+
+.rs-shopping-checkout-drawer__scroll--reelshort {
+    overflow-x: hidden;
+    --un-bg-opacity: 1;
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+}
+
+/**
+ * 视频 VIP 购物弹窗：内层不单独滚动，整块随 Drawer 增高展示（依赖外层 max-h 与内容压缩）
+ */
+.rs-shopping-checkout-drawer--vipNoScroll .rs-shopping-checkout-drawer__scroll--reelshort {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: auto;
+}
+
+/** 覆盖 vaul 默认 max-h-[80vh] / 内层滚动：整块加高、外层必要时再处理溢出 */
+.rs-shopping-checkout-drawer--vipNoScroll[data-slot='drawer-content'] {
+    max-height: min(98vh, 1040px);
+    overflow-x: hidden;
+    overflow-y: visible;
+    /** 顶圆角：大于 Drawer 默认 `rounded-t-lg`，与 ReelShort 大圆角观感一致 */
+    border-top-left-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
+    border-top-right-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
+}
+
+.rs-checkout-h5--embedded .rs-checkout-h5__inner {
+    padding-top: 10px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+/**
+ * vaul 底部抽屉在 `[data-vaul-drawer][data-vaul-drawer-direction=bottom]::after` 上做了 200% 高的占位，
+ * 会导致抽屉外仍可下滑；去掉伪元素占位（不影响拖拽关闭逻辑）。
+ */
+[data-vaul-drawer][data-vaul-drawer-direction='bottom']::after {
+    content: none !important;
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    pointer-events: none !important;
 }

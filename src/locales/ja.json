@@ -21,6 +21,8 @@
     "shopping_subscription_item1": "1. During the subscription period, you can watch {site} episodes without limits.",
     "shopping_subscription_item2": "2. Auto-renewal: the subscription renews automatically at the original price and will be charged 24 hours before each cycle begins unless you cancel.",
     "shopping_subscription_item3": "3. How to cancel: you can cancel anytime in the \"{site}\" app under \"Settings > Subscription Management\".",
+    "shopping_vip_drawer_title": "VIPで解放",
+    "shopping_vip_fab_label": "VIP",
     "footer_about_us": "About Us",
     "footer_support_center": "Support Center",
     "footer_community": "Community",

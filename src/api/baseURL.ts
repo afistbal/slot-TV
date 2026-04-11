@@ -7,7 +7,7 @@ const customFlag = import.meta.env.VITE_APP_FLAG;
 
 let baseURL = "";
 if (flag === "production" || customFlag === "prod") {
-  baseURL = "https://api.yogoshort.com/api";
+  baseURL = "https://test.yogoshort.com/api";
 } else {
   baseURL = "https://test.yogoshort.com/api";
 }

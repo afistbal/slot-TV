@@ -1,7 +1,36 @@
 /**
  * /page/checkout — 站内收银台（Airwallex Elements 内嵌）
- * 深色壳 + 半透明卡片，避免 HPP。
+ * 独立页：`Page` 顶栏/主区浅色；抽屉内嵌仍用 `.rs-checkout-h5--embedded` 深色（见 `variant`）。
  */
+
+/** `Page` 顶栏：浅色，覆盖默认 `bg-app-canvas text-white` */
+.rs-checkout-page__topLight {
+    background-color: #ffffff !important;
+    color: #121417 !important;
+    border-bottom-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+.rs-checkout-page__topLight button {
+    color: rgba(17, 24, 39, 0.88) !important;
+}
+
+.rs-checkout-page__topLight button:hover {
+    background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.rs-checkout-page__topLight button:active {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/** `Page` 主滚动区：浅灰底；PWA 安装条（`#install`）出现时追加底padding，避免内容贴条 */
+.rs-checkout-page__bodyLight {
+    background-color: #f3f4f6;
+    min-height: 100%;
+}
+
+body:has(#install) .rs-checkout-page__bodyLight {
+    padding-bottom: calc(60px + max(16px, env(safe-area-inset-bottom)));
+}
 
 .rs-checkout__titlebar {
     background: #1e1f21 !important;
@@ -162,5 +191,256 @@
     padding: 18px;
     display: flex;
     justify-content: center;
+}
+
+/* H5 暗色收银台：对齐 Airwallex standalone recurring（checkout.airwallex.com） */
+.rs-checkout.rs-checkout-h5 {
+    background: #14171a;
+    color: rgba(245, 246, 247, 0.92);
+}
+
+.rs-checkout-h5__inner {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.rs-checkout-h5__header {
+    padding-bottom: 12px;
+}
+
+.rs-checkout-h5__h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f5f6f7;
+}
+
+.rs-checkout-h5__sub {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(245, 246, 247, 0.55);
+    line-height: 1.45;
+}
+
+/** 订单信息：应付金额 +（可选）套餐名 / 续费价，避免与底部再叠一张同风格卡片 */
+.rs-checkout-h5__orderBox {
+    margin-bottom: 22px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #1b1f21;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rs-checkout-h5__orderAmountRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rs-checkout-h5__orderMeta {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 13px;
+    color: rgba(245, 246, 247, 0.9);
+}
+
+.rs-checkout-h5__amountLabel {
+    font-size: 14px;
+    color: rgba(245, 246, 247, 0.65);
+}
+
+.rs-checkout-h5__amountValue {
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #f5f6f7;
+}
+
+.rs-checkout-h5__pickTitle {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #f5f6f7;
+}
+
+/* 与 Airwallex 内嵌标题层级类似（如 css-1wuzzne） */
+.rs-checkout-h5__pickTitle--section {
+    margin: 24px 0 18px;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.rs-checkout-h5__express {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin-bottom: 6px;
+}
+
+.rs-checkout-h5__mountWrap--hidden {
+    display: none;
+}
+
+.rs-checkout-h5__mount {
+    min-height: 48px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.rs-checkout-h5__mount--apple,
+.rs-checkout-h5__mount--google {
+    background: #000;
+}
+
+.rs-checkout-h5__mount--hidden {
+    display: none;
+    min-height: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.rs-checkout-h5__hint {
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(255, 200, 120, 0.92);
+    line-height: 1.45;
+}
+
+.rs-checkout-h5__divider {
+    display: flex;
+    align-items: center;
+    margin: 26px 0 22px;
+    color: rgba(245, 246, 247, 0.45);
+    font-size: 12px;
+}
+
+.rs-checkout-h5__divider::before,
+.rs-checkout-h5__divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.rs-checkout-h5__divider span {
+    padding: 0 12px;
+    white-space: nowrap;
+}
+
+.rs-checkout-h5__cardPanel {
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #1b1f21;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    padding: 12px 14px 16px;
+}
+
+.rs-checkout-h5__cardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: rgba(245, 246, 247, 0.88);
+}
+
+.rs-checkout-h5__mount--card {
+    min-height: 200px;
+}
+
+.rs-checkout-h5__summaryRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.rs-checkout-h5__summaryLabel {
+    color: rgba(245, 246, 247, 0.5);
+}
+
+.rs-checkout-h5__summaryMuted {
+    color: rgba(245, 246, 247, 0.65);
+    font-variant-numeric: tabular-nums;
+}
+
+.rs-checkout-h5__loading {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 独立 `/page/checkout`：`variant="page"` → `.rs-checkout-h5--pageLight`   */
+/* -------------------------------------------------------------------------- */
+
+.rs-checkout.rs-checkout-h5.rs-checkout-h5--pageLight {
+    background: transparent;
+    color: rgba(17, 24, 39, 0.92);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__h1 {
+    color: #0f172a;
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__sub {
+    color: rgba(51, 65, 85, 0.88);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__orderBox {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__orderMeta {
+    border-top-color: rgba(15, 23, 42, 0.08);
+    color: rgba(17, 24, 39, 0.9);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__amountLabel {
+    color: rgba(71, 85, 105, 0.95);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__amountValue {
+    color: #0f172a;
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__pickTitle,
+.rs-checkout-h5--pageLight .rs-checkout-h5__pickTitle--section {
+    color: #0f172a;
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__hint {
+    color: #9a3412;
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__divider {
+    color: rgba(71, 85, 105, 0.75);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__divider::before,
+.rs-checkout-h5--pageLight .rs-checkout-h5__divider::after {
+    background: rgba(15, 23, 42, 0.12);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__cardPanel {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__cardTitle {
+    color: rgba(30, 41, 59, 0.95);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__summaryLabel {
+    color: rgba(71, 85, 105, 0.9);
+}
+
+.rs-checkout-h5--pageLight .rs-checkout-h5__summaryMuted {
+    color: rgba(71, 85, 105, 0.85);
 }
 

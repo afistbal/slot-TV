@@ -11,14 +11,14 @@ import {
     Unlock,
     X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { WebVTT } from 'videojs-vtt.js';
 import { Swiper, SwiperSlide, type SwiperClass, type SwiperRef } from 'swiper/react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import lockIcon from '@/assets/lock.svg';
 import { cn } from '@/lib/utils';
-import Vip from '@/widgets/Vip';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
+import RadixRc from '@/pages/user/RadixRc';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
@@ -128,7 +128,7 @@ export default function Component() {
             onAfterInit={handleAfterInit}
             direction="vertical"
             touchStartPreventDefault={false}
-            className="w-full h-full overflow-hidden bg-black select-none"
+            className="video-vertical-swiper w-full h-full overflow-hidden bg-black select-none"
         >
             {data?.episodes.map((v, k) => (
                 <SwiperSlide
@@ -147,7 +147,7 @@ export default function Component() {
                         />
                     )}
                     {(current - 1 === k || current + 1 === k) && (
-                        <div className="w-full h-full flex justify-center items-center text-2xl text-shadow-2xs text-shadow-border text-white">
+                        <div className="video-vertical-slide-label w-full h-full flex justify-center items-center text-2xl text-white">
                             <div>
                                 <FormattedMessage id="episode" /> {v.episode} /{' '}
                                 {data.episodes.length}
@@ -183,6 +183,7 @@ function Player({
     const subtitleRef = useRef<HTMLDivElement>(null);
     const episodeRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+    const intl = useIntl();
     const userStore = useUserStore();
     const controllerTimerRef = useRef(0);
     const controllerIsShow = useRef(true);
@@ -288,20 +289,26 @@ function Player({
                     d.subtitle.startsWith('http://') || d.subtitle.startsWith('https://')
                         ? d.subtitle
                         : `${configStore.config['static']}/${d.subtitle}`;
-                await fetch(subUrl)
-                    .then((res) => res.text())
-                    .then((text) => {
-                        const parser = new WebVTT.Parser(window, WebVTT.StringDecoder());
-                        const cues: VTTCue[] = [];
-                        parser.oncue = (cue) => {
-                            cues.push(cue);
-                        };
-                        parser.onflush = () => {
-                            subtitlesRef.current = cues;
-                        };
-                        parser.parse(text);
-                        parser.flush();
-                    });
+                try {
+                    const res = await fetch(subUrl);
+                    if (!res.ok) {
+                        throw new Error(`subtitle HTTP ${res.status}`);
+                    }
+                    const text = await res.text();
+                    const parser = new WebVTT.Parser(window, WebVTT.StringDecoder());
+                    const cues: VTTCue[] = [];
+                    parser.oncue = (cue) => {
+                        cues.push(cue);
+                    };
+                    parser.onflush = () => {
+                        subtitlesRef.current = cues;
+                    };
+                    parser.parse(text);
+                    parser.flush();
+                } catch (e) {
+                    subtitlesRef.current = [];
+                    console.warn('[Video] subtitle load skipped (CORS/network/parse)', subUrl, e);
+                }
             }
 
             if (!videoRef.current) {
@@ -393,12 +400,15 @@ function Player({
         setFavorite(!favorite);
     }
 
-    function handleToggleVip() {
-        if (!controllerIsShow.current && !vip) {
+    function handleToggleVip(ev?: MouseEvent) {
+        ev?.stopPropagation();
+        if (userStore.signed && userStore.isVIP()) {
             return;
         }
-
-        setVip(!vip);
+        if (!vip) {
+            showController();
+        }
+        setVip((open) => !open);
     }
 
     function handleToggleUnlockEpisode(open: boolean) {
@@ -642,7 +652,7 @@ function Player({
             videoRef.current?.removeEventListener('timeupdate', videoTimeUpdate);
             videoRef.current?.removeEventListener('ended', videoEnded);
             videoRef.current?.removeEventListener('canplay', videoCanPlay);
-            videoRef.current?.removeEventListener('wating', videoWaiting);
+            videoRef.current?.removeEventListener('waiting', videoWaiting);
             progressWrapRef.current?.removeEventListener('touchmove', progressTouchMove);
             window.removeEventListener('mouseup', mouseUp);
             window.removeEventListener('touchend', mouseUp);
@@ -660,7 +670,7 @@ function Player({
 
         wrapRef.current.addEventListener('touchmove', touchMove);
 
-        () => {
+        return () => {
             wrapRef.current?.removeEventListener('touchmove', touchMove);
         };
     }, []);
@@ -678,7 +688,7 @@ function Player({
     }, [episode]);
 
     return (
-        <div className="h-full w-full relative" ref={wrapRef}>
+        <div className="video-player-root h-full w-full relative" ref={wrapRef}>
             {loading && (
                 <div className="h-full w-full flex flex-col">
                     <div
@@ -726,13 +736,13 @@ function Player({
                     ref={subtitleRef}
                 >
                     {subtitle > -1 && subtitlesRef.current.length > 0 && (
-                        <div className="text-white px-2 py-1 rounded-md text-shadow-[0px_0px_4px_black] text-2xl font-bold">
+                        <div className="video-player-subtitle-text text-white px-2 py-1 rounded-md text-2xl font-bold">
                             {subtitlesRef.current[subtitle].text.replace(/<[^>]*>?/gm, '')}
                         </div>
                     )}
                 </div>
                 <div
-                    className="relative w-full h-full"
+                    className="video-player-ui relative w-full h-full"
                     ref={controllerRef}
                     onClick={handleControllerTouchStart}
                 >
@@ -805,12 +815,14 @@ function Player({
                                 userStore.signed && userStore.isVIP() && 'hidden',
                             )}
                             onClick={
-                                userStore.signed && userStore.isVIP() ? undefined : handleToggleVip
+                                userStore.signed && userStore.isVIP()
+                                    ? undefined
+                                    : (e) => handleToggleVip(e)
                             }
                         >
                             <Crown className="w-8 h-8 text-[#ffd000] fill-[#ffd000]" />
                             <div className="h-4 leading-4 text-[#ffd000] text-xs text-center">
-                                VIP
+                                <FormattedMessage id="shopping_vip_fab_label" />
                             </div>
                         </div>
                         <div
@@ -1025,7 +1037,21 @@ function Player({
                         <div className="h-4" />
                     </DrawerContent>
                 </Drawer>
-                <Vip open={vip} from="video" onOpenChange={handleToggleVip} />
+                <Drawer open={vip} onOpenChange={setVip}>
+                    <DrawerContent
+                        handler
+                        className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col border-t border-white/10 p-0 text-white max-h-[min(98vh,1040px)] overflow-y-visible"
+                    >
+                        <DrawerTitle className="sr-only">
+                            {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
+                        </DrawerTitle>
+                        <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort">
+                            {vip ? (
+                                <RadixRc layout="embed" onEmbedClose={() => setVip(false)} />
+                            ) : null}
+                        </div>
+                    </DrawerContent>
+                </Drawer>
                 {/* <UnlockEpisode
                     open={unlockEpisodeOpen}
                     coins={episode?.unlock_coins ?? 0}

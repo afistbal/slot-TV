@@ -1,0 +1,35 @@
+/**
+ * 竖屏 Video：Swiper 对 slide 使用 transform 合成层，白字叠在视频上容易边缘发糊。
+ * 用子像素抗锯齿 + 独立合成层改善（对标 ReelShort 等 H5 观感）。
+ */
+.video-vertical-swiper,
+.video-vertical-swiper .swiper-slide {
+    -webkit-font-smoothing: subpixel-antialiased;
+    -moz-osx-font-smoothing: auto;
+}
+
+.video-player-root {
+    -webkit-font-smoothing: subpixel-antialiased;
+    -moz-osx-font-smoothing: auto;
+    text-rendering: optimizeLegibility;
+}
+
+/** 控制栏/按钮叠在视频上：单独一层，减轻与父层 transform 叠加时的栅格化发糊 */
+.video-player-root .video-player-ui {
+    transform: translateZ(0);
+    -webkit-font-smoothing: subpixel-antialiased;
+}
+
+/** 相邻集占位：避免多重 text-shadow 在合成层上糊成一团 */
+.video-vertical-slide-label {
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.88);
+}
+
+/** 字幕：用方向性阴影替代大范围 glow，笔画更利落 */
+.video-player-subtitle-text {
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.95),
+        0 -1px 1px rgba(0, 0, 0, 0.35);
+}

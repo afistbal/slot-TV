@@ -1,0 +1,347 @@
+业务场景：自建 H5 站内收银台，售卖短剧订阅服务。支付方式：银行卡、Apple Pay、Google Pay、本地钱包（如支付宝、微信等）。
+
+要求：
+不使用 Airwallex 托管收银台（Hosted Payment Page / Hosted Billing Checkout）。
+
+站内唤起支付（H5 内嵌组件或自有 UI + JS SDK）。
+
+支持自动续费订阅。
+
+产品与集成方式选择
+
+ 收银台前端：选 Online Payments + Airwallex.js
+
+前端建议使用 Airwallex.js (@airwallex/components-sdk)，在 H5 页面内嵌 UI 组件：
+
+Card Element / Drop-in Element：嵌入卡支付和本地钱包。
+
+Apple Pay Button Element：Apple Pay 快捷按钮。
+
+
+
+Google Pay Button Element：Google Pay 快捷按钮。
+
+集成说明参考：
+
+Airwallex.js 总览：
+https://www.airwallex.com/docs/developer-tools/sdks/airwallex.js
+
+Apple Pay（概览 + 集成方式）：
+https://www.airwallex.com/docs/payments/payment-methods/global/apple-pay
+
+Google Pay（概览 + 集成方式）：
+https://www.airwallex.com/docs/payments/payment-methods/global/google-paytm
+
+Apple Pay Button Element（JS 详细参数）：
+https://www.airwallex.com/docs/js/payments/applepaybutton
+
+Google Pay Button Element（JS 详细参数）：
+https://www.airwallex.com/docs/js/payments/googlepaybutton 
+
+订阅与自动续费：用 PaymentConsent + Recurring
+
+
+对于 Apple Pay / Google Pay / 卡，Airwallex 支持通过 PaymentConsent 保存支付方式，并进行后续 Merchant‑Initiated Transactions (MIT)，用于订阅自动扣款。
+
+Google Pay / Apple Pay 订阅示例（Native API / Hosted / Element 层面）文档中已有：
+
+Google Pay Recurring 示例：
+https://www.airwallex.com/docs/payments/payment-methods/global/google-paytm/native-api
+
+Apple Pay Element 注册用户订阅示例：
+https://www.airwallex.com/docs/payments/payment-methods/global/apple-pay/apple-pay-element/registered-user-checkout
+
+业务层面：你们自己维护“套餐、周期、下次扣款时间”等订阅逻辑；Airwallex 负责安全保存支付方式 + 发起后续扣款。
+
+
+前端 H5 集成步骤（概览）
+
+3.1 支付方式开通与配置（一次性）
+
+
+
+
+
+在 Airwallex Web App 中：
+
+
+
+
+
+开通 Online Payments 能力；
+
+
+
+在 Payments > Payment Methods 中启用：
+
+
+
+
+
+Cards
+
+
+
+Apple Pay
+
+
+
+Google Pay
+
+
+
+需要的本地支付方式（Alipay、WeChat Pay 等）。
+
+
+
+按文档完成 Apple Pay for Web 域名验证：
+https://www.airwallex.com/docs/payments/payment-methods/global/apple-pay/enable-apple-pay-via-web-application/apple-pay-for-web
+
+
+
+如需 Google Pay 原生集成，可参考 enable Google Pay 文档完成 Google Console 配置：
+https://www.airwallex.com/docs/payments/payment-methods/global/google-paytm/enable-google-paytm
+
+3.2 H5 页面结构建议
+
+在订阅结算页（/checkout 或 /subscribe）：
+
+
+
+
+
+显示订单信息：套餐名称、金额、周期等。
+
+
+
+嵌入以下组件（任选组合）：
+
+
+
+
+
+Drop‑in Element：一个组件内展示卡 + 本地钱包 + Apple Pay / Google Pay（统一列表）。适合简化前端开发。
+
+
+
+ApplePayButton / GooglePayButton 作为“快速支付”按钮，放在页面顶部或商品详情页，提升转换。
+
+初始化 Airwallex.js（伪代码示例）：
+
+import { init, createElement } from '@airwallex/components-sdk';
+
+// 页面加载后初始化一次
+await init({
+  env: 'prod',            // 或 'demo' 测试环境
+  locale: 'zh',
+  enabledElements: ['payments'],
+});
+
+// 创建 Apple Pay / Google Pay / Drop-in 等元素，并挂载到对应 DOM
+const applePayButton = await createElement('applePayButton', { ...options });
+applePayButton.mount('#apple-pay-container');
+
+const googlePayButton = await createElement('googlePayButton', { ...options });
+googlePayButton.mount('#google-pay-container');
+
+
+详细参数以官方文档为准：
+
+
+
+
+
+Apple Pay Button options：ApplePayButtonElementOptions
+
+
+
+Google Pay Button options：GooglePayButtonElementOptions
+
+
+
+4. 订阅首扣 + 自动续费整体流程（推荐）
+
+以“下单当场支付首期费用 + 后续自动扣款”为例：
+
+4.1 首次订阅（用户在 H5 页面）
+
+后端步骤（用户点击“立即订阅”前）：
+
+
+
+
+
+创建 Customer（如无）
+
+
+
+
+
+使用 Payments Customer API 创建客户，返回 customer_id。
+
+
+
+创建 PaymentIntent（首期费用）
+
+
+
+
+
+金额 = 首期订阅金额（例如首月）。
+
+
+
+货币 = 订阅币种（如 CNY / USD 等）。
+
+
+
+返回给前端：
+
+
+
+
+
+intent_id
+
+
+
+client_secret
+
+
+
+customer_id
+
+
+
+业务自有的 user_id / subscription_id 等
+
+前端调用 Apple Pay / Google Pay（示意）
+
+
+
+
+
+Apple Pay Button（带付款 + 订阅信息）：
+
+const applePayButton = await createElement('applePayButton', {
+  mode: 'recurring',
+  intent_id: '<PAYMENT_INTENT_ID>',
+  client_secret: '<PAYMENT_INTENT_CLIENT_SECRET>',
+  customer_id: '<CUSTOMER_ID>',
+  amount: {
+    value: '20.00',
+    currency: 'CNY',
+  },
+  lineItems: [
+    {
+      label: '短剧会员订阅',
+      amount: '20.00',
+      type: 'final',
+      paymentTiming: 'recurring',
+      // 可配置开始日期、间隔等，见官方示例
+    },
+  ],
+});
+applePayButton.mount('#apple-pay');
+
+
+
+
+
+
+Google Pay Button（带付款 + 订阅信息）：
+
+const googlePayButton = await createElement('googlePayButton', {
+  mode: 'recurring',
+  intent_id: '<PAYMENT_INTENT_ID>',
+  client_secret: '<PAYMENT_INTENT_CLIENT_SECRET>',
+  countryCode: 'CN',
+  customer_id: '<CUSTOMER_ID>',
+  amount: {
+    value: '20.00',
+    currency: 'CNY',
+  },
+  displayItems: [
+    {
+      label: 'monthly',
+      price: '20',
+      status: 'FINAL',
+      type: 'LINE_ITEM',
+    },
+  ],
+  buttonType: 'subscribe',
+});
+googlePayButton.mount('#google-pay');
+
+
+SDK 完成支付后：
+
+
+
+
+
+支付成功时，前端从 SDK 事件中拿到 intent 信息；
+
+
+
+后端通过 PaymentIntents API 查询最终状态，确认首期款已成功；
+
+
+
+同时基于 Apple Pay / Google Pay 支付方式创建 Payment Method + Payment Consent，用于后续自动扣款（可按 Native API 文档示例）
+
+
+4.2 后续周期自动扣款（后台任务）
+
+到期时（例如每月 1 号）：
+
+
+
+
+
+后端根据你们的订阅表，找到需要扣款的用户 + 对应 payment_consent_id / payment_method.id。
+
+
+
+创建新的 PaymentIntent，金额为当期应收。
+
+
+
+使用 payment_consent_id 或已存的 payment_method.id + triggered_by: merchant 发起 MIT 扣款。
+
+
+
+根据结果更新你们的订阅状态、会员有效期等。
+
+
+
+5. “只保存支付方式，延后首扣”变种（比如先试用）
+
+如果需要先绑定支付方式，不立刻扣款（例如 7 天试用，期末再扣首期）：
+
+
+
+
+
+前端 Apple Pay / Google Pay Button 使用 mode: 'recurring' + amount: 0 等配置，仅创建 PaymentConsent，不触发即时支付。官方示例：
+
+
+
+
+
+Apple Pay：amount.value = '0'，paymentTiming: 'deferred'，仅展示将来扣款条款。
+
+
+
+Google Pay：amount.value = '0'，displayItems 中说明为 monthly / subscription。
+
+
+
+到期日再由后台按 4.2 自动扣款流程 创建 PaymentIntent + MIT 扣款。
+
+您这边技术自检一下：
+技术同事可以用 API 自检：
+
+调用：GET /api/v1/pa/config/payment_method_types
+如果返回里 card / googlepay / applepay 的 transaction_mode 包含 "recurring"，说明这个支付方式的 recurring 模式 已经开通，可以按你文档中的 PaymentConsent + MIT 流程做对接。 
+若调用结果里没有 "recurring"，告诉我
