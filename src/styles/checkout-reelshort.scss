@@ -1,5 +1,5 @@
 /**
- * /page/checkout — 站内收银台（Airwallex Elements 内嵌）
+ * /page/pay — 站内收银台（Airwallex Elements 内嵌）
  * 独立页：`Page` 顶栏/主区浅色；抽屉内嵌仍用 `.rs-checkout-h5--embedded` 深色（见 `variant`）。
  */
 
@@ -351,6 +351,11 @@ body:has(#install) .rs-checkout-page__bodyLight {
     min-height: 200px;
 }
 
+/** 单 Drop-in（含 card / Google Pay / Apple Pay）挂载区 */
+.rs-checkout-h5__dropInMount {
+    min-height: 200px;
+}
+
 .rs-checkout-h5__summaryRow {
     display: flex;
     justify-content: space-between;
@@ -374,7 +379,7 @@ body:has(#install) .rs-checkout-page__bodyLight {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 独立 `/page/checkout`：`variant="page"` → `.rs-checkout-h5--pageLight`   */
+/* 独立 `/page/pay`：`variant="page"` → `.rs-checkout-h5--pageLight`   */
 /* -------------------------------------------------------------------------- */
 
 .rs-checkout.rs-checkout-h5.rs-checkout-h5--pageLight {

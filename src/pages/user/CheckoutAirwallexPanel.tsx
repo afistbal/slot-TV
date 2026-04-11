@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { useIntl } from "react-intl";
 
 /**
- * Airwallex H5 支付区（无 `Page` 壳）：供 `/page/checkout/:id` 与购物页 Drawer 复用。
+ * Airwallex H5 支付区（无 `Page` 壳）：供 `/page/pay/:id` 与购物页 Drawer 复用。
  * `redirectHref` 传入 `pay/create` 的 `redirect`（如购物页用 `${origin}/shopping`）。
  */
 
@@ -15,6 +15,12 @@ export function parsePaymentMethod(raw: string | null): number {
   const n = parseInt(raw ?? "1", 10);
   return n === 1 || n === 2 || n === 3 ? n : 1;
 }
+
+/**
+ * 后端 `pay/create` 的 `payment`：本页 Drop-in 固定含银行卡 + Google Pay + Apple Pay。
+ * URL `?payment=1|2` 仅表示购物页偏好；创建 intent 应传 **3**（与 HPP `methods: card/googlepay/applepay` 一致）。
+ */
+export const PAY_CREATE_FULL_CHECKOUT = 3;
 
 const ZERO_DECIMAL_CURRENCY = new Set([
   "BIF",
@@ -57,6 +63,50 @@ function googlePayPriceString(value: number, currency: string): string {
     return String(Math.round(value));
   }
   return value.toFixed(2);
+}
+
+type AirwallexInit = NonNullable<Parameters<typeof init>[0]>;
+type AirwallexInitLocale = NonNullable<AirwallexInit["locale"]>;
+
+/** 与 `init({ locale })` 对齐（勿写死 `en`，否则 GPay 等控件英文 Subscribe） */
+function normalizeAirwallexLocale(reactLocale: string): AirwallexInitLocale {
+  const lower = reactLocale.replace(/_/g, "-").toLowerCase();
+  if (lower === "zh-hk" || lower === "zh-tw" || lower.startsWith("zh-hant")) {
+    return "zh-HK";
+  }
+  if (lower.startsWith("zh")) {
+    return "zh";
+  }
+  const two = lower.slice(0, 2);
+  const supported: AirwallexInitLocale[] = [
+    "ar",
+    "da",
+    "de",
+    "en",
+    "es",
+    "fi",
+    "fr",
+    "id",
+    "it",
+    "ja",
+    "ko",
+    "ms",
+    "nl",
+    "nl-NL",
+    "pl",
+    "pt",
+    "ro",
+    "ru",
+    "sv",
+    "zh",
+    "zh-HK",
+  ];
+  for (const code of supported) {
+    if (code === two || code === lower) {
+      return code;
+    }
+  }
+  return "en";
 }
 
 type AirwallexMounted = {
@@ -113,11 +163,12 @@ function mountToRef(
 
 export type CheckoutAirwallexPanelProps = {
   productId: number;
+  /** 来自 URL，仅作展示/日志；`pay/create` 固定用 {@link PAY_CREATE_FULL_CHECKOUT} */
   payment: number;
   /** `pay/create` 的 `redirect`，须与当前业务回跳一致 */
   redirectHref: string;
   /**
-   * `page`：独立 `/page/checkout` 浅色底（默认）。
+   * `page`：独立 `/page/pay` 浅色底（默认）。
    * `embed`：深色 + `rs-checkout-h5--embedded`（如将来抽屉内嵌复用）。
    */
   variant?: "page" | "embed";
@@ -135,17 +186,8 @@ export function CheckoutAirwallexPanel({
   const [sdkReady, setSdkReady] = useState(false);
   const [orderSummary, setOrderSummary] = useState<TData | null>(null);
 
-  const appleMountRef = useRef<HTMLDivElement | null>(null);
-  const googleMountRef = useRef<HTMLDivElement | null>(null);
-  const cardMountRef = useRef<HTMLDivElement | null>(null);
+  const dropInMountRef = useRef<HTMLDivElement | null>(null);
   const instancesRef = useRef<AirwallexMounted[]>([]);
-
-  const isLikelyIos =
-    typeof navigator !== "undefined" &&
-    /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  /** 非 iOS 不展示 Apple Pay 行，避免 iframe 高度为 0 时先出现两行再缩成一行 */
-  const [appleRowHidden, setAppleRowHidden] = useState(() => !isLikelyIos);
 
   function cleanupAll() {
     for (const el of instancesRef.current) {
@@ -171,12 +213,12 @@ export function CheckoutAirwallexPanel({
     cleanupAll();
     setSdkReady(false);
     setOrderSummary(null);
-    setAppleRowHidden(!isLikelyIos);
 
     async function run() {
       checkoutDbg("0 Airwallex 面板", {
         productId,
-        payment,
+        paymentFromUrl: payment,
+        payCreatePayment: PAY_CREATE_FULL_CHECKOUT,
         redirectHref,
       });
 
@@ -225,7 +267,7 @@ export function CheckoutAirwallexPanel({
 
       try {
         await init({
-          locale: "en",
+          locale: normalizeAirwallexLocale(intl.locale),
           env,
           enabledElements: ["payments"],
         });
@@ -253,29 +295,45 @@ export function CheckoutAirwallexPanel({
 
       const paymentConsent = recurringOptions;
 
-      const recurringExpressBase = {
-        mode: "recurring" as const,
-        intent_id: redirectFields.intent_id,
-        client_secret: redirectFields.client_secret,
-        customer_id: redirectFields.customer_id,
-        amount: { value: amountValue, currency: redirectFields.currency },
-        countryCode: "HK",
-        buttonType: "subscribe" as const,
-        payment_consent: paymentConsent,
-      };
+      const gPayLinePrice = googlePayPriceString(
+        amountValue,
+        redirectFields.currency,
+      );
 
-      const dropInCardOnly = {
+      /** 与 `slot-TV/Airwallex.tsx` 的 `redirectToCheckout({ methods: [...] })` 一致：单 Drop-in 内嵌三种方式 */
+      const dropInAllMethods = {
         mode: "recurring" as const,
         intent_id: redirectFields.intent_id,
         client_secret: redirectFields.client_secret,
         customer_id: redirectFields.customer_id,
         currency: redirectFields.currency,
         payment_consent: paymentConsent,
-        methods: ["card"],
-        appearance: { mode: "dark" as const },
+        recurringOptions,
+        methods: ["card", "googlepay", "applepay"],
+        appearance: {
+          mode: (variant === "page" ? "light" : "dark") as const,
+        },
         country_code: "HK",
         submitType: "subscribe" as const,
-        googlePayRequestOptions: { countryCode: "HK" },
+        googlePayRequestOptions: {
+          countryCode: "HK",
+          totalPriceStatus: "FINAL" as const,
+          totalPriceLabel: intl.formatMessage({
+            id: "checkout_googlepay_total_label",
+            defaultMessage: "Subscription due today",
+          }),
+          displayItems: [
+            {
+              label: intl.formatMessage({
+                id: "checkout_googlepay_line_recurring",
+                defaultMessage: "Recurring subscription",
+              }),
+              price: gPayLinePrice,
+              status: "FINAL" as const,
+              type: "LINE_ITEM" as const,
+            },
+          ],
+        },
         applePayRequestOptions: {
           buttonType: "subscribe" as const,
           countryCode: "HK",
@@ -303,111 +361,33 @@ export function CheckoutAirwallexPanel({
         }
       };
 
-      const mountApple = async () => {
-        try {
-          checkoutDbg("3 创建 applePayButton", { amount: recurringExpressBase.amount });
-          const raw = await createElement(
-            "applePayButton",
-            recurringExpressBase as Parameters<
-              typeof createElement<"applePayButton">
-            >[1],
-          );
-          const appleEl = raw as unknown as AirwallexMounted | null;
-          if (appleEl && !isCancelled()) {
-            appleEl.on("success", onSuccess);
-            appleEl.on("error", (ev) => checkoutDbg("Apple error", ev));
-            pushInstance(appleEl);
-            mountToRef(appleEl, appleMountRef, isCancelled, "Apple");
-          }
-        } catch (e) {
-          checkoutDbg("3 applePayButton 创建失败（可忽略）", e);
-        }
-      };
-
-      const mountGoogle = async () => {
-        try {
-          const gPayLinePrice = googlePayPriceString(
-            amountValue,
-            redirectFields.currency,
-          );
-          checkoutDbg("4 创建 googlePayButton", { amount: recurringExpressBase.amount });
-          const raw = await createElement(
-            "googlePayButton",
-            {
-              ...recurringExpressBase,
-              totalPriceStatus: "FINAL",
-              totalPriceLabel: intl.formatMessage({
-                id: "checkout_googlepay_total_label",
-                defaultMessage: "Subscription due today",
-              }),
-              displayItems: [
-                {
-                  label: intl.formatMessage({
-                    id: "checkout_googlepay_line_recurring",
-                    defaultMessage: "Recurring subscription",
-                  }),
-                  price: gPayLinePrice,
-                  status: "FINAL",
-                  type: "LINE_ITEM",
-                },
-              ],
-            } as Parameters<typeof createElement<"googlePayButton">>[1],
-          );
-          const googleEl = raw as unknown as AirwallexMounted | null;
-          if (googleEl && !isCancelled()) {
-            googleEl.on("success", onSuccess);
-            googleEl.on("error", (ev) => checkoutDbg("Google error", ev));
-            pushInstance(googleEl);
-            mountToRef(googleEl, googleMountRef, isCancelled, "Google");
-          }
-        } catch (e) {
-          checkoutDbg("4 googlePayButton 创建失败（可忽略）", e);
-        }
-      };
-
-      if (isLikelyIos) {
-        await mountApple();
-        if (isCancelled()) {
-          return;
-        }
-        await mountGoogle();
-      } else {
-        await mountGoogle();
-        if (isCancelled()) {
-          return;
-        }
-        await mountApple();
-      }
-
-      if (isCancelled()) {
-        return;
-      }
-
       try {
-        checkoutDbg("5 创建 dropIn（仅 card）");
-        const rawCard = await createElement(
+        checkoutDbg("3 创建 dropIn（card + googlepay + applepay）");
+        const rawDropIn = await createElement(
           "dropIn",
-          dropInCardOnly as Parameters<typeof createElement<"dropIn">>[1],
+          dropInAllMethods as unknown as Parameters<
+            typeof createElement<"dropIn">
+          >[1],
         );
-        const cardEl = rawCard as unknown as AirwallexMounted | null;
-        if (!cardEl) {
-          checkoutDbg("5 dropIn 返回空");
+        const dropInEl = rawDropIn as unknown as AirwallexMounted | null;
+        if (!dropInEl) {
+          checkoutDbg("3 dropIn 返回空");
           setShowIncomplete(true);
           return;
         }
-        cardEl.on("success", onSuccess);
-        cardEl.on("error", onCardError);
-        pushInstance(cardEl);
-        mountToRef(cardEl, cardMountRef, isCancelled, "Card");
+        dropInEl.on("success", onSuccess);
+        dropInEl.on("error", onCardError);
+        pushInstance(dropInEl);
+        mountToRef(dropInEl, dropInMountRef, isCancelled, "DropIn");
       } catch (e) {
-        checkoutDbg("5 dropIn 异常", e);
+        checkoutDbg("3 dropIn 异常", e);
         setShowIncomplete(true);
         return;
       }
 
       if (!isCancelled()) {
         setSdkReady(true);
-        checkoutDbg("6 就绪");
+        checkoutDbg("4 就绪");
       }
     }
 
@@ -417,42 +397,7 @@ export function CheckoutAirwallexPanel({
       cancelled = true;
       cleanupAll();
     };
-  }, [productId, payment, isLikelyIos, intl, redirectHref]);
-
-  useEffect(() => {
-    if (!sdkReady || !isLikelyIos) {
-      return;
-    }
-    const root = appleMountRef.current;
-    if (!root) {
-      return;
-    }
-
-    let alive = true;
-    let debounce: ReturnType<typeof setTimeout> | undefined;
-
-    const measure = () => {
-      if (!alive) {
-        return;
-      }
-      const ifr = root.querySelector("iframe");
-      const h = ifr?.getBoundingClientRect().height ?? 0;
-      setAppleRowHidden(h < 2);
-    };
-
-    const ro = new ResizeObserver(() => {
-      clearTimeout(debounce);
-      debounce = setTimeout(measure, 120);
-    });
-    ro.observe(root);
-    debounce = setTimeout(measure, 2400);
-
-    return () => {
-      alive = false;
-      clearTimeout(debounce);
-      ro.disconnect();
-    };
-  }, [sdkReady, productId, isLikelyIos]);
+  }, [productId, payment, intl, redirectHref, variant]);
 
   const summaryCurrency =
     (orderSummary?.["currency"] as string) || "USD";
@@ -461,11 +406,6 @@ export function CheckoutAirwallexPanel({
     orderSummary?.["renewal_price"] ?? orderSummary?.["renewal"];
   const hasRenewal = renewalRaw != null && String(renewalRaw).trim() !== "";
   const hasOrderMeta = Boolean(planName) || hasRenewal;
-
-  const appleWrapClass =
-    `rs-checkout-h5__mountWrap rs-checkout-h5__mountWrap--apple${
-      appleRowHidden ? " rs-checkout-h5__mountWrap--hidden" : ""
-    }`;
 
   return (
     <>
@@ -542,71 +482,10 @@ export function CheckoutAirwallexPanel({
             })}
           </h2>
 
-          <div className="rs-checkout-h5__express">
-            {isLikelyIos ? (
-              <>
-                <div className={appleWrapClass}>
-                  <div
-                    ref={appleMountRef}
-                    className="rs-checkout-h5__mount rs-checkout-h5__mount--apple"
-                  />
-                </div>
-                <div className="rs-checkout-h5__mountWrap rs-checkout-h5__mountWrap--google">
-                  <div
-                    ref={googleMountRef}
-                    className="rs-checkout-h5__mount rs-checkout-h5__mount--google"
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="rs-checkout-h5__mountWrap rs-checkout-h5__mountWrap--google">
-                  <div
-                    ref={googleMountRef}
-                    className="rs-checkout-h5__mount rs-checkout-h5__mount--google"
-                  />
-                </div>
-                <div className={appleWrapClass}>
-                  <div
-                    ref={appleMountRef}
-                    className="rs-checkout-h5__mount rs-checkout-h5__mount--apple"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          {payment === 2 && isLikelyIos ? (
-            <p className="rs-checkout-h5__hint">
-              {intl.formatMessage({
-                id: "checkout_googlepay_ios_hint",
-                defaultMessage:
-                  "Google Pay often does not show on iPhone Safari. Use Apple Pay or card below.",
-              })}
-            </p>
-          ) : null}
-
-          <div className="rs-checkout-h5__divider">
-            <span>
-              {intl.formatMessage({
-                id: "checkout_or_alternate_methods",
-                defaultMessage: "Or pay using the following methods",
-              })}
-            </span>
-          </div>
-
-          <div className="rs-checkout-h5__cardPanel">
-            <div className="rs-checkout-h5__cardTitle">
-              {intl.formatMessage({
-                id: "checkout_bank_card",
-                defaultMessage: "Bank card",
-              })}
-            </div>
-            <div
-              ref={cardMountRef}
-              className="rs-checkout-h5__mount rs-checkout-h5__mount--card"
-            />
-          </div>
+          <div
+            ref={dropInMountRef}
+            className="rs-checkout-h5__dropInMount"
+          />
 
           {!sdkReady && !showIncomplete ? (
             <div className="rs-checkout-h5__loading">

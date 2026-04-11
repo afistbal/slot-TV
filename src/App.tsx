@@ -1,4 +1,11 @@
-import { createBrowserRouter, Navigate, RouterProvider, useRouteError } from "react-router"
+import {
+    createBrowserRouter,
+    Navigate,
+    RouterProvider,
+    useLocation,
+    useParams,
+    useRouteError,
+} from "react-router";
 import { FormattedMessage, IntlProvider } from 'react-intl';
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "./components/ui/sonner";
@@ -60,6 +67,13 @@ import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminActivityLog from './pages/admin/ActivityLog';
 import Loader from "./components/Loader";
 import NotFound from './pages/NotFound';
+
+/** 旧书签 `/page/checkout/:id` → `/page/pay/:id` */
+function LegacyCheckoutToPayRedirect() {
+    const { id } = useParams();
+    const { search } = useLocation();
+    return <Navigate to={`/page/pay/${id ?? ''}${search}`} replace />;
+}
 
 /** config/登录完成前全屏占位 */
 function InitialBootLoading() {
@@ -216,12 +230,16 @@ const router = createBrowserRouter([
                 element: <UserLogin />,
             },
             {
+                path: 'pay/:id',
+                element: <UserCheckout />,
+            },
+            {
                 path: 'pay',
                 element: <UserPay />,
             },
             {
                 path: 'checkout/:id',
-                element: <UserCheckout />,
+                element: <LegacyCheckoutToPayRedirect />,
             },
             {
                 path: 'membership',

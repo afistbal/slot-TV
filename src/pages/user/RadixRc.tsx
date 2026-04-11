@@ -129,7 +129,7 @@ export default function RadixRc({
     }, [productFrom]);
 
     function goCheckout(productId: number, payMethod: number) {
-        navigate(`/page/checkout/${productId}?payment=${payMethod}&from=${checkoutFrom}`);
+        navigate(`/page/pay/${productId}?payment=${payMethod}&from=${checkoutFrom}`);
     }
 
     function handleSelectAndPay(productId: number) {
