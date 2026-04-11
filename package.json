@@ -27,7 +27,7 @@
     "@types/videojs-vtt.js": "^0.15.3",
     "@use-gesture/react": "^10.3.1",
     "@vitejs/plugin-legacy": "^6.1.1",
-    "axios": "^1.15.0",
+    "ky": "^1.8.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",

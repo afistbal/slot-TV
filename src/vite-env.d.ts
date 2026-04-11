@@ -2,11 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_SKIP_API?: string;
-  /**
-   * axios `baseURL`（不含末尾 `/`），例如 `https://test.yogoshort.com/api`
-   * 不设置时默认为 `/api`，开发时由 Vite proxy 转发。
-   */
-  readonly VITE_API_BASE_URL?: string;
+  readonly VITE_PWA_INSTALL_PROMPT?: string;
+  readonly VITE_BOTTOM_TAB_BAR?: string;
 }
 
 interface ImportMeta {
