@@ -43,6 +43,7 @@ import UserSearch from './pages/user/Search';
 import UserMyBalance from './pages/user/MyBanlance';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
+import UserCheckout from './pages/user/Checkout';
 
 import LayoutAdmin from './layouts/admin';
 import AdminHome from './pages/admin/Home';
@@ -217,6 +218,10 @@ const router = createBrowserRouter([
             {
                 path: 'pay',
                 element: <UserPay />,
+            },
+            {
+                path: 'checkout/:id',
+                element: <UserCheckout />,
             },
             {
                 path: 'membership',

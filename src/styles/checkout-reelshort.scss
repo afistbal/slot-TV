@@ -1,0 +1,166 @@
+/**
+ * /page/checkout — 站内收银台（Airwallex Elements 内嵌）
+ * 深色壳 + 半透明卡片，避免 HPP。
+ */
+
+.rs-checkout__titlebar {
+    background: #1e1f21 !important;
+}
+
+.rs-checkout {
+    min-height: 100%;
+    background: #1e1f21;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-checkout__content {
+    padding: 16px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.rs-checkout__header {
+    padding: 8px 0 12px;
+}
+
+.rs-checkout__h1 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.rs-checkout__sub {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.62);
+    line-height: 1.45;
+}
+
+.rs-checkout__section {
+    margin-top: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.rs-checkout__sectionTitle {
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.86);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rs-checkout__plans {
+    display: flex;
+    flex-direction: column;
+}
+
+.rs-checkout__plan {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+.rs-checkout__plan + .rs-checkout__plan {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rs-checkout__plan--active {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rs-checkout__planName {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.rs-checkout__planHint {
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.rs-checkout__planPrice {
+    font-weight: 800;
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.92);
+    font-variant-numeric: tabular-nums;
+}
+
+.rs-checkout__dropinWrap {
+    position: relative;
+    padding: 12px 14px 14px;
+}
+
+.rs-checkout__dropinLoading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(2px);
+    z-index: 1;
+}
+
+.rs-checkout__dropin {
+    min-height: 160px;
+}
+
+.rs-checkout__note {
+    padding: 0 14px 14px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.rs-checkout__noteMuted {
+    color: rgba(255, 255, 255, 0.42);
+}
+
+.rs-checkout__summary {
+    margin-top: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 12px 14px;
+}
+
+.rs-checkout__summaryRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.rs-checkout__summaryLabel {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 13px;
+}
+
+.rs-checkout__summaryValue {
+    font-weight: 700;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.92);
+    font-variant-numeric: tabular-nums;
+}
+
+.rs-checkout__summaryValue--muted {
+    color: rgba(255, 255, 255, 0.60);
+}
+
+.rs-checkout__skeleton {
+    padding: 18px;
+    display: flex;
+    justify-content: center;
+}
+

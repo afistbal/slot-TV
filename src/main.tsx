@@ -13,6 +13,7 @@ import './styles/episodes-reelshort.scss'
 import './styles/pwa-install.scss'
 import './styles/feedback-reelshort.scss'
 import './styles/membership-reelshort.scss'
+import './styles/checkout-reelshort.scss'
 import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 

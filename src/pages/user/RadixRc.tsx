@@ -72,9 +72,20 @@ export default function Component() {
     };
   }, []);
 
+  function goCheckout(productId: number, payMethod: number) {
+    navigate(`/page/checkout/${productId}?payment=${payMethod}`);
+  }
+
   function handleSelectAndPay(productId: number) {
     setCurrentId(productId);
-    navigate(`/airwallex/${productId}?payment=${payment}`);
+    goCheckout(productId, payment);
+  }
+
+  function handlePaymentPick(payMethod: number) {
+    setPayment(payMethod);
+    if (currentId != null) {
+      goCheckout(currentId, payMethod);
+    }
   }
 
   return (
@@ -175,21 +186,21 @@ export default function Component() {
             <div className="rs-shopping__payGrid">
               <button
                 type="button"
-                onClick={() => setPayment(1)}
+                onClick={() => handlePaymentPick(1)}
                 className={cn('rs-shopping__payBtn', payment === 1 && 'rs-shopping__payBtn--active')}
               >
                 <img className="rs-shopping__payLogo rs-shopping__payLogo--apple" src={applePay} alt="Apple Pay" />
               </button>
               <button
                 type="button"
-                onClick={() => setPayment(2)}
+                onClick={() => handlePaymentPick(2)}
                 className={cn('rs-shopping__payBtn', payment === 2 && 'rs-shopping__payBtn--active')}
               >
                 <img className="rs-shopping__payLogo rs-shopping__payLogo--google" src={googlePay} alt="Google Pay" />
               </button>
               <button
                 type="button"
-                onClick={() => setPayment(3)}
+                onClick={() => handlePaymentPick(3)}
                 className={cn(
                   'rs-shopping__payBtn rs-shopping__payBtn--cardPair',
                   payment === 3 && 'rs-shopping__payBtn--active',
