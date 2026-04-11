@@ -7,7 +7,6 @@ import path from "path"
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
   plugins: [
     react(),
     tailwindcss(),
@@ -31,6 +30,8 @@ export default defineConfig({
     })
   ],
   build: {
+    outDir: 'D:/JJ-TV/movie-www',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         'index': 'index.html',
@@ -42,13 +43,28 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+
   },
   server: {
     host: '0.0.0.0',
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'https://test.yogoshort.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
   preview: {
     host: '0.0.0.0',
     port: 5173,
+    proxy: {
+      '/api': {
+        target: 'https://test.yogoshort.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
 })

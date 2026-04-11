@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useLoadingStore } from './stores/loading';
 import { useUserStore } from './stores/user';
 import { UAParser } from 'ua-parser-js';
+import { apiBaseURL } from './api/baseURL';
 
 
 interface IResult<T> {
@@ -22,8 +23,6 @@ export type TData = { [key: string]: unknown };
 
 const ua = UAParser(window.navigator.userAgent);
 
-/** 与 `vite.config.ts` 的 `base` 一致：`./api/`（相对部署）或 `/api/`（base 为 `/`） */
-const apiPrefixUrl = `${import.meta.env.BASE_URL}api/`.replace(/\/{2,}/g, '/');
 
 export async function api<T = TData>(path: string, options?: { loading?: boolean, method?: 'get' | 'post', data?: { [key: string]: unknown }, headers?: Record<string, string | undefined> }): Promise<IResult<T>> {
     const query = new URLSearchParams();
@@ -44,7 +43,7 @@ export async function api<T = TData>(path: string, options?: { loading?: boolean
 
     try {
         const response = await ky(path, {
-            prefixUrl: apiPrefixUrl,
+            prefixUrl: apiBaseURL,
             method: options?.method,
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
