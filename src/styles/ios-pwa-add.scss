@@ -50,3 +50,49 @@
     font-weight: 600;
     line-height: 1.2;
 }
+
+.rs-ios-add-home {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px 16px 40px;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-ios-add-home__lead {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.rs-ios-add-home__steps {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.rs-ios-add-home__step {
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px;
+}
+
+.rs-ios-add-home__stepTitle {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-ios-add-home__img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+}
