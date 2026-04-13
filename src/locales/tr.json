@@ -1,6 +1,6 @@
 {
-    "site_name": "YogoTV",
-    "domain": "YogoTV.com",
+    "site_name": "YogoShort",
+    "domain": "YogoShort.com",
     "language": "Dil",
     "home": "Ana Sayfa",
     "nav_open_menu": "Menüyü aç",
@@ -39,7 +39,7 @@
     "check_login": "Girişi Kontrol Et",
     "guest": "Misafir",
     "welcome_to_site": "{site}'e hoş geldiniz!",
-    "vip": "YogoTV VIP",
+    "vip": "YogoShort VIP",
     "enjoy": "Tüm dizilerin keyfini ücretsiz çıkarın",
     "feedback_help": "Geri Bildirim & Yardım",
     "about_us": "Hakkımızda",

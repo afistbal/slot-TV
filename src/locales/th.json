@@ -1,6 +1,6 @@
 {
-    "site_name": "YogoTV",
-    "domain": "YogoTV.com",
+    "site_name": "YogoShort",
+    "domain": "YogoShort.com",
     "language": "ภาษา",
     "home": "หน้าแรก",
     "nav_open_menu": "เปิดเมนู",
@@ -39,7 +39,7 @@
     "check_login": "ตรวจสอบการเข้าสู่ระบบ",
     "guest": "ผู้เยี่ยมชม",
     "welcome_to_site": "ยินดีต้อนรับสู่ {site}!",
-    "vip": "YogoTV VIP",
+    "vip": "YogoShort VIP",
     "enjoy": "เพลิดเพลินกับละครทั้งหมดได้ฟรี",
     "feedback_help": "ข้อเสนอแนะและช่วยเหลือ",
     "about_us": "เกี่ยวกับเรา",

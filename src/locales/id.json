@@ -1,6 +1,6 @@
 {
-    "site_name": "YogoTV",
-    "domain": "YogoTV.com",
+    "site_name": "YogoShort",
+    "domain": "YogoShort.com",
     "language": "Bahasa",
     "home": "Beranda",
     "nav_open_menu": "Buka menu",
@@ -39,7 +39,7 @@
     "check_login": "Cek Masuk",
     "guest": "Tamu",
     "welcome_to_site": "Selamat datang di {site}!",
-    "vip": "YogoTV VIP",
+    "vip": "YogoShort VIP",
     "enjoy": "Nikmati semua drama secara gratis",
     "feedback_help": "Saran & Bantuan",
     "about_us": "Tentang Kami",

@@ -1,6 +1,6 @@
 {
-    "name": "YogoTV",
-    "short_name": "YogoTV",
+    "name": "YogoShort",
+    "short_name": "YogoShort",
     "start_url": "/?s=A100DESKTOPAPP",
     "display": "standalone",
     "background_color": "#ffffff",

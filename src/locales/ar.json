@@ -1,6 +1,6 @@
 {
-    "site_name": "YogoTV",
-    "domain": "YogoTV.com",
+    "site_name": "YogoShort",
+    "domain": "YogoShort.com",
     "language": "اللغة",
     "home": "الرئيسية",
     "nav_open_menu": "Open menu",
@@ -39,7 +39,7 @@
     "check_login": "التحقق من تسجيل الدخول",
     "guest": "ضيف",
     "welcome_to_site": "مرحبًا بك في {site}!",
-    "vip": "YogoTV VIP",
+    "vip": "YogoShort VIP",
     "enjoy": "استمتع بجميع الأعمال الدرامية مجانًا",
     "feedback_help": "الملاحظات والمساعدة",
     "about_us": "حولنا",

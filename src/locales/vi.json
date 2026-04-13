@@ -1,6 +1,6 @@
 {
-    "site_name": "YogoTV",
-    "domain": "YogoTV.com",
+    "site_name": "YogoShort",
+    "domain": "YogoShort.com",
     "language": "Ngôn ngữ",
     "home": "Trang chủ",
     "nav_open_menu": "Mở menu",
@@ -39,7 +39,7 @@
     "check_login": "Kiểm tra đăng nhập",
     "guest": "Khách",
     "welcome_to_site": "Chào mừng đến với {site}!",
-    "vip": "YogoTV VIP",
+    "vip": "YogoShort VIP",
     "enjoy": "Xem tất cả phim miễn phí",
     "feedback_help": "Phản hồi & Trợ giúp",
     "about_us": "Về chúng tôi",

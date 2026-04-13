@@ -1,0 +1,52 @@
+/**
+ * iOS：底部「添加到主屏幕」胶囊按钮（与 Chromium #install 条区分，走独立样式）
+ * 尺寸按 pwa-install 同款 `--rs-vw = min(100vw, 480px)`（定义见 `pwa-install.scss`）
+ */
+
+:root {
+    --ios-pwa-add-bottom: calc(var(--rs-vw) * 24 / 375);
+}
+
+.ios-pwa-add-btn {
+    position: fixed;
+    left: 50%;
+    bottom: max(var(--ios-pwa-add-bottom), env(safe-area-inset-bottom, 0px));
+    z-index: 99;
+    box-sizing: border-box;
+    display: flex;
+    width: calc(var(--rs-vw) * 167 / 375);
+    height: calc(var(--rs-vw) * 40 / 375);
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--rs-vw) * 5 / 375);
+    padding: 0 calc(var(--rs-vw) * 10 / 375);
+    transform: translateX(-50%);
+    border-radius: calc(var(--rs-vw) * 40 / 375);
+    background: linear-gradient(90deg, #ff3d5d, #ff6b8a);
+    text-decoration: none;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.ios-pwa-add-btn:active {
+    transform: translateX(-50%) translateY(1px);
+}
+
+.ios-pwa-add-btn__icon {
+    flex: 0 0 auto;
+    width: calc(var(--rs-vw) * 22 / 375);
+    height: calc(var(--rs-vw) * 22 / 375);
+    object-fit: contain;
+    border-radius: calc(var(--rs-vw) * 6 / 375);
+}
+
+.ios-pwa-add-btn__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: calc(var(--rs-vw) * 13 / 375);
+    font-weight: 600;
+    line-height: 1.2;
+}

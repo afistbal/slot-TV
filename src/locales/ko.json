@@ -1,6 +1,6 @@
 {
-    "site_name": "YogoTV",
-    "domain": "YogoTV.com",
+    "site_name": "YogoShort",
+    "domain": "YogoShort.com",
     "language": "언어",
     "home": "홈",
     "nav_open_menu": "메뉴 열기",
@@ -39,7 +39,7 @@
     "check_login": "로그인 확인",
     "guest": "게스트",
     "welcome_to_site": "{site}에 오신 것을 환영합니다!",
-    "vip": "YogoTV VIP",
+    "vip": "YogoShort VIP",
     "enjoy": "모든 드라마를 무료로 즐기세요",
     "feedback_help": "피드백 및 도움말",
     "about_us": "회사 소개",

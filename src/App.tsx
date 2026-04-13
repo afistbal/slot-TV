@@ -51,6 +51,7 @@ import UserMyBalance from './pages/user/MyBanlance';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
 import UserCheckout from './pages/user/Checkout';
+import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 
 import LayoutAdmin from './layouts/admin';
 import AdminHome from './pages/admin/Home';
@@ -229,6 +230,10 @@ const router = createBrowserRouter([
             {
                 path: 'login',
                 element: <UserLogin />,
+            },
+            {
+                path: 'ios-add-home',
+                element: <UserIosAddHomeGuide />,
             },
             {
                 path: 'pay/:id',

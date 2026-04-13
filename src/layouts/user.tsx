@@ -6,6 +6,7 @@ import { Suspense, useEffect } from "react";
 import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
 import usePixel from "@/hooks/usePixel";
 import { showBottomTabBar } from "@/env";
+import { IosAddHomeFloatingBtn } from "@/components/IosAddHomeFloatingBtn";
 
 function RouteSuspenseFallback() {
     const intl = useIntl();
@@ -83,6 +84,7 @@ export default function Component() {
                 </NavLink>
             </div>
         ) : null}
+        <IosAddHomeFloatingBtn />
     </div>;
 }
 
