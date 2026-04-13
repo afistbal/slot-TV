@@ -16,7 +16,7 @@ type ReelShortBasicsSpinProps = {
 };
 
 /**
- * ReelShort BasicsSpin 对标：#3d3d3d 方形容器 + 圆角，动画为纯 CSS 环（无雪碧图）
+ * ReelShort BasicsSpin 对标：#3d3d3d 方形容器 + 雪碧图三球帧动画（`rs-basics-spin__sprite`）
  * 样式：`src/styles/reelshort-basics-spin.scss`
  */
 export function ReelShortBasicsSpin({
@@ -55,7 +55,7 @@ export function ReelShortBasicsSpin({
                 aria-label={label}
             >
                 <div className="rs-basics-spin__spin">
-                    <div className="rs-basics-spin__ring" aria-hidden />
+                    <div className="rs-basics-spin__sprite" aria-hidden />
                 </div>
             </div>
         </>

@@ -1,6 +1,14 @@
 /**
- * ReelShort BasicsSpin 对标：#3d3d3d 圆角容器 + translate(-50%,-50%) scale(0.6)，动画纯 DOM/CSS（无图）
+ * ReelShort BasicsSpin 对标：#3d3d3d 圆角方形容器；整体较镜像再约小 20%（modal scale 0.48、inline/embed 0.68）
+ * 内层雪碧图（BasicsSpin_loading）：50 帧；镜像为 720vw×14.4vw，此处按 --app-vw 与 166px 断点等比
+ * 雪碧图：`src/assets/images/loading.png`
  */
+
+$rs-basics-spin-sprite-path: '../assets/images/loading.png';
+
+/* 与镜像一致：50 帧 × 14.4vw = 720vw 总宽 */
+$rs-basics-spin-frame-unit: calc(14.4 / 100 * var(--app-vw));
+$rs-basics-spin-sprite-shift: calc(-49 * 14.4 / 100 * var(--app-vw));
 
 .rs-basics-spin__shade {
     position: fixed;
@@ -60,33 +68,84 @@
     top: 50%;
     left: 50%;
     z-index: 99999;
-    transform: translate(-50%, -50%) scale(0.6);
+    transform: translate(-50%, -50%) scale(0.48);
 }
 
 .rs-basics-spin--inline .rs-basics-spin__spin {
     position: relative;
     top: auto;
     left: auto;
-    transform: scale(0.85);
+    transform: scale(0.68);
 }
 
-@keyframes rs-basics-spin-rotate {
-    to {
-        transform: rotate(360deg);
+/**
+ * 全局 Loader 等嵌入场景：与 inline 同为方块 + 内层动画，但不占 160px 最小高度，避免撑开侧栏/小卡片
+ */
+.rs-basics-spin--embed {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.rs-basics-spin--embed .rs-basics-spin__spin {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: scale(0.68);
+}
+
+/* Loader color="light"：略提亮容器，在深色底上更清晰 */
+.rs-basics-spin--embed-light .rs-basics-spin__spin {
+    background: #4a4a4a;
+}
+
+/* 对标 .BasicsSpin_loading__YwFMw：雪碧图 + steps(49,end) 对应 50 帧步进 */
+.rs-basics-spin__sprite {
+    box-sizing: border-box;
+    flex-shrink: 0;
+    width: $rs-basics-spin-frame-unit;
+    height: $rs-basics-spin-frame-unit;
+    background-image: url($rs-basics-spin-sprite-path);
+    background-repeat: no-repeat;
+    background-position: 0 0;
+    background-size: calc(720 / 100 * var(--app-vw)) $rs-basics-spin-frame-unit;
+    animation-name: rs-basics-spin-sprite-kf;
+    animation-duration: 1.667s;
+    animation-delay: 0s;
+    animation-iteration-count: infinite;
+    animation-fill-mode: forwards;
+    animation-timing-function: steps(49, end);
+
+    @media (min-width: 768px) {
+        width: calc(166px * 14.4 / 34.66667);
+        height: calc(166px * 14.4 / 34.66667);
+        background-size: calc(50 * 166px * 14.4 / 34.66667) calc(166px * 14.4 / 34.66667);
+        animation-name: rs-basics-spin-sprite-kf-md;
     }
 }
 
-/* 纯 CSS 环，不依赖图片 */
-.rs-basics-spin__ring {
-    box-sizing: border-box;
-    width: 42%;
-    height: 42%;
-    border-radius: 50%;
-    border: calc(2.5 / 375 * var(--app-vw)) solid rgba(255, 255, 255, 0.14);
-    border-top-color: rgba(255, 255, 255, 0.92);
-    animation: rs-basics-spin-rotate 0.72s linear infinite;
+@keyframes rs-basics-spin-sprite-kf {
+    from {
+        background-position: 0 0;
+    }
 
-    @media (min-width: 768px) {
-        border-width: 3px;
+    to {
+        background-position: $rs-basics-spin-sprite-shift 0;
+    }
+}
+
+@keyframes rs-basics-spin-sprite-kf-md {
+    from {
+        background-position: 0 0;
+    }
+
+    to {
+        /* -49 × 单帧宽，与移动端 -705.6/100*vw 同比例 */
+        background-position: calc(-49 * 166px * 14.4 / 34.66667) 0;
     }
 }

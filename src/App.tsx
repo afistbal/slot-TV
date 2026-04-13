@@ -67,6 +67,7 @@ import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminActivityLog from './pages/admin/ActivityLog';
 import Loader from "./components/Loader";
 import NotFound from './pages/NotFound';
+import { isApplePlatform } from "./lib/isApplePlatform";
 
 /** 旧书签 `/page/checkout/:id` → `/page/pay/:id` */
 function LegacyCheckoutToPayRedirect() {
@@ -640,14 +641,14 @@ function App() {
 
     }, [checked]);
 
-    const showInstallPrompt = install > 0;
+    const showInstallPrompt = install > 0 && !isApplePlatform();
 
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
         <div
             className={cn('root', `root-${rootStore.theme}`)}
             style={showInstallPrompt ? { paddingBottom: '60px' } : undefined}
         >
-            {install > 0 && (
+            {showInstallPrompt && (
                 <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center">
                     <div
                         id="install"
