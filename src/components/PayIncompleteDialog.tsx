@@ -13,11 +13,17 @@ import { useNavigate } from "react-router";
 type PayIncompleteDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * 为 false 时关闭弹窗不再 `navigate("/shopping")`（例如已在购物页内嵌钱包流程）。
+   * 默认 true，与其它收银台页行为一致。
+   */
+  dismissNavigateToShopping?: boolean;
 };
 
 export default function PayIncompleteDialog({
   open,
   onOpenChange,
+  dismissNavigateToShopping = true,
 }: PayIncompleteDialogProps) {
   const navigate = useNavigate();
   /** 为 true 时表示本次关闭来自「意见回馈」，不再跳 shopping */
@@ -27,7 +33,7 @@ export default function PayIncompleteDialog({
     if (!next) {
       if (closingForFeedbackRef.current) {
         closingForFeedbackRef.current = false;
-      } else {
+      } else if (dismissNavigateToShopping) {
         navigate("/shopping");
       }
     }

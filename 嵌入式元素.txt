@@ -1,0 +1,372 @@
+Drop-in Element  插入元素
+The Drop-in Element lets you embed multiple payment methods with a single integration while offering options to customize the look and feel of the checkout experience.
+插件功能允许您通过一次集成嵌入多种支付方式，同时提供自定义结账体验外观和风格的选项。
+Create Drop-in Element  创建插入式元素
+createElement('dropIn', options?)
+Use this function to create an instance of an individual Element.
+使用此函数创建单个元素的实例。
+
+Parameters  参数
+type
+required  必需的
+'dropIn'
+The type of element you are creating.
+
+options
+optional  选修的
+DropInElementOptions
+Options for creating dropIn Element.
+
+Returns  返回
+DropInElement | null
+linkTypeScript
+import { createElement } from '@airwallex/components-sdk';
+const element = await createElement('dropIn', {
+  intent_id: 'replace-with-your-intent-id',
+  client_secret: 'replace-with-your-client-secret',
+  currency: 'replace-with-your-intent-currency',
+});
+DropInElementOptions
+Apply to dropIn element type integration, interface used when createElement called with type dropIn
+适用于 dropIn 元素类型集成，当使用 dropIn 类型调用 createElement 时使用的接口
+
+client_secret  客户端密钥
+required  必需的
+string  细绳
+The client_secret of the Payment Intent when Payment Intent is provided. Otherwise, this should be the client_secret of the Customer object.
+当提供了支付意图时，此值为支付意图的 client_secret 。否则，此值为 Customer 对象的 client_secret 。
+
+currency  货币
+required  必需的
+string  细绳
+The three-letter ISO currency code representing the currency of the Payment Intent or Payment Consent. Only payment methods supported for the specified currency will be shown on the payment page.
+代表付款意向或付款授权所用货币的三字母 ISO 货币代码。付款页面上只会显示支持该指定货币的付款方式。
+
+allowedCardNetworks  允许的卡网络
+optional  选修的
+CardNetwork[]
+CardNetwork []
+One or more card networks that you support.
+您支持的一个或多个卡网络。
+
+appearance  外貌
+optional  选修的
+DropInAppearance
+Customize the visual appearance of the DropIn Element to match your website's design.
+自定义 DropIn 元素的视觉外观，使其与您的网站设计相匹配。
+
+You can configure:  您可以配置：
+
+mode: Choose between 'dark' and 'light' mode.
+模式：选择 “深色” 模式或 “浅色” 模式。
+
+variables: Set colorBrand, colorText, colorBackground properties.
+变量：设置 colorBrand 、 colorText 、 colorBackground 属性。
+
+rules: Customize the styles of the specific elements.
+规则：自定义特定元素的样式。
+
+
+applePayRequestOptions
+optional  选修的
+ApplePayRequestOptions
+Checkout configuration options for Apple Pay.
+Apple Pay 的结账配置选项。
+
+authFormContainer
+optional  选修的
+string  细绳
+The container of the authentication form used in 3D Secure authentication.
+用于 3D 安全认证的认证表单容器。
+
+authorizationType  授权类型
+optional  选修的
+AuthorizationType  授权类型
+The authorization type for the card payment. Set it to pre_auth if you want to place a hold on your customer's card for more than 7 days, i.e., extend the authorization time window. Currently pre_auth is only available when the card brand is Visa or Mastercard. autoCapture will be automatically set to false if you enable pre_auth. Default value is 'final_auth'.
+信用卡支付的授权类型。如果您希望冻结客户信用卡超过 7 天（即延长授权时间），请将其设置为 pre_auth 。目前， pre_auth 仅适用于 Visa 或 Mastercard 卡。启用 pre_auth 后， autoCapture 将自动设置为 false 。默认值为 final_auth 。
+
+autoCapture  自动捕获
+optional  选修的
+boolean  布尔值
+Whether the amount should be captured automatically upon successful payment authorization. Set it to false if you want to place a hold on the payment method and capture the funds sometime later. Default value is true.
+是否在付款授权成功后自动扣款。如果您希望暂时冻结付款方式并在稍后扣款，请将其设置为 false。 默认值为 true 。
+
+autoSaveCardForFuturePayments
+自动保存信用卡信息以备将来支付
+optional  选修的
+boolean  布尔值
+Specifies whether the card payment method should be automatically saved for future transactions.
+指定是否应自动保存银行卡支付方式以供将来交易使用。
+
+This parameter is only effective in payment mode when a customer_id is provided.
+此参数仅在提供 customer_id 的支付模式下有效。
+
+If set to true, the "Save my card for future payments" checkbox will be preselected by default.
+如果设置为 true ，则“保存我的银行卡以便将来付款”复选框将默认预先选中。
+-If set to false, the checkbox will remain unchecked, requiring the shopper to manually opt in.
+-如果设置为 false ，则复选框将保持未选中状态，需要购物者手动选择加入。
+
+Default value is true
+默认值为真
+
+billing  计费
+optional  选修的
+Billing  账单
+Billing information provided by the merchant. This option overrides the billing information from the shopper as provided in the input billing fields. Do not set withBilling and requiredBillingContactFields when you use this option.
+商家提供的账单信息。此选项会覆盖购物者在账单输入字段中提供的账单信息。使用此选项时，请勿设置 withBilling 和 requiredBillingContactFields 。
+
+country_code  国家代码
+optional  选修的
+string  细绳
+The two-letter ISO country code of the shopper's country. This is required for bank_transfer, online_banking, skrill or seven_eleven payment methods.
+购物者所在国家/地区的两位字母 ISO 国家/地区代码。银行转账、网上银行、 Skrill 或 7-11 便利店付款方式需要此信息。
+
+customer_id  客户 ID
+optional  选修的
+string  细绳
+The ID of the Customer used in registered user checkout. Refer to Airwallex Client APIAPI This field is required when mode is 'recurring'.
+注册用户结账时使用的客户 ID。请参阅 Airwallex 客户端 API。 当模式为 “定期” 时，此字段为必填项。
+
+cvcRequired
+optional  选修的
+boolean  布尔值
+Whether you require the shopper to provide CVC when they checkout with a network tokenized card.
+是否要求购物者在使用网络令牌化卡结账时提供 CVC。
+
+disableAutoCurrencyConversion
+禁用自动货币转换
+optional  选修的
+boolean  布尔值
+Whether to force disable automatic currency conversion. - true: Overrides merchant settings to disable conversion. - false: Respects the merchant's automatic conversion configuration. Default value is false.
+是否强制禁用自动货币转换。- true ：覆盖商家设置以禁用转换。- false ：遵循商家的自动转换配置。默认值为 false 。
+
+googlePayRequestOptions
+optional  选修的
+GooglePayRequestOptions
+Checkout configuration options for Google Pay.
+Google Pay 的结账配置选项。
+
+intent_id
+optional  选修的
+string  细绳
+The ID of the Payment Intent you would like to checkout. Required when mode is 'payment'.
+您要结账的支付意图的 ID。当模式为 “支付” 时为必填项。
+
+layout  布局
+optional  选修的
+Layout  布局
+The layout of the DropIn element.
+DropIn 元素的布局。
+
+methods  方法
+optional  选修的
+PaymentMethodType[]
+支付方式类型[]
+The payment methods your website would like to integrate with.
+您的网站希望集成的支付方式。
+
+mode  模式
+optional  选修的
+Mode  时尚
+The checkout mode for the shopper, 'payment' or 'recurring'. Default value is 'payment'.
+购物者的结账模式，可以是“付款” 或 “定期付款” 。默认值为 “付款” 。
+
+payment_consent  支付同意
+optional  选修的
+PaymentConsentOptions  支付同意选项
+The payment consent details.
+付款授权详情。
+
+platformConnectedAccount
+optional  选修的
+string  细绳
+When using Payments for Platforms, specify the ID of the connected account associated with the payment if you want to use its information to process the payment. For example, the statement descriptor displayed on the shopper's credit card or bank statement and the payment methods activated by the connected account.
+使用“平台支付”功能时，如果您希望使用关联账户的信息来处理付款，请指定与该付款关联的账户 ID。例如，购物者信用卡或银行对账单上显示的账单描述符以及关联账户激活的付款方式。
+
+quote_id  报价单
+optional  选修的
+null | string  空 | 字符串
+This field is used for Multi-Currency Pricing(MCP). The merchant can create a quote for the shopper, and pass the quote_id to Drop-in Element. If the quote_id is provided, Drop-in Element will use that quote to convert the amount and currency. And each time the shopper changes the currency, the merchant needs to create a new quote or reuse existing quotes and update the quote_id. If the quote_id is not provided, Drop-in Element will use ACC logic to automatically convert the amount and currency.
+此字段用于多币种定价 (MCP)。商家可以为顾客创建报价单，并将 quote_id 传递给 Drop-in Element。如果提供了 quote_id，Drop-in Element 将使用该报价单转换金额和货币。每次顾客更改货币时，商家都需要创建新报价单或重用现有报价单并更新 quote_id。如果未提供 quote_id，Drop-in Element 将使用 ACC 逻辑自动转换金额和货币。
+
+requiredBillingContactFields
+必填的账单联系人字段
+optional  选修的
+ContactField[]
+联系字段[]
+The billing information that you require from the user in order to process the transaction.
+您需要从用户处获取的账单信息，以便处理交易。
+
+savedPaymentMethod  已保存的支付方式
+optional  选修的
+SavedPaymentMethodOptions
+已保存的支付方式选项
+The options for saved payment method. Default value is { displayMode: 'auto', saveMode: 'auto' }.
+已保存付款方式的选项。默认值为 { displayMode: 'auto', saveMode: 'auto' } 。
+
+shopper_email  购物者电子邮件
+optional  选修的
+string  细绳
+The shopper's email address.
+购物者的电子邮件地址。
+
+shopper_name  购物者姓名
+optional  选修的
+string  细绳
+The shopper's full name.   购物者的全名。
+
+shopper_phone  购物电话
+optional  选修的
+string  细绳
+The shopper's phone number.
+购物者的电话号码。
+
+showConfirmButton  显示确认按钮
+optional  选修的
+boolean  布尔值
+Whether to display the built-in confirm button. Default is true. When set to false: - The confirm button will be hidden - Only card payment method will be displayed, other payment methods will be hidden - You must implement your own button and call dropInElement.confirm() to submit the payment Default value is true.
+是否显示内置的确认按钮。默认值为 true 。设置为 false 时：- 确认按钮将被隐藏 - 仅显示银行卡支付方式，其他支付方式将被隐藏 - 您必须实现自己的按钮并调用 dropInElement.confirm() 来提交付款。默认值为 true 。
+
+style  风格
+optional  选修的
+BoxStyle
+Box style for the dropIn element.
+dropIn 元素的盒式样式。
+
+submitType  提交类型
+optional  选修的
+SubmitType  提交类型
+Describes the type of transaction being performed in order to customize the submit button text. Available options are 'pay', 'book', or 'subscribe'. The type can only be specified in payment mode. If blank, the default value will be 'pay' Default value is 'pay'.
+用于描述正在执行的交易类型，以便自定义提交按钮文本。可用选项包括“支付”、“预订”或“订阅”。类型只能在支付模式下指定。如果留空，则默认值为 “支付” 。
+
+wechatpay  微信支付
+optional  选修的
+WeChatPayFlow  微信支付流
+The options for Wechat Pay.
+微信支付选项。
+
+components  成分
+deprecated  已弃用
+PaymentMethodType[]
+支付方式类型[]
+The payment methods your website would like to integrate with
+您的网站希望集成的支付方式
+
+recurringOptions  循环选项
+deprecated  已弃用
+RecurringOptions  循环选项
+Options for recurring flow.
+循环流程选项。
+
+withBilling  计费
+deprecated  已弃用
+boolean  布尔值
+Indicate to improve 3DS experience, indicate if the payment form will collect billing info from shopper
+为了提升 3DS 用户体验，请说明支付表单是否会收集购物者的账单信息。
+
+DropInElement  插入元素
+Element functions can be used in your integration flow with Airwallex element.
+元素功能可以用于与 Airwallex element 的集成流程中。
+
+destroy()  破坏（）
+Destroys the Element instance.
+销毁 Element 实例。
+
+Returns  返回
+void
+linkTypeScript
+element.destroy();
+mount(domElement)
+Mounts Element to your HTML DOM.
+将元素挂载到 HTML DOM 中。
+
+Parameters  参数
+domElement
+required  必需的
+string | HTMLElement
+
+Returns  返回
+null | HTMLElement
+linkTypeScript
+// There are two ways to mount the element:
+// 1. Call with the container DOM id
+element.mount('container-dom-id');
+
+// 2. Find the created DOM in the existing HTML and call with the container DOM element
+const containerElement = document.getElementById('container-dom-id');
+element.mount(containerElement);
+on(eventCode, handler)
+Listen to the Element events.
+监听元素事件。
+
+Parameters  参数
+eventCode
+required  必需的
+EventCode
+The event code to listen for.
+
+handler
+required  必需的
+DropInElementEventHandler<EventCode,>
+The callback function that will be called when the event occurs.
+
+Returns  返回
+void
+linkTypeScript
+element.on('success', (e) => {
+  const { intent } = e.detail;
+ // Handle success event
+});
+trigger(code, params?)  触发器（代码，参数？）
+Call this function to trigger a specific event.
+调用此函数可触发特定事件。
+
+Parameters  参数
+code  代码
+required  必需的
+T
+The event code to trigger.
+要触发的事件代码。
+
+params  参数
+optional  选修的
+DropInElementTriggerEventParams<T,>
+The parameters that pass to the triggered event handler.
+传递给触发事件处理程序的参数。
+
+Returns  返回
+void  空白
+linkTypeScript
+element.trigger('intentRefetch');
+unmount()  卸载()
+Unmounts the Element. Note that the Element instance will remain.
+卸载 Element 组件。请注意，Element 实例将仍然存在。
+
+Returns  返回
+void  空白
+linkTypeScript
+element.unmount();
+update(options?, initOptions?)
+更新（选项？，初始化选项？）
+Call this function to update Element options after creating the Element.
+创建元素后，调用此函数以更新元素选项。
+
+Parameters  参数
+options  选项
+optional  选修的
+Partial<DropInElementOptions>
+部分 DropInElementOptions >
+
+initOptions  初始化选项
+optional  选修的
+Partial<InitOptions>
+部分初始化选项>
+
+Returns  返回
+void  空白
+linkTypeScript
+element.update({
+  methods: ['card'],
+}, {
+  locale: 'en',
+});
