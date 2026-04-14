@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api } from '@/api';
 import { cn } from '@/lib/utils';
+import {
+    airwallexEnsureShoppingWalletInit,
+    airwallexRunShoppingWalletExclusive,
+    normalizeAirwallexLocale,
+} from '@/lib/airwallexShoppingWalletEmbedSingleton';
+import { createElement, type ElementTypes } from '@airwallex/components-sdk';
 import vipCardBg from '@/assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png';
 import iconUnlimitedViewing from '@/assets/images/icon_unlimited_viewing.png';
 import icon1080p from '@/assets/images/icon_1080p.png';
@@ -14,28 +20,15 @@ import master from '@/assets/master.svg';
 import googlePay from '@/assets/google-pay.svg';
 import applePay from '@/assets/apple-pay.svg';
 import Countdown from '@/widgets/Countdown';
+import { isApplePlatform } from '@/lib/isApplePlatform';
 
 function paywallImage(file: string) {
     return new URL(`../../assets/images/${file}`, import.meta.url).href;
 }
 
-/** 购物/收银默认 `payment`：仅 Apple 手机与 iPad 默认 Apple Pay(1)，Android 与其余设备默认 Google Pay(2) */
+/** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
-    if (typeof navigator === 'undefined') {
-        return 2;
-    }
-    const ua = navigator.userAgent;
-    if (/iPhone|iPod/i.test(ua)) {
-        return 1;
-    }
-    if (/iPad/i.test(ua)) {
-        return 1;
-    }
-    // iPadOS 13+ 桌面模式 UA 常为 Macintosh
-    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) {
-        return 1;
-    }
-    return 2;
+    return isApplePlatform() ? 1 : 2;
 }
 
 /** 与 `widgets/Vip.tsx` 一致：相对续费价的展示折扣百分比 */
@@ -55,6 +48,28 @@ type Product = {
     price: string;
     renewal_price: string;
 };
+
+type PayCreateResp = {
+    pi: string;
+    client_secret: string;
+    customer_id: string;
+    currency?: string;
+    amount?: unknown;
+    amount_major?: unknown;
+    pay_amount?: unknown;
+    price?: unknown;
+    env?: 'prod' | 'demo';
+    success_url?: string;
+};
+
+function majorAmount(apiHint: unknown): number {
+    if (typeof apiHint === 'number' && Number.isFinite(apiHint)) return apiHint;
+    if (typeof apiHint === 'string') {
+        const v = parseFloat(apiHint);
+        if (Number.isFinite(v)) return v;
+    }
+    return 0;
+}
 
 export type RadixRcLayout = 'page' | 'embed';
 
@@ -84,6 +99,14 @@ export default function RadixRc({
     const navigate = useNavigate();
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // 预留：之前用于 Airwallex wallet 的 redirect 计算；当前版本不在 /shopping 内嵌钱包按钮
+    // const walletPayCreateRedirect = useMemo(() => {
+    //     if (typeof window === 'undefined') {
+    //         return '';
+    //     }
+    //     return payCreateRedirectFromApiOrigin(`${location.pathname}${location.search}`);
+    // }, [location.pathname, location.search]);
+
     const [products, setProducts] = useState<Product[]>(() => shoppingProductCache.get(productFrom) ?? []);
     const [loadingProducts, setLoadingProducts] = useState(
         () => !shoppingProductCache.has(productFrom),
@@ -94,6 +117,19 @@ export default function RadixRc({
     });
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
+    const [planWalletState, setPlanWalletState] = useState<Map<number, 'pending' | 'ready' | 'failed'>>(
+        () => new Map(),
+    );
+    const planWalletTimersRef = useRef<Map<number, number>>(new Map());
+    const planWalletReadyDelayTimersRef = useRef<Map<number, number>>(new Map());
+    const walletElementsRef = useRef<
+        Map<number, ElementTypes['googlePayButton'] | ElementTypes['applePayButton']>
+    >(new Map());
+    const planWalletMountRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+    const planWalletSeenNonZeroHeightRef = useRef<Map<number, boolean>>(new Map());
+    const walletObsRef = useRef<MutationObserver[]>([]);
+    const walletRunIdRef = useRef(0);
+    const lastWalletPaymentRef = useRef<1 | 2 | null>(null);
 
     useEffect(() => {
         const cached = shoppingProductCache.get(productFrom);
@@ -128,12 +164,295 @@ export default function RadixRc({
         };
     }, [productFrom]);
 
+    const planProducts = useMemo(() => products.slice(0, 3), [products]);
+    const planIdsKey = useMemo(() => planProducts.map((p) => p.id).join(','), [planProducts]);
+
+    const cleanupWalletOverlays = useCallback(() => {
+        walletObsRef.current.forEach((o) => o.disconnect());
+        walletObsRef.current = [];
+        for (const [, el] of walletElementsRef.current) {
+            try {
+                el.unmount();
+                el.destroy();
+            } catch {
+                /* noop */
+            }
+        }
+        walletElementsRef.current.clear();
+        for (const [, t] of planWalletTimersRef.current) {
+            window.clearTimeout(t);
+        }
+        planWalletTimersRef.current.clear();
+        for (const [, t] of planWalletReadyDelayTimersRef.current) {
+            window.clearTimeout(t);
+        }
+        planWalletReadyDelayTimersRef.current.clear();
+        setPlanWalletState(new Map());
+    }, []);
+
+    useEffect(() => {
+        // Visa/卡：不销毁 wallet（避免切回来重建）；仅隐藏由 render 层控制
+        if (payment !== 1 && payment !== 2) {
+            walletObsRef.current.forEach((o) => o.disconnect());
+            walletObsRef.current = [];
+            return;
+        }
+
+        let alive = true;
+        walletRunIdRef.current += 1;
+        const runId = walletRunIdRef.current;
+        // 只有在 google/apple 互切时才清理重建；visa<->google 不清
+        if (lastWalletPaymentRef.current && lastWalletPaymentRef.current !== payment) {
+            cleanupWalletOverlays();
+        }
+        lastWalletPaymentRef.current = payment;
+
+        const which = payment === 1 ? ('apple' as const) : ('google' as const);
+
+        const plans = planProducts;
+        void airwallexRunShoppingWalletExclusive(async () => {
+            const initialRendered = new Set<number>();
+            const READY_H = 40;
+            const READY_TIMEOUT_MS = 12000;
+            const READY_DELAY_MS = 1200;
+            const readPx = (v: string | null | undefined): number => {
+                if (!v) return NaN;
+                const n = parseFloat(v);
+                return Number.isFinite(n) ? n : NaN;
+            };
+            const frameHeightPx = (frame: HTMLIFrameElement): number => {
+                // Airwallex 常用 inline style 驱动 height transition：优先信任 frame.style.height
+                const inlineH = readPx(frame.style.height);
+                if (Number.isFinite(inlineH)) return inlineH;
+                const csH = readPx(window.getComputedStyle(frame).height);
+                if (Number.isFinite(csH)) return csH;
+                return frame.getBoundingClientRect().height;
+            };
+            const isHostReady = (host: HTMLDivElement, planId: number) => {
+                const frame = host.querySelector('iframe') as HTMLIFrameElement | null;
+                if (!frame) return false;
+                const h = frameHeightPx(frame);
+                // 防止“接口回来了但按钮还没真正渲染”的误判：
+                // 必须观察到 iframe 的 inline height 从 0 变为非 0（通常是 0 -> 40+ 的 transition），
+                // 然后再以高度阈值判断 ready。
+                const inlineH = readPx(frame.style.height);
+                if (Number.isFinite(inlineH) && inlineH > 0) {
+                    planWalletSeenNonZeroHeightRef.current.set(planId, true);
+                }
+                if (!planWalletSeenNonZeroHeightRef.current.get(planId)) {
+                    return false;
+                }
+                return h >= READY_H;
+            };
+            const scheduleReady = (planId: number) => {
+                const prevTid = planWalletReadyDelayTimersRef.current.get(planId);
+                if (prevTid) {
+                    window.clearTimeout(prevTid);
+                }
+                const tid = window.setTimeout(() => {
+                    if (!alive || walletRunIdRef.current !== runId) return;
+                    setPlanWalletState((prev) => {
+                        const n = new Map(prev);
+                        n.set(planId, 'ready');
+                        return n;
+                    });
+                }, READY_DELAY_MS);
+                planWalletReadyDelayTimersRef.current.set(planId, tid);
+            };
+            const markReady = (planId: number, host: HTMLDivElement) => {
+                const startAt = performance.now();
+                const tick = () => {
+                    if (!alive || walletRunIdRef.current !== runId) return;
+                    if (isHostReady(host, planId)) {
+                        scheduleReady(planId);
+                        return;
+                    }
+                    if (performance.now() - startAt > READY_TIMEOUT_MS) {
+                        setPlanWalletState((prev) => {
+                            const n = new Map(prev);
+                            if (n.get(planId) !== 'ready') n.set(planId, 'failed');
+                            return n;
+                        });
+                        return;
+                    }
+                    requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+            };
+            // init 一次即可（env 优先用第一个 pay/create 返回；否则 demo）
+            let inited = false;
+            let initEnv: 'prod' | 'demo' = 'demo';
+            for (const p of plans) {
+                if (!alive || walletRunIdRef.current !== runId) return;
+                const host = planWalletMountRefs.current.get(p.id) ?? null;
+                if (!host) continue;
+
+                // 初始化状态与超时
+                planWalletSeenNonZeroHeightRef.current.set(p.id, false);
+                const prevDelayTid = planWalletReadyDelayTimersRef.current.get(p.id);
+                if (prevDelayTid) {
+                    window.clearTimeout(prevDelayTid);
+                }
+                planWalletReadyDelayTimersRef.current.delete(p.id);
+                setPlanWalletState((prev) => {
+                    const n = new Map(prev);
+                    n.set(p.id, 'pending');
+                    return n;
+                });
+                if (!planWalletTimersRef.current.has(p.id) && (payment === 1 || payment === 2)) {
+                    const tid = window.setTimeout(() => {
+                        setPlanWalletState((prev) => {
+                            const n = new Map(prev);
+                            if (n.get(p.id) !== 'ready') n.set(p.id, 'failed');
+                            return n;
+                        });
+                    }, 10000);
+                    planWalletTimersRef.current.set(p.id, tid);
+                }
+
+                // 已有 iframe/element：直接标记渲染完成，不重复创建（用于 visa->google 切回）
+                if (walletElementsRef.current.has(p.id) && isHostReady(host, p.id)) {
+                    initialRendered.add(p.id);
+                    scheduleReady(p.id);
+                    continue;
+                }
+
+                let payCreate: Awaited<ReturnType<typeof api<PayCreateResp>>>;
+                try {
+                    payCreate = await api<PayCreateResp>('pay/create', {
+                        method: 'post',
+                        loading: false,
+                        data: {
+                            payment,
+                            product_id: p.id,
+                            redirect: window.location.href,
+                        },
+                    });
+                } catch (e) {
+                    console.error('[shopping] pay/create failed', e);
+                    continue;
+                }
+                if (!alive || walletRunIdRef.current !== runId) return;
+                if (payCreate.c !== 0) continue;
+
+                if (!inited) {
+                    initEnv = (payCreate.d?.env as 'prod' | 'demo' | undefined) ?? 'demo';
+                    try {
+                        await airwallexEnsureShoppingWalletInit(
+                            normalizeAirwallexLocale(intl.locale),
+                            initEnv,
+                        );
+                    } catch (e) {
+                        console.error('[shopping] airwallex init failed', e);
+                        return;
+                    }
+                    inited = true;
+                    if (!alive || walletRunIdRef.current !== runId) return;
+                }
+
+                const intent_id = payCreate.d.pi;
+                const client_secret = payCreate.d.client_secret;
+                const customer_id = payCreate.d.customer_id;
+                const currency = payCreate.d.currency || 'USD';
+                const amountValue = majorAmount(
+                    payCreate.d.amount ?? payCreate.d.amount_major ?? payCreate.d.pay_amount ?? payCreate.d.price,
+                );
+
+                try {
+                    const el =
+                        which === 'google'
+                            ? await createElement('googlePayButton', {
+                                  mode: 'recurring',
+                                  intent_id,
+                                  client_secret,
+                                  customer_id,
+                                  amount: { value: amountValue, currency },
+                                  countryCode: 'HK',
+                                  buttonSizeMode: 'fill',
+                                  buttonColor: 'white',
+                                  buttonType: 'short',
+                              })
+                            : await createElement('applePayButton', {
+                                  mode: 'recurring',
+                                  intent_id,
+                                  client_secret,
+                                  customer_id,
+                                  amount: { value: amountValue, currency },
+                                  countryCode: 'HK',
+                                  buttonType: 'plain',
+                                  buttonColor: 'black',
+                              });
+                    if (!el) continue;
+                    if (!alive || walletRunIdRef.current !== runId) {
+                        try {
+                            el.destroy();
+                        } catch {
+                            /* noop */
+                        }
+                        continue;
+                    }
+                    el.mount(host);
+                    walletElementsRef.current.set(p.id, el as never);
+                    // mount 后 child 可能下一帧才出现：用 rAF 轮询确认
+                    if (isHostReady(host, p.id)) {
+                        initialRendered.add(p.id);
+                        scheduleReady(p.id);
+                    } else {
+                        markReady(p.id, host);
+                    }
+                } catch {
+                    continue;
+                }
+            }
+
+            const observers: MutationObserver[] = [];
+            for (const p of plans) {
+                const host = planWalletMountRefs.current.get(p.id);
+                if (!host) continue;
+                if (isHostReady(host, p.id)) {
+                    initialRendered.add(p.id);
+                }
+                const obs = new MutationObserver(() => {
+                    if (!alive || walletRunIdRef.current !== runId) return;
+                    // iframe/样式变化可能滞后：变更后重新尝试判定 ready
+                    markReady(p.id, host);
+                });
+                obs.observe(host, { childList: true, subtree: true });
+                observers.push(obs);
+            }
+            walletObsRef.current = observers;
+        }).catch((e) => {
+            console.error('[shopping] wallet overlay crashed', e);
+        });
+
+        return () => {
+            alive = false;
+            // 注意：这里不 destroy，避免 StrictMode/卸载重挂载导致丢缓存；只断开 observer
+            walletObsRef.current.forEach((o) => o.disconnect());
+            walletObsRef.current = [];
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [payment, intl.locale, cleanupWalletOverlays, planIdsKey]);
+
     function goCheckout(productId: number, payMethod: number) {
+        if (payMethod === 3) {
+            navigate(`/page/pay/${productId}?from=${checkoutFrom}`);
+            return;
+        }
         navigate(`/page/pay/${productId}?payment=${payMethod}&from=${checkoutFrom}`);
     }
 
     function handleSelectAndPay(productId: number) {
         setCurrentId(productId);
+        // wallet 状态下由 overlay 按钮自行拉起；这里仅选中
+        if (payment === 2) {
+            const st = planWalletState.get(productId) ?? 'pending';
+            if (st === 'failed') {
+                goCheckout(productId, 3);
+            }
+            return;
+        }
+        if (payment === 1) return;
         goCheckout(productId, payment);
     }
 
@@ -166,62 +485,111 @@ export default function RadixRc({
 
             {layout !== 'embed' ? countdownEl : null}
 
-            <div className="rs-shopping__plans">
-                {(loadingProducts ? [] : products).map((p) => (
+            <div className="rs-shopping__plans rs-shopping__plans--singleColAlways">
+                {(loadingProducts ? [] : planProducts).map((p) => (
+                    (() => {
+                        const isWalletMode = payment === 1 || payment === 2;
+                        const walletReady = !isWalletMode
+                            ? true
+                            : (planWalletState.get(p.id) ?? 'pending') === 'ready';
+                        const enableInteraction = !isWalletMode || walletReady;
+                        return (
                     <div
                         key={p.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleSelectAndPay(p.id)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                handleSelectAndPay(p.id);
-                            }
-                        }}
-                        className={cn('rs-shopping__plan', currentId === p.id && 'rs-shopping__plan--selected')}
+                        role={enableInteraction ? 'button' : undefined}
+                        aria-disabled={enableInteraction ? undefined : true}
+                        tabIndex={enableInteraction ? 0 : -1}
+                        onClick={enableInteraction ? () => handleSelectAndPay(p.id) : undefined}
+                        onKeyDown={
+                            enableInteraction
+                                ? (e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault();
+                                          handleSelectAndPay(p.id);
+                                      }
+                                  }
+                                : undefined
+                        }
+                        className={cn(
+                            'rs-shopping__plan',
+                            currentId === p.id && 'rs-shopping__plan--selected',
+                            !enableInteraction && 'cursor-default',
+                        )}
                     >
+                        {/* 每个套餐自己的 wallet overlay（真实三方按钮挂载容器） */}
                         <div
-                            className="rs-shopping__planBg"
-                            style={{ backgroundImage: `url(${vipCardBg})` }}
+                            ref={(node) => {
+                                planWalletMountRefs.current.set(p.id, node);
+                            }}
+                            className="rs-shopping__planPayMount absolute inset-0 z-10"
+                            style={{
+                                display: payment === 1 || payment === 2 ? 'flex' : 'none',
+                                opacity: 0.35,
+                                pointerEvents:
+                                    (planWalletState.get(p.id) ?? 'pending') === 'ready' ? 'auto' : 'none',
+                            }}
                         />
 
-                        <div className="rs-shopping__planOfferBadge">
-                            <FormattedMessage
-                                id="limited_time_offer"
-                                values={{ off: limitedOfferOffPercent(p.price, p.renewal_price) }}
+                        {/* Wallet 模式：按钮未 ready 前，仅显示骨架卡（避免看起来可点） */}
+                        {isWalletMode && !walletReady ? (
+                            <div
+                                aria-hidden="true"
+                                className="rs-shopping__skeletonBar rs-shopping__skeletonBar--planWalletOverlay"
                             />
-                        </div>
+                        ) : null}
 
-                        <div className="rs-shopping__planBody">
-                            <div className="rs-shopping__planText">
-                                <div className="rs-shopping__planName">
-                                    {intl.formatMessage({ id: `${p.name}_subscription` })}
-                                </div>
-                                <div className="rs-shopping__planPriceRow">
-                                    <div className="rs-shopping__planPrice">${p.price}</div>
-                                </div>
-                                <div className="rs-shopping__planRenew">
-                                    {intl.formatMessage({ id: 'shopping_auto_renew_short' })}
-                                </div>
-                            </div>
-                        </div>
+                        <>
+                            <div
+                                className="rs-shopping__planBg"
+                                style={{ backgroundImage: `url(${vipCardBg})` }}
+                            />
 
-                        <div className="rs-shopping__planBenefits">
-                            <div className="rs-shopping__planBenefit">
-                                <img
-                                    className="rs-shopping__planBenefitIcon"
-                                    src={iconUnlimitedViewing}
-                                    alt=""
+                            <div className="rs-shopping__planOfferBadge">
+                                <FormattedMessage
+                                    id="limited_time_offer"
+                                    values={{ off: limitedOfferOffPercent(p.price, p.renewal_price) }}
                                 />
-                                <FormattedMessage id="shopping_benefit_unlimited_viewing" />
                             </div>
-                            <div className="rs-shopping__planBenefit">
-                                <img className="rs-shopping__planBenefitIcon" src={icon1080p} alt="" />
-                                <FormattedMessage id="shopping_benefit_1080p" />
+
+                            <div className="rs-shopping__planBody">
+                                <div className="rs-shopping__planText">
+                                    <div className="rs-shopping__planName">
+                                        {intl.formatMessage({ id: `${p.name}_subscription` })}
+                                    </div>
+                                    <div className="rs-shopping__planPriceRow">
+                                        <div className="rs-shopping__planPrice">${p.price}</div>
+                                    </div>
+                                    <div className="rs-shopping__planRenew">
+                                        {intl.formatMessage({ id: 'shopping_auto_renew_short' })}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+
+                            {/* 纯展示 DOM：无点击事件，样式按 H5 “Top Up” */}
+                            <div className="rs-shopping__planTopUp">Top Up</div>
+
+                            <div className="rs-shopping__planBenefits">
+                                <div className="rs-shopping__planBenefit">
+                                    <img
+                                        className="rs-shopping__planBenefitIcon"
+                                        src={iconUnlimitedViewing}
+                                        alt=""
+                                    />
+                                    <FormattedMessage id="shopping_benefit_unlimited_viewing" />
+                                </div>
+                                <div className="rs-shopping__planBenefit">
+                                    <img
+                                        className="rs-shopping__planBenefitIcon"
+                                        src={icon1080p}
+                                        alt=""
+                                    />
+                                    <FormattedMessage id="shopping_benefit_1080p" />
+                                </div>
+                            </div>
+                        </>
                     </div>
+                        );
+                    })()
                 ))}
 
                 {loadingProducts ? (

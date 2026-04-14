@@ -9,7 +9,8 @@ export default function Component() {
   const params = useParams();
   const [searchParams] = useSearchParams();
   const productId = parseInt(params["id"] ?? "0", 10);
-  const payment = parsePaymentMethod(searchParams.get("payment"));
+  const rawPayment = searchParams.get("payment");
+  const payment = rawPayment == null ? 3 : parsePaymentMethod(rawPayment);
 
   const redirectHref =
     typeof window !== "undefined" ? window.location.href : "";

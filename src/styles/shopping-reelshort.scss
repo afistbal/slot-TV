@@ -81,6 +81,16 @@
         }
     }
 
+    /** 强制单列：PC 也保持一行一个套餐 */
+    &__plans--singleColAlways {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    /** Demo 页面：固定一行一个套餐（桌面端也不分两列） */
+    &__plans--demoSingleCol {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
     &__plan {
         position: relative;
         box-sizing: border-box;
@@ -95,6 +105,65 @@
             border-radius: 4px;
         }
 
+    }
+
+    /**
+     * Demo: 让 Airwallex Google/Apple Pay 挂载内容占满套餐卡片。
+     * Airwallex 会在容器内插入 iframe/div/button；这里统一强制拉伸。
+     */
+    &__planPayMount {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        line-height: 0;
+    }
+
+    /** 让真实注入的 iframe 按钮横向铺满，垂直居中（高度由 iframe 自己控制，如 46px） */
+    &__planPayMount iframe {
+        width: 100% !important;
+        max-width: none !important;
+        display: block;
+        box-sizing: border-box;
+    }
+
+    /** 套餐卡上的 wallet 骨架遮罩：复用 UI 的 `.rs-shopping__skeletonBar` 视觉 */
+    &__skeletonBar--planWalletOverlay {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        border-radius: inherit;
+        pointer-events: none;
+        /**
+         * 让覆盖层呈现“接口刚回来的黑底骨架”观感：
+         * 背景固定为 #141414，再叠加骨架 shimmer（来自 `.rs-shopping__skeletonBar`）。
+         */
+        background-color: #141414;
+        background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.04) 25%,
+            rgba(255, 255, 255, 0.10) 37%,
+            rgba(255, 255, 255, 0.04) 63%
+        );
+    }
+
+    /** Apple 品牌图标：用于骨架遮罩上提示（每个套餐 1 个，共 3 个） */
+    &__planWalletBrandIcon {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 21;
+        transform: translate(-50%, -50%);
+        width: min(92px, calc(92 / 375 * var(--app-vw)));
+        height: auto;
+        opacity: 0.92;
+        pointer-events: none;
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+
+        @media (min-width: 768px) {
+            width: 92px;
+        }
     }
 
     /* 与 `widgets/Vip.tsx` 角标一致：Limited-Time Offer xx% */
@@ -152,6 +221,27 @@
 
         @media (min-width: 768px) {
             padding: 16px;
+        }
+    }
+
+    /** H5 套餐卡右侧 “Top Up” 纯展示标签（无点击事件） */
+    &__planTopUp {
+        position: absolute;
+        right: calc(16 / 375 * var(--app-vw));
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        padding: 6px 14px;
+        font-size: 12px;
+        line-height: 1;
+        border-radius: 4px;
+        background: #8e604b;
+        color: #fff;
+        user-select: none;
+        pointer-events: none;
+
+        @media (min-width: 768px) {
+            right: 16px;
         }
     }
 
@@ -302,6 +392,17 @@
                 height: 80px;
                 margin-top: 24px;
             }
+        }
+    }
+
+    /** 新组件 `ShoppingAirwallexWalletExpress`：仅 GPay / Apple Pay 槽 */
+    &__airwallexWalletSlot {
+        margin-top: calc(12 / 375 * var(--app-vw));
+        margin-bottom: calc(4 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 16px;
+            margin-bottom: 8px;
         }
     }
 
@@ -665,6 +766,40 @@
 .rs-checkout-h5--embedded .rs-checkout-h5__inner {
     padding-top: 10px;
     padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+
+/** `ShoppingAirwallexWalletExpress`：高度与 `.rs-shopping__payBtn` 两行 + 间距对齐 */
+.rs-shopping-airwallex-wallet {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: calc((34 + 34 + 8) / 375 * var(--app-vw));
+
+    @media (min-width: 768px) {
+        min-height: 88px;
+    }
+}
+
+.rs-shopping-airwallex-wallet__mount {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: calc((34 + 34 + 8) / 375 * var(--app-vw));
+    line-height: 0;
+
+    @media (min-width: 768px) {
+        min-height: 88px;
+    }
+}
+
+/** Drop-in iframe 常写死高度；压到与支付条按钮同量级（与旧内嵌槽一致思路） */
+.rs-shopping-airwallex-wallet__mount iframe {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: calc((34 + 34 + 8) / 375 * var(--app-vw)) !important;
+
+    @media (min-width: 768px) {
+        min-height: 88px !important;
+    }
 }
 
 /**
