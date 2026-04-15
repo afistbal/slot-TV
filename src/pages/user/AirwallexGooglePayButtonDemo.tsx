@@ -9,7 +9,6 @@ import { createElement, type ElementTypes } from "@airwallex/components-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { useSearchParams } from "react-router";
-import { parsePaymentMethod } from "./CheckoutAirwallexPanel";
 
 type Product = {
   id: number;
@@ -18,25 +17,6 @@ type Product = {
   price: string;
   renewal_price: string;
 };
-
-const ZERO_DECIMAL = new Set([
-  "BIF",
-  "CLP",
-  "DJF",
-  "GNF",
-  "JPY",
-  "KMF",
-  "KRW",
-  "MGA",
-  "PYG",
-  "RWF",
-  "UGX",
-  "VND",
-  "VUV",
-  "XAF",
-  "XOF",
-  "XPF",
-]);
 
 function majorAmount(apiHint: unknown): number {
   if (typeof apiHint === "number" && Number.isFinite(apiHint)) {
@@ -51,37 +31,16 @@ function majorAmount(apiHint: unknown): number {
   return 0;
 }
 
-function googlePayPriceString(value: number, currency: string): string {
-  if (!Number.isFinite(value)) {
-    return "0";
-  }
-  const c = currency.toUpperCase();
-  if (ZERO_DECIMAL.has(c)) {
-    return String(Math.round(value));
-  }
-  return value.toFixed(2);
-}
-
-function clampPayCreatePayment(n: number | undefined): 1 | 2 | 3 {
-  if (n === 1 || n === 2 || n === 3) {
-    return n;
-  }
-  return 2;
-}
-
 /**
  * 开发演示：购物页 3 个套餐卡片（`rs-shopping__plans` / `rs-shopping__plan`）
- * 每个卡片都挂一个半透明 `googlePayButton`（真实可点），实现“点套餐=点 Google Pay”。
+ * 每个卡片都挂一个半透明 `applePayButton`（真实可点），实现“点套餐=点 Apple Pay”。
  */
 export default function AirwallexGooglePayButtonDemo() {
   const intl = useIntl();
   const [searchParams] = useSearchParams();
   const forceEnv = searchParams.get("awenv"); // demo/prod，仅用于本演示页
-  const payMethod = clampPayCreatePayment(
-    parsePaymentMethod(searchParams.get("payment")),
-  );
 
-  const elementsRef = useRef<Map<number, ElementTypes["googlePayButton"]>>(
+  const elementsRef = useRef<Map<number, ElementTypes["applePayButton"]>>(
     new Map(),
   );
   const planMountRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
@@ -165,7 +124,7 @@ export default function AirwallexGooglePayButtonDemo() {
           method: "post",
           loading: false,
           data: {
-            payment: payMethod,
+            payment: 1,
             product_id: p.id,
             redirect: redirectHref,
           },
@@ -182,13 +141,12 @@ export default function AirwallexGooglePayButtonDemo() {
             payCreate.d["pay_amount"] ??
             payCreate.d["price"],
         );
-        const gPayLine = googlePayPriceString(amountValue, currency);
         const recurringOptions = {
           next_triggered_by: "merchant" as const,
           merchant_trigger_reason: "scheduled" as const,
         };
 
-        const googlePayButtonOptions = {
+        const applePayButtonOptions = {
           mode: "recurring" as const,
           intent_id,
           client_secret,
@@ -197,35 +155,18 @@ export default function AirwallexGooglePayButtonDemo() {
           payment_consent: recurringOptions,
           countryCode: "HK",
           submitType: "subscribe" as const,
-          buttonSizeMode: "fill" as const,
-          buttonColor: "white" as const,
-          buttonType: "short" as const,
+          buttonColor: "black" as const,
+          buttonType: "plain" as const,
           style: {
             width: "100%",
             height: "200px !important",
           },
-          totalPriceStatus: "FINAL" as const,
-          totalPriceLabel: intl.formatMessage({
-            id: "checkout_googlepay_total_label",
-            defaultMessage: "Subscription due today",
-          }),
-          displayItems: [
-            {
-              label: intl.formatMessage({
-                id: "checkout_googlepay_line_recurring",
-                defaultMessage: "Recurring subscription",
-              }),
-              price: gPayLine,
-              status: "FINAL" as const,
-              type: "LINE_ITEM" as const,
-            },
-          ],
         };
 
         const el = await createElement(
-          "googlePayButton",
-          googlePayButtonOptions as Parameters<
-            typeof createElement<"googlePayButton">
+          "applePayButton",
+          applePayButtonOptions as Parameters<
+            typeof createElement<"applePayButton">
           >[1],
         );
         if (!el) continue;
@@ -242,14 +183,14 @@ export default function AirwallexGooglePayButtonDemo() {
           const detail = (
             ev as { detail?: { error?: { message?: string } } }
           )?.detail?.error?.message;
-          setError(detail || "googlePayButton error");
+          setError(detail || "applePayButton error");
         });
 
         el.mount(host);
         elementsRef.current.set(p.id, el);
       }
     });
-  }, [forceEnv, intl, payMethod, redirectHref, selectedPlans]);
+  }, [forceEnv, intl, redirectHref, selectedPlans]);
 
   useEffect(() => {
     void ensureMountedForPlans();
@@ -286,7 +227,7 @@ export default function AirwallexGooglePayButtonDemo() {
         <code className="text-white">/shopping</code> 的 DOM：
         <code className="text-white">rs-shopping__plans</code> /{" "}
         <code className="text-white">rs-shopping__plan</code>。
-        每个套餐卡片都挂一个半透明 Google Pay（真实按钮），点卡片即拉起对应金额支付。
+        每个套餐卡片都挂一个半透明 Apple Pay（真实按钮），点卡片即拉起对应金额支付。
       </p>
 
       {error ? (
@@ -303,7 +244,7 @@ export default function AirwallexGooglePayButtonDemo() {
           {envHint === "prod" ? (
             <div className="text-white/60">
               提示：在 <code className="text-white">localhost</code> 上使用{" "}
-              <code className="text-white">prod</code>，Google Pay 可能因域名/商户校验无法弹出。
+              <code className="text-white">prod</code>，Apple Pay 可能因域名/商户校验无法弹出。
               你可以加参数{" "}
               <code className="text-white">?awenv=demo</code> 仅用于演示验证“能不能弹”。
             </div>
