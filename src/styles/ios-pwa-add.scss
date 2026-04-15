@@ -4,7 +4,7 @@
  */
 
 :root {
-    --ios-pwa-add-bottom: calc(var(--rs-vw) * 24 / 375);
+    --ios-pwa-add-bottom: calc(var(--rs-vw) * 12 / 375);
 }
 
 .ios-pwa-add-btn {
@@ -43,6 +43,8 @@
 .ios-pwa-add-btn__text {
     flex: 1 1 auto;
     min-width: 0;
+    display: block;
+    text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

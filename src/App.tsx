@@ -51,7 +51,6 @@ import UserMyBalance from './pages/user/MyBanlance';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
 import UserCheckout from './pages/user/Checkout';
-import UserAirwallexGooglePayButtonDemo from './pages/user/AirwallexGooglePayButtonDemo';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 
 import LayoutAdmin from './layouts/admin';
@@ -239,10 +238,6 @@ const router = createBrowserRouter([
             {
                 path: 'pay/:id',
                 element: <UserCheckout />,
-            },
-            {
-                path: 'paydemo/:id',
-                element: <UserAirwallexGooglePayButtonDemo />,
             },
             {
                 path: 'pay',

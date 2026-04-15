@@ -354,6 +354,9 @@ body:has(#install) .rs-checkout-page__bodyLight {
 /** 单 Drop-in（含 card / Google Pay / Apple Pay）挂载区 */
 .rs-checkout-h5__dropInMount {
     min-height: 200px;
+    padding: 14px;
+    background: #fff;
+    border-radius: 10px;
 }
 
 .rs-checkout-h5__summaryRow {

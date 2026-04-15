@@ -14,6 +14,8 @@ import { createElement, type ElementTypes } from '@airwallex/components-sdk';
 import vipCardBg from '@/assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png';
 import iconUnlimitedViewing from '@/assets/images/icon_unlimited_viewing.png';
 import icon1080p from '@/assets/images/icon_1080p.png';
+import checkedIcon from '@/assets/images/checked.png';
+import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 
 import visa from '@/assets/visa.svg';
 import master from '@/assets/master.svg';
@@ -126,11 +128,15 @@ export default function RadixRc({
     const walletElementsRef = useRef<
         Map<number, ElementTypes['googlePayButton'] | ElementTypes['applePayButton']>
     >(new Map());
-    const planWalletMountRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+    const payWalletMountRef = useRef<HTMLDivElement | null>(null);
     const planWalletSeenNonZeroHeightRef = useRef<Map<number, boolean>>(new Map());
     const walletObsRef = useRef<MutationObserver[]>([]);
     const walletRunIdRef = useRef(0);
     const lastWalletPaymentRef = useRef<1 | 2 | null>(null);
+    const lastWalletTargetByMethodRef = useRef<Record<1 | 2, number | null>>({
+        1: null,
+        2: null,
+    });
 
     useEffect(() => {
         const cached = shoppingProductCache.get(productFrom);
@@ -149,24 +155,28 @@ export default function RadixRc({
             data: { from: productFrom },
             loading: false,
         })
-            .then((res) => {
-                if (!alive) return;
-                if (res.c !== 0) return;
-                shoppingProductCache.set(productFrom, res.d);
-                setProducts(res.d);
-                setCurrentId(res.d?.[0]?.id ?? null);
-            })
-            .finally(() => {
-                if (!alive) return;
-                setLoadingProducts(false);
-            });
-        return () => {
-            alive = false;
-        };
+        .then((res) => {
+            if (!alive) return;
+            if (res.c !== 0) return;
+            shoppingProductCache.set(productFrom, res.d);
+            setProducts(res.d);
+            setCurrentId(res.d?.[0]?.id ?? null);
+        })
+        .finally(() => {
+            if (!alive) return;
+            setLoadingProducts(false);
+        });
+    return () => {
+        alive = false;
+    }
     }, [productFrom]);
 
     const planProducts = useMemo(() => products.slice(0, 3), [products]);
-    const planIdsKey = useMemo(() => planProducts.map((p) => p.id).join(','), [planProducts]);
+    const defaultWalletProductId = useMemo(() => {
+        const p999 = planProducts.find((p) => Math.abs(parseFloat(p.price) - 9.99) < 0.001);
+        return p999?.id ?? planProducts[0]?.id ?? null;
+    }, [planProducts]);
+    const walletProductId = currentId ?? defaultWalletProductId;
 
     const cleanupWalletOverlays = useCallback(() => {
         walletObsRef.current.forEach((o) => o.disconnect());
@@ -209,13 +219,14 @@ export default function RadixRc({
         lastWalletPaymentRef.current = payment;
 
         const which = payment === 1 ? ('apple' as const) : ('google' as const);
+        const method = payment as 1 | 2;
+        // 达到可见高度后再缓冲 1.7s，避免刚出现就切态导致视觉突兀
+        const readyDelayMs = 1700;
 
-        const plans = planProducts;
+        const targetProductId = walletProductId;
         void airwallexRunShoppingWalletExclusive(async () => {
-            const initialRendered = new Set<number>();
             const READY_H = 40;
             const READY_TIMEOUT_MS = 12000;
-            const READY_DELAY_MS = 1200;
             const readPx = (v: string | null | undefined): number => {
                 if (!v) return NaN;
                 const n = parseFloat(v);
@@ -240,9 +251,6 @@ export default function RadixRc({
                 if (Number.isFinite(inlineH) && inlineH > 0) {
                     planWalletSeenNonZeroHeightRef.current.set(planId, true);
                 }
-                if (!planWalletSeenNonZeroHeightRef.current.get(planId)) {
-                    return false;
-                }
                 return h >= READY_H;
             };
             const scheduleReady = (planId: number) => {
@@ -257,7 +265,7 @@ export default function RadixRc({
                         n.set(planId, 'ready');
                         return n;
                     });
-                }, READY_DELAY_MS);
+                }, readyDelayMs);
                 planWalletReadyDelayTimersRef.current.set(planId, tid);
             };
             const markReady = (planId: number, host: HTMLDivElement) => {
@@ -280,44 +288,72 @@ export default function RadixRc({
                 };
                 requestAnimationFrame(tick);
             };
-            // init 一次即可（env 优先用第一个 pay/create 返回；否则 demo）
-            let inited = false;
-            let initEnv: 'prod' | 'demo' = 'demo';
-            for (const p of plans) {
-                if (!alive || walletRunIdRef.current !== runId) return;
-                const host = planWalletMountRefs.current.get(p.id) ?? null;
-                if (!host) continue;
+            if (!targetProductId) return;
+            const host = payWalletMountRef.current;
+            if (!host) return;
+            const shouldForceRecreate = lastWalletTargetByMethodRef.current[method] !== targetProductId;
 
-                // 初始化状态与超时
-                planWalletSeenNonZeroHeightRef.current.set(p.id, false);
-                const prevDelayTid = planWalletReadyDelayTimersRef.current.get(p.id);
+            let mountedEl = walletElementsRef.current.get(targetProductId);
+            if (mountedEl && shouldForceRecreate) {
+                try {
+                    mountedEl.unmount();
+                    mountedEl.destroy();
+                } catch {
+                    /* noop */
+                }
+                walletElementsRef.current.delete(targetProductId);
+                mountedEl = undefined;
+            }
+
+            if (mountedEl) {
+                // 已有按钮实例（例如 Visa -> Google/Apple 切回）：直接复用，避免再出现 loading
+                try {
+                    mountedEl.mount(host);
+                } catch {
+                    /* noop */
+                }
+                const prevDelayTid = planWalletReadyDelayTimersRef.current.get(targetProductId);
                 if (prevDelayTid) {
                     window.clearTimeout(prevDelayTid);
                 }
-                planWalletReadyDelayTimersRef.current.delete(p.id);
+                planWalletReadyDelayTimersRef.current.delete(targetProductId);
+                const prevFailTid = planWalletTimersRef.current.get(targetProductId);
+                if (prevFailTid) {
+                    window.clearTimeout(prevFailTid);
+                }
+                planWalletTimersRef.current.delete(targetProductId);
                 setPlanWalletState((prev) => {
                     const n = new Map(prev);
-                    n.set(p.id, 'pending');
+                    n.set(targetProductId, 'ready');
                     return n;
                 });
-                if (!planWalletTimersRef.current.has(p.id) && (payment === 1 || payment === 2)) {
-                    const tid = window.setTimeout(() => {
-                        setPlanWalletState((prev) => {
-                            const n = new Map(prev);
-                            if (n.get(p.id) !== 'ready') n.set(p.id, 'failed');
-                            return n;
-                        });
-                    }, 10000);
-                    planWalletTimersRef.current.set(p.id, tid);
-                }
+                lastWalletTargetByMethodRef.current[method] = targetProductId;
+                return;
+            }
 
-                // 已有 iframe/element：直接标记渲染完成，不重复创建（用于 visa->google 切回）
-                if (walletElementsRef.current.has(p.id) && isHostReady(host, p.id)) {
-                    initialRendered.add(p.id);
-                    scheduleReady(p.id);
-                    continue;
-                }
+            planWalletSeenNonZeroHeightRef.current.set(targetProductId, false);
+            const prevDelayTid = planWalletReadyDelayTimersRef.current.get(targetProductId);
+            if (prevDelayTid) {
+                window.clearTimeout(prevDelayTid);
+            }
+            planWalletReadyDelayTimersRef.current.delete(targetProductId);
+            setPlanWalletState((prev) => {
+                const n = new Map(prev);
+                n.set(targetProductId, 'pending');
+                return n;
+            });
+            if (!planWalletTimersRef.current.has(targetProductId)) {
+                const tid = window.setTimeout(() => {
+                    setPlanWalletState((prev) => {
+                        const n = new Map(prev);
+                        if (n.get(targetProductId) !== 'ready') n.set(targetProductId, 'failed');
+                        return n;
+                    });
+                }, 10000);
+                planWalletTimersRef.current.set(targetProductId, tid);
+            }
 
+            {
                 let payCreate: Awaited<ReturnType<typeof api<PayCreateResp>>>;
                 try {
                     payCreate = await api<PayCreateResp>('pay/create', {
@@ -325,31 +361,28 @@ export default function RadixRc({
                         loading: false,
                         data: {
                             payment,
-                            product_id: p.id,
+                            product_id: targetProductId,
                             redirect: window.location.href,
                         },
                     });
                 } catch (e) {
                     console.error('[shopping] pay/create failed', e);
-                    continue;
+                    return;
                 }
                 if (!alive || walletRunIdRef.current !== runId) return;
-                if (payCreate.c !== 0) continue;
+                if (payCreate.c !== 0) return;
 
-                if (!inited) {
-                    initEnv = (payCreate.d?.env as 'prod' | 'demo' | undefined) ?? 'demo';
-                    try {
-                        await airwallexEnsureShoppingWalletInit(
-                            normalizeAirwallexLocale(intl.locale),
-                            initEnv,
-                        );
-                    } catch (e) {
-                        console.error('[shopping] airwallex init failed', e);
-                        return;
-                    }
-                    inited = true;
-                    if (!alive || walletRunIdRef.current !== runId) return;
+                const initEnv = (payCreate.d?.env as 'prod' | 'demo' | undefined) ?? 'demo';
+                try {
+                    await airwallexEnsureShoppingWalletInit(
+                        normalizeAirwallexLocale(intl.locale),
+                        initEnv,
+                    );
+                } catch (e) {
+                    console.error('[shopping] airwallex init failed', e);
+                    return;
                 }
+                if (!alive || walletRunIdRef.current !== runId) return;
 
                 const intent_id = payCreate.d.pi;
                 const client_secret = payCreate.d.client_secret;
@@ -370,8 +403,12 @@ export default function RadixRc({
                                   amount: { value: amountValue, currency },
                                   countryCode: 'HK',
                                   buttonSizeMode: 'fill',
-                                  buttonColor: 'white',
+                                  buttonColor: 'black',
                                   buttonType: 'short',
+                                  style: {
+                                      width: '100%',
+                                      height: '40px',
+                                  },
                               })
                             : await createElement('applePayButton', {
                                   mode: 'recurring',
@@ -382,46 +419,39 @@ export default function RadixRc({
                                   countryCode: 'HK',
                                   buttonType: 'plain',
                                   buttonColor: 'black',
+                                  style: {
+                                      width: '100%',
+                                      height: '40px',
+                                  },
                               });
-                    if (!el) continue;
+                    if (!el) return;
                     if (!alive || walletRunIdRef.current !== runId) {
                         try {
                             el.destroy();
                         } catch {
                             /* noop */
                         }
-                        continue;
+                        return;
                     }
                     el.mount(host);
-                    walletElementsRef.current.set(p.id, el as never);
-                    // mount 后 child 可能下一帧才出现：用 rAF 轮询确认
-                    if (isHostReady(host, p.id)) {
-                        initialRendered.add(p.id);
-                        scheduleReady(p.id);
+                    walletElementsRef.current.set(targetProductId, el as never);
+                    lastWalletTargetByMethodRef.current[method] = targetProductId;
+                    if (isHostReady(host, targetProductId)) {
+                        scheduleReady(targetProductId);
                     } else {
-                        markReady(p.id, host);
+                        markReady(targetProductId, host);
                     }
                 } catch {
-                    continue;
+                    return;
                 }
             }
 
-            const observers: MutationObserver[] = [];
-            for (const p of plans) {
-                const host = planWalletMountRefs.current.get(p.id);
-                if (!host) continue;
-                if (isHostReady(host, p.id)) {
-                    initialRendered.add(p.id);
-                }
-                const obs = new MutationObserver(() => {
-                    if (!alive || walletRunIdRef.current !== runId) return;
-                    // iframe/样式变化可能滞后：变更后重新尝试判定 ready
-                    markReady(p.id, host);
-                });
-                obs.observe(host, { childList: true, subtree: true });
-                observers.push(obs);
-            }
-            walletObsRef.current = observers;
+            const obs = new MutationObserver(() => {
+                if (!alive || walletRunIdRef.current !== runId) return;
+                markReady(targetProductId, host);
+            });
+            obs.observe(host, { childList: true, subtree: true });
+            walletObsRef.current = [obs];
         }).catch((e) => {
             console.error('[shopping] wallet overlay crashed', e);
         });
@@ -432,29 +462,33 @@ export default function RadixRc({
             walletObsRef.current.forEach((o) => o.disconnect());
             walletObsRef.current = [];
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [payment, intl.locale, cleanupWalletOverlays, planIdsKey]);
+    }, [payment, intl.locale, cleanupWalletOverlays, walletProductId]);
 
     function goCheckout(productId: number, payMethod: number) {
-        if (payMethod === 3) {
-            navigate(`/page/pay/${productId}?from=${checkoutFrom}`);
-            return;
-        }
         navigate(`/page/pay/${productId}?payment=${payMethod}&from=${checkoutFrom}`);
     }
 
     function handleSelectAndPay(productId: number) {
         setCurrentId(productId);
-        // wallet 状态下由 overlay 按钮自行拉起；这里仅选中
+        // wallet 状态下点击套餐：切换选中，并触发钱包按钮按所选套餐重建订单
         if (payment === 2) {
-            const st = planWalletState.get(productId) ?? 'pending';
+            const targetId = walletProductId ?? productId;
+            const st = planWalletState.get(targetId) ?? 'pending';
             if (st === 'failed') {
-                goCheckout(productId, 3);
+                goCheckout(targetId, 3);
             }
             return;
         }
-        if (payment === 1) return;
+        if (payment === 1 || payment === 3) return;
         goCheckout(productId, payment);
+    }
+
+    function handleTopUpClick() {
+        const targetId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
+        if (!targetId) return;
+        if (payment === 3) {
+            goCheckout(targetId, 3);
+        }
     }
 
     function handlePaymentPick(payMethod: number) {
@@ -462,6 +496,8 @@ export default function RadixRc({
     }
 
     const showCountdown = !loadingProducts && products.length > 0;
+    const walletOverlayOpacity =
+        typeof window !== 'undefined' && window.localStorage.getItem('shopping_wallet_opacity') === '1' ? 0.4 : 0.01;
     const countdownEl = showCountdown ? (
         <div
             className={cn(
@@ -487,14 +523,9 @@ export default function RadixRc({
             {layout !== 'embed' ? countdownEl : null}
 
             <div className="rs-shopping__plans rs-shopping__plans--singleColAlways">
-                {(loadingProducts ? [] : planProducts).map((p) => (
-                    (() => {
-                        const isWalletMode = payment === 1 || payment === 2;
-                        const walletReady = !isWalletMode
-                            ? true
-                            : (planWalletState.get(p.id) ?? 'pending') === 'ready';
-                        const enableInteraction = !isWalletMode || walletReady;
-                        return (
+                {(loadingProducts ? [] : planProducts).map((p) => {
+                    const enableInteraction = true;
+                    return (
                     <div
                         key={p.id}
                         role={enableInteraction ? 'button' : undefined}
@@ -517,28 +548,6 @@ export default function RadixRc({
                             !enableInteraction && 'cursor-default',
                         )}
                     >
-                        {/* 每个套餐自己的 wallet overlay（真实三方按钮挂载容器） */}
-                        <div
-                            ref={(node) => {
-                                planWalletMountRefs.current.set(p.id, node);
-                            }}
-                            className="rs-shopping__planPayMount absolute inset-0 z-10"
-                            style={{
-                                display: payment === 1 || payment === 2 ? 'flex' : 'none',
-                                opacity: 0.35,
-                                pointerEvents:
-                                    (planWalletState.get(p.id) ?? 'pending') === 'ready' ? 'auto' : 'none',
-                            }}
-                        />
-
-                        {/* Wallet 模式：按钮未 ready 前，仅显示骨架卡（避免看起来可点） */}
-                        {isWalletMode && !walletReady ? (
-                            <div
-                                aria-hidden="true"
-                                className="rs-shopping__skeletonBar rs-shopping__skeletonBar--planWalletOverlay"
-                            />
-                        ) : null}
-
                         <>
                             <div
                                 className="rs-shopping__planBg"
@@ -551,6 +560,14 @@ export default function RadixRc({
                                     values={{ off: limitedOfferOffPercent(p.price, p.renewal_price) }}
                                 />
                             </div>
+                            {currentId === p.id ? (
+                                <img
+                                    className="rs-shopping__planCheckedIcon"
+                                    src={checkedIcon}
+                                    alt=""
+                                    aria-hidden="true"
+                                />
+                            ) : null}
 
                             <div className="rs-shopping__planBody">
                                 <div className="rs-shopping__planText">
@@ -565,9 +582,6 @@ export default function RadixRc({
                                     </div>
                                 </div>
                             </div>
-
-                            {/* 纯展示 DOM：无点击事件，样式按 H5 “Top Up” */}
-                            <div className="rs-shopping__planTopUp">Top Up</div>
 
                             <div className="rs-shopping__planBenefits">
                                 <div className="rs-shopping__planBenefit">
@@ -589,9 +603,8 @@ export default function RadixRc({
                             </div>
                         </>
                     </div>
-                        );
-                    })()
-                ))}
+                    );
+                })}
 
                 {loadingProducts ? (
                     <div
@@ -617,8 +630,8 @@ export default function RadixRc({
                             type="button"
                             onClick={() => handlePaymentPick(1)}
                             className={cn(
-                                'rs-shopping__payBtn',
-                                payment === 1 && 'rs-shopping__payBtn--active',
+                                'rs-shopping__payMethodBtn',
+                                payment === 1 && 'rs-shopping__payMethodBtn--active',
                             )}
                         >
                             <img
@@ -632,8 +645,8 @@ export default function RadixRc({
                             type="button"
                             onClick={() => handlePaymentPick(2)}
                             className={cn(
-                                'rs-shopping__payBtn',
-                                payment === 2 && 'rs-shopping__payBtn--active',
+                                'rs-shopping__payMethodBtn',
+                                payment === 2 && 'rs-shopping__payMethodBtn--active',
                             )}
                         >
                             <img
@@ -647,8 +660,8 @@ export default function RadixRc({
                         type="button"
                         onClick={() => handlePaymentPick(3)}
                         className={cn(
-                            'rs-shopping__payBtn rs-shopping__payBtn--cardPair',
-                            payment === 3 && 'rs-shopping__payBtn--active',
+                            'rs-shopping__payMethodBtn rs-shopping__payMethodBtn--cardPair',
+                            payment === 3 && 'rs-shopping__payMethodBtn--active',
                         )}
                     >
                         <img src={visa} alt="Visa" className="rs-shopping__payLogo rs-shopping__payLogo--visa" />
@@ -658,18 +671,61 @@ export default function RadixRc({
                             className="rs-shopping__payLogo rs-shopping__payLogo--master"
                         />
                     </button>
-                    <button
-                        type="button"
-                        onClick={() =>
-                            navigate(
-                                `/page/paydemo/${currentId ?? planProducts[0]?.id ?? 1}`,
-                            )
-                        }
-                        className="rs-shopping__payBtn"
-                    >
-                        test apple
-                    </button>
                 </div>
+                {payment === 1 || payment === 2 || payment === 3 ? (
+                    <div className="rs-shopping__airwallexWalletSlot">
+                        <div className="rs-shopping__payWalletSlot">
+                            <button
+                                type="button"
+                                disabled={
+                                    payment === 3
+                                        ? false
+                                        : (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready'
+                                }
+                                onClick={payment === 3 ? handleTopUpClick : undefined}
+                                className={cn(
+                                    'rs-shopping__payWalletGhostBtn',
+                                    payment !== 3 &&
+                                        (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready' &&
+                                        'rs-shopping__payWalletGhostBtn--loading',
+                                    (payment === 3 ||
+                                        (planWalletState.get(walletProductId ?? -1) ?? 'pending') === 'ready') &&
+                                        'rs-shopping__payWalletGhostBtn--ready',
+                                    payment === 3 && 'rs-shopping__payWalletGhostBtn--clickable',
+                                )}
+                                aria-hidden={payment === 3 ? undefined : true}
+                            >
+                                <span className="rs-shopping__payWalletGhostInner">
+                                    {payment !== 3 &&
+                                    (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready' ? (
+                                        <img
+                                            className="rs-shopping__payWalletGhostSpinner"
+                                            src={btnLoadingIcon}
+                                            alt=""
+                                            aria-hidden="true"
+                                        />
+                                    ) : null}
+                                    <span className="rs-shopping__payWalletGhostText">
+                                        <FormattedMessage id="top_up" defaultMessage="Top-up" />
+                                    </span>
+                                </span>
+                            </button>
+                            <div
+                                ref={payWalletMountRef}
+                                className="rs-shopping__planPayMount"
+                                style={{
+                                    display: 'flex',
+                                    ['--rs-wallet-iframe-opacity' as string]: walletOverlayOpacity,
+                                    pointerEvents:
+                                        (payment === 1 || payment === 2) &&
+                                        (planWalletState.get(walletProductId ?? -1) ?? 'pending') === 'ready'
+                                            ? 'auto'
+                                            : 'none',
+                                }}
+                            />
+                        </div>
+                    </div>
+                ) : null}
             </div>
         </div>
     );

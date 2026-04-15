@@ -302,7 +302,7 @@ export function CheckoutAirwallexPanel({
         currency: redirectFields.currency,
         payment_consent: paymentConsent,
         recurringOptions,
-        methods: ["card", "googlepay", "applepay"],
+        methods: ["card"],
         appearance: {
           mode: dropInAppearanceMode as "light" | "dark",
         },
