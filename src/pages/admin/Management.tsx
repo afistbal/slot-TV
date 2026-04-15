@@ -15,13 +15,13 @@ export default function Component() {
     //         loadingStore.hide();
     //     }
     // }
-    return <div className="p-4">
+    return <div className="p-4 bg-black min-h-full">
         <div className="grid grid-cols-3 gap-4">
             {/* <Link to="/z/page/movie/detail" className="bg-emerald-400 text-sm text-white flex justify-center flex-col gap-1 items-center py-4 rounded-lg">
                 <div><Video className="w-8 h-8" /></div>
                 <div><FormattedMessage id="flix_add" /></div>
             </Link> */}
-            <Link to="/z/page/movie" className="bg-red-400 text-sm text-white flex justify-center flex-col gap-1 items-center py-4 rounded-lg">
+            <Link to="/z/page/movie" className="border border-slate-800 bg-slate-900 text-sm text-slate-100 flex justify-center flex-col gap-1 items-center py-4 rounded-lg shadow-[0_0_0_1px_rgba(15,23,42,0.3)] transition-colors hover:bg-slate-800">
                 <div><Videotape className="w-8 h-8" /></div>
                 <div><FormattedMessage id="flix_list" /></div>
             </Link>
@@ -29,7 +29,7 @@ export default function Component() {
                 <div><Magnet className="w-8 h-8" /></div>
                 <div><FormattedMessage id="magnet" /></div>
             </Link> */}
-            <Link to="/z/page/user" className="bg-blue-400 text-sm text-white flex justify-center flex-col gap-1 items-center py-4 rounded-lg">
+            <Link to="/z/page/user" className="border border-slate-800 bg-slate-900 text-sm text-slate-100 flex justify-center flex-col gap-1 items-center py-4 rounded-lg shadow-[0_0_0_1px_rgba(15,23,42,0.3)] transition-colors hover:bg-slate-800">
                 <div><SquareUser className="w-8 h-8" /></div>
                 <div><FormattedMessage id="users" /></div>
             </Link>
@@ -37,11 +37,11 @@ export default function Component() {
                 <div><Settings className="w-8 h-8" /></div>
                 <div><FormattedMessage id="settings" /></div>
             </Link> */}
-            <Link to="/z/page/analysis" className="bg-orange-400 text-sm text-white flex justify-center flex-col gap-1 items-center py-4 rounded-lg">
+            <Link to="/z/page/analysis" className="border border-slate-800 bg-slate-900 text-sm text-slate-100 flex justify-center flex-col gap-1 items-center py-4 rounded-lg shadow-[0_0_0_1px_rgba(15,23,42,0.3)] transition-colors hover:bg-slate-800">
                 <div><BarChart className="w-8 h-8" /></div>
                 <div><FormattedMessage id="analysis" /></div>
             </Link>
-            <Link to="/z/page/orders" className="bg-pink-400 text-sm text-white flex justify-center flex-col gap-1 items-center py-4 rounded-lg">
+            <Link to="/z/page/orders" className="border border-slate-700 bg-slate-800 text-sm text-amber-200 flex justify-center flex-col gap-1 items-center py-4 rounded-lg shadow-[0_0_0_1px_rgba(15,23,42,0.3)] transition-colors hover:bg-slate-700">
                 <div><CircleDollarSign className="w-8 h-8" /></div>
                 <div><FormattedMessage id="order" /></div>
             </Link>

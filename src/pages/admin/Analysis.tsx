@@ -36,18 +36,18 @@ export default function Component() {
         loadData();
     }, []);
 
-    return <Page title="analysis">
-        {loading ? <Loader /> : <div className='p-4 flex flex-col gap-4'>
-            <div className='bg-white p-4 rounded-md border'>
-                <div className='font-bold text-slate-500'>
+    return <Page title="analysis" titleClassName="bg-black border-slate-800 text-slate-100">
+        {loading ? <Loader /> : <div className='p-4 flex flex-col gap-4 bg-black min-h-full'>
+            <div className='bg-slate-900 p-4 rounded-md border border-slate-800'>
+                <div className='font-bold text-slate-300'>
                     <FormattedMessage id="today" />
                 </div>
                 <div className='flex flex-col gap-4 mt-4'>
                     {data!.source_today.length > 0 ? data?.source_today.map((v, k) => {
                         const total = data?.source_today.reduce((a, b) => a + b.count, 0);
                         const percent = ((v.count / total) * 100).toFixed(2);
-                        return <div key={k} className='bg-[#94a3b8] text-white rounded-sm relative overflow-hidden'>
-                            <div className='bg-amber-400 absolute h-full left-0 top-0' style={{ width: percent + '%' }} />
+                        return <div key={k} className='bg-slate-700 text-slate-100 rounded-sm relative overflow-hidden border border-slate-600'>
+                            <div className='bg-amber-500 absolute h-full left-0 top-0' style={{ width: percent + '%' }} />
                             <div className='flex justify-between items-center relative px-4 py-2'>
                                 <div className='flex gap-4'>
                                     <div>{v.count}</div>
@@ -56,21 +56,21 @@ export default function Component() {
                                 <div className='text-sm'>{percent}%</div>
                             </div>
                         </div>;
-                    }) : <div className='text-slate-500'>
+                    }) : <div className='text-slate-400'>
                         <FormattedMessage id="no_more" />
                     </div>}
                 </div>
             </div>
-            <div className='bg-white p-4 rounded-md border'>
-                <div className='font-bold text-slate-500'>
+            <div className='bg-slate-900 p-4 rounded-md border border-slate-800'>
+                <div className='font-bold text-slate-300'>
                     <FormattedMessage id="week" />
                 </div>
                 <div className='flex flex-col gap-4 mt-4'>
                     {data!.source_week.length > 0 ? data?.source_week.map((v, k) => {
                         const total = data?.source_week.reduce((a, b) => a + b.count, 0);
                         const percent = ((v.count / total) * 100).toFixed(2);
-                        return <div key={k} className='bg-[#94a3b8] text-white rounded-sm relative overflow-hidden'>
-                            <div className='bg-emerald-400 absolute h-full left-0 top-0' style={{ width: percent + '%' }} />
+                        return <div key={k} className='bg-slate-700 text-slate-100 rounded-sm relative overflow-hidden border border-slate-600'>
+                            <div className='bg-emerald-500 absolute h-full left-0 top-0' style={{ width: percent + '%' }} />
                             <div className='flex justify-between items-center relative px-4 py-2'>
                                 <div className='flex gap-4'>
                                     <div>{v.count}</div>
@@ -79,21 +79,21 @@ export default function Component() {
                                 <div className='text-sm'>{percent}%</div>
                             </div>
                         </div>;
-                    }) : <div className='text-slate-500'>
+                    }) : <div className='text-slate-400'>
                         <FormattedMessage id="no_more" />
                     </div>}
                 </div>
             </div>
-            <div className='bg-white p-4 rounded-md border'>
-                <div className='font-bold text-slate-500'>
+            <div className='bg-slate-900 p-4 rounded-md border border-slate-800'>
+                <div className='font-bold text-slate-300'>
                     <FormattedMessage id="all" />
                 </div>
                 <div className='flex flex-col gap-4 mt-4'>
                     {data!.source_all.length > 0 ? data?.source_all.map((v, k) => {
                         const total = data?.source_all.reduce((a, b) => a + b.count, 0);
                         const percent = ((v.count / total) * 100).toFixed(2);
-                        return <div key={k} className='bg-[#94a3b8] text-white rounded-sm relative overflow-hidden'>
-                            <div className='bg-indigo-400 absolute h-full left-0 top-0' style={{ width: percent + '%' }} />
+                        return <div key={k} className='bg-slate-700 text-slate-100 rounded-sm relative overflow-hidden border border-slate-600'>
+                            <div className='bg-indigo-500 absolute h-full left-0 top-0' style={{ width: percent + '%' }} />
                             <div className='flex justify-between items-center relative px-4 py-2'>
                                 <div className='flex gap-4'>
                                     <div>{v.count}</div>
@@ -102,7 +102,7 @@ export default function Component() {
                                 <div className='text-sm'>{percent}%</div>
                             </div>
                         </div>;
-                    }) : <div className='text-slate-500'>
+                    }) : <div className='text-slate-400'>
                         <FormattedMessage id="no_more" />
                     </div>}
                 </div>

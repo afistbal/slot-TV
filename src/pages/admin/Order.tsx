@@ -73,37 +73,37 @@ export default function Component() {
         }
     }, []);
 
-    return <Page title="order">
-        <div className="flex flex-col h-full overflow-auto" ref={scrollRef} onScrollEnd={handleScrollEnd}>
+    return <Page title="order" titleClassName="bg-black border-slate-800 text-slate-100">
+        <div className="flex flex-col h-full overflow-auto bg-black" ref={scrollRef} onScrollEnd={handleScrollEnd}>
             <div className="flex items-center justify-between px-4 pt-4 shrink-0">
-                <div className="shrink-0 text-slate-500">
+                <div className="shrink-0 text-slate-400">
                     <FormattedMessage id="total_orders" values={{ total: store.total || '...' }} />
                 </div>
-                <label className="h-10 w-40 flex items-center border border-slate-300 rounded bg-slate-50 focus-within:bg-slate-100">
-                    <input value={store.keyword} onChange={handleKeywordChange} type="text" enterKeyHint="done" maxLength={32} autoComplete="off" name="search" className="px-4 w-full h-full outline-none py-0 text-center text-sm" placeholder={intl.formatMessage({ id: 'flix_search' })} />
+                <label className="h-10 w-40 flex items-center border border-slate-700 rounded bg-slate-900 focus-within:bg-slate-800">
+                    <input value={store.keyword} onChange={handleKeywordChange} type="text" enterKeyHint="done" maxLength={32} autoComplete="off" name="search" className="px-4 w-full h-full outline-none py-0 text-center text-sm bg-transparent text-slate-100 placeholder:text-slate-500" placeholder={intl.formatMessage({ id: 'flix_search' })} />
                 </label>
             </div>
             {!store.loading && store.list.length === 0 ? <NoContent /> : <div className={cn('flex flex-col gap-2 p-4', store.loading || store.list.length === 0 ? 'overflow-hidden' : '')}>
                 {store.loading ? <div /> : store.list.map(v => <Link to={`/z/page/order/${v['id']}`} key={v['id'] as string}>
-                    <div className="flex justify-between items-center gap-4 bg-white p-4 rounded-md relative">
+                    <div className="flex justify-between items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-md relative">
                         <div className="flex flex-col justify-center">
                             <div className="flex items-center">
-                                <div className="text-lg font-bold">{v['id'] as number}</div>
-                                <div className="text-xs px-1 py-0.5 border-[#94a3b8] border rounded-sm text-slate-500 ml-1">{v['product_name'] as string}</div>
-                                {v['type'] === 2 && <div className="text-xs px-1 py-0.5 border-lime-500 border rounded-sm text-lime-600 ml-1">
+                                <div className="text-lg font-bold text-slate-100">{v['id'] as number}</div>
+                                <div className="text-xs px-1 py-0.5 border-slate-600 border rounded-sm text-slate-300 ml-1">{v['product_name'] as string}</div>
+                                {v['type'] === 2 && <div className="text-xs px-1 py-0.5 border-lime-400 border rounded-sm text-lime-300 ml-1">
                                     <FormattedMessage id="renewal"/>
                                 </div>}
                             </div>
-                            <div className="text-sm text-slate-500 leading-4 py-3">{v['platform_sn'] as string}</div>
-                            <div className="text-xs text-slate-500 leading-3" title={v['created_at'] as string}><FormattedMessage id="created_at" /> <FormattedDate value={v['created_at'] as string} /> <FormattedMessage id="updated_at" /> <FormattedDate value={v['updated_at'] as string} /></div>
+                            <div className="text-sm text-slate-300 leading-4 py-3">{v['platform_sn'] as string}</div>
+                            <div className="text-xs text-slate-400 leading-3" title={v['created_at'] as string}><FormattedMessage id="created_at" /> <FormattedDate value={v['created_at'] as string} /> <FormattedMessage id="updated_at" /> <FormattedDate value={v['updated_at'] as string} /></div>
                         </div>
                         <div className="flex flex-col gap-2 items-center">
-                            <div className="flex items-center text-red-400">
+                            <div className="flex items-center text-amber-300">
                                 <span className="text-sm mt-[3px]">$</span>
                                 <span className="text-2xl">{v['amount'] as string}</span>
                             </div>
 
-                            <div className={cn("rounded-sm text-sm px-2 py-1.5 text-white leading-3", v['status'] as number === 0 && 'bg-[#94a3b8]', v['status'] as number === 1 && 'bg-orange-400', v['status'] as number === 2 && 'bg-purple-400',)}>
+                            <div className={cn("rounded-sm text-sm px-2 py-1.5 text-white leading-3", v['status'] as number === 0 && 'bg-slate-600', v['status'] as number === 1 && 'bg-emerald-600', v['status'] as number === 2 && 'bg-purple-600',)}>
                                 {(v['status'] as number) === 0 && <FormattedMessage id="unpaid" />}
                                 {(v['status'] as number) === 1 && <FormattedMessage id="paid" />}
                                 {(v['status'] as number) === 2 && <FormattedMessage id="refunded" />}

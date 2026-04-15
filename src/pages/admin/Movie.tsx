@@ -168,14 +168,14 @@ export default function Component() {
     }, []);
 
     return (
-        <Page title="flix_list">
+        <Page title="flix_list" titleClassName="bg-black border-slate-800 text-slate-100">
             <div
-                className="flex flex-col h-full overflow-auto"
+                className="flex flex-col h-full overflow-auto bg-black"
                 ref={scrollRef}
                 onScrollEnd={handleScrollEnd}
             >
                 <div className="flex items-center justify-between px-4 pt-4 shrink-0 gap-4">
-                    <div className="shrink-0 text-slate-500">
+                    <div className="shrink-0 text-slate-400">
                         <FormattedMessage
                             id="flix_total"
                             values={{ total: movieListStore.total || '...' }}
@@ -183,7 +183,7 @@ export default function Component() {
                     </div>
                     <div className="flex gap-2">
                         <DropdownMenu>
-                            <DropdownMenuTrigger className="border border-slate-300 rounded-md bg-slate-50 px-4 text-slate-500 text-sm py-2 min-h-10">
+                            <DropdownMenuTrigger className="border border-slate-700 rounded-md bg-slate-900 px-4 text-slate-300 text-sm py-2 min-h-10">
                                 {LANGUAGES.find((v) => v.code === movieListStore.language)?.label}
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -204,7 +204,7 @@ export default function Component() {
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <label className="h-10 w-30 flex items-center border border-slate-300 rounded bg-slate-50 focus-within:bg-slate-100">
+                        <label className="h-10 w-30 flex items-center border border-slate-700 rounded bg-slate-900 focus-within:bg-slate-800">
                             <input
                                 value={movieListStore.keyword}
                                 onChange={handleKeywordChange}
@@ -213,7 +213,7 @@ export default function Component() {
                                 maxLength={32}
                                 autoComplete="off"
                                 name="search"
-                                className="px-4 w-full h-full outline-none py-0 text-center text-sm"
+                                className="px-4 w-full h-full outline-none py-0 text-center text-sm bg-transparent text-slate-100 placeholder:text-slate-500"
                                 placeholder={intl.formatMessage({ id: 'flix_search' })}
                             />
                         </label>
@@ -235,7 +235,7 @@ export default function Component() {
                         ) : (
                             movieListStore.list.map((v, k) => (
                                 <Link
-                                    className="relative overflow-hidden rounded-t-md"
+                                    className="relative overflow-hidden rounded-t-md bg-slate-900 border border-slate-800"
                                     to={`/z/page/movie/detail/${v['id']}`}
                                     key={v['id'] as string}
                                     data-index={k}
@@ -246,8 +246,8 @@ export default function Component() {
                                         alt={v['title'] as string}
                                         src={`${configStore.config['static']}/${v['image']}`}
                                     />
-                                    <div className="p-1">
-                                        <div className="text-sm text-ellipsis overflow-hidden line-clamp-2 leading-[18px]">{`${v['title']}`}</div>
+                                    <div className="p-1.5">
+                                        <div className="text-sm text-slate-200 text-ellipsis overflow-hidden line-clamp-2 leading-[18px]">{`${v['title']}`}</div>
                                     </div>
                                     {v['sort'] === 100 && (
                                         <>
@@ -280,10 +280,7 @@ export default function Component() {
                 )}
             </div>
             <Drawer open={actionOpen > -1} onOpenChange={() => handleActionOpenChange(-1)}>
-                <DrawerContent
-                    className="bg-linear-to-b from-yellow-100 to-white"
-                    aria-describedby="manage"
-                >
+                <DrawerContent className="bg-linear-to-b from-slate-900 to-black border border-slate-700 text-slate-100" aria-describedby="manage">
                     <DrawerTitle className="flex items-center gap-4 px-4 pt-4 mb-4">
                         <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
                             <FormattedMessage id="flix_manage" />

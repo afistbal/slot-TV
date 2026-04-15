@@ -6,6 +6,7 @@
     min-height: 100%;
     background: #1e1f21;
     color: rgba(255, 255, 255, 0.92);
+    padding-top: max(16px, env(safe-area-inset-top));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
 }
 

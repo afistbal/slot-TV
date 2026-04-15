@@ -11,8 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 export default function Component() {
     const location = useLocation();
 
-    return <div className="flex flex-col h-full">
-        <div className={cn("flex gap-2 px-4 justify-between h-16 items-center border-b border-slate-200 bg-white text-slate-600")}>
+    return <div className="flex flex-col h-full bg-black text-slate-100">
+        <div className="flex gap-2 px-4 justify-between h-16 items-center border-b border-slate-800 bg-black text-slate-100">
             <div className="text-lg font-bold text-ellipsis flex-1 whitespace-nowrap overflow-hidden">
                 <FormattedMessage id="admin" />
             </div>
@@ -20,19 +20,32 @@ export default function Component() {
                 <Home />
             </Link>
         </div>
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto bg-black">
             <Suspense key={location.key} fallback={<Loader />}>
                 <Outlet key={location.key} />
             </Suspense>
         </div>
-        <div className="p-2 grid grid-cols-2 border-t border-slate-200 bg-white text-xs text-slate-500">
-            <NavLink end className='flex flex-col items-center gap-0.5' to="/z">
+        <div className="p-2 grid grid-cols-2 border-t text-xs border-slate-800 bg-black text-slate-300">
+            <NavLink
+                end
+                className={({ isActive }) => cn(
+                    "flex flex-col items-center gap-0.5 transition-colors",
+                    isActive ? "text-amber-300" : "text-slate-400",
+                )}
+                to="/z"
+            >
                 <Gauge className="w-5 h-5" />
                 <div>
                     <FormattedMessage id="home" />
                 </div>
             </NavLink>
-            <NavLink className='flex flex-col items-center gap-0.5' to="/z/management">
+            <NavLink
+                className={({ isActive }) => cn(
+                    "flex flex-col items-center gap-0.5 transition-colors",
+                    isActive ? "text-amber-300" : "text-slate-400",
+                )}
+                to="/z/management"
+            >
                 <LayoutDashboard className="w-5 h-5" />
                 <div>
                     <FormattedMessage id="management" />
@@ -62,7 +75,9 @@ const Page = forwardRef<HTMLDivElement, IPage>(({ title, titleClassName, menu, m
     }
 
     function handleOk() {
-        onMenuClick && onMenuClick(confirmOpen);
+        if (onMenuClick) {
+            onMenuClick(confirmOpen);
+        }
         setConfirmOpen('');
     }
 
@@ -96,7 +111,9 @@ const Page = forwardRef<HTMLDivElement, IPage>(({ title, titleClassName, menu, m
                         if (v.confirm) {
                             setConfirmOpen(v.id);
                         } else {
-                            onMenuClick && onMenuClick(v.id);
+                            if (onMenuClick) {
+                                onMenuClick(v.id);
+                            }
                         }
                         setMenuOpen(false);
                     }}>
