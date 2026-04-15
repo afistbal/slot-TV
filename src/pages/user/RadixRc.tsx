@@ -117,6 +117,7 @@ export default function RadixRc({
     });
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
+    const isAppleDevice = isApplePlatform();
     const [planWalletState, setPlanWalletState] = useState<Map<number, 'pending' | 'ready' | 'failed'>>(
         () => new Map(),
     );
@@ -611,28 +612,37 @@ export default function RadixRc({
                     <FormattedMessage id="payment_method" />
                 </div>
                 <div className="rs-shopping__payGrid">
-                    <button
-                        type="button"
-                        onClick={() => handlePaymentPick(1)}
-                        className={cn('rs-shopping__payBtn', payment === 1 && 'rs-shopping__payBtn--active')}
-                    >
-                        <img
-                            className="rs-shopping__payLogo rs-shopping__payLogo--apple"
-                            src={applePay}
-                            alt="Apple Pay"
-                        />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handlePaymentPick(2)}
-                        className={cn('rs-shopping__payBtn', payment === 2 && 'rs-shopping__payBtn--active')}
-                    >
-                        <img
-                            className="rs-shopping__payLogo rs-shopping__payLogo--google"
-                            src={googlePay}
-                            alt="Google Pay"
-                        />
-                    </button>
+                    {isAppleDevice ? (
+                        <button
+                            type="button"
+                            onClick={() => handlePaymentPick(1)}
+                            className={cn(
+                                'rs-shopping__payBtn',
+                                payment === 1 && 'rs-shopping__payBtn--active',
+                            )}
+                        >
+                            <img
+                                className="rs-shopping__payLogo rs-shopping__payLogo--apple"
+                                src={applePay}
+                                alt="Apple Pay"
+                            />
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => handlePaymentPick(2)}
+                            className={cn(
+                                'rs-shopping__payBtn',
+                                payment === 2 && 'rs-shopping__payBtn--active',
+                            )}
+                        >
+                            <img
+                                className="rs-shopping__payLogo rs-shopping__payLogo--google"
+                                src={googlePay}
+                                alt="Google Pay"
+                            />
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => handlePaymentPick(3)}
