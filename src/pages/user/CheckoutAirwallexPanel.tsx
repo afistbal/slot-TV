@@ -1,6 +1,7 @@
 import { api, type TData } from "@/api";
 import PayIncompleteDialog from "@/components/PayIncompleteDialog";
 import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
+import { isApplePlatform } from "@/lib/isApplePlatform";
 import { cn } from "@/lib/utils";
 import { createElement, init } from "@airwallex/components-sdk";
 import { useEffect, useRef, useState, type RefObject } from "react";
@@ -208,9 +209,12 @@ export function CheckoutAirwallexPanel({
     setOrderSummary(null);
 
     async function run() {
+      const payCreatePayment =
+        payment === 3 ? (isApplePlatform() ? 1 : 2) : payment;
       checkoutDbg("0 Airwallex 面板", {
         productId,
         payment,
+        payCreatePayment,
         redirectHref,
       });
 
@@ -225,7 +229,7 @@ export function CheckoutAirwallexPanel({
           method: "post",
           loading: false,
           data: {
-            payment,
+            payment: payCreatePayment,
             product_id: productId,
             redirect: redirectHref,
           },
