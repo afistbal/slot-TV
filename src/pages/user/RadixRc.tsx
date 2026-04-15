@@ -464,30 +464,19 @@ export default function RadixRc({
         };
     }, [payment, intl.locale, cleanupWalletOverlays, walletProductId]);
 
-    function goCheckout(productId: number, payMethod: number) {
-        navigate(`/page/pay/${productId}?payment=${payMethod}&from=${checkoutFrom}`);
+    function goCheckout(productId: number) {
+        navigate(`/page/pay/${productId}?from=${checkoutFrom}`);
     }
 
-    function handleSelectAndPay(productId: number) {
+    function handleSelectPlan(productId: number) {
         setCurrentId(productId);
-        // wallet 状态下点击套餐：切换选中，并触发钱包按钮按所选套餐重建订单
-        if (payment === 2) {
-            const targetId = walletProductId ?? productId;
-            const st = planWalletState.get(targetId) ?? 'pending';
-            if (st === 'failed') {
-                goCheckout(targetId, 3);
-            }
-            return;
-        }
-        if (payment === 1 || payment === 3) return;
-        goCheckout(productId, payment);
     }
 
     function handleTopUpClick() {
         const targetId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
         if (!targetId) return;
         if (payment === 3) {
-            goCheckout(targetId, 3);
+            goCheckout(targetId);
         }
     }
 
@@ -531,13 +520,13 @@ export default function RadixRc({
                         role={enableInteraction ? 'button' : undefined}
                         aria-disabled={enableInteraction ? undefined : true}
                         tabIndex={enableInteraction ? 0 : -1}
-                        onClick={enableInteraction ? () => handleSelectAndPay(p.id) : undefined}
+                        onClick={enableInteraction ? () => handleSelectPlan(p.id) : undefined}
                         onKeyDown={
                             enableInteraction
                                 ? (e) => {
                                       if (e.key === 'Enter' || e.key === ' ') {
                                           e.preventDefault();
-                                          handleSelectAndPay(p.id);
+                                          handleSelectPlan(p.id);
                                       }
                                   }
                                 : undefined
