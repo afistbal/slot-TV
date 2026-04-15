@@ -292,7 +292,12 @@ export function CheckoutAirwallexPanel({
         redirectFields.currency,
       );
 
-      /** 与 `slot-TV/Airwallex.tsx` 的 `redirectToCheckout({ methods: [...] })` 一致：单 Drop-in 内嵌三种方式 */
+      /** payment=1/2 时展示钱包+卡；未传或 payment=3 时仅卡 */
+      const dropInMethods =
+        payment === 1 || payment === 2
+          ? (["card", "googlepay", "applepay"] as const)
+          : (["card"] as const);
+
       const dropInAppearanceMode = variant === "page" ? "light" : "dark";
       const dropInAllMethods = {
         mode: "recurring" as const,
@@ -302,7 +307,7 @@ export function CheckoutAirwallexPanel({
         currency: redirectFields.currency,
         payment_consent: paymentConsent,
         recurringOptions,
-        methods: ["card"],
+        methods: dropInMethods,
         appearance: {
           mode: dropInAppearanceMode as "light" | "dark",
         },

@@ -1,5 +1,4 @@
 import { Page } from "@/layouts/user";
-import { isApplePlatform } from "@/lib/isApplePlatform";
 import { useParams, useSearchParams } from "react-router";
 import {
   CheckoutAirwallexPanel,
@@ -11,12 +10,7 @@ export default function Component() {
   const [searchParams] = useSearchParams();
   const productId = parseInt(params["id"] ?? "0", 10);
   const rawPayment = searchParams.get("payment");
-  const payment =
-    rawPayment == null
-      ? isApplePlatform()
-        ? 1
-        : 2
-      : parsePaymentMethod(rawPayment);
+  const payment = rawPayment == null ? 3 : parsePaymentMethod(rawPayment);
 
   const redirectHref =
     typeof window !== "undefined" ? window.location.href : "";

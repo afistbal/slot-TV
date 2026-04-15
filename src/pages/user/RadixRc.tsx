@@ -119,7 +119,8 @@ export default function RadixRc({
     });
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
-    const isAppleDevice = isApplePlatform();
+    const walletEmbedSupported =
+        (payment === 1 && isApplePlatform()) || (payment === 2 && !isApplePlatform());
     const [planWalletState, setPlanWalletState] = useState<Map<number, 'pending' | 'ready' | 'failed'>>(
         () => new Map(),
     );
@@ -202,8 +203,8 @@ export default function RadixRc({
     }, []);
 
     useEffect(() => {
-        // Visa/卡：不销毁 wallet（避免切回来重建）；仅隐藏由 render 层控制
-        if (payment !== 1 && payment !== 2) {
+        // 非钱包模式，或当前设备不支持所选钱包：不创建元素，交互走直跳 checkout。
+        if (payment !== 1 && payment !== 2 || !walletEmbedSupported) {
             walletObsRef.current.forEach((o) => o.disconnect());
             walletObsRef.current = [];
             return;
@@ -462,10 +463,10 @@ export default function RadixRc({
             walletObsRef.current.forEach((o) => o.disconnect());
             walletObsRef.current = [];
         };
-    }, [payment, intl.locale, cleanupWalletOverlays, walletProductId]);
+    }, [payment, intl.locale, cleanupWalletOverlays, walletProductId, walletEmbedSupported]);
 
     function goCheckout(productId: number) {
-        navigate(`/page/pay/${productId}?from=${checkoutFrom}`);
+        navigate(`/page/pay/${productId}?payment=${payment}&from=${checkoutFrom}`);
     }
 
     function handleSelectPlan(productId: number) {
@@ -475,7 +476,7 @@ export default function RadixRc({
     function handleTopUpClick() {
         const targetId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
         if (!targetId) return;
-        if (payment === 3) {
+        if (payment === 3 || !walletEmbedSupported) {
             goCheckout(targetId);
         }
     }
@@ -485,6 +486,7 @@ export default function RadixRc({
     }
 
     const showCountdown = !loadingProducts && products.length > 0;
+    const walletDirectCheckout = payment === 3 || !walletEmbedSupported;
     const walletOverlayOpacity =
         typeof window !== 'undefined' && window.localStorage.getItem('shopping_wallet_opacity') === '1' ? 0.4 : 0.01;
     const countdownEl = showCountdown ? (
@@ -614,37 +616,34 @@ export default function RadixRc({
                     <FormattedMessage id="payment_method" />
                 </div>
                 <div className="rs-shopping__payGrid">
-                    {isAppleDevice ? (
-                        <button
-                            type="button"
-                            onClick={() => handlePaymentPick(1)}
-                            className={cn(
-                                'rs-shopping__payMethodBtn',
-                                payment === 1 && 'rs-shopping__payMethodBtn--active',
-                            )}
-                        >
-                            <img
-                                className="rs-shopping__payLogo rs-shopping__payLogo--apple"
-                                src={applePay}
-                                alt="Apple Pay"
-                            />
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => handlePaymentPick(2)}
-                            className={cn(
-                                'rs-shopping__payMethodBtn',
-                                payment === 2 && 'rs-shopping__payMethodBtn--active',
-                            )}
-                        >
-                            <img
-                                className="rs-shopping__payLogo rs-shopping__payLogo--google"
-                                src={googlePay}
-                                alt="Google Pay"
-                            />
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        onClick={() => handlePaymentPick(1)}
+                        className={cn(
+                            'rs-shopping__payMethodBtn',
+                            payment === 1 && 'rs-shopping__payMethodBtn--active',
+                        )}
+                    >
+                        <img
+                            className="rs-shopping__payLogo rs-shopping__payLogo--apple"
+                            src={applePay}
+                            alt="Apple Pay"
+                        />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handlePaymentPick(2)}
+                        className={cn(
+                            'rs-shopping__payMethodBtn',
+                            payment === 2 && 'rs-shopping__payMethodBtn--active',
+                        )}
+                    >
+                        <img
+                            className="rs-shopping__payLogo rs-shopping__payLogo--google"
+                            src={googlePay}
+                            alt="Google Pay"
+                        />
+                    </button>
                     <button
                         type="button"
                         onClick={() => handlePaymentPick(3)}
@@ -666,26 +665,25 @@ export default function RadixRc({
                         <div className="rs-shopping__payWalletSlot">
                             <button
                                 type="button"
-                                disabled={
-                                    payment === 3
-                                        ? false
-                                        : (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready'
+                                disabled={walletDirectCheckout
+                                    ? false
+                                    : (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready'
                                 }
-                                onClick={payment === 3 ? handleTopUpClick : undefined}
+                                onClick={walletDirectCheckout ? handleTopUpClick : undefined}
                                 className={cn(
                                     'rs-shopping__payWalletGhostBtn',
-                                    payment !== 3 &&
+                                    !walletDirectCheckout &&
                                         (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready' &&
                                         'rs-shopping__payWalletGhostBtn--loading',
-                                    (payment === 3 ||
+                                    (walletDirectCheckout ||
                                         (planWalletState.get(walletProductId ?? -1) ?? 'pending') === 'ready') &&
                                         'rs-shopping__payWalletGhostBtn--ready',
-                                    payment === 3 && 'rs-shopping__payWalletGhostBtn--clickable',
+                                    walletDirectCheckout && 'rs-shopping__payWalletGhostBtn--clickable',
                                 )}
-                                aria-hidden={payment === 3 ? undefined : true}
+                                aria-hidden={walletDirectCheckout ? undefined : true}
                             >
                                 <span className="rs-shopping__payWalletGhostInner">
-                                    {payment !== 3 &&
+                                    {!walletDirectCheckout &&
                                     (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready' ? (
                                         <img
                                             className="rs-shopping__payWalletGhostSpinner"
@@ -706,7 +704,7 @@ export default function RadixRc({
                                     display: 'flex',
                                     ['--rs-wallet-iframe-opacity' as string]: walletOverlayOpacity,
                                     pointerEvents:
-                                        (payment === 1 || payment === 2) &&
+                                        !walletDirectCheckout &&
                                         (planWalletState.get(walletProductId ?? -1) ?? 'pending') === 'ready'
                                             ? 'auto'
                                             : 'none',
