@@ -241,7 +241,7 @@ const router = createBrowserRouter([
                 element: <UserCheckout />,
             },
             {
-                path: 'airwallex-google-pay-demo/:id',
+                path: 'paydemo/:id',
                 element: <UserAirwallexGooglePayButtonDemo />,
             },
             {

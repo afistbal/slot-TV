@@ -32,8 +32,8 @@ function majorAmount(apiHint: unknown): number {
 }
 
 /**
- * 开发演示：购物页 3 个套餐卡片（`rs-shopping__plans` / `rs-shopping__plan`）
- * 每个卡片都挂一个半透明 `applePayButton`（真实可点），实现“点套餐=点 Apple Pay”。
+ * 开发演示：购物页套餐卡片（`rs-shopping__plans` / `rs-shopping__plan`）
+ * 当前先只保留 1 个 9.99 套餐做 Apple Pay 单点排查。
  */
 export default function AirwallexGooglePayButtonDemo() {
   const intl = useIntl();
@@ -50,6 +50,13 @@ export default function AirwallexGooglePayButtonDemo() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [renderedIds, setRenderedIds] = useState<Set<number>>(() => new Set());
+  /** 仅作提示，不拦截挂载（避免误判；真正能否弹窗由 Apple + Airwallex 决定） */
+  const [applePaySupported, setApplePaySupported] = useState<boolean | null>(
+    null,
+  );
+  const [applePayHint, setApplePayHint] = useState<string | null>(null);
+  /** Apple Pay 要求安全上下文；用局域网 IP 打开 http 会触发 InvalidAccessError: insecure document */
+  const [secureContextOk, setSecureContextOk] = useState<boolean | null>(null);
 
   const redirectHref =
     typeof window !== "undefined" ? window.location.href : "";
@@ -65,6 +72,34 @@ export default function AirwallexGooglePayButtonDemo() {
     }
     elementsRef.current.clear();
     setRenderedIds(new Set());
+  }, []);
+
+  useEffect(() => {
+    setSecureContextOk(
+      typeof window !== "undefined" ? window.isSecureContext : null,
+    );
+  }, []);
+
+  useEffect(() => {
+    let supported = false;
+    try {
+      const maybeSession = (
+        globalThis as { ApplePaySession?: unknown }
+      ).ApplePaySession as { canMakePayments?: () => boolean } | undefined;
+      if (maybeSession && typeof maybeSession.canMakePayments === "function") {
+        supported = Boolean(maybeSession.canMakePayments());
+      }
+    } catch {
+      supported = false;
+    }
+    setApplePaySupported(supported);
+    if (!supported) {
+      setApplePayHint(
+        "本机 ApplePaySession.canMakePayments() 为 false：请确认已在「钱包」添加可支付卡片、未使用无痕窗口；部分 Mac 需在系统设置中启用 Apple Pay 或使用 iPhone/Apple Watch 确认。",
+      );
+    } else {
+      setApplePayHint(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -91,12 +126,9 @@ export default function AirwallexGooglePayButtonDemo() {
   }, [cleanupElements]);
 
   const selectedPlans = useMemo(() => {
-    const wanted = ["9.99", "24.99", "49.99"];
-    const hits = wanted
-      .map((v) => products.find((p) => String(p.price) === v))
-      .filter(Boolean) as Product[];
-    if (hits.length === 3) return hits;
-    return products.slice(0, 3);
+    const target = products.find((p) => String(p.price) === "9.99");
+    if (target) return [target];
+    return products.slice(0, 1);
   }, [products]);
 
   const ensureMountedForPlans = useCallback(async () => {
@@ -107,14 +139,6 @@ export default function AirwallexGooglePayButtonDemo() {
     if (!selectedPlans.length) return;
 
     await airwallexRunShoppingWalletExclusive(async () => {
-      const effectiveEnv: "prod" | "demo" =
-        forceEnv === "demo" || forceEnv === "prod" ? forceEnv : "demo";
-      setEnvHint(effectiveEnv);
-      await airwallexEnsureShoppingWalletInit(
-        normalizeAirwallexLocale(intl.locale),
-        effectiveEnv,
-      );
-
       for (const p of selectedPlans) {
         if (elementsRef.current.has(p.id)) continue;
         const host = planMountRefs.current.get(p.id) ?? null;
@@ -129,7 +153,27 @@ export default function AirwallexGooglePayButtonDemo() {
             redirect: redirectHref,
           },
         });
-        if (payCreate.c !== 0) continue;
+        if (payCreate.c !== 0) {
+          setError(
+            payCreate.m
+              ? String(payCreate.m)
+              : `pay/create 失败（c=${String(payCreate.c)}）`,
+          );
+          continue;
+        }
+
+        const backendEnv = payCreate.d["env"] as "prod" | "demo" | undefined;
+        const sdkEnv: "prod" | "demo" =
+          forceEnv === "demo" || forceEnv === "prod"
+            ? forceEnv
+            : backendEnv === "prod" || backendEnv === "demo"
+              ? backendEnv
+              : "demo";
+        setEnvHint(sdkEnv);
+        await airwallexEnsureShoppingWalletInit(
+          normalizeAirwallexLocale(intl.locale),
+          sdkEnv,
+        );
 
         const intent_id = payCreate.d["pi"] as string;
         const client_secret = payCreate.d["client_secret"] as string;
@@ -157,15 +201,16 @@ export default function AirwallexGooglePayButtonDemo() {
           submitType: "subscribe" as const,
           buttonColor: "black" as const,
           buttonType: "plain" as const,
+          merchantCapabilities: [{ supports3DS: true }],
           style: {
             width: "100%",
-            height: "200px !important",
+            height: "56px !important",
           },
         };
 
         const el = await createElement(
           "applePayButton",
-          applePayButtonOptions as Parameters<
+          applePayButtonOptions as unknown as Parameters<
             typeof createElement<"applePayButton">
           >[1],
         );
@@ -185,12 +230,17 @@ export default function AirwallexGooglePayButtonDemo() {
           )?.detail?.error?.message;
           setError(detail || "applePayButton error");
         });
+        (el as unknown as {
+          on: (code: string, cb: (ev?: unknown) => void) => void;
+        }).on("cancel", () => {
+          /* 用户取消，不当作错误 */
+        });
 
         el.mount(host);
         elementsRef.current.set(p.id, el);
       }
     });
-  }, [forceEnv, intl, redirectHref, selectedPlans]);
+  }, [cleanupElements, forceEnv, intl, redirectHref, selectedPlans]);
 
   useEffect(() => {
     void ensureMountedForPlans();
@@ -198,11 +248,15 @@ export default function AirwallexGooglePayButtonDemo() {
 
   useEffect(() => {
     const observers: MutationObserver[] = [];
+    const initialRendered = new Set<number>();
     setRenderedIds(new Set());
 
     for (const p of selectedPlans) {
       const host = planMountRefs.current.get(p.id);
       if (!host) continue;
+      if (host.childElementCount > 0) {
+        initialRendered.add(p.id);
+      }
       const obs = new MutationObserver(() => {
         setRenderedIds((prev) => {
           const n = new Set(prev);
@@ -212,6 +266,9 @@ export default function AirwallexGooglePayButtonDemo() {
       });
       obs.observe(host, { childList: true, subtree: true });
       observers.push(obs);
+    }
+    if (initialRendered.size > 0) {
+      setRenderedIds(initialRendered);
     }
 
     return () => observers.forEach((o) => o.disconnect());
@@ -227,8 +284,39 @@ export default function AirwallexGooglePayButtonDemo() {
         <code className="text-white">/shopping</code> 的 DOM：
         <code className="text-white">rs-shopping__plans</code> /{" "}
         <code className="text-white">rs-shopping__plan</code>。
-        每个套餐卡片都挂一个半透明 Apple Pay（真实按钮），点卡片即拉起对应金额支付。
+        当前仅渲染一个 <code className="text-white">$9.99</code> 套餐用于排查 Apple
+        Pay 按钮展示与拉起。
       </p>
+
+      {secureContextOk === false ? (
+        <div className="rounded-md border border-red-500/60 bg-red-950/50 p-3 text-sm text-red-100 mb-4 space-y-2">
+          <div className="font-medium">
+            当前不是安全上下文，Apple Pay 无法启动（控制台常见：InvalidAccessError: Trying to start an Apple Pay session from an insecure document）。
+          </div>
+          <p className="text-xs text-red-100/80 border-t border-red-500/30 pt-2 mt-1">
+            这是浏览器 / Apple Pay 的安全策略，不是 React 或 pay/create 等业务代码写错；需改访问协议或域名（见下），而不是在业务里「修一行」就能消除该错误。
+          </p>
+          <ul className="list-disc pl-4 text-xs text-red-100/90 space-y-1">
+            <li>
+              不要用局域网地址打开，例如{" "}
+              <code className="text-white">http://192.168.x.x:5173</code>；请改用{" "}
+              <code className="text-white">http://localhost:5173</code> 或{" "}
+              <code className="text-white">http://127.0.0.1:5173</code> 同一台机器调试。
+            </li>
+            <li>
+              若必须用局域网 IP 或 Safari 仍要求加密，请用本地 HTTPS（例如 mkcert 签发证书后配置 Vite{" "}
+              <code className="text-white">server.https</code>，或{" "}
+              <code className="text-white">@vitejs/plugin-basic-ssl</code>）。
+            </li>
+          </ul>
+        </div>
+      ) : null}
+
+      {applePaySupported === false && applePayHint ? (
+        <div className="rounded-md border border-amber-500/40 bg-amber-950/30 p-3 text-xs text-amber-100/90 mb-4">
+          {applePayHint}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-md border border-red-500/50 bg-red-950/40 p-3 text-sm text-red-200 mb-4">
@@ -250,8 +338,13 @@ export default function AirwallexGooglePayButtonDemo() {
             </div>
           ) : (
             <div className="text-white/60">
-              demo 环境更适合在本地验证拉起；若仍不弹窗，再重点排查网络是否能访问{" "}
-              <code className="text-white">pay.google.com</code>。
+              SDK 环境已与 <code className="text-white">pay/create</code> 返回的{" "}
+              <code className="text-white">env</code> 对齐；若开发者工具里对{" "}
+              <code className="text-white">checkout-demo.airwallex.com</code> 的请求出现{" "}
+              <code className="text-white">401</code>，请核对 intent 与{" "}
+              <code className="text-white">init</code> 的 <code className="text-white">env</code>{" "}
+              是否一致，或临时加{" "}
+              <code className="text-white">?awenv=demo</code> / <code className="text-white">?awenv=prod</code> 强制覆盖。
             </div>
           )}
         </div>
