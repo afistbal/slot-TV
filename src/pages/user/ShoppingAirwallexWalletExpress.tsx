@@ -316,10 +316,6 @@ export const ShoppingAirwallexWalletExpress = forwardRef<
           result.d["pay_amount"] ??
           result.d["price"],
       );
-      const recurringOptions = {
-        next_triggered_by: "merchant" as const,
-        merchant_trigger_reason: "scheduled" as const,
-      } as const;
       const gPayLine = googlePayPriceString(
         amountValue,
         redirectFields.currency,
@@ -331,9 +327,7 @@ export const ShoppingAirwallexWalletExpress = forwardRef<
         client_secret: redirectFields.client_secret,
         customer_id: redirectFields.customer_id,
         amount: { value: amountValue, currency: redirectFields.currency },
-        payment_consent: recurringOptions,
         countryCode: "HK",
-        submitType: "subscribe" as const,
         appearance: {
           mode: "dark" as const,
           variables: { ...walletVariables },

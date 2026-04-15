@@ -648,6 +648,17 @@ export default function RadixRc({
                             className="rs-shopping__payLogo rs-shopping__payLogo--master"
                         />
                     </button>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            navigate(
+                                `/page/paydemo/${currentId ?? planProducts[0]?.id ?? 1}`,
+                            )
+                        }
+                        className="rs-shopping__payBtn"
+                    >
+                        test apple
+                    </button>
                 </div>
             </div>
         </div>

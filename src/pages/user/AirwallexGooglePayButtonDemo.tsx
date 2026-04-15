@@ -185,26 +185,18 @@ export default function AirwallexGooglePayButtonDemo() {
             payCreate.d["pay_amount"] ??
             payCreate.d["price"],
         );
-        const recurringOptions = {
-          next_triggered_by: "merchant" as const,
-          merchant_trigger_reason: "scheduled" as const,
-        };
-
         const applePayButtonOptions = {
           mode: "recurring" as const,
           intent_id,
           client_secret,
           customer_id,
           amount: { value: amountValue, currency },
-          payment_consent: recurringOptions,
           countryCode: "HK",
-          submitType: "subscribe" as const,
           buttonColor: "black" as const,
           buttonType: "plain" as const,
-          merchantCapabilities: [{ supports3DS: true }],
           style: {
             width: "100%",
-            height: "56px !important",
+            height: "56px",
           },
         };
 
@@ -240,7 +232,7 @@ export default function AirwallexGooglePayButtonDemo() {
         elementsRef.current.set(p.id, el);
       }
     });
-  }, [cleanupElements, forceEnv, intl, redirectHref, selectedPlans]);
+  }, [forceEnv, intl, redirectHref, selectedPlans]);
 
   useEffect(() => {
     void ensureMountedForPlans();
@@ -249,20 +241,61 @@ export default function AirwallexGooglePayButtonDemo() {
   useEffect(() => {
     const observers: MutationObserver[] = [];
     const initialRendered = new Set<number>();
+    const READY_H = 40;
+    const frameHeightPx = (frame: HTMLIFrameElement): number => {
+      const inlineH = Number.parseFloat(frame.style.height || "");
+      if (Number.isFinite(inlineH)) return inlineH;
+      const csH = Number.parseFloat(window.getComputedStyle(frame).height || "");
+      if (Number.isFinite(csH)) return csH;
+      return frame.getBoundingClientRect().height;
+    };
+    const isHostReady = (host: HTMLDivElement): boolean => {
+      const frame = host.querySelector("iframe") as HTMLIFrameElement | null;
+      if (!frame) return false;
+      return frameHeightPx(frame) >= READY_H;
+    };
+    const watchReady = (planId: number, host: HTMLDivElement) => {
+      let raf = 0;
+      let frames = 0;
+      const tick = () => {
+        if (isHostReady(host)) {
+          setRenderedIds((prev) => {
+            const n = new Set(prev);
+            n.add(planId);
+            return n;
+          });
+          return;
+        }
+        frames += 1;
+        if (frames > 180) return;
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(raf);
+    };
+    const stopRafs: Array<() => void> = [];
     setRenderedIds(new Set());
 
     for (const p of selectedPlans) {
       const host = planMountRefs.current.get(p.id);
       if (!host) continue;
-      if (host.childElementCount > 0) {
+      if (isHostReady(host)) {
         initialRendered.add(p.id);
+      } else {
+        const stop = watchReady(p.id, host);
+        if (stop) stopRafs.push(stop);
       }
       const obs = new MutationObserver(() => {
-        setRenderedIds((prev) => {
-          const n = new Set(prev);
-          if (host.childElementCount > 0) n.add(p.id);
-          return n;
-        });
+        if (isHostReady(host)) {
+          setRenderedIds((prev) => {
+            const n = new Set(prev);
+            n.add(p.id);
+            return n;
+          });
+          return;
+        }
+        const stop = watchReady(p.id, host);
+        if (stop) stopRafs.push(stop);
       });
       obs.observe(host, { childList: true, subtree: true });
       observers.push(obs);
@@ -271,7 +304,10 @@ export default function AirwallexGooglePayButtonDemo() {
       setRenderedIds(initialRendered);
     }
 
-    return () => observers.forEach((o) => o.disconnect());
+    return () => {
+      observers.forEach((o) => o.disconnect());
+      stopRafs.forEach((stop) => stop());
+    };
   }, [selectedPlans]);
 
   return (
