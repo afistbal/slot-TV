@@ -449,7 +449,7 @@ export default function RadixRcShoppingPaySection({
                 </button>
             </div>
             <button type="button" onClick={handleTestAppleCheckout} className="rs-shopping__payTestAppleBtn">
-                test apple1
+                test apple2
             </button>
             {payment === 1 || payment === 2 || payment === 3 ? (
                 <div className="rs-shopping__airwallexWalletSlot">
