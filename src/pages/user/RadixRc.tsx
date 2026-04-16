@@ -9,7 +9,6 @@ import iconUnlimitedViewing from '@/assets/images/icon_unlimited_viewing.png';
 import icon1080p from '@/assets/images/icon_1080p.png';
 import checkedIcon from '@/assets/images/checked.png';
 import Countdown from '@/widgets/Countdown';
-import RadixRcApplePayNativeButton from '@/pages/user/RadixRcApplePayNativeButton';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 
 function paywallImage(file: string) {
@@ -243,7 +242,6 @@ export default function RadixRc({
                 checkoutTargetProductId={checkoutTargetProductId}
                 checkoutFrom={checkoutFrom}
             />
-            <RadixRcApplePayNativeButton productId={walletProductId} disabled={loadingProducts} />
         </div>
     );
 

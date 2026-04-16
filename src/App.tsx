@@ -50,6 +50,7 @@ import UserSearch from './pages/user/Search';
 import UserMyBalance from './pages/user/MyBanlance';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
+import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
 import UserCheckout from './pages/user/Checkout';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 
@@ -258,6 +259,10 @@ const router = createBrowserRouter([
             {
                 path: 'my-balance',
                 element: <UserMyBalance />,
+            },
+            {
+                path: 'demo',
+                element: <UserApplePayNativeButtonDemo />,
             },
         ],
     },
