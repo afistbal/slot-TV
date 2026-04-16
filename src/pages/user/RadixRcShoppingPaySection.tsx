@@ -389,7 +389,7 @@ export default function RadixRcShoppingPaySection({
     }
 
     function handleTestAppleCheckout() {
-        window.location.href = 'http://localhost:5174/page/pay/1?payment=1&from=shopping';
+        window.location.href = `${window.location.origin}/page/pay/1?payment=1&from=shopping`;
     }
 
     const walletDirectCheckout = payment === 3 || !walletEmbedSupported;
