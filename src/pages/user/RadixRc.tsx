@@ -676,7 +676,7 @@ export default function RadixRc({
                     </button>
                 </div>
                 <button type="button" onClick={handleTestAppleCheckout} className="rs-shopping__payTestAppleBtn">
-                    test apple
+                    test apple1
                 </button>
                 {payment === 1 || payment === 2 || payment === 3 ? (
                     <div className="rs-shopping__airwallexWalletSlot">

@@ -21,6 +21,9 @@ export default defineConfig({
       manifest: false,
       injectRegister: false,
       workbox: {
+        // injectRegister 为 false 时插件不会自动合并这两项；autoUpdate 依赖 SW 内 skipWaiting，否则新版本会一直 waiting
+        skipWaiting: true,
+        clientsClaim: true,
         navigateFallbackDenylist: [
           /^\/api\//,
           /^\/[\w-]+\.html/

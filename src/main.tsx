@@ -19,13 +19,8 @@ import './styles/video-vertical.scss'
 import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 
-/** 新版本 SW 已下载但处于 waiting 时触发；`true` 会 skipWaiting 并刷新页面以加载最新资源 */
-const updateSW = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    void updateSW(true)
-  },
-})
+/** `registerType: 'autoUpdate'`：新 SW 就绪后由插件侧自动接管并刷新，无需 onNeedRefresh / 弹窗 */
+registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')!).render(
   <App />,
