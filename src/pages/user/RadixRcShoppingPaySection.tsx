@@ -291,11 +291,11 @@ export default function RadixRcShoppingPaySection({
                 );
 
                 const applePayButtonOptions = {
-                    mode: 'payment' as const,
+                    mode: 'recurring' as const,
                     intent_id,
                     client_secret,
                     customer_id,
-                    amount: { value: amountValue, currency },
+                    amount: { value: amountValue.toString(), currency },
                     countryCode: 'HK',
                     // buttonType: 'plain' as const,
                     // buttonColor: 'black' as const,
@@ -449,7 +449,7 @@ export default function RadixRcShoppingPaySection({
                 </button>
             </div>
             <button type="button" onClick={handleTestAppleCheckout} className="rs-shopping__payTestAppleBtn">
-                test apple5
+                test apple6
             </button>
             {payment === 1 || payment === 2 || payment === 3 ? (
                 <div className="rs-shopping__airwallexWalletSlot">
