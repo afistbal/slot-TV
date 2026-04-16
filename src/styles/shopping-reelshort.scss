@@ -569,6 +569,62 @@
         }
     }
 
+    /** RadixRc：Airwallex Apple Pay Native API（Safari `ApplePaySession`） */
+    &__applePayNativeWrap {
+        margin-top: calc(10 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 12px;
+        }
+    }
+
+    &__applePayNativeBtn {
+        box-sizing: border-box;
+        display: inline-flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        gap: calc(8 / 375 * var(--app-vw));
+        padding: calc(10 / 375 * var(--app-vw)) calc(14 / 375 * var(--app-vw));
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: calc(8 / 375 * var(--app-vw));
+        background: #000;
+        color: rgba(255, 255, 255, 0.92);
+        font-size: calc(14 / 375 * var(--app-vw));
+        font-weight: 500;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+
+        @media (min-width: 768px) {
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+    }
+
+    &__applePayNativeBtnLogo {
+        height: calc(18 / 375 * var(--app-vw));
+        width: auto;
+        flex-shrink: 0;
+
+        @media (min-width: 768px) {
+            height: 18px;
+        }
+    }
+
+    &__applePayNativeHint {
+        margin-top: calc(6 / 375 * var(--app-vw));
+        font-size: calc(11 / 375 * var(--app-vw));
+        line-height: 1.35;
+        color: rgba(255, 255, 255, 0.55);
+
+        @media (min-width: 768px) {
+            margin-top: 6px;
+            font-size: 11px;
+        }
+    }
+
     /** 调试入口：跳转 tv-web 收银台对照 Apple Pay（整页 /shopping 与抽屉共用） */
     &__payTestAppleBtn {
         margin-top: calc(8 / 375 * var(--app-vw));
