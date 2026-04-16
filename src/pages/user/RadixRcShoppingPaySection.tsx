@@ -296,7 +296,7 @@ export default function RadixRcShoppingPaySection({
                     client_secret,
                     customer_id,
                     amount: { value: amountValue, currency },
-                    countryCode: 'HK',
+                    countryCode: 'CN',
                     // buttonType: 'plain' as const,
                     // buttonColor: 'black' as const,
                     // style: {
