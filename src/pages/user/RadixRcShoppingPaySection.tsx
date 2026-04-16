@@ -297,12 +297,12 @@ export default function RadixRcShoppingPaySection({
                     customer_id,
                     amount: { value: amountValue, currency },
                     countryCode: 'HK',
-                    buttonType: 'plain' as const,
-                    buttonColor: 'black' as const,
-                    style: {
-                        width: '100%',
-                        height: '40px',
-                    },
+                    // buttonType: 'plain' as const,
+                    // buttonColor: 'black' as const,
+                    // style: {
+                    //     width: '100%',
+                    //     height: '40px',
+                    // },
                 };
 
                 if (which === 'apple') {
