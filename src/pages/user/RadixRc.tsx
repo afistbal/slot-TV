@@ -393,6 +393,25 @@ export default function RadixRc({
                     payCreate.d.amount ?? payCreate.d.amount_major ?? payCreate.d.pay_amount ?? payCreate.d.price,
                 );
 
+                const applePayButtonOptions = {
+                    mode: 'recurring' as const,
+                    intent_id,
+                    client_secret,
+                    customer_id,
+                    amount: { value: amountValue, currency },
+                    countryCode: 'HK',
+                    buttonType: 'plain' as const,
+                    buttonColor: 'black' as const,
+                    style: {
+                        width: '100%',
+                        height: '40px',
+                    },
+                };
+
+                if (which === 'apple') {
+                    console.log(JSON.stringify(applePayButtonOptions, null, 2));
+                }
+
                 try {
                     const el =
                         which === 'google'
@@ -411,20 +430,12 @@ export default function RadixRc({
                                       height: '40px',
                                   },
                               })
-                            : await createElement('applePayButton', {
-                                  mode: 'recurring',
-                                  intent_id,
-                                  client_secret,
-                                  customer_id,
-                                  amount: { value: amountValue, currency },
-                                  countryCode: 'HK',
-                                  buttonType: 'plain',
-                                  buttonColor: 'black',
-                                  style: {
-                                      width: '100%',
-                                      height: '40px',
-                                  },
-                              });
+                            : await createElement(
+                                  'applePayButton',
+                                  applePayButtonOptions as unknown as Parameters<
+                                      typeof createElement<'applePayButton'>
+                                  >[1],
+                              );
                     if (!el) return;
                     if (!alive || walletRunIdRef.current !== runId) {
                         try {
@@ -483,6 +494,10 @@ export default function RadixRc({
 
     function handlePaymentPick(payMethod: number) {
         setPayment(payMethod);
+    }
+
+    function handleTestAppleCheckout() {
+        window.location.href = 'http://localhost:5174/page/pay/1?payment=1&from=shopping';
     }
 
     const showCountdown = !loadingProducts && products.length > 0;
@@ -660,6 +675,9 @@ export default function RadixRc({
                         />
                     </button>
                 </div>
+                <button type="button" onClick={handleTestAppleCheckout} className="rs-shopping__payTestAppleBtn">
+                    test apple
+                </button>
                 {payment === 1 || payment === 2 || payment === 3 ? (
                     <div className="rs-shopping__airwallexWalletSlot">
                         <div className="rs-shopping__payWalletSlot">

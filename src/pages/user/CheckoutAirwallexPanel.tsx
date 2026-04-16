@@ -261,12 +261,16 @@ export function CheckoutAirwallexPanel({
 
       const env = result.d["env"] as "prod" | "demo";
 
+      let payments:
+        | (Awaited<ReturnType<typeof init>>["payments"] | undefined)
+        | null = null;
       try {
-        await init({
+        const initResult = await init({
           locale: normalizeAirwallexLocale(intl.locale),
           env,
           enabledElements: ["payments"],
         });
+        payments = initResult.payments;
       } catch (e) {
         checkoutDbg("2 init 失败", e);
         setShowIncomplete(true);
@@ -275,6 +279,44 @@ export function CheckoutAirwallexPanel({
 
       if (isCancelled()) {
         return;
+      }
+
+      // /page/pay/:id?payment=1：苹果支付参数与 tv-web 的 Airwallex.tsx 保持一致
+      if (payment === 1) {
+        if (!payments) {
+          checkoutDbg("2 payments 未就绪（apple redirect）");
+          setShowIncomplete(true);
+          return;
+        }
+        const appleCheckoutPayload: Parameters<
+          NonNullable<typeof payments>["redirectToCheckout"]
+        >[0] = {
+          intent_id: redirectFields.intent_id,
+          mode: "recurring",
+          recurringOptions: {
+            next_triggered_by: "merchant",
+            merchant_trigger_reason: "scheduled",
+          },
+          customer_id: redirectFields.customer_id,
+          client_secret: redirectFields.client_secret,
+          currency: redirectFields.currency,
+          successUrl: redirectFields.successUrl,
+          failUrl: redirectFields.failUrl,
+          methods: ["applepay"],
+          applePayRequestOptions: {
+            buttonType: "subscribe",
+            countryCode: "HK",
+          },
+        };
+        checkoutDbg("2.5 apple redirectToCheckout 参数", appleCheckoutPayload);
+        try {
+          await payments.redirectToCheckout(appleCheckoutPayload);
+          return;
+        } catch (e) {
+          checkoutDbg("2.6 apple redirectToCheckout 异常", e);
+          setShowIncomplete(true);
+          return;
+        }
       }
 
       const amountValue = majorAmount(
