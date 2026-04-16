@@ -7,7 +7,7 @@ import applePayLogo from '@/assets/apple-pay.svg';
 
 /**
  * Airwallex Apple Pay Native API（Web）：
- * - 创建意图：`pay/method`（非 `pay/create`）
+ * - 创建意图：`pay/create`（非 `pay/create`）
  * - POST /api/v1/pa/payment_session/start → 前端约定 `pay/apple_pay_session_start`
  * - POST /api/v1/pa/payment_intents/:id/confirm → 前端约定 `pay/payment_intent_confirm`
  *
@@ -28,6 +28,18 @@ type PayMethodResp = {
     pay_amount?: unknown;
     price?: unknown;
     env?: 'prod' | 'demo';
+};
+
+type ShoppingProduct = {
+    id: number;
+    price?: string;
+};
+
+type PreparedPayIntent = {
+    pi: string;
+    currency: string;
+    amountStr: string;
+    productId: number;
 };
 
 function majorAmount(apiHint: unknown): number {
@@ -91,6 +103,8 @@ export default function RadixRcApplePayNativeButton({
 }: RadixRcApplePayNativeButtonProps) {
     const [busy, setBusy] = useState(false);
     const [nativeReady, setNativeReady] = useState<boolean | null>(null);
+    const [prepared, setPrepared] = useState<PreparedPayIntent | null>(null);
+    const [validationUrlPreview, setValidationUrlPreview] = useState<string | null>(null);
 
     const refreshNativeReady = useCallback(() => {
         try {
@@ -109,40 +123,84 @@ export default function RadixRcApplePayNativeButton({
         refreshNativeReady();
     }, [refreshNativeReady]);
 
-    const handleClick = async () => {
-        if (disabled || !productId || busy) return;
-        const APS = window.ApplePaySession;
-        if (!APS || !APS.canMakePayments()) {
-            toast.error('Apple Pay 不可用（需 Safari、HTTPS、钱包已绑卡）');
+    const resolveProductId = useCallback(async (): Promise<number | null> => {
+        if (productId) return productId;
+        const productRes = await api<ShoppingProduct[]>('product', {
+            loading: false,
+            data: { from: 'shopping' },
+        });
+        if (productRes.c !== 0) return null;
+        return productRes.d?.[0]?.id ?? null;
+    }, [productId]);
+
+    const preparePayIntent = useCallback(async () => {
+        const pickedProductId = await resolveProductId();
+        if (!pickedProductId) {
+            setPrepared(null);
             return;
         }
-        if (!window.isSecureContext) {
-            toast.error('Apple Pay 需要安全上下文（HTTPS）');
+        const payMethod = await api<PayMethodResp>('pay/create', {
+            method: 'post',
+            loading: false,
+            data: {
+                payment: 1,
+                product_id: pickedProductId,
+                redirect: window.location.href,
+            },
+        });
+        if (payMethod.c !== 0) {
+            setPrepared(null);
+            return;
+        }
+        const currency = payMethod.d.currency || 'USD';
+        const amountNum = majorAmount(
+            payMethod.d.amount ?? payMethod.d.amount_major ?? payMethod.d.pay_amount ?? payMethod.d.price,
+        );
+        const amountStr = Number.isFinite(amountNum) ? amountNum.toFixed(2) : '0.00';
+        setPrepared({
+            pi: payMethod.d.pi,
+            currency,
+            amountStr,
+            productId: pickedProductId,
+        });
+    }, [resolveProductId]);
+
+    useEffect(() => {
+        let alive = true;
+        setPrepared(null);
+        preparePayIntent().catch((e) => {
+            if (!alive) return;
+            console.error('[RadixRcApplePayNativeButton][preparePayIntent]', e);
+            setPrepared(null);
+        });
+        return () => {
+            alive = false;
+        };
+    }, [preparePayIntent]);
+
+    const handleClick = async () => {
+        if (disabled || busy) return;
+        if (!prepared?.pi) {
+            toast.error('支付信息初始化中，请稍后重试');
             return;
         }
 
         setBusy(true);
         try {
-            const payMethod = await api<PayMethodResp>('pay/method', {
-                method: 'post',
-                loading: false,
-                data: {
-                    payment: 1,
-                    product_id: productId,
-                    redirect: window.location.href,
-                },
-            });
-            if (payMethod.c !== 0) {
+            const pi = prepared.pi;
+            const currency = prepared.currency;
+            const amountStr = prepared.amountStr;
+            const APS = window.ApplePaySession;
+            if (!APS || !APS.canMakePayments()) {
+                toast.error('Apple Pay 不可用（需 Safari、HTTPS、钱包已绑卡）');
                 setBusy(false);
                 return;
             }
-
-            const pi = payMethod.d.pi;
-            const currency = payMethod.d.currency || 'USD';
-            const amountNum = majorAmount(
-                payMethod.d.amount ?? payMethod.d.amount_major ?? payMethod.d.pay_amount ?? payMethod.d.price,
-            );
-            const amountStr = Number.isFinite(amountNum) ? amountNum.toFixed(2) : '0.00';
+            if (!window.isSecureContext) {
+                toast.error('Apple Pay 需要安全上下文（HTTPS）');
+                setBusy(false);
+                return;
+            }
 
             const paymentRequest: ApplePayPaymentRequest = {
                 countryCode: 'HK',
@@ -172,6 +230,8 @@ export default function RadixRcApplePayNativeButton({
 
             session.onvalidatemerchant = async (event: ApplePayValidateMerchantEvent) => {
                 const sid = requestId();
+                console.log('[ApplePay][onvalidatemerchant] validationURL:', event.validationURL);
+                setValidationUrlPreview(event.validationURL);
                 try {
                     const sessionRes = await api<Record<string, unknown>>('pay/apple_pay_session_start', {
                         method: 'post',
@@ -237,7 +297,7 @@ export default function RadixRcApplePayNativeButton({
         }
     };
 
-    const blocked = disabled || !productId || nativeReady === false || busy;
+    const blocked = disabled || busy;
 
     return (
         <div className={cn('rs-shopping__applePayNativeWrap', className)}>
@@ -267,6 +327,43 @@ export default function RadixRcApplePayNativeButton({
                         defaultMessage="当前环境不支持 Apple Pay Native（需 Safari 且钱包已添加卡片）。"
                     />
                 </p>
+            ) : null}
+            {validationUrlPreview ? (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+                >
+                    <div className="w-full max-w-xl rounded-lg bg-white p-4 shadow-xl">
+                        <div className="mb-2 text-base font-semibold">Apple validationURL</div>
+                        <textarea
+                            value={validationUrlPreview}
+                            readOnly
+                            className="h-32 w-full resize-none rounded border p-2 text-xs"
+                        />
+                        <div className="mt-3 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                className="rounded border px-3 py-1 text-sm"
+                                onClick={() => {
+                                    void navigator.clipboard
+                                        .writeText(validationUrlPreview)
+                                        .then(() => toast.success('validationURL 已复制'))
+                                        .catch(() => toast.error('复制失败'));
+                                }}
+                            >
+                                复制
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded bg-black px-3 py-1 text-sm text-white"
+                                onClick={() => setValidationUrlPreview(null)}
+                            >
+                                关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
             ) : null}
         </div>
     );

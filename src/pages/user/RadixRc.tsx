@@ -243,7 +243,7 @@ export default function RadixRc({
                 checkoutTargetProductId={checkoutTargetProductId}
                 checkoutFrom={checkoutFrom}
             />
-            <RadixRcApplePayNativeButton productId={walletProductId} disabled={loadingProducts || !walletProductId} />
+            <RadixRcApplePayNativeButton productId={walletProductId} disabled={loadingProducts} />
         </div>
     );
 
