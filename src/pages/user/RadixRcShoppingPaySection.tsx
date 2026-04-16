@@ -296,7 +296,7 @@ export default function RadixRcShoppingPaySection({
                     client_secret,
                     customer_id,
                     amount: { value: amountValue, currency },
-                    countryCode: 'CN',
+                    countryCode: 'US',
                     // buttonType: 'plain' as const,
                     // buttonColor: 'black' as const,
                     // style: {
@@ -449,7 +449,7 @@ export default function RadixRcShoppingPaySection({
                 </button>
             </div>
             <button type="button" onClick={handleTestAppleCheckout} className="rs-shopping__payTestAppleBtn">
-                test apple3
+                test apple4
             </button>
             {payment === 1 || payment === 2 || payment === 3 ? (
                 <div className="rs-shopping__airwallexWalletSlot">
