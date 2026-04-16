@@ -16,7 +16,9 @@ import { WebVTT } from 'videojs-vtt.js';
 import { Swiper, SwiperSlide, type SwiperClass, type SwiperRef } from 'swiper/react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import lockIcon from '@/assets/lock.svg';
+import fullscreenIcon from '@/assets/images/is_full_screen_icon.88dfd7dd.png';
 import { cn } from '@/lib/utils';
+import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
 import RadixRc from '@/pages/user/RadixRc';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -572,6 +574,12 @@ function Player({
         setIntroduction(!introduction);
     }
 
+    async function handleToggleFullscreen(e: React.MouseEvent<HTMLDivElement>) {
+        e.stopPropagation();
+        await toggleVideoFullscreen(videoRef, wrapRef);
+        showController();
+    }
+
     useEffect(() => {
         loadData(id);
     }, [id]);
@@ -730,7 +738,15 @@ function Player({
                     loading ? '' : 'opacity-100',
                 )}
             >
-                <video ref={videoRef} className="w-full h-full object-contain absolute" playsInline />
+                <video
+                    ref={videoRef}
+                    className="w-full h-full object-contain absolute"
+                    playsInline
+                    controlsList="nodownload noplaybackrate noremoteplayback"
+                    disablePictureInPicture
+                    disableRemotePlayback
+                    onContextMenu={(e) => e.preventDefault()}
+                />
                 <div
                     className="absolute w-10/12 h-4/12 m-auto left-0 right-0 bottom-10 flex justify-center items-start text-center"
                     ref={subtitleRef}
@@ -900,6 +916,12 @@ function Player({
                                 onClick={handleSpeedOpen}
                             >
                                 {SPEED[speed]}x
+                            </div>
+                            <div
+                                className="text-white text-xs flex items-center justify-center px-4 cursor-pointer"
+                                onClick={handleToggleFullscreen}
+                            >
+                                <img src={fullscreenIcon} alt="" className="w-5 h-5" />
                             </div>
                         </div>
                     )}
