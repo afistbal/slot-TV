@@ -260,27 +260,27 @@ export function ReelShortTopNav({
           </div>
         </div>
 
-        {showPrimaryNav ? (
+        {/* {showPrimaryNav ? (
           <nav
             className="reelshort-topnav__primary-nav"
-            style={{ scrollbarWidth: 'none',minHeight: '40px', }}
+            style={{ scrollbarWidth: 'none' }}
             aria-label="Primary"
           >
-            {/* <NavLink to="/" end className={subNavLinkClass}>
+            <NavLink to="/" end className={subNavLinkClass}>
               <FormattedMessage id="home" />
-            </NavLink> */}
-            {/* <NavLink to="/search" className={subNavLinkClass}>
+            </NavLink>
+            <NavLink to="/search" className={subNavLinkClass}>
                             <FormattedMessage id="nav_categories" />
-                        </NavLink> */}
-            {/* <button
+                        </NavLink>
+            <button
                             type="button"
                             onClick={() => setBrandVideoOpen(true)}
                             className="reelshort-topnav__primary-brand-btn"
                         >
                             <FormattedMessage id="nav_brand" />
-                        </button> */}
+                        </button>
           </nav>
-        ) : null}
+        ) : null} */}
       </header>
 
       <ReelShortNavDrawer open={menuOpen} onOpenChange={setMenuOpen} />

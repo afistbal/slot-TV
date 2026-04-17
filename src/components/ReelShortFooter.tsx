@@ -171,7 +171,7 @@ export function ReelShortFooter() {
                     </div>
                 </div>
 
-                <div className="reelshort-footer__community">
+                {/* <div className="reelshort-footer__community">
                     <div className="reelshort-footer__community-title">
                         <FormattedMessage id="footer_community" />
                     </div>
@@ -192,7 +192,7 @@ export function ReelShortFooter() {
                             <IconFandom />
                         </a>
                     </div>
-                </div>
+                </div> */}
 
                 <div className="reelshort-footer__copyright">
                     <FormattedMessage id="footer_copyright" values={{ year, site: BRAND_DISPLAY_NAME }} />

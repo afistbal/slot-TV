@@ -58,39 +58,39 @@ export default function Component() {
         });
     }, [])
 
-    return <Page title="user_detail" menuButton={<div className="px-4 text-lg" onClick={handleSave}>Save</div>}>
+    return <Page title="user_detail" titleClassName="bg-black text-slate-100 border-slate-800" menuButton={<div className="px-4 text-lg text-slate-100" onClick={handleSave}>Save</div>}>
         {loading ? <div className="h-full w-full flex justify-center items-center">
             <Loader />
         </div> : <>
             <div className="m-4 flex flex-col">
-                <div className="text-slate-500 mb-2">
+                <div className="text-slate-400 mb-2">
                     <FormattedMessage id="user_basic_info" />
                 </div>
-                <div className="flex gap-2 justify-between border-b border-gray-100 p-4 bg-white rounded-t-md">
+                <div className="flex gap-2 justify-between border-b border-slate-800 p-4 bg-slate-900 rounded-t-md">
                     <div className="text-muted-foreground">
                         <FormattedMessage id="id" />
                     </div>
                     <div>{info!['id'] as number}</div>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white border-b border-gray-100 overflow-hidden">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800 overflow-hidden">
                     <div className="text-muted-foreground shrink-0">
                         <FormattedMessage id="unique_id" />
                     </div>
                     <div className="wrap-anywhere text-wrap text-right">{info!['unique_id'] as string}</div>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white border-b border-gray-100 overflow-hidden">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800 overflow-hidden">
                     <div className="text-muted-foreground shrink-0">
                         <FormattedMessage id="email" />
                     </div>
                     <div className="wrap-anywhere text-wrap text-right">{info!['email'] as string}</div>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white border-b border-gray-100 overflow-hidden">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800 overflow-hidden">
                     <div className="text-muted-foreground shrink-0">
                         <FormattedMessage id="anonymous" />
                     </div>
                     <div className="wrap-anywhere text-wrap text-right">{(info!['anonymous'] as number) === 1 ? <FormattedMessage id="yes" /> : <FormattedMessage id="no" />}</div>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white border-b border-gray-100">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800">
                     <div className="text-muted-foreground">
                         <FormattedMessage id="created_at" />
                     </div>
@@ -98,7 +98,7 @@ export default function Component() {
                         <FormattedDate value={info!['created_at'] as string} />&nbsp;<FormattedTime value={info!['created_at'] as string} />
                     </div>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white border-b border-gray-100">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800">
                     <div className="text-muted-foreground">
                         <FormattedMessage id="login_at" />
                     </div>
@@ -108,7 +108,7 @@ export default function Component() {
                         </> : 'N/A'}
                     </div>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white rounded-b-md">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 rounded-b-md">
                     <div className="text-muted-foreground">
                         <FormattedMessage id="active_at" />
                     </div>
@@ -118,7 +118,7 @@ export default function Component() {
                         </> : 'N/A'}
                     </div>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white rounded-b-md">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 rounded-b-md">
                     <div className="text-muted-foreground">
                         <FormattedMessage id="retention_time" />
                     </div>
@@ -127,7 +127,7 @@ export default function Component() {
                         <FormattedMessage id="minute"/>
                     </div>
                 </div>
-                <Link to={`/z/page/user-activity/${params['id']}`} className="flex gap-2 justify-between p-4 bg-white border-b border-gray-100 overflow-hidden">
+                <Link to={`/z/page/user-activity/${params['id']}`} className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800 overflow-hidden">
                     <div className="text-muted-foreground shrink-0">
                         <FormattedMessage id="activity_log" />
                     </div>
@@ -135,10 +135,10 @@ export default function Component() {
                 </Link>
             </div>
             <div className="m-4 flex flex-col">
-                <div className="text-slate-500 mb-2">
+                <div className="text-slate-400 mb-2">
                     <FormattedMessage id="user_settings" />
                 </div>
-                <div className="flex gap-2 justify-between border-b border-gray-100 p-4 bg-white rounded-t-md">
+                <div className="flex gap-2 justify-between border-b border-slate-800 p-4 bg-slate-900 rounded-t-md">
                     <div className="text-muted-foreground">
                         <FormattedMessage id="user_is_admin" />
                     </div>
@@ -157,7 +157,7 @@ export default function Component() {
                         </div>
                     </RadioGroup>
                 </div>
-                <div className="flex gap-2 justify-between p-4 bg-white border-b border-gray-100">
+                <div className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800">
                     <div className="text-muted-foreground">
                         <FormattedMessage id="user_is_vip" />
                     </div>

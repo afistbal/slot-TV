@@ -337,6 +337,7 @@ export default function Component() {
     return <div className='flex h-full min-h-0 flex-col bg-app-canvas'>
         {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div className='min-w-0 flex-1 overflow-y-auto' ref={scrollRef} onScroll={handleScroll}>
             <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
+            <div className="h-40"></div>
             <div className="relative z-10 -mt-[min(calc(22*var(--app-vw)/100),5.5rem)]">
                 <div className="home-hero-shell w-full overflow-hidden" style={{ direction: 'ltr' }}>
                     <div

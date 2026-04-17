@@ -215,15 +215,24 @@ export default function Component() {
                 </div>
                 <div className="rs-profile__menu">
                     {userStore.isAdmin() && (
-                        <Link to="/z" className="rs-profile__menuItem">
-                            <div className="rs-profile__menuLeft">
-                                <CircleUser className="w-5 h-5" />
-                                <div className="rs-profile__menuText">
-                                    <FormattedMessage id="admin" />
+                        <>
+                            <Link to="/z" className="rs-profile__menuItem">
+                                <div className="rs-profile__menuLeft">
+                                    <CircleUser className="w-5 h-5" />
+                                    <div className="rs-profile__menuText">
+                                        <FormattedMessage id="admin" />
+                                    </div>
                                 </div>
-                            </div>
-                            <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
-                        </Link>
+                                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                            </Link>
+                            <Link to="/shopping" className="rs-profile__menuItem">
+                                <div className="rs-profile__menuLeft">
+                                    <CircleUser className="w-5 h-5" />
+                                    <div className="rs-profile__menuText">产品列表</div>
+                                </div>
+                                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                            </Link>
+                        </>
                     )}
                     {/* <Link to="/my-list" className="rs-profile__menuItem">
                         <div className="rs-profile__menuLeft">

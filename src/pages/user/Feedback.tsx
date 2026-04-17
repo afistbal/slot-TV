@@ -1,16 +1,25 @@
 import { api } from "@/api";
 import { Page } from "@/layouts/user";
+import { useUserStore } from "@/stores/user";
 import { CheckCircle2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { toast } from "sonner";
 
 export default function Component() {
     const intl = useIntl();
+    const userStore = useUserStore();
     const [content, setContent] = useState("");
     const [email, setEmail] = useState("");
     const [submitted, setSubmitted] = useState(false);
     const [sending, setSending] = useState(false);
+
+    useEffect(() => {
+        const userEmail = String(userStore.info?.["email"] ?? "").trim();
+        if (userEmail) {
+            setEmail(userEmail);
+        }
+    }, [userStore.info]);
 
     function handleSubmit() {
         if (content.trim().length < 5) {
