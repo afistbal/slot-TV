@@ -1040,6 +1040,7 @@
     padding: 0 !important;
     border: 0 !important;
     box-shadow: none !important;
+    outline: none !important;
     background: transparent !important;
     border-radius: 0 !important;
     max-width: none !important;
@@ -1052,6 +1053,15 @@
 
 .rs-paywall__dialog[data-slot='drawer-content'] > * {
     width: 100%;
+}
+
+/* 去掉支付弹窗打开后的金色焦点环（受全局 outline-ring 影响） */
+.rs-paywall__dialog[data-slot='drawer-content']:focus,
+.rs-paywall__dialog[data-slot='drawer-content']:focus-visible,
+.rs-paywall__dialog[data-slot='drawer-content'] *:focus,
+.rs-paywall__dialog[data-slot='drawer-content'] *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 

@@ -95,6 +95,7 @@
         position: relative;
         box-sizing: border-box;
         width: 100%;
+        min-height: calc(140 / 375 * var(--app-vw));
         cursor: pointer;
         overflow: hidden;
         border-radius: calc(4 / 375 * var(--app-vw));
@@ -103,6 +104,7 @@
 
         @media (min-width: 768px) {
             border-radius: 4px;
+            min-height: 197px;
         }
 
     }
@@ -362,6 +364,7 @@
     &__skeletonBar {
         width: 100%;
         flex-shrink: 0;
+        height: calc(140 / 375 * var(--app-vw));
         border-radius: calc(4 / 375 * var(--app-vw));
         background-color: hsla(0, 0%, 100%, 0.1);
         background-image: linear-gradient(
@@ -375,6 +378,7 @@
 
         @media (min-width: 768px) {
             border-radius: 4px;
+            height: 197px;
         }
 
         &--vip {
@@ -914,9 +918,21 @@
     max-height: min(98vh, 1040px);
     overflow-x: hidden;
     overflow-y: visible;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
     /** 顶圆角：大于 Drawer 默认 `rounded-t-lg`，与 ReelShort 大圆角观感一致 */
     border-top-left-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
     border-top-right-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
+}
+
+/* 去掉购物弹窗父层级的金色焦点环（全局 outline-ring 会命中 DrawerContent） */
+.rs-shopping-checkout-drawer--vipNoScroll[data-slot='drawer-content']:focus,
+.rs-shopping-checkout-drawer--vipNoScroll[data-slot='drawer-content']:focus-visible,
+.rs-shopping-checkout-drawer--vipNoScroll[data-slot='drawer-content'] *:focus,
+.rs-shopping-checkout-drawer--vipNoScroll[data-slot='drawer-content'] *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .rs-checkout-h5--embedded .rs-checkout-h5__inner {

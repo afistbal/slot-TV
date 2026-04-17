@@ -14,10 +14,15 @@
     min-width: 0;
     flex: 1 1 auto;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .rs-profile__content {
     position: relative;
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .rs-profile__loginCard {
@@ -188,7 +193,7 @@
     justify-content: center;
     align-items: center;
     color: hsla(0, 0%, 100%, 0.6);
-    margin: calc(64 * var(--app-vw) / 100) auto 0;
+    margin: auto auto 0;
     border-radius: calc(1.6 * var(--app-vw) / 100);
     text-decoration: none;
     background: transparent;

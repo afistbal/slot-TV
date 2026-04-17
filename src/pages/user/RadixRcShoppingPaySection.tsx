@@ -79,10 +79,6 @@ export default function RadixRcShoppingPaySection({
     const walletObsRef = useRef<MutationObserver[]>([]);
     const walletRunIdRef = useRef(0);
     const lastWalletPaymentRef = useRef<1 | 2 | null>(null);
-    const lastWalletTargetByMethodRef = useRef<Record<1 | 2, number | null>>({
-        1: null,
-        2: null,
-    });
 
     const cleanupWalletOverlays = useCallback(() => {
         walletObsRef.current.forEach((o) => o.disconnect());
@@ -123,7 +119,6 @@ export default function RadixRcShoppingPaySection({
         lastWalletPaymentRef.current = payment;
 
         const which = payment === 1 ? ('apple' as const) : ('google' as const);
-        const method = payment as 1 | 2;
         const readyDelayMs = 1700;
 
         const targetProductId = walletProductId;
@@ -190,44 +185,20 @@ export default function RadixRcShoppingPaySection({
             if (!targetProductId) return;
             const host = payWalletMountRef.current;
             if (!host) return;
-            const shouldForceRecreate = lastWalletTargetByMethodRef.current[method] !== targetProductId;
-
-            let mountedEl = walletElementsRef.current.get(targetProductId);
-            if (mountedEl && shouldForceRecreate) {
+            /**
+             * 只保留单一挂载位：切套餐/切意图时强制销毁旧 element，避免复用陈旧 intent
+             * 导致 Apple Pay 首次可用、切换后失效（或切回也失效）。
+             */
+            for (const [, el] of walletElementsRef.current) {
                 try {
-                    mountedEl.unmount();
-                    mountedEl.destroy();
+                    el.unmount();
+                    el.destroy();
                 } catch {
                     /* noop */
                 }
-                walletElementsRef.current.delete(targetProductId);
-                mountedEl = undefined;
             }
-
-            if (mountedEl) {
-                try {
-                    mountedEl.mount(host);
-                } catch {
-                    /* noop */
-                }
-                const prevDelayTid = planWalletReadyDelayTimersRef.current.get(targetProductId);
-                if (prevDelayTid) {
-                    window.clearTimeout(prevDelayTid);
-                }
-                planWalletReadyDelayTimersRef.current.delete(targetProductId);
-                const prevFailTid = planWalletTimersRef.current.get(targetProductId);
-                if (prevFailTid) {
-                    window.clearTimeout(prevFailTid);
-                }
-                planWalletTimersRef.current.delete(targetProductId);
-                setPlanWalletState((prev) => {
-                    const n = new Map(prev);
-                    n.set(targetProductId, 'ready');
-                    return n;
-                });
-                lastWalletTargetByMethodRef.current[method] = targetProductId;
-                return;
-            }
+            walletElementsRef.current.clear();
+            host.replaceChildren();
 
             planWalletSeenNonZeroHeightRef.current.set(targetProductId, false);
             const prevDelayTid = planWalletReadyDelayTimersRef.current.get(targetProductId);
@@ -235,21 +206,24 @@ export default function RadixRcShoppingPaySection({
                 window.clearTimeout(prevDelayTid);
             }
             planWalletReadyDelayTimersRef.current.delete(targetProductId);
+            const prevFailTid = planWalletTimersRef.current.get(targetProductId);
+            if (prevFailTid) {
+                window.clearTimeout(prevFailTid);
+            }
+            planWalletTimersRef.current.delete(targetProductId);
             setPlanWalletState((prev) => {
                 const n = new Map(prev);
                 n.set(targetProductId, 'pending');
                 return n;
             });
-            if (!planWalletTimersRef.current.has(targetProductId)) {
-                const tid = window.setTimeout(() => {
-                    setPlanWalletState((prev) => {
-                        const n = new Map(prev);
-                        if (n.get(targetProductId) !== 'ready') n.set(targetProductId, 'failed');
-                        return n;
-                    });
-                }, 10000);
-                planWalletTimersRef.current.set(targetProductId, tid);
-            }
+            const tid = window.setTimeout(() => {
+                setPlanWalletState((prev) => {
+                    const n = new Map(prev);
+                    if (n.get(targetProductId) !== 'ready') n.set(targetProductId, 'failed');
+                    return n;
+                });
+            }, 10000);
+            planWalletTimersRef.current.set(targetProductId, tid);
 
             {
                 let payCreate: Awaited<ReturnType<typeof api<PayCreateResp>>>;
@@ -344,7 +318,6 @@ export default function RadixRcShoppingPaySection({
                     }
                     el.mount(host);
                     walletElementsRef.current.set(targetProductId, el as never);
-                    lastWalletTargetByMethodRef.current[method] = targetProductId;
                     if (isHostReady(host, targetProductId)) {
                         scheduleReady(targetProductId);
                     } else {
