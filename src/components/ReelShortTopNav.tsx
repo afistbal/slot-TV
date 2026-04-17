@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useLayoutEffect, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { cn } from '@/lib/utils';
@@ -125,9 +125,6 @@ function NavProfileAvatar() {
     </Link>
   );
 }
-
-const subNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn('reelshort-topnav__primary-link', isActive && 'is-active');
 
 const HEADER_SCROLL_SOLID_THRESHOLD = 4;
 
