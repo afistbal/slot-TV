@@ -9,6 +9,8 @@ import {
     normalizeAirwallexLocale,
 } from '@/lib/airwallexShoppingWalletEmbedSingleton';
 import { createElement, type ElementTypes } from '@airwallex/components-sdk';
+import PayIncompleteDialog from "@/components/PayIncompleteDialog";
+import PaySuccessDialog from "@/components/PaySuccessDialog";
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import visa from '@/assets/visa.svg';
 import master from '@/assets/master.svg';
@@ -32,6 +34,10 @@ type PayCreateResp = {
     price?: unknown;
     env?: 'prod' | 'demo';
     success_url?: string;
+};
+
+type WalletEventElement = {
+    on?: (code: 'success' | 'error' | 'cancel', handler: (e?: unknown) => void) => void;
 };
 
 function majorAmount(apiHint: unknown): number {
@@ -64,6 +70,8 @@ export default function RadixRcShoppingPaySection({
     const navigate = useNavigate();
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
+    const [showIncomplete, setShowIncomplete] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const walletEmbedSupported =
         (payment === 1 && isApplePlatform()) || (payment === 2 && !isApplePlatform());
     const [planWalletState, setPlanWalletState] = useState<Map<number, 'pending' | 'ready' | 'failed'>>(
@@ -316,6 +324,13 @@ export default function RadixRcShoppingPaySection({
                         }
                         return;
                     }
+                    const eventBinder = (el as unknown as WalletEventElement).on;
+                    eventBinder?.('success', () => {
+                        setShowSuccess(true);
+                    });
+                    eventBinder?.('error', () => {
+                        setShowIncomplete(true);
+                    });
                     el.mount(host);
                     walletElementsRef.current.set(targetProductId, el as never);
                     if (isHostReady(host, targetProductId)) {
@@ -366,6 +381,51 @@ export default function RadixRcShoppingPaySection({
         typeof window !== 'undefined' && window.localStorage.getItem('shopping_wallet_opacity') === '1'
             ? 0.4
             : 0.01;
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const query = new URLSearchParams(window.location.search);
+        const action = query.get('action');
+        const platform = query.get('platform');
+        const sn = query.get('sn');
+
+        const clearPaymentQueryFlags = () => {
+            const next = new URLSearchParams(window.location.search);
+            ['action', 'platform', 'sn', 'paymentId', 'token', 'PayerID'].forEach((k) =>
+                next.delete(k),
+            );
+            const nextQs = next.toString();
+            const nextUrl = `${window.location.pathname}${nextQs ? `?${nextQs}` : ''}${window.location.hash}`;
+            window.history.replaceState({}, '', nextUrl);
+        };
+
+        if (action === 'success') {
+            setShowSuccess(true);
+            clearPaymentQueryFlags();
+            return;
+        }
+
+        if (action === 'return' && platform === 'airwallex' && sn) {
+            api('pay/complete', {
+                method: 'post',
+                data: { sn },
+                loading: false,
+            })
+                .then((res) => {
+                    if (res.c === 0) {
+                        setShowSuccess(true);
+                    } else {
+                        setShowIncomplete(true);
+                    }
+                })
+                .catch(() => {
+                    setShowIncomplete(true);
+                })
+                .finally(() => {
+                    clearPaymentQueryFlags();
+                });
+        }
+    }, []);
 
     return (
         <div className="rs-shopping__pay">
@@ -471,6 +531,18 @@ export default function RadixRcShoppingPaySection({
                     </div>
                 </div>
             ) : null}
+            <PayIncompleteDialog
+                open={showIncomplete}
+                onOpenChange={setShowIncomplete}
+                dismissNavigateToShopping={false}
+            />
+            <PaySuccessDialog
+                open={showSuccess}
+                onOpenChange={setShowSuccess}
+                onConfirm={() => {
+                    window.location.reload();
+                }}
+            />
         </div>
     );
 }

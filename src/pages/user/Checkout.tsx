@@ -25,6 +25,7 @@ export default function Component() {
         productId={productId}
         payment={payment}
         redirectHref={redirectHref}
+        successAction="reload"
       />
     </Page>
   );

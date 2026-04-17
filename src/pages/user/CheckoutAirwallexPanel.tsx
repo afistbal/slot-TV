@@ -1,6 +1,7 @@
 import { api, type TData } from "@/api";
 import PayIncompleteDialog from "@/components/PayIncompleteDialog";
 import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
+import PaySuccessDialog from "@/components/PaySuccessDialog";
 import { isApplePlatform } from "@/lib/isApplePlatform";
 import { cn } from "@/lib/utils";
 import { createElement, init } from "@airwallex/components-sdk";
@@ -161,6 +162,8 @@ export type CheckoutAirwallexPanelProps = {
   payment: number;
   /** `pay/create` 的 `redirect`，须与当前业务回跳一致 */
   redirectHref: string;
+  /** 成功弹窗点击确认后的行为 */
+  successAction?: "navigate" | "reload";
   /**
    * `page`：独立 `/page/pay` 浅色底（默认）。
    * `embed`：深色 + `rs-checkout-h5--embedded`（如将来抽屉内嵌复用）。
@@ -172,11 +175,14 @@ export function CheckoutAirwallexPanel({
   productId,
   payment,
   redirectHref,
+  successAction = "navigate",
   variant = "page",
 }: CheckoutAirwallexPanelProps) {
   const intl = useIntl();
 
   const [showIncomplete, setShowIncomplete] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successUrl, setSuccessUrl] = useState("");
   const [sdkReady, setSdkReady] = useState(false);
   const [orderSummary, setOrderSummary] = useState<TData | null>(null);
 
@@ -201,12 +207,21 @@ export function CheckoutAirwallexPanel({
     }
   }
 
+  function handleSuccessConfirm(successUrl: string) {
+    if (successAction === "reload") {
+      window.location.reload();
+      return;
+    }
+    goSuccess(successUrl);
+  }
+
   useEffect(() => {
     let cancelled = false;
     const isCancelled = () => cancelled;
     cleanupAll();
     setSdkReady(false);
     setOrderSummary(null);
+    setSuccessUrl("");
 
     async function run() {
       const payCreatePayment =
@@ -388,7 +403,8 @@ export function CheckoutAirwallexPanel({
         checkoutDbg("支付成功", {
           successUrl: redirectFields.successUrl?.slice(0, 80),
         });
-        goSuccess(redirectFields.successUrl);
+        setSuccessUrl(redirectFields.successUrl || "");
+        setShowSuccess(true);
       };
 
       const onCardError = (ev?: unknown) => {
@@ -547,6 +563,12 @@ export function CheckoutAirwallexPanel({
       <PayIncompleteDialog
         open={showIncomplete}
         onOpenChange={setShowIncomplete}
+        dismissNavigateToShopping={false}
+      />
+      <PaySuccessDialog
+        open={showSuccess}
+        onOpenChange={setShowSuccess}
+        onConfirm={() => handleSuccessConfirm(successUrl)}
       />
     </>
   );
