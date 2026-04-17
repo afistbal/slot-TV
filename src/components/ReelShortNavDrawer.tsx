@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
@@ -67,7 +67,9 @@ export function ReelShortNavDrawer({
 }) {
     const intl = useIntl();
     const rootStore = useRootStore();
+    const location = useLocation();
     const [langOpen, setLangOpen] = useState(false);
+    const sourceform = `${location.pathname}${location.search}`;
 
     function selectLocale(code: string) {
         if (rootStore.locale === code) {
@@ -153,7 +155,8 @@ export function ReelShortNavDrawer({
 
                         <div>
                             <Link
-                                to="/my-list/history"
+                                to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
+                                state={{ sourceform }}
                                 className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
                                 onClick={() => onOpenChange(false)}
                             >

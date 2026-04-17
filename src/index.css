@@ -289,6 +289,17 @@ a.reelshort-footer__collapse-item {
     }
 }
 
+.reelshort-footer__collapse-item--version {
+    color: hsla(0, 0%, 100%, 0.4);
+    font-size: inherit;
+    cursor: default;
+}
+
+.reelshort-footer__versionLabel,
+.reelshort-footer__versionValue {
+    font-size: inherit;
+}
+
 @theme inline {
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);

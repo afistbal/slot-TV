@@ -105,6 +105,7 @@ function IconFandom() {
 
 export function ReelShortFooter() {
     const year = new Date().getFullYear();
+    const appVersion = __APP_VERSION__;
     const [aboutOpen, setAboutOpen] = useState(false);
     const [supportOpen, setSupportOpen] = useState(false);
 
@@ -136,6 +137,12 @@ export function ReelShortFooter() {
                         <Link className="reelshort-footer__collapse-item" to="/page/text?title=privacy_policy">
                             <FormattedMessage id="privacy_policy" />
                         </Link>
+                        <div className="reelshort-footer__collapse-item reelshort-footer__collapse-item--version">
+                            <span className="reelshort-footer__versionLabel">
+                                <FormattedMessage id="version" />
+                            </span>
+                            <span className="reelshort-footer__versionValue">{appVersion}</span>
+                        </div>
                     </div>
                 </div>
 

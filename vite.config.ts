@@ -3,10 +3,19 @@ import react from '@vitejs/plugin-react'
 // import legacy from '@vitejs/plugin-legacy'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'node:fs'
 import path from "path"
+
+const packageJson = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
+) as { version?: string }
+const appVersion = packageJson.version ?? '0.0.0'
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -34,7 +43,8 @@ export default defineConfig({
   ],
   build: {
     outDir: 'D:/JJ-TV/movie-www',
-    emptyOutDir: true,
+    // 由 `npm run build` 前置脚本清理 outDir，保留 `.git` / `.well-known`（Apple 域名验证等）
+    emptyOutDir: false,
     rollupOptions: {
       input: {
         'index': 'index.html',

@@ -16,3 +16,5 @@ interface ImportMeta {
 interface Window {
   ApplePaySession?: typeof ApplePaySession;
 }
+
+declare const __APP_VERSION__: string;

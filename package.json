@@ -1,11 +1,11 @@
 {
   "name": "tv",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node ./scripts/clean-movie-www.mjs && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

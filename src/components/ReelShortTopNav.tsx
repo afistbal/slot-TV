@@ -266,12 +266,12 @@ export function ReelShortTopNav({
         {showPrimaryNav ? (
           <nav
             className="reelshort-topnav__primary-nav"
-            style={{ scrollbarWidth: 'none' }}
+            style={{ scrollbarWidth: 'none',minHeight: '40px', }}
             aria-label="Primary"
           >
-            <NavLink to="/" end className={subNavLinkClass}>
+            {/* <NavLink to="/" end className={subNavLinkClass}>
               <FormattedMessage id="home" />
-            </NavLink>
+            </NavLink> */}
             {/* <NavLink to="/search" className={subNavLinkClass}>
                             <FormattedMessage id="nav_categories" />
                         </NavLink> */}

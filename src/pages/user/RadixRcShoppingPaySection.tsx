@@ -388,10 +388,6 @@ export default function RadixRcShoppingPaySection({
         setPayment(payMethod);
     }
 
-    function handleTestAppleCheckout() {
-        window.location.href = `${window.location.origin}/page/pay/1?payment=1&from=shopping`;
-    }
-
     const walletDirectCheckout = payment === 3 || !walletEmbedSupported;
     const walletOverlayOpacity =
         typeof window !== 'undefined' && window.localStorage.getItem('shopping_wallet_opacity') === '1'
@@ -448,9 +444,6 @@ export default function RadixRcShoppingPaySection({
                     />
                 </button>
             </div>
-            <button type="button" onClick={handleTestAppleCheckout} className="rs-shopping__payTestAppleBtn">
-                test apple7
-            </button>
             {payment === 1 || payment === 2 || payment === 3 ? (
                 <div className="rs-shopping__airwallexWalletSlot">
                     <div className="rs-shopping__payWalletSlot">

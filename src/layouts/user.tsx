@@ -25,6 +25,7 @@ function RouteSuspenseFallback() {
 export default function Component() {
     const pixel = usePixel();
     const location = useLocation();
+    const sourceform = `${location.pathname}${location.search}`;
 
     useEffect(() => {
         pixel.track('PageView');
@@ -55,7 +56,8 @@ export default function Component() {
                     </div>
                 </NavLink>
                 <NavLink
-                    to="/my-list"
+                    to={`/my-list?sourceform=${encodeURIComponent(sourceform)}`}
+                    state={{ sourceform }}
                     className={({ isActive }) =>
                         cn(
                             'flex flex-col items-center gap-0.5 rounded-md py-1',
