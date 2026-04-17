@@ -102,7 +102,7 @@ export default function RadixRc({
         };
     }, [productFrom]);
 
-    const planProducts = useMemo(() => products.slice(0, 3), [products]);
+    const planProducts = useMemo(() => products, [products]);
     const defaultWalletProductId = useMemo(() => {
         const p999 = planProducts.find((p) => Math.abs(parseFloat(p.price) - 9.99) < 0.001);
         return p999?.id ?? planProducts[0]?.id ?? null;
