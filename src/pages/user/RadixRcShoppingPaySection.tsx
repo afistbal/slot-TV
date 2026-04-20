@@ -195,7 +195,7 @@ function WalletPayAction({
                                     }
                                 />
                             ) : (
-                                <FormattedMessage id="checkout_pay_with" defaultMessage="Subscribe with" />
+                                <FormattedMessage id="shopping_wallet_pay_with" defaultMessage="Pay now" />
                             )}
                         </span>
                     </span>
@@ -440,7 +440,8 @@ export default function RadixRcShoppingPaySection({
             const host = payWalletMountRef.current;
             if (!host) return;
             const existingElement = walletElementsRef.current.get(targetProductId);
-            if (existingElement && host.childElementCount > 0) {
+            // Apple Pay 在切换后复用旧 iframe 容易导致无法再次拉起；Apple 一律重建。
+            if (which !== 'apple' && existingElement && host.childElementCount > 0) {
                 bindWalletFrameTrigger(targetProductId, host);
                 if (isHostReady(host, targetProductId)) {
                     scheduleReady(targetProductId);

@@ -218,6 +218,7 @@
     "pay_incomplete_change_method": "Change Payment Method",
     "pay_incomplete_feedback": "Feedback",
     "checkout_pay_with": "Subscribe with",
+    "shopping_wallet_pay_with": "Pay now",
     "checkout_select_payment_method": "Please select a payment method",
     "checkout_amount_due_label": "Amount due",
     "checkout_or_alternate_methods": "Or pay using the following methods",

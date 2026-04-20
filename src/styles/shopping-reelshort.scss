@@ -545,7 +545,7 @@
         border-radius: inherit;
         background: #000000;
         color: #fff;
-        font-size: 17px;
+        font-size: 14px;
         font-weight: 500;
         letter-spacing: 0.2px;
         pointer-events: none;
@@ -583,6 +583,7 @@
 
     .rs-shopping__payWalletGhostText {
         display: block;
+        line-height: 1;
     }
 
     @keyframes rs-shopping-wallet-icon-spin {
@@ -877,8 +878,7 @@
         align-items: flex-end;
         justify-content: center;
         background: rgba(0, 0, 0, 0.65);
-        /* 遮罩全屏时避免与 Drawer/iframe 叠层竞争导致子面板（支付方式、卡字段）点不到 */
-        pointer-events: none;
+        pointer-events: auto;
     }
 
     .rs-shopping__payModalMask--nested {

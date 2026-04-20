@@ -355,5 +355,6 @@
     "shopping_pay_status_checking_desc": "請稍候，謝謝！",
     "shopping_wallet_loading": "信用卡載入中...",
     "shopping_wallet_loading_apple": "Apple Pay 載入中...",
-    "shopping_wallet_loading_google": "Google Pay 載入中..."
+    "shopping_wallet_loading_google": "Google Pay 載入中...",
+    "shopping_wallet_pay_with": "立即支付"
 }
