@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useNavigate } from 'react-router';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { api } from '@/api';
@@ -9,14 +9,15 @@ import {
     normalizeAirwallexLocale,
 } from '@/lib/airwallexShoppingWalletEmbedSingleton';
 import { createElement, type ElementTypes } from '@airwallex/components-sdk';
-import PayIncompleteDialog from "@/components/PayIncompleteDialog";
-import PaySuccessDialog from "@/components/PaySuccessDialog";
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
-import visa from '@/assets/visa.svg';
-import master from '@/assets/master.svg';
-import googlePay from '@/assets/google-pay.svg';
-import applePay from '@/assets/apple-pay.svg';
+import payApple from '@/assets/icons/shopping-pay/apple-pay.svg';
+import payGoogle from '@/assets/icons/shopping-pay/google-pay.svg';
+import payVisa from '@/assets/icons/shopping-pay/visa.svg';
+import payMastercard from '@/assets/icons/shopping-pay/mastercard.svg';
+import payAmex from '@/assets/icons/shopping-pay/amex.svg';
+import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
+import { CheckoutAirwallexPanel } from '@/pages/user/CheckoutAirwallexPanel';
 
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
@@ -36,10 +37,6 @@ type PayCreateResp = {
     success_url?: string;
 };
 
-type WalletEventElement = {
-    on?: (code: 'success' | 'error' | 'cancel', handler: (e?: unknown) => void) => void;
-};
-
 function majorAmount(apiHint: unknown): number {
     if (typeof apiHint === 'number' && Number.isFinite(apiHint)) return apiHint;
     if (typeof apiHint === 'string') {
@@ -56,7 +53,189 @@ export type RadixRcShoppingPaySectionProps = {
     checkoutTargetProductId: number | null;
     /** 跳转 `/page/pay/...` 的 `from=` */
     checkoutFrom: 'shopping' | 'video';
+    /** 支付状态回调（用于外层弹窗展示处理中/成功/失败） */
+    onPayStateChange?: (state: 'idle' | 'processing' | 'checking' | 'success' | 'failed') => void;
 };
+
+type PaymentMethodSwitcherProps = {
+    payment: number;
+    canPickApple: boolean;
+    onPick: (payMethod: number) => void;
+};
+
+function PaymentMethodSwitcher({ payment, canPickApple, onPick }: PaymentMethodSwitcherProps) {
+    return (
+        <div className="rs-shopping__payGrid">
+            <button
+                type="button"
+                onClick={() => onPick(payment === 2 ? 2 : canPickApple ? 1 : 2)}
+                className={cn(
+                    'rs-shopping__payMethodBtn rs-shopping__payMethodBtn--walletGroup',
+                    (payment === 1 || payment === 2) && 'rs-shopping__payMethodBtn--active',
+                )}
+            >
+                <span
+                    className={cn(
+                        'rs-shopping__payMethodSubBtn',
+                        payment === 1 && 'rs-shopping__payMethodSubBtn--active',
+                        !canPickApple && 'opacity-50',
+                    )}
+                    role="button"
+                    aria-disabled={!canPickApple}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (!canPickApple) return;
+                        onPick(1);
+                    }}
+                >
+                    <img
+                        className="rs-shopping__payLogo rs-shopping__payLogo--apple"
+                        src={payApple}
+                        alt="Apple Pay"
+                    />
+                </span>
+                <span
+                    className={cn(
+                        'rs-shopping__payMethodSubBtn',
+                        payment === 2 && 'rs-shopping__payMethodSubBtn--active',
+                    )}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onPick(2);
+                    }}
+                >
+                    <img
+                        className="rs-shopping__payLogo rs-shopping__payLogo--google"
+                        src={payGoogle}
+                        alt="Google Pay"
+                    />
+                </span>
+            </button>
+            <button
+                type="button"
+                onClick={() => onPick(3)}
+                className={cn(
+                    'rs-shopping__payMethodBtn rs-shopping__payMethodBtn--cardGroup',
+                    payment === 3 && 'rs-shopping__payMethodBtn--active',
+                )}
+            >
+                <span className="rs-shopping__payCardTitle">
+                    <FormattedMessage id="shopping_credit_card" defaultMessage="Credit card" />
+                </span>
+                <span className="rs-shopping__payCardIcons">
+                    <img src={payVisa} alt="Visa" className="rs-shopping__payLogo rs-shopping__payLogo--bank" />
+                    <img src={payDiscover} alt="Discover" className="rs-shopping__payLogo rs-shopping__payLogo--bank" />
+                    <img src={payMastercard} alt="Mastercard" className="rs-shopping__payLogo rs-shopping__payLogo--bank" />
+                    <img src={payAmex} alt="American Express" className="rs-shopping__payLogo rs-shopping__payLogo--bank" />
+                </span>
+            </button>
+        </div>
+    );
+}
+
+type WalletPayActionProps = {
+    walletDirectCheckout: boolean;
+    walletState: 'pending' | 'ready' | 'failed';
+    walletMethod: 'apple' | 'google';
+    onCheckout: () => void;
+    onWalletPointerDown?: () => void;
+    mountRef: RefObject<HTMLDivElement | null>;
+    hidden?: boolean;
+};
+
+function WalletPayAction({
+    walletDirectCheckout,
+    walletState,
+    walletMethod,
+    onCheckout,
+    onWalletPointerDown,
+    mountRef,
+    hidden = false,
+}: WalletPayActionProps) {
+    return (
+        <div
+            className="rs-shopping__airwallexWalletSlot"
+            style={{ display: hidden ? 'none' : undefined }}
+            aria-hidden={hidden || undefined}
+        >
+            <div className="rs-shopping__payWalletSlot">
+                <button
+                    type="button"
+                    disabled={walletDirectCheckout ? false : walletState !== 'ready'}
+                    onClick={walletDirectCheckout ? onCheckout : undefined}
+                    className={cn(
+                        'rs-shopping__payWalletGhostBtn',
+                        !walletDirectCheckout && walletState !== 'ready' && 'rs-shopping__payWalletGhostBtn--loading',
+                        (walletDirectCheckout || walletState === 'ready') && 'rs-shopping__payWalletGhostBtn--ready',
+                        walletDirectCheckout && 'rs-shopping__payWalletGhostBtn--clickable',
+                    )}
+                    aria-hidden={walletDirectCheckout ? undefined : true}
+                >
+                    <span className="rs-shopping__payWalletGhostInner">
+                        {!walletDirectCheckout && walletState !== 'ready' ? (
+                            <img
+                                className="rs-shopping__payWalletGhostSpinner"
+                                src={btnLoadingIcon}
+                                alt=""
+                                aria-hidden="true"
+                            />
+                        ) : null}
+                        <span className="rs-shopping__payWalletGhostText">
+                            {!walletDirectCheckout && walletState !== 'ready' ? (
+                                <FormattedMessage
+                                    id={
+                                        walletMethod === 'apple'
+                                            ? 'shopping_wallet_loading_apple'
+                                            : 'shopping_wallet_loading_google'
+                                    }
+                                    defaultMessage={
+                                        walletMethod === 'apple'
+                                            ? 'Apple Pay Loading...'
+                                            : 'Google Pay Loading...'
+                                    }
+                                />
+                            ) : (
+                                <FormattedMessage id="checkout_pay_with" defaultMessage="Subscribe with" />
+                            )}
+                        </span>
+                    </span>
+                </button>
+                <div
+                    ref={mountRef}
+                    className="rs-shopping__planPayMount"
+                    onPointerDownCapture={onWalletPointerDown}
+                    style={{
+                        display: 'flex',
+                        pointerEvents: !walletDirectCheckout && walletState === 'ready' ? 'auto' : 'none',
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
+type CardPayActionProps = {
+    checkoutTargetProductId: number | null;
+    onPayStateChange?: (state: 'idle' | 'processing' | 'checking' | 'success' | 'failed') => void;
+    hidden?: boolean;
+};
+
+function CardPayAction({ checkoutTargetProductId, onPayStateChange, hidden = false }: CardPayActionProps) {
+    if (!checkoutTargetProductId || hidden) return null;
+    return (
+        <div className="rs-shopping__cardDropin">
+            <CheckoutAirwallexPanel
+                productId={checkoutTargetProductId}
+                payment={3}
+                redirectHref={typeof window !== 'undefined' ? window.location.href : ''}
+                successAction="reload"
+                variant="embed"
+                externalStatusMode={true}
+                onPayStateChange={onPayStateChange}
+            />
+        </div>
+    );
+}
 
 /**
  * RadixRc 购物页：支付方式选择、Airwallex Google/Apple Pay 嵌入、Top-up 幽灵按钮。
@@ -65,15 +244,14 @@ export default function RadixRcShoppingPaySection({
     walletProductId,
     checkoutTargetProductId,
     checkoutFrom,
+    onPayStateChange,
 }: RadixRcShoppingPaySectionProps) {
     const intl = useIntl();
     const navigate = useNavigate();
+    const canPickApple = isApplePlatform();
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
-    const [showIncomplete, setShowIncomplete] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
-    const walletEmbedSupported =
-        (payment === 1 && isApplePlatform()) || (payment === 2 && !isApplePlatform());
+    const walletEmbedSupported = (payment === 1 && canPickApple) || payment === 2;
     const [planWalletState, setPlanWalletState] = useState<Map<number, 'pending' | 'ready' | 'failed'>>(
         () => new Map(),
     );
@@ -85,12 +263,28 @@ export default function RadixRcShoppingPaySection({
     const payWalletMountRef = useRef<HTMLDivElement | null>(null);
     const planWalletSeenNonZeroHeightRef = useRef<Map<number, boolean>>(new Map());
     const walletObsRef = useRef<MutationObserver[]>([]);
+    const walletFrameTriggerCleanupRef = useRef<Map<number, () => void>>(new Map());
     const walletRunIdRef = useRef(0);
     const lastWalletPaymentRef = useRef<1 | 2 | null>(null);
+    const pendingProcessingTimerRef = useRef<number | null>(null);
+    const successAlertShownRef = useRef(false);
+
+    const cleanupWalletFrameTriggers = useCallback(() => {
+        for (const [, cleanup] of walletFrameTriggerCleanupRef.current) {
+            cleanup();
+        }
+        walletFrameTriggerCleanupRef.current.clear();
+        if (pendingProcessingTimerRef.current) {
+            window.clearTimeout(pendingProcessingTimerRef.current);
+            pendingProcessingTimerRef.current = null;
+        }
+        successAlertShownRef.current = false;
+    }, []);
 
     const cleanupWalletOverlays = useCallback(() => {
         walletObsRef.current.forEach((o) => o.disconnect());
         walletObsRef.current = [];
+        cleanupWalletFrameTriggers();
         for (const [, el] of walletElementsRef.current) {
             try {
                 el.unmount();
@@ -109,7 +303,7 @@ export default function RadixRcShoppingPaySection({
         }
         planWalletReadyDelayTimersRef.current.clear();
         setPlanWalletState(new Map());
-    }, []);
+    }, [cleanupWalletFrameTriggers]);
 
     useEffect(() => {
         if (payment !== 1 && payment !== 2 || !walletEmbedSupported) {
@@ -144,6 +338,55 @@ export default function RadixRcShoppingPaySection({
                 const csH = readPx(window.getComputedStyle(frame).height);
                 if (Number.isFinite(csH)) return csH;
                 return frame.getBoundingClientRect().height;
+            };
+            const emitProcessing = (source: string) => {
+                if (!alive || walletRunIdRef.current !== runId) return;
+                if (pendingProcessingTimerRef.current) {
+                    window.clearTimeout(pendingProcessingTimerRef.current);
+                }
+                pendingProcessingTimerRef.current = window.setTimeout(() => {
+                    pendingProcessingTimerRef.current = null;
+                    if (!alive || walletRunIdRef.current !== runId) return;
+                    onPayStateChange?.('processing');
+                    console.log('[shopping] processing triggered:', source);
+                }, 0);
+            };
+            const bindWalletFrameTrigger = (planId: number, host: HTMLDivElement) => {
+                const prevCleanup = walletFrameTriggerCleanupRef.current.get(planId);
+                if (prevCleanup) {
+                    prevCleanup();
+                }
+                const frame = host.querySelector('iframe') as HTMLIFrameElement | null;
+                if (!frame) {
+                    walletFrameTriggerCleanupRef.current.delete(planId);
+                    return;
+                }
+                const onFocus = () => emitProcessing('iframe-focus');
+                const onPointerDown = () => emitProcessing('iframe-pointerdown');
+                const onDocumentFocusIn = () => {
+                    if (document.activeElement === frame) {
+                        emitProcessing('document-focusin-iframe');
+                    }
+                };
+                const onWindowBlur = () => {
+                    if (document.activeElement === frame) {
+                        emitProcessing('window-blur-after-iframe-focus');
+                    }
+                };
+                frame.addEventListener('focus', onFocus);
+                frame.addEventListener('pointerdown', onPointerDown);
+                frame.addEventListener('mousedown', onPointerDown);
+                frame.addEventListener('touchstart', onPointerDown, { passive: true });
+                document.addEventListener('focusin', onDocumentFocusIn, true);
+                window.addEventListener('blur', onWindowBlur);
+                walletFrameTriggerCleanupRef.current.set(planId, () => {
+                    frame.removeEventListener('focus', onFocus);
+                    frame.removeEventListener('pointerdown', onPointerDown);
+                    frame.removeEventListener('mousedown', onPointerDown);
+                    frame.removeEventListener('touchstart', onPointerDown);
+                    document.removeEventListener('focusin', onDocumentFocusIn, true);
+                    window.removeEventListener('blur', onWindowBlur);
+                });
             };
             const isHostReady = (host: HTMLDivElement, planId: number) => {
                 const frame = host.querySelector('iframe') as HTMLIFrameElement | null;
@@ -193,6 +436,16 @@ export default function RadixRcShoppingPaySection({
             if (!targetProductId) return;
             const host = payWalletMountRef.current;
             if (!host) return;
+            const existingElement = walletElementsRef.current.get(targetProductId);
+            if (existingElement && host.childElementCount > 0) {
+                bindWalletFrameTrigger(targetProductId, host);
+                if (isHostReady(host, targetProductId)) {
+                    scheduleReady(targetProductId);
+                } else {
+                    markReady(targetProductId, host);
+                }
+                return;
+            }
             /**
              * 只保留单一挂载位：切套餐/切意图时强制销毁旧 element，避免复用陈旧 intent
              * 导致 Apple Pay 首次可用、切换后失效（或切回也失效）。
@@ -219,6 +472,11 @@ export default function RadixRcShoppingPaySection({
                 window.clearTimeout(prevFailTid);
             }
             planWalletTimersRef.current.delete(targetProductId);
+            const prevFrameCleanup = walletFrameTriggerCleanupRef.current.get(targetProductId);
+            if (prevFrameCleanup) {
+                prevFrameCleanup();
+            }
+            walletFrameTriggerCleanupRef.current.delete(targetProductId);
             setPlanWalletState((prev) => {
                 const n = new Map(prev);
                 n.set(targetProductId, 'pending');
@@ -302,8 +560,16 @@ export default function RadixRcShoppingPaySection({
                                   amount: { value: amountValue, currency },
                                   countryCode: 'HK',
                                   buttonSizeMode: 'fill',
-                                  buttonColor: 'black',
-                                  buttonType: 'short',
+                                  buttonColor: 'default',
+                                  appearance: {
+                                      rules: {
+                                          '.GooglePayButton': {
+                                              width: '100%',
+                                              height: '40px',
+                                              borderRadius: '4px',
+                                          },
+                                      },
+                                  },
                                   style: {
                                       width: '100%',
                                       height: '40px',
@@ -324,27 +590,67 @@ export default function RadixRcShoppingPaySection({
                         }
                         return;
                     }
-                    const eventBinder = (el as unknown as WalletEventElement).on;
-                    eventBinder?.('success', () => {
-                        setShowSuccess(true);
-                    });
-                    eventBinder?.('error', () => {
-                        setShowIncomplete(true);
-                    });
+                    try {
+                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
+                            'click',
+                            () => {
+                                emitProcessing('sdk-click');
+                            },
+                        );
+                    } catch {
+                        /* noop */
+                    }
+                    try {
+                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
+                            'clickConfirmButton',
+                            () => {
+                                emitProcessing('sdk-clickConfirmButton');
+                            },
+                        );
+                    } catch {
+                        /* noop */
+                    }
+                    try {
+                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
+                            'success',
+                            () => {
+                                if (!successAlertShownRef.current) {
+                                    successAlertShownRef.current = true;
+                                    window.alert('[shopping-wallet] success callback triggered');
+                                }
+                                onPayStateChange?.('success');
+                            },
+                        );
+                    } catch {
+                        /* noop */
+                    }
+                    try {
+                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
+                            'error',
+                            () => {
+                                onPayStateChange?.('failed');
+                            },
+                        );
+                    } catch {
+                        /* noop */
+                    }
                     el.mount(host);
                     walletElementsRef.current.set(targetProductId, el as never);
+                    bindWalletFrameTrigger(targetProductId, host);
                     if (isHostReady(host, targetProductId)) {
                         scheduleReady(targetProductId);
                     } else {
                         markReady(targetProductId, host);
                     }
-                } catch {
+                } catch (e) {
+                    console.error('[shopping] create wallet element failed', e);
                     return;
                 }
             }
 
             const obs = new MutationObserver(() => {
                 if (!alive || walletRunIdRef.current !== runId) return;
+                bindWalletFrameTrigger(targetProductId, host);
                 markReady(targetProductId, host);
             });
             obs.observe(host, { childList: true, subtree: true });
@@ -357,14 +663,23 @@ export default function RadixRcShoppingPaySection({
             alive = false;
             walletObsRef.current.forEach((o) => o.disconnect());
             walletObsRef.current = [];
+            cleanupWalletFrameTriggers();
         };
-    }, [payment, intl.locale, cleanupWalletOverlays, walletProductId, walletEmbedSupported]);
+    }, [
+        payment,
+        intl.locale,
+        cleanupWalletOverlays,
+        cleanupWalletFrameTriggers,
+        walletProductId,
+        walletEmbedSupported,
+        onPayStateChange,
+    ]);
 
     function goCheckout(productId: number) {
         navigate(`/page/pay/${productId}?payment=${payment}&from=${checkoutFrom}`);
     }
 
-    function handleTopUpClick() {
+    function handleWalletCheckoutClick() {
         const targetId = checkoutTargetProductId;
         if (!targetId) return;
         if (payment === 3 || !walletEmbedSupported) {
@@ -373,175 +688,48 @@ export default function RadixRcShoppingPaySection({
     }
 
     function handlePaymentPick(payMethod: number) {
+        if (payMethod === 1 && !canPickApple) {
+            return;
+        }
         setPayment(payMethod);
     }
 
     const walletDirectCheckout = payment === 3 || !walletEmbedSupported;
-    const walletOverlayOpacity =
-        typeof window !== 'undefined' && window.localStorage.getItem('shopping_wallet_opacity') === '1'
-            ? 0.4
-            : 0.01;
+    const walletState = planWalletState.get(walletProductId ?? -1) ?? 'pending';
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const query = new URLSearchParams(window.location.search);
-        const action = query.get('action');
-        const platform = query.get('platform');
-        const sn = query.get('sn');
-
-        const clearPaymentQueryFlags = () => {
-            const next = new URLSearchParams(window.location.search);
-            ['action', 'platform', 'sn', 'paymentId', 'token', 'PayerID'].forEach((k) =>
-                next.delete(k),
-            );
-            const nextQs = next.toString();
-            const nextUrl = `${window.location.pathname}${nextQs ? `?${nextQs}` : ''}${window.location.hash}`;
-            window.history.replaceState({}, '', nextUrl);
-        };
-
-        if (action === 'success') {
-            setShowSuccess(true);
-            clearPaymentQueryFlags();
-            return;
+        if (!canPickApple && payment === 1) {
+            setPayment(2);
         }
-
-        if (action === 'return' && platform === 'airwallex' && sn) {
-            api('pay/complete', {
-                method: 'post',
-                data: { sn },
-                loading: false,
-            })
-                .then((res) => {
-                    if (res.c === 0) {
-                        setShowSuccess(true);
-                    } else {
-                        setShowIncomplete(true);
-                    }
-                })
-                .catch(() => {
-                    setShowIncomplete(true);
-                })
-                .finally(() => {
-                    clearPaymentQueryFlags();
-                });
-        }
-    }, []);
+    }, [canPickApple, payment]);
 
     return (
         <div className="rs-shopping__pay">
-            <div className="rs-shopping__payTitle">
-                <FormattedMessage id="payment_method" />
-            </div>
-            <div className="rs-shopping__payGrid">
-                <button
-                    type="button"
-                    onClick={() => handlePaymentPick(1)}
-                    className={cn(
-                        'rs-shopping__payMethodBtn',
-                        payment === 1 && 'rs-shopping__payMethodBtn--active',
-                    )}
-                >
-                    <img
-                        className="rs-shopping__payLogo rs-shopping__payLogo--apple"
-                        src={applePay}
-                        alt="Apple Pay"
-                    />
-                </button>
-                <button
-                    type="button"
-                    onClick={() => handlePaymentPick(2)}
-                    className={cn(
-                        'rs-shopping__payMethodBtn',
-                        payment === 2 && 'rs-shopping__payMethodBtn--active',
-                    )}
-                >
-                    <img
-                        className="rs-shopping__payLogo rs-shopping__payLogo--google"
-                        src={googlePay}
-                        alt="Google Pay"
-                    />
-                </button>
-                <button
-                    type="button"
-                    onClick={() => handlePaymentPick(3)}
-                    className={cn(
-                        'rs-shopping__payMethodBtn rs-shopping__payMethodBtn--cardPair',
-                        payment === 3 && 'rs-shopping__payMethodBtn--active',
-                    )}
-                >
-                    <img src={visa} alt="Visa" className="rs-shopping__payLogo rs-shopping__payLogo--visa" />
-                    <img
-                        src={master}
-                        alt="Master"
-                        className="rs-shopping__payLogo rs-shopping__payLogo--master"
-                    />
-                </button>
-            </div>
-            {payment === 1 || payment === 2 || payment === 3 ? (
-                <div className="rs-shopping__airwallexWalletSlot">
-                    <div className="rs-shopping__payWalletSlot">
-                        <button
-                            type="button"
-                            disabled={
-                                walletDirectCheckout
-                                    ? false
-                                    : (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready'
-                            }
-                            onClick={walletDirectCheckout ? handleTopUpClick : undefined}
-                            className={cn(
-                                'rs-shopping__payWalletGhostBtn',
-                                !walletDirectCheckout &&
-                                    (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready' &&
-                                    'rs-shopping__payWalletGhostBtn--loading',
-                                (walletDirectCheckout ||
-                                    (planWalletState.get(walletProductId ?? -1) ?? 'pending') === 'ready') &&
-                                    'rs-shopping__payWalletGhostBtn--ready',
-                                walletDirectCheckout && 'rs-shopping__payWalletGhostBtn--clickable',
-                            )}
-                            aria-hidden={walletDirectCheckout ? undefined : true}
-                        >
-                            <span className="rs-shopping__payWalletGhostInner">
-                                {!walletDirectCheckout &&
-                                (planWalletState.get(walletProductId ?? -1) ?? 'pending') !== 'ready' ? (
-                                    <img
-                                        className="rs-shopping__payWalletGhostSpinner"
-                                        src={btnLoadingIcon}
-                                        alt=""
-                                        aria-hidden="true"
-                                    />
-                                ) : null}
-                                <span className="rs-shopping__payWalletGhostText">
-                                    <FormattedMessage id="top_up" defaultMessage="Top-up" />
-                                </span>
-                            </span>
-                        </button>
-                        <div
-                            ref={payWalletMountRef}
-                            className="rs-shopping__planPayMount"
-                            style={{
-                                display: 'flex',
-                                ['--rs-wallet-iframe-opacity' as string]: walletOverlayOpacity,
-                                pointerEvents:
-                                    !walletDirectCheckout &&
-                                    (planWalletState.get(walletProductId ?? -1) ?? 'pending') === 'ready'
-                                        ? 'auto'
-                                        : 'none',
-                            }}
-                        />
-                    </div>
-                </div>
-            ) : null}
-            <PayIncompleteDialog
-                open={showIncomplete}
-                onOpenChange={setShowIncomplete}
-                dismissNavigateToShopping={false}
+
+            <PaymentMethodSwitcher
+                payment={payment}
+                canPickApple={canPickApple}
+                onPick={handlePaymentPick}
             />
-            <PaySuccessDialog
-                open={showSuccess}
-                onOpenChange={setShowSuccess}
-                onConfirm={() => {
-                    window.location.reload();
+
+            <WalletPayAction
+                walletDirectCheckout={walletDirectCheckout}
+                walletState={walletState}
+                walletMethod={payment === 1 ? 'apple' : 'google'}
+                onCheckout={handleWalletCheckoutClick}
+                onWalletPointerDown={() => {
+                    if (!walletDirectCheckout && walletState === 'ready') {
+                        onPayStateChange?.('processing');
+                    }
                 }}
+                mountRef={payWalletMountRef}
+                hidden={payment === 3}
+            />
+
+            <CardPayAction
+                checkoutTargetProductId={checkoutTargetProductId}
+                onPayStateChange={onPayStateChange}
+                hidden={payment !== 3}
             />
         </div>
     );

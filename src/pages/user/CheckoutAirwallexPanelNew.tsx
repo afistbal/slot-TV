@@ -1,5 +1,6 @@
 import { api, type TData } from "@/api";
 import PayIncompleteDialog from "@/components/PayIncompleteDialog";
+import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
 import PaySuccessDialog from "@/components/PaySuccessDialog";
 import { isApplePlatform } from "@/lib/isApplePlatform";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,16 @@ function checkoutDbg(说明: string, 详情?: unknown) {
   console.log(`[checkout] ${说明}`, 详情 ?? "");
 }
 
+function formatMoneyDisplay(raw: unknown, currency: string): string {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return `${raw} ${currency}`;
+  }
+  if (typeof raw === "string" && raw.trim() !== "") {
+    return `${raw} ${currency}`;
+  }
+  return currency;
+}
+
 function mountToRef(
   el: AirwallexMounted,
   containerRef: RefObject<HTMLDivElement | null>,
@@ -158,10 +169,6 @@ export type CheckoutAirwallexPanelProps = {
    * `embed`：深色 + `rs-checkout-h5--embedded`（如将来抽屉内嵌复用）。
    */
   variant?: "page" | "embed";
-  /** 外部托管支付状态 UI（例如购物弹窗） */
-  externalStatusMode?: boolean;
-  /** 向外层回传支付状态 */
-  onPayStateChange?: (state: "processing" | "checking" | "success" | "failed") => void;
 };
 
 export function CheckoutAirwallexPanel({
@@ -170,15 +177,15 @@ export function CheckoutAirwallexPanel({
   redirectHref,
   successAction = "navigate",
   variant = "page",
-  externalStatusMode = false,
-  onPayStateChange,
 }: CheckoutAirwallexPanelProps) {
   const intl = useIntl();
 
   const [showIncomplete, setShowIncomplete] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successUrl, setSuccessUrl] = useState("");
-  const successAlertShownRef = useRef(false);
+  const [sdkReady, setSdkReady] = useState(false);
+  const [orderSummary, setOrderSummary] = useState<TData | null>(null);
+
   const dropInMountRef = useRef<HTMLDivElement | null>(null);
   const instancesRef = useRef<AirwallexMounted[]>([]);
 
@@ -212,8 +219,9 @@ export function CheckoutAirwallexPanel({
     let cancelled = false;
     const isCancelled = () => cancelled;
     cleanupAll();
+    setSdkReady(false);
+    setOrderSummary(null);
     setSuccessUrl("");
-    successAlertShownRef.current = false;
 
     async function run() {
       const payCreatePayment =
@@ -251,6 +259,10 @@ export function CheckoutAirwallexPanel({
         checkoutDbg("1 pay/create 失败", { c: result.c, m: result.m });
         setShowIncomplete(true);
         return;
+      }
+
+      if (!isCancelled()) {
+        setOrderSummary(result.d);
       }
 
       const redirectFields = {
@@ -417,15 +429,8 @@ export function CheckoutAirwallexPanel({
         checkoutDbg("支付成功", {
           successUrl: redirectFields.successUrl?.slice(0, 80),
         });
-        if (!successAlertShownRef.current) {
-          successAlertShownRef.current = true;
-          window.alert("[checkout-dropin] success callback triggered");
-        }
-        onPayStateChange?.("success");
         setSuccessUrl(redirectFields.successUrl || "");
-        if (!externalStatusMode) {
-          setShowSuccess(true);
-        }
+        setShowSuccess(true);
       };
 
       const onCardError = (ev?: unknown) => {
@@ -433,10 +438,7 @@ export function CheckoutAirwallexPanel({
           ev,
           failUrl: redirectFields.failUrl?.slice(0, 80),
         });
-        onPayStateChange?.("failed");
-        if (!externalStatusMode) {
-          setShowIncomplete(true);
-        }
+        setShowIncomplete(true);
       };
 
       const pushInstance = (el: AirwallexMounted | null) => {
@@ -459,30 +461,6 @@ export function CheckoutAirwallexPanel({
           setShowIncomplete(true);
           return;
         }
-        if (externalStatusMode) {
-          try {
-            (
-              dropInEl as unknown as {
-                on?: (code: string, handler: (ev?: unknown) => void) => void;
-              }
-            ).on?.("click", () => {
-              onPayStateChange?.("processing");
-            });
-          } catch {
-            /* noop */
-          }
-          try {
-            (
-              dropInEl as unknown as {
-                on?: (code: string, handler: (ev?: unknown) => void) => void;
-              }
-            ).on?.("clickConfirmButton", () => {
-              onPayStateChange?.("processing");
-            });
-          } catch {
-            /* noop */
-          }
-        }
         dropInEl.on("success", onSuccess);
         dropInEl.on("error", onCardError);
         pushInstance(dropInEl);
@@ -494,6 +472,7 @@ export function CheckoutAirwallexPanel({
       }
 
       if (!isCancelled()) {
+        setSdkReady(true);
         checkoutDbg("4 就绪");
       }
     }
@@ -504,7 +483,15 @@ export function CheckoutAirwallexPanel({
       cancelled = true;
       cleanupAll();
     };
-  }, [productId, payment, intl, redirectHref, variant, externalStatusMode, onPayStateChange]);
+  }, [productId, payment, intl, redirectHref, variant]);
+
+  const summaryCurrency =
+    (orderSummary?.["currency"] as string) || "USD";
+  const planName = orderSummary?.["name"] as string | undefined;
+  const renewalRaw =
+    orderSummary?.["renewal_price"] ?? orderSummary?.["renewal"];
+  const hasRenewal = renewalRaw != null && String(renewalRaw).trim() !== "";
+  const hasOrderMeta = Boolean(planName) || hasRenewal;
 
   return (
     <>
@@ -516,27 +503,99 @@ export function CheckoutAirwallexPanel({
         )}
       >
         <div className="rs-checkout-h5__inner">
+          <div className="rs-checkout-h5__header">
+            <h1 className="rs-checkout-h5__h1">
+              {intl.formatMessage({ id: "payment_method" })}
+            </h1>
+            <p className="rs-checkout-h5__sub">
+              {intl.formatMessage({
+                id: "shopping_auto_renew_short",
+              })}
+            </p>
+          </div>
+
+          {orderSummary ? (
+            <div className="rs-checkout-h5__orderBox">
+              <div className="rs-checkout-h5__orderAmountRow">
+                <span className="rs-checkout-h5__amountLabel">
+                  {intl.formatMessage({
+                    id: "checkout_amount_due_label",
+                    defaultMessage: "Amount due",
+                  })}
+                </span>
+                <span className="rs-checkout-h5__amountValue">
+                  {formatMoneyDisplay(
+                    orderSummary["price"],
+                    summaryCurrency,
+                  )}
+                </span>
+              </div>
+              {hasOrderMeta ? (
+                <div className="rs-checkout-h5__orderMeta">
+                  {planName ? (
+                    <div className="rs-checkout-h5__summaryRow">
+                      <span className="rs-checkout-h5__summaryLabel">
+                        {intl.formatMessage({
+                          id: "checkout_plan",
+                          defaultMessage: "Plan",
+                        })}
+                      </span>
+                      <span>{planName}</span>
+                    </div>
+                  ) : null}
+                  {hasRenewal ? (
+                    <div className="rs-checkout-h5__summaryRow">
+                      <span className="rs-checkout-h5__summaryLabel">
+                        {intl.formatMessage({
+                          id: "checkout_renews_at",
+                          defaultMessage: "Renews at",
+                        })}
+                      </span>
+                      <span className="rs-checkout-h5__summaryMuted">
+                        {formatMoneyDisplay(renewalRaw, summaryCurrency)}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <h2 className="rs-checkout-h5__pickTitle rs-checkout-h5__pickTitle--section">
+            {intl.formatMessage({
+              id: "checkout_select_payment_method",
+              defaultMessage: "Please select a payment method",
+            })}
+          </h2>
+
           <div
             ref={dropInMountRef}
             className="rs-checkout-h5__dropInMount"
           />
+
+          {!sdkReady && !showIncomplete ? (
+            <div className="rs-checkout-h5__loading">
+              <ReelShortBasicsSpin
+                visible
+                variant="inline"
+                withOverlay={false}
+                label={intl.formatMessage({ id: "loading" })}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {!externalStatusMode ? (
-        <>
-          <PayIncompleteDialog
-            open={showIncomplete}
-            onOpenChange={setShowIncomplete}
-            dismissNavigateToShopping={false}
-          />
-          <PaySuccessDialog
-            open={showSuccess}
-            onOpenChange={setShowSuccess}
-            onConfirm={() => handleSuccessConfirm(successUrl)}
-          />
-        </>
-      ) : null}
+      <PayIncompleteDialog
+        open={showIncomplete}
+        onOpenChange={setShowIncomplete}
+        dismissNavigateToShopping={false}
+      />
+      <PaySuccessDialog
+        open={showSuccess}
+        onOpenChange={setShowSuccess}
+        onConfirm={() => handleSuccessConfirm(successUrl)}
+      />
     </>
   );
 }

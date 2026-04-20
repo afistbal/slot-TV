@@ -307,3 +307,91 @@
     font-size: calc(3.2 * var(--app-vw) / 100);
     cursor: pointer;
 }
+
+/**
+ * 首页 PC 架构层（仅 >480 生效）：
+ * 当前阶段先做容器与滚动语义约束，不改 H5 视觉参数。
+ */
+@media (min-width: 481px) {
+    .home-page {
+        min-width: 0;
+    }
+
+    .home-page__scroll {
+        min-width: 0;
+        overscroll-behavior-y: contain;
+    }
+
+    .HomePage_main__BzEnK {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-top: 28px;
+        padding-bottom: 68px;
+    }
+
+    .HomePage_main__BzEnK .HomePage_bookShelf__W2tPD {
+        margin-bottom: 16px;
+    }
+
+    .HomePage_main__BzEnK .HomePage_bookShelf__W2tPD h2 {
+        font-size: 18px;
+        line-height: 1.25;
+    }
+
+    .HomePage_main__BzEnK .HomePage_bookShelf__W2tPD .HomePage_shelfHead {
+        margin-bottom: 12px;
+    }
+
+    .HomePage_main__BzEnK .HomePage_content__DZ4dU {
+        padding-bottom: 12px;
+    }
+
+    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT .book-item {
+        margin-right: 14px;
+    }
+
+    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT::after {
+        flex-basis: 16px;
+    }
+
+    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv .book-item {
+        margin-bottom: 30px;
+    }
+
+    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv .HomePage_colunm__1XbhV {
+        margin-right: 14px;
+    }
+
+    .BookItem_bookItem__wWmbf .BookItem_title__85fqs {
+        font-size: 14px;
+        margin-top: 8px;
+        line-height: 21px;
+    }
+
+    .BookItem_bookItem__wWmbf .BookItem_chapter__8RIez {
+        font-size: 12px;
+        margin-top: 3px;
+    }
+
+    .BookItem_bookItem__wWmbf .BookItem_playCount__klKNX {
+        font-size: 11px;
+        right: 6px;
+        bottom: 6px;
+        height: 14px;
+    }
+
+    .HomePage_more_movies_btn__z0biE {
+        border-radius: 8px;
+        margin-top: 12px;
+        width: 276px;
+        height: 54px;
+        font-size: 20px;
+    }
+
+    .HomePage_listLoader__rs {
+        margin-top: 12px;
+        min-height: 54px;
+        line-height: 54px;
+        font-size: 14px;
+    }
+}

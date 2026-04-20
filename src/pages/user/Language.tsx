@@ -16,12 +16,15 @@ export default function Component() {
 
     return <Page title="language">
         <div className="m-4 rounded-md bg-white">
-            {APP_LANGUAGES.map(lang => <div key={lang.code} className={cn("flex gap-2 justify-between items-center p-4 border-b last:border-none")} onClick={() => handleSelect(lang.code)}>
-                <div className="flex gap-1 text-gray-600">
+            {APP_LANGUAGES.map(lang => {
+                const active = rootStore.locale.indexOf(lang.code) === 0;
+                return <div key={lang.code} className={cn("flex gap-2 justify-between items-center p-4 border-b last:border-none")} onClick={() => handleSelect(lang.code)}>
+                <div className={cn("flex gap-1", active ? "text-[#fe4167]" : "text-gray-600")}>
                     <div className="text-md">{lang.label}</div>
                 </div>
-                {rootStore.locale.indexOf(lang.code) === 0 ? <CircleCheck className='text-red-400 w-6 h-6' /> : <Circle className="text-slate-400 w-6 h-6" />}
-            </div>)}
+                {active ? <CircleCheck className='text-[#fe4167] w-6 h-6' /> : <Circle className="text-slate-400 w-6 h-6" />}
+            </div>;
+            })}
         </div>
     </Page>
 }

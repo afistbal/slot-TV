@@ -36,6 +36,34 @@ body,
     height: 100%;
 }
 
+/**
+ * PC 架构层（不影响 H5）：
+ * 口径固定为 viewport > 480px 进入桌面窄栏模式，<= 480px 保持原移动样式。
+ */
+@media (min-width: 481px) {
+    html,
+    body {
+        background-color: #000;
+        width: 100%;
+    }
+
+    #root {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
+        box-shadow: none;
+    }
+
+    .home-hero-viewport {
+        height: 588.8px;
+    }
+
+    .home-hero-banner-dots {
+        padding-bottom: 10px;
+    }
+}
+
 .root-light,
 .root-dark {
     background-color: var(--app-canvas);

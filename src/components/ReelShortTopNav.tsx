@@ -6,8 +6,12 @@ import { cn } from '@/lib/utils';
 import { ReelShortNavDrawer } from '@/components/ReelShortNavDrawer';
 import { ReelShortDramaWorldDialog } from '@/components/ReelShortDramaWorldDialog';
 import { useUserStore } from '@/stores/user';
+import { useRootStore } from '@/stores/root';
+import { APP_LANGUAGES } from '@/constants/appLanguages';
 import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
+import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
+import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
@@ -61,12 +65,13 @@ function TopNavSearchEntry() {
       role="search-control"
       aria-label={intl.formatMessage({ id: 'flix_search' })}
       className={cn(
+        'reelshort-topnav__search-entry',
         'relative flex cursor-pointer flex-col items-center justify-center text-white',
         'hover:text-[var(--rs-brand,#d4a853)]',
       )}
       onClick={() => navigate('/search')}
     >
-      <span role="img" className="text-[min(6vw,1.5rem)] text-current md:text-2xl">
+      <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current md:text-2xl">
         <TopNavSearchIcon className="h-[1em] w-[1em]" />
       </span>
       <div className="hidden text-base lg:block">
@@ -81,6 +86,56 @@ function BrandWordmark() {
     <span className="reelshort-topnav__brand-text">
       {BRAND_DISPLAY_NAME}
     </span>
+  );
+}
+
+function TopNavLanguageSwitcher() {
+  const rootStore = useRootStore();
+  const current = APP_LANGUAGES.find((v) => v.code === rootStore.locale) ?? APP_LANGUAGES[0];
+
+  return (
+    <div className="reelshort-topnav__lang group">
+      <button
+        type="button"
+        className="reelshort-topnav__lang-trigger"
+        aria-haspopup="menu"
+        aria-expanded={undefined}
+        aria-label="Language"
+      >
+        <span
+          className="reelshort-topnav__lang-globe"
+          aria-hidden
+          style={{ ['--lang-icon-url' as string]: `url("${iconLangGlobe}")` }}
+        />
+        <span className="reelshort-topnav__lang-text">{current.label}</span>
+        <span
+          className="reelshort-topnav__lang-chevron"
+          aria-hidden
+          style={{ ['--lang-chevron-url' as string]: `url("${iconLangChevron}")` }}
+        />
+      </button>
+      <div className="reelshort-topnav__lang-menu" role="menu" aria-label="Language options">
+        {APP_LANGUAGES.map((lang) => {
+          const active = lang.code === rootStore.locale;
+          return (
+            <button
+              key={lang.code}
+              type="button"
+              role="menuitemradio"
+              aria-checked={active}
+              className={cn('reelshort-topnav__lang-item', active && 'is-active')}
+              onClick={() => {
+                if (rootStore.locale === lang.code) return;
+                localStorage.setItem('locale', lang.code);
+                window.location.reload();
+              }}
+            >
+              {lang.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -255,6 +310,7 @@ export function ReelShortTopNav({
                   <TopNavSearchEntry />
                 </div>
               ) : null}
+              <TopNavLanguageSwitcher />
               {showProfile ? <NavProfileAvatar /> : null}
             </div>
           </div>

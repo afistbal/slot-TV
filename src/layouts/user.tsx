@@ -26,6 +26,8 @@ export default function Component() {
     const pixel = usePixel();
     const location = useLocation();
     const sourceform = `${location.pathname}${location.search}`;
+    const pathSegments = location.pathname.toLowerCase().split('/').filter(Boolean);
+    const isShoppingRoute = pathSegments[pathSegments.length - 1] === 'shopping';
 
     useEffect(() => {
         pixel.track('PageView');
@@ -86,7 +88,7 @@ export default function Component() {
                 </NavLink>
             </div>
         ) : null}
-        <IosAddHomeFloatingBtn />
+        {!isShoppingRoute ? <IosAddHomeFloatingBtn /> : null}
     </div>;
 }
 

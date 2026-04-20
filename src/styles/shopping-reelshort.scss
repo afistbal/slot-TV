@@ -10,21 +10,114 @@
     background-color: var(--app-canvas);
     color: #fff;
 
-    &__scroll {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    .rs-shopping__scroll {
         min-width: 0;
         flex: 1 1 auto;
         overflow-y: auto;
     }
 
-    &__main {
+    .rs-shopping__main {
         padding: calc(12 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw)) calc(8 / 375 * var(--app-vw));
     }
 
-    &__intro {
+    .rs-shopping__intro {
         margin-bottom: calc(10 / 375 * var(--app-vw));
     }
 
-    &__introTitle {
+    .rs-shopping__introTitle {
         margin-bottom: calc(2 / 375 * var(--app-vw));
         font-size: calc(16 / 375 * var(--app-vw));
         font-weight: 500;
@@ -38,7 +131,7 @@
         }
     }
 
-    &__introSub {
+    .rs-shopping__introSub {
         font-size: calc(12 / 375 * var(--app-vw));
         font-weight: 400;
         line-height: calc(16 / 375 * var(--app-vw));
@@ -51,7 +144,7 @@
     }
 
     /* 与 VIP 弹窗 `widgets/Countdown` 同款粉块倒计时，外层仅负责间距与居中 */
-    &__countdown {
+    .rs-shopping__countdown {
         margin-bottom: calc(12 / 375 * var(--app-vw));
         display: flex;
         justify-content: center;
@@ -62,7 +155,7 @@
     }
 
     /** 嵌入抽屉顶栏：限时略缩小，便于与标题同排（约 12%） */
-    &__countdown--inDrawerHead {
+    .rs-shopping__countdown--inDrawerHead {
         margin-bottom: 0;
         flex: 1 1 auto;
         justify-content: flex-start;
@@ -71,7 +164,7 @@
         transform-origin: left center;
     }
 
-    &__plans {
+    .rs-shopping__plans {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
         gap: 8px;
@@ -82,16 +175,16 @@
     }
 
     /** 强制单列：PC 也保持一行一个套餐 */
-    &__plans--singleColAlways {
+    .rs-shopping__plans--singleColAlways {
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
     /** Demo 页面：固定一行一个套餐（桌面端也不分两列） */
-    &__plans--demoSingleCol {
+    .rs-shopping__plans--demoSingleCol {
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
-    &__plan {
+    .rs-shopping__plan {
         position: relative;
         box-sizing: border-box;
         width: 100%;
@@ -113,7 +206,7 @@
      * Demo: 让 Airwallex Google/Apple Pay 挂载内容占满套餐卡片。
      * Airwallex 会在容器内插入 iframe/div/button；这里统一强制拉伸。
      */
-    &__planPayMount {
+    .rs-shopping__planPayMount {
         position: relative;
         z-index: 2;
         display: flex;
@@ -125,14 +218,14 @@
     }
 
     /** 让真实注入的 iframe 按钮横向铺满，垂直居中（高度由 iframe 自己控制，如 46px） */
-    &__planPayMount iframe {
+    .rs-shopping__planPayMount iframe {
         width: 100% !important;
         max-width: 100% !important;
         display: block;
         box-sizing: border-box;
         height: 40px !important;
         min-height: 40px !important;
-        opacity: var(--rs-wallet-iframe-opacity, 0);
+        opacity: 1;
 
         @media (min-width: 768px) {
             height: 40px !important;
@@ -141,7 +234,7 @@
     }
 
     /** Apple 品牌图标：用于骨架遮罩上提示（每个套餐 1 个，共 3 个） */
-    &__planWalletBrandIcon {
+    .rs-shopping__planWalletBrandIcon {
         position: absolute;
         left: 50%;
         top: 50%;
@@ -159,7 +252,7 @@
     }
 
     /* 与 `widgets/Vip.tsx` 角标一致：Limited-Time Offer xx% */
-    &__planOfferBadge {
+    .rs-shopping__planOfferBadge {
         position: absolute;
         top: 0;
         right: 0;
@@ -184,7 +277,7 @@
     }
 
     /** 套餐选中图标：放在卡片右侧中部 */
-    &__planCheckedIcon {
+    .rs-shopping__planCheckedIcon {
         position: absolute;
         right: calc(14 / 375 * var(--app-vw));
         top: 40%;
@@ -202,7 +295,7 @@
         }
     }
 
-    &__planBg {
+    .rs-shopping__planBg {
         position: absolute;
         right: calc(8 / 375 * var(--app-vw));
         top: calc(16 / 375 * var(--app-vw));
@@ -220,7 +313,7 @@
         }
     }
 
-    &__planBody {
+    .rs-shopping__planBody {
         position: relative;
         z-index: 1;
         box-sizing: content-box;
@@ -235,7 +328,7 @@
     }
 
     /** H5 套餐卡右侧 “Top Up” 纯展示标签（无点击事件） */
-    &__planTopUp {
+    .rs-shopping__planTopUp {
         position: absolute;
         right: calc(16 / 375 * var(--app-vw));
         top: 50%;
@@ -255,11 +348,11 @@
         }
     }
 
-    &__planText {
+    .rs-shopping__planText {
         width: 100%;
     }
 
-    &__planName {
+    .rs-shopping__planName {
         font-size: calc(14 / 375 * var(--app-vw));
         font-weight: 400;
 
@@ -268,12 +361,12 @@
         }
     }
 
-    &__planPriceRow {
+    .rs-shopping__planPriceRow {
         display: flex;
         align-items: baseline;
     }
 
-    &__planPrice {
+    .rs-shopping__planPrice {
         font-size: calc(20 / 375 * var(--app-vw));
         font-weight: 700;
 
@@ -282,7 +375,7 @@
         }
     }
 
-    &__planRenew {
+    .rs-shopping__planRenew {
         display: -webkit-box;
         overflow: hidden;
         -webkit-box-orient: vertical;
@@ -297,7 +390,7 @@
         }
     }
 
-    &__planBenefits {
+    .rs-shopping__planBenefits {
         position: relative;
         z-index: 1;
         box-sizing: content-box;
@@ -318,13 +411,13 @@
         }
     }
 
-    &__planBenefit {
+    .rs-shopping__planBenefit {
         display: flex;
         width: 100%;
         align-items: center;
     }
 
-    &__planBenefitIcon {
+    .rs-shopping__planBenefitIcon {
         margin-right: calc(1 / 375 * var(--app-vw));
         height: calc(16 / 375 * var(--app-vw));
         width: calc(16 / 375 * var(--app-vw));
@@ -338,7 +431,7 @@
     }
 
     /* 套餐列表加载：对标 ReelShort StoreInfo 骨架（两块大卡 + 支付方式条） */
-    &__plansSkeleton {
+    .rs-shopping__plansSkeleton {
         grid-column: 1 / -1;
         display: flex;
         width: 100%;
@@ -361,18 +454,16 @@
         }
     }
 
-    &__skeletonBar {
+    .rs-shopping__skeletonBar {
         width: 100%;
         flex-shrink: 0;
         height: calc(140 / 375 * var(--app-vw));
         border-radius: calc(4 / 375 * var(--app-vw));
         background-color: hsla(0, 0%, 100%, 0.1);
-        background-image: linear-gradient(
-            90deg,
-            hsla(0, 0%, 100%, 0.1) 25%,
-            hsla(0, 0%, 100%, 0.3) 37%,
-            hsla(0, 0%, 100%, 0.1) 63%
-        );
+        background-image: linear-gradient(90deg,
+                hsla(0, 0%, 100%, 0.1) 25%,
+                hsla(0, 0%, 100%, 0.3) 37%,
+                hsla(0, 0%, 100%, 0.1) 63%);
         background-size: 400% 100%;
         animation: rs-shopping-skeleton-shimmer 1.4s ease infinite;
 
@@ -380,34 +471,34 @@
             border-radius: 4px;
             height: 197px;
         }
+    }
 
-        &--vip {
-            height: calc(140 / 375 * var(--app-vw));
+    .rs-shopping__skeletonBar--vip {
+        height: calc(140 / 375 * var(--app-vw));
 
-            @media (min-width: 768px) {
-                height: 197px;
-            }
+        @media (min-width: 768px) {
+            height: 197px;
         }
+    }
 
-        &--vipFirst {
-            height: calc(140 / 375 * var(--app-vw));
+    .rs-shopping__skeletonBar--vipFirst {
+        height: calc(140 / 375 * var(--app-vw));
 
-            @media (min-width: 768px) {
-                height: 197px;
-            }
+        @media (min-width: 768px) {
+            height: 197px;
         }
+    }
 
-        &--payRow {
-            height: calc(140 / 375 * var(--app-vw));
+    .rs-shopping__skeletonBar--payRow {
+        height: calc(140 / 375 * var(--app-vw));
 
-            @media (min-width: 768px) {
-                height: 197px;
-            }
+        @media (min-width: 768px) {
+            height: 197px;
         }
     }
 
     /** 新组件 `ShoppingAirwallexWalletExpress`：仅 GPay / Apple Pay 槽 */
-    &__airwallexWalletSlot {
+    .rs-shopping__airwallexWalletSlot {
         margin-top: calc(8 / 375 * var(--app-vw));
         margin-bottom: 0;
 
@@ -417,7 +508,7 @@
         }
     }
 
-    &__payWalletSlot {
+    .rs-shopping__payWalletSlot {
         position: relative;
         width: 100%;
         height: calc(40 / 375 * var(--app-vw));
@@ -436,13 +527,13 @@
     }
 
     /** 钱包挂载层固定高度，避免 SDK 后续把按钮撑到 46px */
-    &__payWalletSlot .rs-shopping__planPayMount {
+    .rs-shopping__payWalletSlot .rs-shopping__planPayMount {
         height: 100%;
         min-height: 100%;
         max-height: 100%;
     }
 
-    &__payWalletGhostBtn {
+    .rs-shopping__payWalletGhostBtn {
         position: absolute;
         inset: 0;
         z-index: 1;
@@ -460,7 +551,7 @@
         pointer-events: none;
     }
 
-    &__payWalletGhostBtn--loading::after {
+    .rs-shopping__payWalletGhostBtn--loading::after {
         content: '';
         position: absolute;
         inset: 0;
@@ -468,16 +559,16 @@
         background: rgba(0, 0, 0, 0.3);
     }
 
-    &__payWalletGhostBtn--ready {
-        opacity: 1;
+    .rs-shopping__payWalletGhostBtn--ready {
+        opacity: 0;
     }
 
-    &__payWalletGhostBtn--clickable {
+    .rs-shopping__payWalletGhostBtn--clickable {
         pointer-events: auto;
         cursor: pointer;
     }
 
-    &__payWalletGhostInner {
+    .rs-shopping__payWalletGhostInner {
         position: absolute;
         left: 50%;
         top: 50%;
@@ -490,7 +581,7 @@
         white-space: nowrap;
     }
 
-    &__payWalletGhostText {
+    .rs-shopping__payWalletGhostText {
         display: block;
     }
 
@@ -500,7 +591,7 @@
         }
     }
 
-    &__payWalletGhostSpinner {
+    .rs-shopping__payWalletGhostSpinner {
         width: 21px;
         height: 21px;
         flex-shrink: 0;
@@ -509,7 +600,7 @@
         animation: rs-shopping-wallet-icon-spin 1.4s linear infinite;
     }
 
-    &__pay {
+    .rs-shopping__pay {
         margin-top: calc(12 / 375 * var(--app-vw));
 
         @media (min-width: 768px) {
@@ -517,7 +608,11 @@
         }
     }
 
-    &__payTitle {
+    .rs-shopping__pay--inModal {
+        margin-top: 0;
+    }
+
+    .rs-shopping__payTitle {
         margin-bottom: calc(8 / 375 * var(--app-vw));
         font-size: calc(16 / 375 * var(--app-vw));
         font-weight: 500;
@@ -529,52 +624,104 @@
         }
     }
 
-    &__payGrid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
+    .rs-shopping__payGrid {
+        display: flex;
+        gap: 4px;
 
         @media (min-width: 768px) {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 7px;
+            gap: 6px;
         }
     }
 
-    &__payMethodBtn {
+    .rs-shopping__payMethodBtn {
         position: relative;
         box-sizing: border-box;
         display: flex;
-        height: calc(34 / 375 * var(--app-vw));
-        flex-shrink: 0;
+        width: 50%;
+        min-height: calc(80 / 375 * var(--app-vw));
+        flex-shrink: 1;
         align-items: center;
         justify-content: center;
-        padding: 0;
-        border: 1px solid transparent;
-        border-radius: calc(4 / 375 * var(--app-vw));
-        background: #141414;
+        padding: calc(8 / 375 * var(--app-vw));
+        border: 1px solid #4b5563;
+        border-radius: calc(8 / 375 * var(--app-vw));
+        background: #333333;
         font-size: 12px;
-        font-weight: 500;
         color: rgba(255, 255, 255, 0.9);
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
 
         @media (min-width: 768px) {
-            height: 40px;
-            border-radius: 4px;
-            background: #292929;
+            min-height: 80px;
+            padding: 8px;
+            border-radius: 8px;
         }
+    }
 
-        &--active {
-            border-color: rgba(255, 255, 255, 0.9);
+    .rs-shopping__payMethodBtn--active {
+        border-color: #ffffff;
+    }
+
+    .rs-shopping__payMethodBtn--walletGroup {
+        gap: calc(8 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            gap: 8px;
         }
+    }
 
-        &--cardPair {
+    .rs-shopping__payMethodBtn--cardGroup {
+        flex-direction: column;
+        background: #333333;
+    }
+
+    .rs-shopping__payMethodSubBtn {
+        display: flex;
+        flex: 1 1 0%;
+        min-width: 0;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #1f2937;
+        border-radius: calc(7 / 375 * var(--app-vw));
+        background: #fff;
+        padding: calc(2 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            border-radius: 7px;
+            padding: 2px;
+        }
+    }
+
+    .rs-shopping__payMethodSubBtn--active {
+        border-color: #a349f1;
+    }
+
+    .rs-shopping__payCardTitle {
+        padding-bottom: calc(8 / 375 * var(--app-vw));
+        font-size: calc(16 / 375 * var(--app-vw));
+        font-weight: 400;
+        color: #fff;
+        line-height: 1;
+
+        @media (min-width: 768px) {
+            padding-bottom: 8px;
+            font-size: 16px;
+        }
+    }
+
+    .rs-shopping__payCardIcons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: calc(6 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
             gap: 6px;
         }
     }
 
     /** RadixRc：Airwallex Apple Pay Native API（Safari `ApplePaySession`） */
-    &__applePayNativeWrap {
+    .rs-shopping__applePayNativeWrap {
         margin-top: calc(10 / 375 * var(--app-vw));
 
         @media (min-width: 768px) {
@@ -582,7 +729,7 @@
         }
     }
 
-    &__applePayNativeBtn {
+    .rs-shopping__applePayNativeBtn {
         box-sizing: border-box;
         display: inline-flex;
         width: 100%;
@@ -607,7 +754,7 @@
         }
     }
 
-    &__applePayNativeBtnLogo {
+    .rs-shopping__applePayNativeBtnLogo {
         height: calc(18 / 375 * var(--app-vw));
         width: auto;
         flex-shrink: 0;
@@ -617,7 +764,7 @@
         }
     }
 
-    &__applePayNativeHint {
+    .rs-shopping__applePayNativeHint {
         margin-top: calc(6 / 375 * var(--app-vw));
         font-size: calc(11 / 375 * var(--app-vw));
         line-height: 1.35;
@@ -629,33 +776,40 @@
         }
     }
 
-    &__payLogo {
+    .rs-shopping__payLogo {
         display: block;
         flex-shrink: 0;
+    }
 
-        &--apple {
-            height: 18px;
-            width: auto;
+    .rs-shopping__payLogo--apple {
+        height: calc(50 / 375 * var(--app-vw));
+        width: auto;
+
+        @media (min-width: 768px) {
+            height: 50px;
         }
+    }
 
-        &--google {
-            height: 15px;
-            width: auto;
+    .rs-shopping__payLogo--google {
+        height: calc(50 / 375 * var(--app-vw));
+        width: auto;
+
+        @media (min-width: 768px) {
+            height: 50px;
         }
+    }
 
-        &--visa {
-            height: 9px;
-            width: auto;
-        }
+    .rs-shopping__payLogo--bank {
+        height: calc(20.5 / 375 * var(--app-vw));
+        width: auto;
 
-        &--master {
-            height: 16px;
-            width: auto;
+        @media (min-width: 768px) {
+            height: 20.5px;
         }
     }
 
     /** 与 Video 页右侧 VIP 同款入口：打开底部 Drawer 收银台 */
-    &__vipFab {
+    .rs-shopping__vipFab {
         position: fixed;
         right: calc(12 / 375 * var(--app-vw));
         bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
@@ -670,15 +824,681 @@
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
 
-        &:active {
-            background: rgba(0, 0, 0, 0.5);
-        }
-
         @media (min-width: 768px) {
             right: 1.25rem;
             bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
         }
     }
+
+    .rs-shopping__vipFab:active {
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .rs-shopping__cardDropin {
+        margin-top: calc(10 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 12px;
+        }
+    }
+
+    .rs-shopping__cardDropin .rs-checkout-h5 {
+        min-height: 0;
+        background: transparent;
+    }
+
+    .rs-shopping__cardDropin .rs-checkout-h5__inner {
+        padding: 0;
+        max-width: 100%;
+    }
+
+    .rs-shopping__cardDropin .rs-checkout-h5__dropInMount {
+        min-height: 240px;
+        border-radius: calc(8 / 375 * var(--app-vw));
+        padding: 0;
+        background: #222222;
+
+        @media (min-width: 768px) {
+            border-radius: 8px;
+        }
+    }
+
+    /* Airwallex dropIn 注入的骨架条默认是浅灰，这里统一压成深色 */
+    .rs-shopping__cardDropin .rs-checkout-h5__dropInMount > #loading > div {
+        background-color: #222222 !important;
+    }
+
+
+    .rs-shopping__payModalMask {
+        position: fixed;
+        inset: 0;
+        z-index: 120;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.65);
+        /* 遮罩全屏时避免与 Drawer/iframe 叠层竞争导致子面板（支付方式、卡字段）点不到 */
+        pointer-events: none;
+    }
+
+    .rs-shopping__payModalMask--nested {
+        z-index: 140;
+    }
+
+    .rs-shopping__payModalPanel {
+        font-family: PingFang SC, PingFang SC;
+        position: relative;
+        pointer-events: auto;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-self: flex-end;
+        width: min(100%, 480px);
+        min-height: 0;
+        max-height: 100dvh;
+        overflow: hidden;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        background: #222222;
+        padding: calc(14 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            border-radius: 16px;
+            margin-bottom: 24px;
+            min-height: min(80vh, 680px);
+            max-height: min(80vh, 680px);
+            padding: 16px 18px 18px;
+        }
+    }
+
+    /** 中间区：标题 / 说明 / 支付方式与卡区；单独纵向滚动 */
+    .rs-shopping__payModalBody {
+        flex: 1 1 auto;
+        position: relative;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .rs-shopping__payStage {
+        transition: opacity 0.18s ease;
+    }
+
+    .rs-shopping__payStage--hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .rs-shopping__payStage--status {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+    }
+
+    /** 底栏：安全提示 + 协议；始终贴在弹窗底部，与 payModalBody 同级 */
+    .rs-shopping__payModalFooter {
+        flex-shrink: 0;
+        padding-top: calc(10 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            padding-top: 10px;
+        }
+    }
+
+    /** 选择信用卡（内嵌 Drop-in）时：弹窗占满视口高度，仅中间区滚动 */
+    .rs-shopping__payModalPanel:has(.rs-shopping__cardDropin) {
+        max-height: 100dvh;
+
+        @media (min-width: 768px) {
+            max-height: 100dvh;
+            margin-bottom: 0;
+        }
+    }
+
+    .rs-shopping__payModalHeader {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 24px;
+        margin-bottom: calc(10 / 375 * var(--app-vw));
+    }
+
+    .rs-shopping__payModalTitle {
+        font-weight: 500;
+        font-size: calc(16 / 375 * var(--app-vw));
+        line-height: 1.25;
+        color: #fff;
+        text-align: center;
+
+        @media (min-width: 768px) {
+            font-size: 17px;
+        }
+    }
+
+    .rs-shopping__payModalCopy {
+        font-weight: 400;
+        margin: 0 auto calc(16 / 375 * var(--app-vw));
+        color: rgba(255, 255, 255, 0.88);
+        text-align: center;
+        font-size: calc(11 / 375 * var(--app-vw));
+        line-height: 1.55;
+    }
+
+    .rs-shopping__payModalCopy p+p {
+        margin-top: calc(6 / 375 * var(--app-vw));
+    }
+
+    .rs-shopping__payModalCopyLine4 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: calc(8 / 375 * var(--app-vw));
+        text-align: left;
+    }
+
+    .rs-shopping__payModalCopyAmount {
+        flex-shrink: 0;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .rs-shopping__payStack {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .rs-shopping__payStatusCard {
+        position: static;
+        width: 100%;
+        padding: calc(4 / 375 * var(--app-vw)) 0 calc(10 / 375 * var(--app-vw));
+        background: transparent;
+        backdrop-filter: none;
+        pointer-events: none;
+
+        @media (min-width: 768px) {
+            padding: 4px 0 10px;
+        }
+    }
+
+    .rs-shopping__payStatusPanel {
+        width: calc(100% - calc(16 / 375 * var(--app-vw)));
+        margin: 0 auto;
+        border-radius: calc(10 / 375 * var(--app-vw));
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+        text-align: center;
+        padding: calc(16 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+        pointer-events: auto;
+
+        @media (min-width: 768px) {
+            width: calc(100% - 16px);
+            border-radius: 10px;
+            padding: 16px 12px;
+        }
+    }
+
+    .rs-shopping__payStatusPanel--processing {
+        padding: calc(8 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            padding: 8px;
+        }
+    }
+
+    .rs-shopping__payStatusSuccessIcon {
+        display: block;
+        margin: 0 auto calc(10 / 375 * var(--app-vw));
+        width: calc(72 / 375 * var(--app-vw));
+        height: calc(72 / 375 * var(--app-vw));
+        object-fit: contain;
+
+        @media (min-width: 768px) {
+            margin-bottom: 10px;
+            width: 72px;
+            height: 72px;
+        }
+    }
+
+    .rs-shopping__payStatusLead {
+        margin-bottom: calc(10 / 375 * var(--app-vw));
+        text-align: center;
+
+        @media (min-width: 768px) {
+            margin-bottom: 10px;
+        }
+    }
+
+    .rs-shopping__payStatusLeadTitle {
+        font-size: calc(16 / 375 * var(--app-vw));
+        line-height: 1.35;
+        font-weight: 600;
+        color: #ffffff;
+
+        @media (min-width: 768px) {
+            font-size: 16px;
+        }
+    }
+
+    .rs-shopping__payStatusLeadBody {
+        margin-top: calc(6 / 375 * var(--app-vw));
+        color: rgba(255, 255, 255, 0.82);
+        font-size: calc(12 / 375 * var(--app-vw));
+        line-height: 1.45;
+
+        @media (min-width: 768px) {
+            margin-top: 6px;
+            font-size: 12px;
+        }
+    }
+
+    .rs-shopping__payStatusTitle {
+        font-size: calc(20 / 375 * var(--app-vw));
+        line-height: 1.25;
+        font-weight: 600;
+        color: #ffffff;
+
+        @media (min-width: 768px) {
+            font-size: 20px;
+        }
+    }
+
+    .rs-shopping__payStatusPanel--failed .rs-shopping__payStatusTitle {
+        color: #ff4f70;
+    }
+
+    .rs-shopping__payStatusDesc {
+        margin-top: calc(10 / 375 * var(--app-vw));
+        color: rgba(255, 255, 255, 0.72);
+        font-size: calc(13 / 375 * var(--app-vw));
+        line-height: 1.4;
+
+        @media (min-width: 768px) {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+    }
+
+    .rs-shopping__payStatusRetryBtn {
+        margin-top: calc(14 / 375 * var(--app-vw));
+        width: 100%;
+        border: 0;
+        border-radius: calc(8 / 375 * var(--app-vw));
+        background: #ff3d5d;
+        color: #fff;
+        font-size: calc(14 / 375 * var(--app-vw));
+        line-height: 1.2;
+        font-weight: 500;
+        padding: calc(11 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+
+        @media (min-width: 768px) {
+            margin-top: 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            padding: 11px 12px;
+        }
+    }
+
+    .rs-shopping__payStatusSpinner {
+        width: calc(48 / 375 * var(--app-vw));
+        height: calc(48 / 375 * var(--app-vw));
+        display: block;
+        margin: 0 auto calc(10 / 375 * var(--app-vw));
+        animation: rs-shopping-pay-spin 1s linear infinite;
+
+        @media (min-width: 768px) {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 10px;
+        }
+    }
+
+    @keyframes rs-shopping-pay-spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .rs-shopping__payModalSecure {
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: calc(6 / 375 * var(--app-vw));
+        color: #ffffff;
+        font-size: calc(12 / 375 * var(--app-vw));
+        line-height: 1.3;
+
+        @media (min-width: 768px) {
+            gap: 6px;
+            font-size: 12px;
+        }
+    }
+
+    .rs-shopping__payModalSecureIcon {
+        width: calc(16 / 375 * var(--app-vw));
+        height: calc(16 / 375 * var(--app-vw));
+        object-fit: contain;
+        flex-shrink: 0;
+
+        @media (min-width: 768px) {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    .rs-shopping__payModalAgreement {
+        margin-top: calc(8 / 375 * var(--app-vw));
+        margin-bottom: calc(2 / 375 * var(--app-vw));
+        padding: 0 calc(4 / 375 * var(--app-vw));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: calc(8 / 375 * var(--app-vw));
+        color: rgba(255, 255, 255, 0.55);
+        font-size: calc(11 / 375 * var(--app-vw));
+        line-height: 1.45;
+        text-align: center;
+
+        @media (min-width: 768px) {
+            margin-top: 8px;
+            margin-bottom: 2px;
+            padding: 0 4px;
+            gap: 8px;
+            font-size: 11px;
+        }
+    }
+
+    .rs-shopping__payModalAgreementMark {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        line-height: 0;
+    }
+
+    .rs-shopping__payModalAgreementCheckImg {
+        display: block;
+        width: calc(14 / 375 * var(--app-vw));
+        height: calc(14 / 375 * var(--app-vw));
+        object-fit: contain;
+
+        @media (min-width: 768px) {
+            width: 14px;
+            height: 14px;
+        }
+    }
+
+    .rs-shopping__payModalAgreementCopy {
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 100%;
+        text-align: center;
+    }
+
+    .rs-shopping__payModalAgreementText {
+        display: inline;
+        color: rgba(255, 255, 255, 0.55);
+        text-align: center;
+    }
+
+    .rs-shopping__payModalAgreementLink {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        font: inherit;
+        color: rgba(255, 255, 255, 0.55);
+        text-decoration: underline;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .rs-shopping__payModalAgreementLink:hover {
+        color: rgba(255, 255, 255, 0.75);
+    }
+
+    /** 用户付费服务协议：改用 UI Dialog，统一由 Radix 管控遮罩与焦点 */
+    .rs-shopping__paidAgreementDialogOverlay {
+        z-index: 230 !important;
+        background: rgba(0, 0, 0, 0.65) !important;
+    }
+
+    .rs-shopping__paidAgreementDialogContent {
+        top: auto !important;
+        bottom: 0 !important;
+        left: 50% !important;
+        transform: translate(-50%, 0) !important;
+        z-index: 231 !important;
+        width: min(100%, 480px) !important;
+        max-width: min(100%, 480px) !important;
+        border: 0 !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /** 对齐设计稿：main 区 linear-gradient(180deg, #363260 → #040405)，白字 + text-sm / #8A85C7 小标题 */
+    .rs-shopping__paidAgreementPanel {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: min(100%, 480px);
+        min-height: 0;
+        height: 85vh !important;
+        max-height: min(85vh, 720px) !important;
+        display: flex;
+        flex-direction: column;
+        align-self: flex-end;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        overflow: hidden;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+        background: linear-gradient(180deg, #363260 0%, #040405 100%);
+        color: #ffffff;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+
+        @supports (height: 100dvh) {
+            height: 85dvh !important;
+            max-height: min(85dvh, 720px) !important;
+        }
+
+        @media (min-width: 768px) {
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+    }
+
+    /** 单行顶栏：返回 + 居中标题（与支付弹窗顶栏一致思路） */
+    .rs-shopping__paidAgreementHead {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(48 / 375 * var(--app-vw));
+        padding: calc(10 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+        background: linear-gradient(180deg, rgba(54, 50, 96, 0.98) 0%, rgba(54, 50, 96, 0.88) 100%);
+
+        @media (min-width: 768px) {
+            min-height: 48px;
+            padding: 10px 12px;
+        }
+    }
+
+    .rs-shopping__paidAgreementHeadTitle {
+        margin: 0;
+        padding: 0 calc(40 / 375 * var(--app-vw));
+        font-weight: 500;
+        font-size: calc(15 / 375 * var(--app-vw));
+        line-height: 1.25;
+        text-align: center;
+        color: #ffffff;
+
+        @media (min-width: 768px) {
+            padding: 0 44px;
+            font-size: 16px;
+        }
+    }
+
+    .rs-shopping__paidAgreementBackBtn {
+        position: absolute;
+        left: calc(8 / 375 * var(--app-vw));
+        top: 50%;
+        z-index: 3;
+        display: inline-flex;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 9999px;
+        background: transparent;
+        color: #ffffff;
+        cursor: pointer;
+        transform: translateY(-50%);
+        -webkit-tap-highlight-color: transparent;
+
+        @media (min-width: 768px) {
+            left: 8px;
+        }
+    }
+
+    .rs-shopping__paidAgreementBackSvg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .rs-shopping__paidAgreementScroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+        background: transparent;
+    }
+
+    /** 正文区：顶栏已含大标题，此处仅保留与卡片的上下留白 */
+    .rs-shopping__paidAgreementContainer {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 896px;
+        margin-left: auto;
+        margin-right: auto;
+        padding: calc(12 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            padding: 12px 16px 28px;
+        }
+    }
+
+    .rs-shopping__paidAgreementInner {
+        position: relative;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 896px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .rs-shopping__paidAgreementSection {
+        max-width: 896px;
+        margin: 0 auto;
+    }
+
+    /** 对应 `rounded-lg shadow-md py-6 px-3 mb-8 text-white pt-2` */
+    .rs-shopping__paidAgreementCard {
+        margin-bottom: calc(32 / 375 * var(--app-vw));
+        border-radius: 0.5rem;
+        padding: 8px calc(12 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+        color: #ffffff;
+        box-shadow:
+            0 4px 6px -1px rgba(0, 0, 0, 0.22),
+            0 2px 4px -2px rgba(0, 0, 0, 0.14);
+
+        @media (min-width: 768px) {
+            margin-bottom: 32px;
+            padding: 8px 12px 24px;
+        }
+    }
+
+    /** 对应 `text-sm mb-4` */
+    .rs-shopping__paidAgreementLead,
+    .rs-shopping__paidAgreementP {
+        margin: 0 0 1rem;
+        font-size: 0.875rem;
+        line-height: 1.625;
+        font-weight: 400;
+        color: #ffffff;
+    }
+
+    /** 对应 `text-sm font-bold mb-3 text-[#8A85C7]` */
+    .rs-shopping__paidAgreementH3 {
+        margin: 0 0 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #8a85c7;
+    }
+
+    .rs-shopping__payModalBackBtn {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: inherit;
+        line-height: 0;
+        cursor: pointer;
+
+        @media (min-width: 768px) {
+            width: 24px;
+            height: 24px;
+        }
+    }
+
+    .rs-shopping__payModalBackIcon {
+        display: block;
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+    }
+}
+
+/**
+ * 剧集内嵌抽屉里的 BEM 块根：满足 `.rs-shopping .rs-shopping__*` 选择器；
+ * 不拉满视口高度，背景交给外层 `rs-shopping-drawer-sheet`。
+ */
+.rs-shopping.rs-shopping--drawerEmbed {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    background-color: transparent;
 }
 
 .rs-shopping-checkout-drawer__title {
@@ -745,7 +1565,7 @@
         padding-top: calc(8 / 375 * var(--app-vw));
         padding-left: 0;
         padding-right: 0;
-        padding-bottom: calc(4 / 375 * var(--app-vw));
+        padding-bottom: calc(30 / 375 * var(--app-vw));
 
         @media (min-width: 768px) {
             padding-top: 10px;
@@ -878,14 +1698,6 @@
     }
 }
 
-/** Drawer 内嵌 shopping 主体：不强制 100% 视口高度，由外层滚动 */
-.rs-shopping.rs-shopping--drawerEmbed {
-    height: auto;
-    min-height: 0;
-    --un-bg-opacity: 1;
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
-}
-
 /** 购物页 Drawer 内仅支付面板（无站点顶栏/底栏） */
 .rs-shopping-checkout-drawer__scroll {
     flex: 1 1 auto;
@@ -933,6 +1745,22 @@
 .rs-shopping-checkout-drawer--vipNoScroll[data-slot='drawer-content'] *:focus-visible {
     outline: none !important;
     box-shadow: none !important;
+}
+
+/**
+ * 视频页 VIP Drawer 内带 transform，子树中 `position:fixed` 会相对抽屉裁剪。
+ * 支付弹层 portal 到 body 后需抬高 z-index，盖在 Drawer(z200) 之上。
+ */
+.rs-shopping.rs-shopping--payModalEmbedPortal .rs-shopping__payModalMask {
+    z-index: 220;
+}
+
+.rs-shopping.rs-shopping--payModalEmbedPortal .rs-shopping__paidAgreementDialogOverlay {
+    z-index: 230 !important;
+}
+
+.rs-shopping.rs-shopping--payModalEmbedPortal .rs-shopping__paidAgreementDialogContent {
+    z-index: 231 !important;
 }
 
 .rs-checkout-h5--embedded .rs-checkout-h5__inner {
@@ -987,4 +1815,192 @@
     padding: 0 !important;
     margin: 0 !important;
     pointer-events: none !important;
+}
+
+/**
+ * 协议抽屉通过 portal 挂到 body，无法命中 `.rs-shopping .xxx` 作用域。
+ * 这里补一组全局选择器，确保内容/排版/滚动样式稳定生效。
+ */
+.rs-shopping__paidAgreementDialogOverlay {
+    z-index: 230 !important;
+    background: rgba(0, 0, 0, 0.65) !important;
+}
+
+.rs-shopping__paidAgreementDialogContent {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translate(-50%, 0) !important;
+    z-index: 231 !important;
+    width: min(100%, 480px) !important;
+    max-width: min(100%, 480px) !important;
+    border: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    box-shadow: none !important;
+}
+
+.rs-shopping__paidAgreementDialogContent.rs-shopping__paidAgreementPanel {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: min(100%, 480px);
+    min-height: 0;
+    height: 85vh !important;
+    max-height: min(85vh, 720px) !important;
+    display: flex;
+    flex-direction: column;
+    align-self: flex-end;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    background: linear-gradient(180deg, #363260 0%, #040405 100%);
+    color: #ffffff;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+
+    @supports (height: 100dvh) {
+        height: 85dvh !important;
+        max-height: min(85dvh, 720px) !important;
+    }
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementHead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(48 / 375 * var(--app-vw));
+    padding: calc(10 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+    background: linear-gradient(180deg, rgba(54, 50, 96, 0.98) 0%, rgba(54, 50, 96, 0.88) 100%);
+
+    @media (min-width: 768px) {
+        min-height: 48px;
+        padding: 10px 12px;
+    }
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementHeadTitle {
+    margin: 0;
+    padding: 0 calc(40 / 375 * var(--app-vw));
+    font-weight: 500;
+    font-size: calc(18 / 375 * var(--app-vw));
+    line-height: 1.2;
+    text-align: center;
+    color: #ffffff;
+
+    @media (min-width: 768px) {
+        padding: 0 44px;
+        font-size: 20px;
+    }
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementBackBtn {
+    position: absolute;
+    left: calc(8 / 375 * var(--app-vw));
+    top: 50%;
+    z-index: 3;
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    transform: translateY(-50%);
+    -webkit-tap-highlight-color: transparent;
+
+    @media (min-width: 768px) {
+        left: 8px;
+    }
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementBackSvg {
+    width: 20px;
+    height: 20px;
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementScroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+    background: transparent;
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementContainer {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 896px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: calc(12 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+
+    @media (min-width: 768px) {
+        padding: 12px 16px 28px;
+    }
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementInner {
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 896px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementSection {
+    max-width: 896px;
+    margin: 0 auto;
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementCard {
+    margin-bottom: calc(32 / 375 * var(--app-vw));
+    border-radius: 0.5rem;
+    padding: 8px calc(12 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+    color: #ffffff;
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.22),
+        0 2px 4px -2px rgba(0, 0, 0, 0.14);
+
+    @media (min-width: 768px) {
+        margin-bottom: 32px;
+        padding: 8px 12px 24px;
+    }
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementLead,
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementP {
+    margin: 0 0 1rem;
+    font-size: calc(16 / 375 * var(--app-vw));
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+
+    @media (min-width: 768px) {
+        font-size: 17px;
+    }
+}
+
+.rs-shopping__paidAgreementDialogContent .rs-shopping__paidAgreementH3 {
+    margin: 0 0 calc(10 / 375 * var(--app-vw));
+    font-size: calc(17 / 375 * var(--app-vw));
+    line-height: 1.3;
+    font-weight: 600;
+    color: #ffffff;
+
+    @media (min-width: 768px) {
+        margin-bottom: 10px;
+        font-size: 18px;
+    }
 }

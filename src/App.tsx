@@ -16,7 +16,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { api, report, type TData } from "./api";
 import { useUserStore } from "./stores/user";
 import { useConfigStore } from "./stores/config";
-import isMobile from 'is-mobile';
 import { useRootStore } from "./stores/root";
 import { cn } from "./lib/utils";
 import { Button } from "./components/ui/button";
@@ -380,6 +379,7 @@ function App() {
     const [checked, setChecked] = useState(false);
     const [install, setInstall] = useState(0);
     const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
+    const adjustInitedRef = useRef(false);
 
     async function handleExecuteInstall() {
         if (!installPrompt.current) {
@@ -407,11 +407,14 @@ function App() {
         configStore.setConfig(config.d);
 
         const adjustConfig = config.d['adjust'] as Record<string, unknown>;
-        Adjust.initSdk({
-            appToken: adjustConfig['token'] as string,
-            environment: adjustConfig['environment'] as 'production' | 'sandbox',
-            logLevel: adjustConfig['log_level'] as Adjust.LogLevel,
-        });
+        if (!adjustInitedRef.current) {
+            Adjust.initSdk({
+                appToken: adjustConfig['token'] as string,
+                environment: adjustConfig['environment'] as 'production' | 'sandbox',
+                logLevel: adjustConfig['log_level'] as Adjust.LogLevel,
+            });
+            adjustInitedRef.current = true;
+        }
 
         await initPixel(config.d);
 
@@ -502,30 +505,9 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const listener = () => {
-            if (!isMobile()) {
-                document.documentElement.style.width = '480px';
-                document.documentElement.style.marginLeft = 'auto';
-                document.documentElement.style.marginRight = 'auto';
-                document.documentElement.style.boxShadow = '0 0 1px #888';
-            } else {
-                document.documentElement.style.width = 'auto';
-                document.documentElement.style.marginLeft = 'auto';
-                document.documentElement.style.marginRight = 'auto';
-                document.documentElement.style.boxShadow = 'none';
-            }
-            const legacyDesktopCss = document.head.querySelector('#desktop-css');
-            if (legacyDesktopCss?.parentNode) {
-                legacyDesktopCss.parentNode.removeChild(legacyDesktopCss);
-            }
-        }
-
-        listener();
-
-        window.addEventListener('resize', listener);
-
-        return () => {
-            window.removeEventListener('resize', listener);
+        const legacyDesktopCss = document.head.querySelector('#desktop-css');
+        if (legacyDesktopCss?.parentNode) {
+            legacyDesktopCss.parentNode.removeChild(legacyDesktopCss);
         }
     }, []);
 
@@ -555,7 +537,10 @@ function App() {
     useEffect(() => {
         const applyModule = (res: unknown) => {
             const mod = res as { default?: TIntlMessages };
-            setMessages(mod.default ?? (res as TIntlMessages));
+            setMessages({
+                ...enMessages,
+                ...(mod.default ?? (res as TIntlMessages)),
+            } as TIntlMessages);
         };
 
         switch (rootStore.locale) {
@@ -651,7 +636,9 @@ function App() {
 
     }, [checked]);
 
-    const showInstallPrompt = install > 0 && !isApplePlatform();
+    const appPathSegments = window.location.pathname.toLowerCase().split('/').filter(Boolean);
+    const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
+    const showInstallPrompt = install > 0 && !isApplePlatform() && !isShoppingRoute;
 
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
         <div

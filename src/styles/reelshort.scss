@@ -199,6 +199,10 @@ button.reelshort-nav-drawer__close {
     }
 }
 
+.reelshort-topnav__lang {
+    display: none;
+}
+
 .reelshort-topnav__right {
     position: absolute;
     right: 12px;
@@ -385,6 +389,253 @@ a.reelshort-topnav__profile-link {
         gap: 40px;
         padding-left: 24px;
         padding-right: 24px;
+    }
+}
+
+@media (min-width: 481px) {
+    /* slot_old -> ReelShort CommonNav 映射：
+     * CommonNav_common_nav_container__r9DEx => .reelshort-topnav__row
+     * CommonNav_right__arFFN => .reelshort-topnav__right
+     */
+    .reelshort-topnav {
+        --rs-nav-hover-color: #fe4167;
+    }
+
+    .reelshort-topnav__row {
+        min-height: 52px;
+        padding: 8px 16px;
+    }
+
+    .reelshort-topnav__left {
+        left: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* PC 不需要 CommonNav_navs__2QZ_q */
+    .reelshort-topnav__primary-nav {
+        display: none !important;
+    }
+
+    a.reelshort-topnav__brand-link {
+        justify-content: flex-start;
+        margin-right: auto;
+    }
+
+    .reelshort-topnav__right {
+        position: relative;
+        right: 16px;
+        top: auto;
+        transform: none;
+        margin-left: auto;
+    }
+
+    .reelshort-topnav__actions {
+        gap: 12px;
+    }
+
+    .reelshort-topnav__search-entry {
+        height: 32px;
+        width: 32px;
+        border-radius: 9999px;
+        color: rgba(255, 255, 255, 0.92);
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .reelshort-topnav__search-entry:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--rs-nav-hover-color);
+    }
+
+    .reelshort-topnav__search-icon-wrap {
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    .reelshort-topnav__brand-text {
+        font-size: 20px;
+    }
+
+    .reelshort-topnav__profile-avatar,
+    .reelshort-topnav__profile-avatar--placeholder {
+        width: 30px;
+        height: 30px;
+        border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    button.reelshort-topnav__menu-btn {
+        display: none;
+    }
+
+    .reelshort-topnav__lang {
+        position: static;
+        display: block;
+    }
+
+    .reelshort-topnav__lang-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        height: 46px;
+        border: 0;
+        background: transparent;
+        color: #fff;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.2s ease;
+    }
+
+    .reelshort-topnav__lang:hover .reelshort-topnav__lang-trigger {
+        color: var(--rs-nav-hover-color);
+    }
+
+    .reelshort-topnav__lang-globe {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        color: currentColor;
+        display: inline-block;
+        background-color: currentColor;
+        -webkit-mask-image: var(--lang-icon-url);
+        mask-image: var(--lang-icon-url);
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+    }
+
+    .reelshort-topnav__lang-text {
+        display: none;
+        font-size: 16px;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .reelshort-topnav__lang-chevron {
+        display: none;
+        width: 12px;
+        height: 12px;
+        line-height: 1;
+        color: currentColor;
+        background-color: currentColor;
+        -webkit-mask-image: var(--lang-chevron-url);
+        mask-image: var(--lang-chevron-url);
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+    }
+
+    .reelshort-topnav__lang:hover .reelshort-topnav__lang-chevron,
+    .reelshort-topnav__lang:focus-within .reelshort-topnav__lang-chevron {
+        transform: rotate(180deg);
+    }
+
+    .reelshort-topnav__lang-menu {
+        position: absolute;
+        right: 0;
+        left: auto;
+        top: 100%;
+        width: max-content;
+        min-width: 220px;
+        max-width: min(78vw, 320px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(14, 14, 14, 0.98);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+        padding: 6px;
+        display: none;
+        z-index: 80;
+    }
+
+    .reelshort-topnav__lang:hover .reelshort-topnav__lang-menu,
+    .reelshort-topnav__lang:focus-within .reelshort-topnav__lang-menu {
+        display: block;
+    }
+
+    .reelshort-topnav__lang-item {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.92);
+        text-align: left;
+        font-size: 14px;
+        line-height: 1.3;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .reelshort-topnav__lang-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .reelshort-topnav__lang-item.is-active {
+        color: var(--rs-nav-hover-color);
+    }
+
+    @media (min-width: 1024px) {
+        .reelshort-topnav__lang-text {
+            display: inline;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .reelshort-topnav__lang-chevron {
+            display: inline;
+        }
+    }
+
+    .reelshort-footer {
+        margin-top: 28px;
+        padding-bottom: 12px;
+        border-top-width: 1.5px;
+    }
+
+    .reelshort-footer__collapse-item {
+        min-height: 48px;
+        padding: 14px 17px 14px 16px;
+    }
+
+    .reelshort-footer__title {
+        font-size: 16px;
+    }
+
+    .reelshort-footer__collapsible--open {
+        font-size: 14px;
+    }
+
+    .reelshort-footer__community {
+        margin-top: 24px;
+    }
+
+    .reelshort-footer__community-title {
+        font-size: 16px;
+    }
+
+    .reelshort-footer__community-list {
+        margin: 16px auto 36px;
+    }
+
+    .reelshort-footer__community-list a {
+        width: 32px;
+        height: 32px;
+        margin: 0 16px;
+        font-size: 32px;
+    }
+
+    .reelshort-footer__copyright {
+        font-size: 12px;
     }
 }
 

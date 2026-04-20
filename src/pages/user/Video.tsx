@@ -1059,7 +1059,7 @@ function Player({
                         <div className="h-4" />
                     </DrawerContent>
                 </Drawer>
-                <Drawer open={vip} onOpenChange={setVip}>
+                <Drawer open={vip} onOpenChange={setVip} disablePreventScroll>
                     <DrawerContent
                         handler
                         className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col border-t border-white/10 p-0 text-white max-h-[min(98vh,1040px)] overflow-y-visible"
