@@ -79,12 +79,14 @@ export default function RadixRc({
     const [showPayModal, setShowPayModal] = useState(false);
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
     const [payModalStatus, setPayModalStatus] = useState<PayModalStatus>('idle');
+    const [paySessionSeed, setPaySessionSeed] = useState(0);
     const successAlertShownRef = useRef(false);
 
     function closePayModal() {
         setShowPaidServiceAgreement(false);
         setPayModalStatus('idle');
         setShowPayModal(false);
+        setPaySessionSeed((prev) => prev + 1);
         successAlertShownRef.current = false;
     }
 
@@ -170,6 +172,7 @@ export default function RadixRc({
         setPayModalStatus('idle');
         setShowPaidServiceAgreement(false);
         setShowPayModal(true);
+        setPaySessionSeed((prev) => prev + 1);
         successAlertShownRef.current = false;
     }
 
@@ -347,6 +350,7 @@ export default function RadixRc({
                             </div>
                             <div className="rs-shopping__payStack">
                                 <RadixRcShoppingPaySection
+                                    key={`${walletProductId ?? 'none'}-${paySessionSeed}`}
                                     walletProductId={walletProductId}
                                     checkoutTargetProductId={checkoutTargetProductId}
                                     checkoutFrom={checkoutFrom}
@@ -395,7 +399,11 @@ export default function RadixRc({
                                     <button
                                         type="button"
                                         className="rs-shopping__payStatusRetryBtn"
-                                        onClick={() => setPayModalStatus('idle')}
+                                        onClick={() => {
+                                            // 强制重建支付组件，避免复用已消费/失效的 Airwallex intent。
+                                            setPaySessionSeed((prev) => prev + 1);
+                                            setPayModalStatus('idle');
+                                        }}
                                     >
                                         <FormattedMessage id="shopping_pay_status_return" />
                                     </button>
