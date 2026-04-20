@@ -307,8 +307,7 @@ export default function RadixRcShoppingPaySection({
 
     useEffect(() => {
         if (payment !== 1 && payment !== 2 || !walletEmbedSupported) {
-            walletObsRef.current.forEach((o) => o.disconnect());
-            walletObsRef.current = [];
+            cleanupWalletOverlays();
             return;
         }
 
@@ -509,10 +508,22 @@ export default function RadixRcShoppingPaySection({
                     });
                 } catch (e) {
                     console.error('[shopping] pay/create failed', e);
+                    setPlanWalletState((prev) => {
+                        const n = new Map(prev);
+                        n.set(targetProductId, 'failed');
+                        return n;
+                    });
                     return;
                 }
                 if (!alive || walletRunIdRef.current !== runId) return;
-                if (payCreate.c !== 0) return;
+                if (payCreate.c !== 0) {
+                    setPlanWalletState((prev) => {
+                        const n = new Map(prev);
+                        n.set(targetProductId, 'failed');
+                        return n;
+                    });
+                    return;
+                }
 
                 const initEnv = (payCreate.d?.env as 'prod' | 'demo' | undefined) ?? 'demo';
                 try {
@@ -522,6 +533,11 @@ export default function RadixRcShoppingPaySection({
                     );
                 } catch (e) {
                     console.error('[shopping] airwallex init failed', e);
+                    setPlanWalletState((prev) => {
+                        const n = new Map(prev);
+                        n.set(targetProductId, 'failed');
+                        return n;
+                    });
                     return;
                 }
                 if (!alive || walletRunIdRef.current !== runId) return;
@@ -648,6 +664,11 @@ export default function RadixRcShoppingPaySection({
                     }
                 } catch (e) {
                     console.error('[shopping] create wallet element failed', e);
+                    setPlanWalletState((prev) => {
+                        const n = new Map(prev);
+                        n.set(targetProductId, 'failed');
+                        return n;
+                    });
                     return;
                 }
             }
@@ -665,15 +686,12 @@ export default function RadixRcShoppingPaySection({
 
         return () => {
             alive = false;
-            walletObsRef.current.forEach((o) => o.disconnect());
-            walletObsRef.current = [];
-            cleanupWalletFrameTriggers();
+            cleanupWalletOverlays();
         };
     }, [
         payment,
         intl.locale,
         cleanupWalletOverlays,
-        cleanupWalletFrameTriggers,
         walletProductId,
         walletEmbedSupported,
         onPayStateChange,
