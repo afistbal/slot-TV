@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
-import { api, type TData } from '@/api';
+import { api } from '@/api';
 import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import vipCardBg from '@/assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png';
@@ -17,7 +17,6 @@ import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import Countdown from '@/widgets/Countdown';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
-import { useUserStore } from '@/stores/user';
 
 function paywallImage(file: string) {
     return new URL(`../../assets/images/${file}`, import.meta.url).href;
@@ -67,7 +66,6 @@ export default function RadixRc({
     checkoutFrom = 'shopping',
 }: RadixRcProps = {}) {
     const intl = useIntl();
-    const userStore = useUserStore();
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const [products, setProducts] = useState<Product[]>(() => shoppingProductCache.get(productFrom) ?? []);
@@ -120,43 +118,6 @@ export default function RadixRc({
         }, 30000);
         return () => window.clearTimeout(timer);
     }, [payModalStatus, showPayModal]);
-
-    useEffect(() => {
-        if (payModalStatus !== 'checking' || !showPayModal) return;
-        let cancelled = false;
-
-        const pollVipPaid = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-            const res = await api<TData>('login/token', {
-                method: 'post',
-                loading: false,
-                data: { token },
-            });
-            if (cancelled || res.c !== 0) return;
-            const raw = res.d as TData;
-            const info = (raw['info'] as TData | undefined) ?? raw;
-            if (Object.keys(info).length > 0) {
-                if (userStore.signed) {
-                    userStore.update(info);
-                } else {
-                    userStore.signin(info);
-                }
-            }
-            if (info['is_vip']) {
-                setPayModalStatus('success');
-            }
-        };
-
-        void pollVipPaid();
-        const timer = window.setInterval(() => {
-            void pollVipPaid();
-        }, 12000);
-        return () => {
-            cancelled = true;
-            window.clearInterval(timer);
-        };
-    }, [payModalStatus, showPayModal, userStore]);
 
     useEffect(() => {
         const cached = shoppingProductCache.get(productFrom);

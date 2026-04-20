@@ -511,9 +511,9 @@
     .rs-shopping__payWalletSlot {
         position: relative;
         width: 100%;
-        height: calc(40 / 375 * var(--app-vw));
-        min-height: calc(40 / 375 * var(--app-vw));
-        max-height: calc(40 / 375 * var(--app-vw));
+        height: min(40px, calc(40 / 375 * var(--app-vw)));
+        min-height: min(40px, calc(40 / 375 * var(--app-vw)));
+        max-height: min(40px, calc(40 / 375 * var(--app-vw)));
         border-radius: calc(4 / 375 * var(--app-vw));
         background: transparent;
         overflow: hidden;
@@ -543,7 +543,7 @@
         padding: 0;
         border: 0;
         border-radius: inherit;
-        background: #ff3d5d;
+        background: #000000;
         color: #fff;
         font-size: 17px;
         font-weight: 500;

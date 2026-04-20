@@ -460,17 +460,7 @@ export function CheckoutAirwallexPanel({
           return;
         }
         if (externalStatusMode) {
-          try {
-            (
-              dropInEl as unknown as {
-                on?: (code: string, handler: (ev?: unknown) => void) => void;
-              }
-            ).on?.("click", () => {
-              onPayStateChange?.("processing");
-            });
-          } catch {
-            /* noop */
-          }
+          // 仅在点击确认提交按钮后进入 processing，避免输入聚焦/悬停误触发 loading。
           try {
             (
               dropInEl as unknown as {

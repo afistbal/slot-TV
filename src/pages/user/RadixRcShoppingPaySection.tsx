@@ -341,6 +341,9 @@ export default function RadixRcShoppingPaySection({
             };
             const emitProcessing = (source: string) => {
                 if (!alive || walletRunIdRef.current !== runId) return;
+                const isSdkTriggered = source === 'sdk-click' || source === 'sdk-clickConfirmButton';
+                // Apple Pay 对手势链路敏感：仅接受 SDK 回调触发 processing，避免前置事件打断拉起。
+                if (which === 'apple' && !isSdkTriggered) return;
                 if (pendingProcessingTimerRef.current) {
                     window.clearTimeout(pendingProcessingTimerRef.current);
                 }
@@ -537,12 +540,12 @@ export default function RadixRcShoppingPaySection({
                     customer_id,
                     amount: { value: amountValue, currency },
                     countryCode: 'HK',
-                    // buttonType: 'plain' as const,
-                    // buttonColor: 'black' as const,
-                    // style: {
-                    //     width: '100%',
-                    //     height: '40px',
-                    // },
+                    buttonType: 'plain' as const,
+                    buttonColor: 'black' as const,
+                    style: {
+                        width: '100%',
+                        height: '40px',
+                    },
                 };
 
                 if (which === 'apple') {
@@ -696,7 +699,6 @@ export default function RadixRcShoppingPaySection({
 
     const walletDirectCheckout = payment === 3 || !walletEmbedSupported;
     const walletState = planWalletState.get(walletProductId ?? -1) ?? 'pending';
-
     useEffect(() => {
         if (!canPickApple && payment === 1) {
             setPayment(2);
@@ -718,7 +720,7 @@ export default function RadixRcShoppingPaySection({
                 walletMethod={payment === 1 ? 'apple' : 'google'}
                 onCheckout={handleWalletCheckoutClick}
                 onWalletPointerDown={() => {
-                    if (!walletDirectCheckout && walletState === 'ready') {
+                    if (payment === 2 && !walletDirectCheckout && walletState === 'ready') {
                         onPayStateChange?.('processing');
                     }
                 }}
