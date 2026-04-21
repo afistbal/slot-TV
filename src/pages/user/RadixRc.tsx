@@ -341,11 +341,10 @@ export default function RadixRc({
                                 <p>
                                     <FormattedMessage id="payment_processing_line_3" />
                                 </p>
-                                <p className="rs-shopping__payModalCopyLine4">
+                                <p>
                                     <span>
                                         <FormattedMessage id="payment_processing_line_4" />
                                     </span>
-                                    <span className="rs-shopping__payModalCopyAmount">{payAmountDisplay}</span>
                                 </p>
                             </div>
                             <div className="rs-shopping__payStack">

@@ -324,7 +324,7 @@ export default function RadixRcShoppingPaySection({
         lastWalletPaymentRef.current = payment;
 
         const which = payment === 1 ? ('apple' as const) : ('google' as const);
-        const readyDelayMs = 1700;
+        const readyDelayMs = 350;
 
         const targetProductId = walletProductId;
         void airwallexRunShoppingWalletExclusive(async () => {

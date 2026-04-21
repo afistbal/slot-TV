@@ -316,18 +316,10 @@ export default function RadixRcApplePayNativeButton({
                 <span>
                     <FormattedMessage
                         id="shopping_apple_pay_native"
-                        defaultMessage="Apple Pay (Native)"
+                        defaultMessage="Apple Pay"
                     />
                 </span>
             </button>
-            {nativeReady === false ? (
-                <p className="rs-shopping__applePayNativeHint">
-                    <FormattedMessage
-                        id="shopping_apple_pay_native_unavailable"
-                        defaultMessage="当前环境不支持 Apple Pay Native（需 Safari 且钱包已添加卡片）。"
-                    />
-                </p>
-            ) : null}
             {validationUrlPreview ? (
                 <div
                     role="dialog"
