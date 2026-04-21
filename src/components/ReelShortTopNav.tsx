@@ -1,17 +1,26 @@
 import type { RefObject } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { cn } from '@/lib/utils';
+import { api } from '@/api';
+import { auth } from '@/firebase';
 import { ReelShortNavDrawer } from '@/components/ReelShortNavDrawer';
 import { ReelShortDramaWorldDialog } from '@/components/ReelShortDramaWorldDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useUserStore } from '@/stores/user';
+import { useLoadingStore } from '@/stores/loading';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
 import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
+import iconTopnavDownload from '@/assets/icons/topnav-download.svg';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
@@ -54,6 +63,38 @@ function TopNavSearchIcon({ className }: { className?: string }) {
   );
 }
 
+function TopNavHistoryIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="21"
+      height="20"
+      viewBox="0 0 21 20"
+      fill="none"
+      className={cn('reelshort-topnav__history-icon', className)}
+      aria-hidden
+    >
+      <g clipPath="url(#topnav_history_clip)">
+        <path
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeMiterlimit="10"
+          strokeWidth="1.5"
+          d="M19.544 9.998a9.044 9.044 0 1 1-18.089 0 9.044 9.044 0 0 1 18.089 0"
+        />
+        <path fill="currentColor" d="M11.38 4.658a.88.88 0 0 0-1.76 0v5.679a.88.88 0 0 0 1.76 0z" />
+        <path fill="currentColor" d="M12.614 12.971a.88.88 0 0 0 1.035-1.423l-2.511-1.826a.88.88 0 1 0-1.035 1.424z" />
+      </g>
+      <defs>
+        <clipPath id="topnav_history_clip">
+          <path fill="currentColor" d="M.5 0h20v20H.5z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+}
+
 /** 顶栏「进入搜索页」入口（与 /search 页内大搜索框分离，不共用 ReelShortNavSearch 组件） */
 function TopNavSearchEntry() {
   const intl = useIntl();
@@ -74,7 +115,7 @@ function TopNavSearchEntry() {
       <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current md:text-2xl">
         <TopNavSearchIcon className="h-[1em] w-[1em]" />
       </span>
-      <div className="hidden text-base lg:block">
+      <div className="reelshort-topnav__search-label">
         <FormattedMessage id="nav_search_label" />
       </div>
     </button>
@@ -139,45 +180,294 @@ function TopNavLanguageSwitcher() {
   );
 }
 
+function TopNavInstallEntry() {
+  const rootStore = useRootStore();
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [open, setOpen] = useState(false);
+  const closeTimerRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 481px)');
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  const clearCloseTimer = () => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = undefined;
+    }
+  };
+
+  const openPanel = () => {
+    clearCloseTimer();
+    setOpen(true);
+  };
+
+  const closePanelSoon = () => {
+    clearCloseTimer();
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+    }, 100);
+  };
+
+  useEffect(() => clearCloseTimer, []);
+
+  if (!rootStore.showInstallPrompt || !isDesktop) {
+    return null;
+  }
+
+  return (
+    <div
+      className="reelshort-topnav__download"
+      onMouseEnter={openPanel}
+      onMouseLeave={closePanelSoon}
+    >
+      <button type="button" className="reelshort-topnav__download-trigger" aria-label="Download">
+        <span
+          className="reelshort-topnav__download-icon"
+          aria-hidden
+          style={{ ['--download-icon-url' as string]: `url("${iconTopnavDownload}")` }}
+        />
+        <span className="reelshort-topnav__download-label">
+          <FormattedMessage id="add_desktop_short" />
+        </span>
+      </button>
+      {open ? (
+        <div className="reelshort-topnav__download-popover" role="tooltip">
+          <div className="reelshort-topnav__download-copy">
+            <p className="reelshort-topnav__download-title">
+              <FormattedMessage id="add_desktop" />
+            </p>
+            <button
+              type="button"
+              className="reelshort-topnav__download-open-btn"
+              onClick={() => {
+                const installBtn = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
+                installBtn?.click();
+              }}
+            >
+              <FormattedMessage id="pwa_open" />
+            </button>
+          </div>
+          <img src="/logo.png" alt="logo" className="reelshort-topnav__download-logo" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function TopNavHistoryEntry() {
+  const navigate = useNavigate();
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 481px)');
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  if (!isDesktop) {
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      className="reelshort-topnav__history"
+      onClick={() => navigate('/my-list/history')}
+      aria-label="Watch history"
+    >
+      <TopNavHistoryIcon />
+      <span className="reelshort-topnav__history-label">
+        <FormattedMessage id="nav_watch_history" />
+      </span>
+    </button>
+  );
+}
+
 /** 顶栏「我的」：已登录且非匿名时展示后端 / Google（含 localStorage user-avatar）头像，否则占位 */
 function NavProfileAvatar() {
   const intl = useIntl();
+  const navigate = useNavigate();
   const userStore = useUserStore();
+  const loadingStore = useLoadingStore();
+  const isSignedUser = userStore.signed && !userStore.isAnonymous();
   const avatar =
-    userStore.signed && !userStore.isAnonymous()
+    isSignedUser
       ? getUserAvatarDisplayUrl(userStore.info as { [key: string]: unknown } | undefined)
       : undefined;
   const hasPhoto = Boolean(avatar);
+  const [open, setOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const closeTimerRef = useRef<number | undefined>(undefined);
+
+  const clearCloseTimer = () => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = undefined;
+    }
+  };
+
+  const openMenu = () => {
+    clearCloseTimer();
+    setOpen(true);
+  };
+
+  const closeMenuSoon = () => {
+    clearCloseTimer();
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+    }, 100);
+  };
+
+  useEffect(() => clearCloseTimer, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 481px)');
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  const avatarNode = hasPhoto ? (
+    <img
+      src={avatar}
+      alt=""
+      className="reelshort-topnav__profile-avatar"
+      referrerPolicy="no-referrer"
+      onError={() => {
+        try {
+          localStorage.removeItem('user-avatar');
+        } catch {
+          /* ignore */
+        }
+        userStore.update({ avatar: '' });
+      }}
+    />
+  ) : (
+    <img
+      src={iconHead}
+      alt=""
+      className="reelshort-topnav__profile-avatar--placeholder"
+    />
+  );
+
+  if (!isDesktop) {
+    return (
+      <Link
+        to="/profile"
+        className="reelshort-topnav__profile-link"
+        aria-label={intl.formatMessage({ id: 'profile' })}
+      >
+        {avatarNode}
+      </Link>
+    );
+  }
+
+  async function handleLogout() {
+    try {
+      loadingStore.show();
+      navigate('/page/login');
+      localStorage.removeItem('token');
+      localStorage.removeItem('login-method');
+      localStorage.removeItem('user-avatar');
+
+      // @ts-expect-error - injected by Flutter InAppWebView
+      if (window.flutter_inappwebview) {
+        // @ts-expect-error - injected by Flutter InAppWebView
+        await window.flutter_inappwebview.callHandler('logout');
+      } else {
+        await auth.signOut();
+      }
+
+      const result = await api<{ token: string; info: { [key: string]: unknown } }>('login/anonymous', {
+        loading: false,
+      });
+
+      if (result.c !== 0) {
+        return;
+      }
+
+      localStorage.setItem('token', result.d['token'] as string);
+      userStore.signin(result.d['info'] as { [key: string]: unknown });
+    } finally {
+      loadingStore.hide();
+    }
+  }
+
+  const userName = String(userStore.info?.['name'] ?? '');
+  const userUid = String(userStore.info?.['unique_id'] ?? '');
+  const signOutIconUrl = 'https://v-mps.crazymaplestudios.com/images/3c2c9f20-2f21-11f1-9a5e-8b72f42f4895.png';
 
   return (
-    <Link
-      to="/profile"
-      className="reelshort-topnav__profile-link"
-      aria-label={intl.formatMessage({ id: 'profile' })}
-    >
-      {hasPhoto ? (
-        <img
-          src={avatar}
-          alt=""
-          className="reelshort-topnav__profile-avatar"
-          referrerPolicy="no-referrer"
-          onError={() => {
-            try {
-              localStorage.removeItem('user-avatar');
-            } catch {
-              /* ignore */
-            }
-            userStore.update({ avatar: '' });
-          }}
-        />
-      ) : (
-        <img
-          src={iconHead}
-          alt=""
-          className="reelshort-topnav__profile-avatar--placeholder"
-        />
-      )}
-    </Link>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="reelshort-topnav__profile-link reelshort-topnav__profile-trigger"
+          aria-label={intl.formatMessage({ id: 'profile' })}
+          onMouseEnter={openMenu}
+          onMouseLeave={closeMenuSoon}
+        >
+          {avatarNode}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={10}
+        className="reelshort-topnav__profile-menu reelshort-topnav__profile-menu--card"
+        onMouseEnter={openMenu}
+        onMouseLeave={closeMenuSoon}
+      >
+        <div className="reelshort-topnav__profile-card">
+          <div className="reelshort-topnav__profile-card-head">
+            <Link to="/profile" className="reelshort-topnav__profile-card-avatar-link">
+              {avatarNode}
+            </Link>
+            <div className="reelshort-topnav__profile-card-user">
+              <p className="reelshort-topnav__profile-card-name">{userName || '遊客'}</p>
+              <p className="reelshort-topnav__profile-card-uid">
+                <span>UID {userUid || '--'}</span>
+              </p>
+            </div>
+            {isSignedUser ? (
+              <button
+                type="button"
+                className="reelshort-topnav__profile-card-logout"
+                onClick={() => {
+                  void handleLogout();
+                }}
+              >
+                <img src={signOutIconUrl} alt="" className="reelshort-topnav__profile-card-logout-icon" />
+                <FormattedMessage id="logout" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="reelshort-topnav__profile-card-login"
+                onClick={() => navigate('/page/login')}
+              >
+                <FormattedMessage id="login" />
+              </button>
+            )}
+          </div>
+          <div className="reelshort-topnav__profile-card-divider" />
+          <button
+              type="button"
+              className="reelshort-topnav__profile-card-topup"
+              onClick={() => navigate('/shopping')}
+          >
+            <FormattedMessage id="top_up" />
+          </button>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -310,6 +600,8 @@ export function ReelShortTopNav({
                   <TopNavSearchEntry />
                 </div>
               ) : null}
+              <TopNavInstallEntry />
+              <TopNavHistoryEntry />
               <TopNavLanguageSwitcher />
               {showProfile ? <NavProfileAvatar /> : null}
             </div>

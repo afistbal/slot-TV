@@ -242,6 +242,7 @@
     "playback_speed": "재생 속도",
     "install_app": "앱 설치",
     "add_desktop": "이 앱을 데스크톱에 추가",
+    "add_desktop_short": "홈 화면",
     "installing": "설치 중…",
     "pwa_open": "열기",
     "ios_add_home_fab_text": "데스크톱에 추가",

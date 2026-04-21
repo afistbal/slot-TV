@@ -242,6 +242,7 @@
     "playback_speed": "Oynatma hızı",
     "install_app": "Uygulamayı yükle",
     "add_desktop": "Bu uygulamayı masaüstüne ekle",
+    "add_desktop_short": "Masaüstü",
     "installing": "Yükleniyor…",
     "pwa_open": "Aç",
     "ios_add_home_fab_text": "Masaüstüne ekle",

@@ -247,6 +247,7 @@
     "playback_speed": "再生速度",
     "install_app": "アプリをインストール",
     "add_desktop": "このアプリをデスクトップに追加",
+    "add_desktop_short": "デスクトップ",
     "installing": "インストール中…",
     "pwa_open": "開く",
     "ios_add_home_fab_text": "デスクトップに追加",

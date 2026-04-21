@@ -242,6 +242,7 @@
     "playback_speed": "سرعة التشغيل",
     "install_app": "تثبيت التطبيق",
     "add_desktop": "أضف هذا التطبيق إلى سطح المكتب",
+    "add_desktop_short": "سطح المكتب",
     "installing": "جارٍ التثبيت…",
     "pwa_open": "فتح",
     "ios_add_home_fab_text": "أضف إلى سطح المكتب",
