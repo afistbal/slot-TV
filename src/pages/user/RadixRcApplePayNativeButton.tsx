@@ -102,26 +102,8 @@ export default function RadixRcApplePayNativeButton({
     className,
 }: RadixRcApplePayNativeButtonProps) {
     const [busy, setBusy] = useState(false);
-    const [nativeReady, setNativeReady] = useState<boolean | null>(null);
     const [prepared, setPrepared] = useState<PreparedPayIntent | null>(null);
     const [validationUrlPreview, setValidationUrlPreview] = useState<string | null>(null);
-
-    const refreshNativeReady = useCallback(() => {
-        try {
-            const APS = window.ApplePaySession;
-            if (!APS) {
-                setNativeReady(false);
-                return;
-            }
-            setNativeReady(APS.canMakePayments());
-        } catch {
-            setNativeReady(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        refreshNativeReady();
-    }, [refreshNativeReady]);
 
     const resolveProductId = useCallback(async (): Promise<number | null> => {
         if (productId) return productId;

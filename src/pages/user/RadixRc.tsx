@@ -159,11 +159,6 @@ export default function RadixRc({
         const p999 = planProducts.find((p) => Math.abs(parseFloat(p.price) - 9.99) < 0.001);
         return p999?.id ?? planProducts[0]?.id ?? null;
     }, [planProducts]);
-    const selectedPlan = useMemo(
-        () => planProducts.find((p) => p.id === (currentId ?? defaultWalletProductId)) ?? null,
-        [planProducts, currentId, defaultWalletProductId],
-    );
-    const payAmountDisplay = `$${selectedPlan?.price ?? '0.00'}`;
     const walletProductId = currentId ?? defaultWalletProductId;
     const checkoutTargetProductId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
 
