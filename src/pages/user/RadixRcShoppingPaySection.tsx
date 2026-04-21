@@ -76,9 +76,8 @@ function PaymentMethodSwitcher({ payment, canPickApple, onPick }: PaymentMethodS
             >
                 <span
                     className={cn(
-                        'rs-shopping__payMethodSubBtn',
+                        'rs-shopping__payMethodSubBtn relative overflow-hidden',
                         payment === 1 && 'rs-shopping__payMethodSubBtn--active',
-                        !canPickApple && 'opacity-50',
                     )}
                     role="button"
                     aria-disabled={!canPickApple}
@@ -88,8 +87,14 @@ function PaymentMethodSwitcher({ payment, canPickApple, onPick }: PaymentMethodS
                         onPick(1);
                     }}
                 >
+                    {!canPickApple ? (
+                        <span
+                            className="absolute inset-0 z-10 rounded-[7px] bg-[#bfbfbf]/70"
+                            aria-hidden="true"
+                        />
+                    ) : null}
                     <img
-                        className="rs-shopping__payLogo rs-shopping__payLogo--apple"
+                        className="rs-shopping__payLogo rs-shopping__payLogo--apple relative z-0"
                         src={payApple}
                         alt="Apple Pay"
                     />
@@ -165,14 +170,13 @@ function WalletPayAction({
                     onClick={walletDirectCheckout ? onCheckout : undefined}
                     className={cn(
                         'rs-shopping__payWalletGhostBtn',
-                        !walletDirectCheckout && walletState !== 'ready' && 'rs-shopping__payWalletGhostBtn--loading',
-                        (walletDirectCheckout || walletState === 'ready') && 'rs-shopping__payWalletGhostBtn--ready',
+                        !walletDirectCheckout && 'rs-shopping__payWalletGhostBtn--loading',
                         walletDirectCheckout && 'rs-shopping__payWalletGhostBtn--clickable',
                     )}
                     aria-hidden={walletDirectCheckout ? undefined : true}
                 >
                     <span className="rs-shopping__payWalletGhostInner">
-                        {!walletDirectCheckout && walletState !== 'ready' ? (
+                        {!walletDirectCheckout ? (
                             <img
                                 className="rs-shopping__payWalletGhostSpinner"
                                 src={btnLoadingIcon}
@@ -181,7 +185,7 @@ function WalletPayAction({
                             />
                         ) : null}
                         <span className="rs-shopping__payWalletGhostText">
-                            {!walletDirectCheckout && walletState !== 'ready' ? (
+                            {!walletDirectCheckout ? (
                                 <FormattedMessage
                                     id={
                                         walletMethod === 'apple'
@@ -739,7 +743,7 @@ export default function RadixRcShoppingPaySection({
                 walletMethod={payment === 1 ? 'apple' : 'google'}
                 onCheckout={handleWalletCheckoutClick}
                 onWalletPointerDown={() => {
-                    if (payment === 2 && !walletDirectCheckout && walletState === 'ready') {
+                    if ((payment === 1 || payment === 2) && !walletDirectCheckout && walletState === 'ready') {
                         onPayStateChange?.('processing');
                     }
                 }}
