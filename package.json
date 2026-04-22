@@ -7,10 +7,12 @@
     "dev": "vite",
     "prebuild": "node ./scripts/bump-version.mjs",
     "build": "node ./scripts/clean-movie-www.mjs && tsc -b && vite build",
+    "build:dev": "node ./scripts/clean-movie-www.mjs && tsc -b && vite build --mode dev",
+    "build:prod": "node ./scripts/clean-movie-www.mjs && tsc -b && vite build --mode prod",
     "lint": "eslint .",
     "preview": "vite preview"
   },
-  "dependencies": {
+"dependencies": {
     "@adjustcom/adjust-web-sdk": "^5.7.2",
     "@airwallex/components-sdk": "^1.28.4",
     "@formatjs/cli": "^6.7.1",
