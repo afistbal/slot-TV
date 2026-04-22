@@ -242,6 +242,7 @@
     "playback_speed": "Velocidade de reprodução",
     "install_app": "Instalar app",
     "add_desktop": "Adicionar este aplicativo à área de trabalho",
+    "add_desktop_short": "Desktop",
     "installing": "A instalar…",
     "pwa_open": "Abrir",
     "ios_add_home_fab_text": "Adicionar ao desktop",

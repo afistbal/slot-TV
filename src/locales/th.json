@@ -242,6 +242,7 @@
     "playback_speed": "ความเร็วในการเล่น",
     "install_app": "ติดตั้งแอป",
     "add_desktop": "เพิ่มแอปนี้ไปที่เดสก์ท็อป",
+    "add_desktop_short": "หน้าจอหลัก",
     "installing": "กำลังติดตั้ง…",
     "pwa_open": "เปิด",
     "ios_add_home_fab_text": "เพิ่มไปที่เดสก์ท็อป",

@@ -371,6 +371,8 @@ function getInitialIntlMessages(): TIntlMessages {
 
 function App() {
     const rootStore = useRootStore();
+    const rootShowInstallPrompt = useRootStore((state) => state.showInstallPrompt);
+    const setRootShowInstallPrompt = useRootStore((state) => state.setShowInstallPrompt);
     const configStore = useConfigStore();
     const loadingStore = useLoadingStore();
     const userStore = useUserStore();
@@ -640,13 +642,19 @@ function App() {
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     const showInstallPrompt = install > 0 && !isApplePlatform() && !isShoppingRoute;
 
+    useEffect(() => {
+        if (rootShowInstallPrompt !== showInstallPrompt) {
+            setRootShowInstallPrompt(showInstallPrompt);
+        }
+    }, [rootShowInstallPrompt, setRootShowInstallPrompt, showInstallPrompt]);
+
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
         <div
             className={cn('root', `root-${rootStore.theme}`)}
             style={showInstallPrompt ? { paddingBottom: '60px' } : undefined}
         >
             {showInstallPrompt && (
-                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center">
+                <div className="pwa-install-shell pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center">
                     <div
                         id="install"
                         className="pwa-install w-full max-w-[480px]"

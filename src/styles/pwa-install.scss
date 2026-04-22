@@ -10,6 +10,16 @@
   --rs-vw: min(100vw, 480px);
 }
 
+.pwa-install-shell {
+  display: flex;
+}
+
+@media (min-width: 481px) {
+  .pwa-install-shell {
+    display: none;
+  }
+}
+
 .pwa-install {
   pointer-events: auto;
   height: 60px;
