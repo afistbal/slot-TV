@@ -423,6 +423,12 @@ export function CheckoutAirwallexPanel({
         if (dropInOutcomeHandled) {
           return;
         }
+        console.log("[结账下拉支付探针] 下拉支付.成功", e);
+        try {
+          alert("[结账下拉支付探针] 下拉支付.成功 已触发");
+        } catch {
+          // 当运行环境不支持 alert 时忽略异常。
+        }
         dropInOutcomeHandled = true;
         const detail = (e as CustomEvent<{ intent?: unknown }>).detail;
         const { intent } = detail ?? {};
@@ -444,6 +450,12 @@ export function CheckoutAirwallexPanel({
       const onCardError = (ev?: unknown) => {
         if (dropInOutcomeHandled) {
           return;
+        }
+        console.log("[结账下拉支付探针] 下拉支付.失败", ev);
+        try {
+          alert("[结账下拉支付探针] 下拉支付.失败 已触发");
+        } catch {
+          // 当运行环境不支持 alert 时忽略异常。
         }
         dropInOutcomeHandled = true;
         checkoutDbg("dropIn(card) error", {
@@ -490,6 +502,12 @@ export function CheckoutAirwallexPanel({
               on?: (code: string, handler: (ev?: unknown) => void) => void;
             }
           ).on?.("clickConfirmButton", () => {
+            console.log("[结账下拉支付探针] 下拉支付.点击确认按钮");
+            try {
+              alert("[结账下拉支付探针] 下拉支付.点击确认按钮 已触发");
+            } catch {
+              // 当运行环境不支持 alert 时忽略异常。
+            }
             onPayStateChange?.("processing");
           });
         }

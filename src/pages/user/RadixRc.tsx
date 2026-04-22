@@ -348,12 +348,14 @@ export default function RadixRc({
                                     <span className="rs-shopping__payModalCopyAmount">{retryAmount}</span>
                                 </p>
                             </div>
+                            {/* 支付进行中勿用 key 整棵卸载本区，以免 destroy 丢 on('success')/on('error')；重试用 paySessionSeed prop 重建钱包 effect。redirectToCheckout 以回跳+Webhook/查单为准。 */}
                             <div className="rs-shopping__payStack">
                                 <RadixRcShoppingPaySection
-                                    key={`${walletProductId ?? 'none'}-${paySessionSeed}`}
+                                    key={String(walletProductId ?? 'wallet')}
                                     walletProductId={walletProductId}
                                     checkoutTargetProductId={checkoutTargetProductId}
                                     checkoutFrom={checkoutFrom}
+                                    paySessionSeed={paySessionSeed}
                                     onPayStateChange={setPayModalStatus}
                                 />
                             </div>

@@ -23,6 +23,15 @@ function shoppingDbg(message: string, details?: unknown) {
     console.log(`[shopping-pay] ${message}`, details ?? '');
 }
 
+function probeWalletEvent(label: string, eventName: string, ev?: unknown) {
+    console.log(`[购物钱包探针] ${label}.${eventName}`, ev);
+    try {
+        alert(`[购物钱包探针] ${label}.${eventName} 已触发`);
+    } catch {
+        // 当运行环境不支持 alert 时忽略异常。
+    }
+}
+
 function bindWalletDebugEvents(
     label: string,
     target: { on?: (code: string, handler: (ev?: unknown) => void) => void },
@@ -658,16 +667,22 @@ export default function RadixRcShoppingPaySection({
                         which === 'apple' ? 'applePayButton' : 'googlePayButton',
                         el as unknown as { on?: (code: string, handler: (ev?: unknown) => void) => void },
                     );
-                    try {
-                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
-                            'click',
-                            () => {
-                                emitProcessing('sdk-click');
-                            },
-                        );
-                    } catch {
-                        /* noop */
-                    }
+                    const walletOn = (el as unknown as {
+                        on?: (code: string, handler: (ev?: unknown) => void) => void;
+                    }).on;
+                    const safeOn = (eventName: string, handler: (ev?: unknown) => void) => {
+                        try {
+                            walletOn?.(eventName, handler);
+                        } catch {
+                            /* noop */
+                        }
+                    };
+                    safeOn('click', (ev) => {
+                        if (which === 'google') {
+                            probeWalletEvent('googlePayButton', 'click', ev);
+                        }
+                        emitProcessing('sdk-click');
+                    });
                     try {
                         (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
                             'clickConfirmButton',
@@ -678,29 +693,38 @@ export default function RadixRcShoppingPaySection({
                     } catch {
                         /* noop */
                     }
-                    try {
-                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
-                            'success',
-                            () => {
-                                if (!successAlertShownRef.current) {
-                                    successAlertShownRef.current = true;
-                                    window.alert('[shopping-wallet] success callback triggered');
-                                }
-                                onPayStateChange?.('success');
-                            },
-                        );
-                    } catch {
-                        /* noop */
-                    }
-                    try {
-                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
-                            'error',
-                            () => {
-                                onPayStateChange?.('failed');
-                            },
-                        );
-                    } catch {
-                        /* noop */
+                    safeOn('success', (ev) => {
+                        if (which === 'google') {
+                            probeWalletEvent('googlePayButton', 'success', ev);
+                        }
+                        if (!successAlertShownRef.current) {
+                            successAlertShownRef.current = true;
+                            window.alert('[shopping-wallet] success callback triggered');
+                        }
+                        onPayStateChange?.('success');
+                    });
+                    safeOn('error', (ev) => {
+                        if (which === 'google') {
+                            probeWalletEvent('googlePayButton', 'error', ev);
+                        }
+                        onPayStateChange?.('failed');
+                    });
+                    if (which === 'google') {
+                        safeOn('authorized', (ev) => {
+                            probeWalletEvent('googlePayButton', 'authorized', ev);
+                        });
+                        safeOn('cancel', (ev) => {
+                            probeWalletEvent('googlePayButton', 'cancel', ev);
+                        });
+                        safeOn('ready', (ev) => {
+                            probeWalletEvent('googlePayButton', 'ready', ev);
+                        });
+                        safeOn('shippingAddressChange', (ev) => {
+                            probeWalletEvent('googlePayButton', 'shippingAddressChange', ev);
+                        });
+                        safeOn('shippingMethodChange', (ev) => {
+                            probeWalletEvent('googlePayButton', 'shippingMethodChange', ev);
+                        });
                     }
                     walletElementsRef.current.set(targetProductId, el as never);
                     bindWalletFrameTrigger(targetProductId, host);
