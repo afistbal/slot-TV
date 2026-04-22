@@ -32,6 +32,7 @@ function bindWalletDebugEvents(
         shoppingDbg(`${label} 无 on() 监听能力`);
         return;
     }
+    /** 勿含 success/error（及与结果强相关的 PI 事件）：下面业务 `el.on` 会绑，若 SDK 只保留先注册的回调，调试会抢槽导致永远进不了 `onPayStateChange` */
     const events = [
         'ready',
         'focus',
@@ -39,16 +40,12 @@ function bindWalletDebugEvents(
         'click',
         'submit',
         'clickConfirmButton',
-        'success',
-        'error',
         '3ds',
         '3ds-challenge',
         'threeDS',
         'three_ds',
         'requiresAction',
         'paymentAuthorized',
-        'paymentIntentSucceeded',
-        'paymentIntentFailed',
     ];
     for (const eventName of events) {
         try {
@@ -656,6 +653,7 @@ export default function RadixRcShoppingPaySection({
                         }
                         return;
                     }
+                    el.mount(host);
                     bindWalletDebugEvents(
                         which === 'apple' ? 'applePayButton' : 'googlePayButton',
                         el as unknown as { on?: (code: string, handler: (ev?: unknown) => void) => void },
@@ -704,7 +702,6 @@ export default function RadixRcShoppingPaySection({
                     } catch {
                         /* noop */
                     }
-                    el.mount(host);
                     walletElementsRef.current.set(targetProductId, el as never);
                     bindWalletFrameTrigger(targetProductId, host);
                     if (isHostReady(host, targetProductId)) {

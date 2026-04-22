@@ -843,6 +843,26 @@
         }
     }
 
+    .rs-shopping__hostCheckoutTestLink {
+        display: block;
+        width: 100%;
+        margin-top: calc(10 / 375 * var(--app-vw));
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: calc(12 / 375 * var(--app-vw));
+        text-align: center;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+
+        @media (min-width: 768px) {
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    }
+
     .rs-shopping__cardDropin .rs-checkout-h5 {
         min-height: 0;
         background: transparent;

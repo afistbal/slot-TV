@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
-const outDir = path.resolve('D:/JJ-TV/movie-www');
+const cliOutDir = process.argv[2];
+const outDir = path.resolve(cliOutDir || 'D:/JJ-TV/movie-www');
 const keepNames = new Set(['.git', '.well-known']);
 
 function exists(p) {
