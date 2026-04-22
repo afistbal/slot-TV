@@ -19,6 +19,48 @@ import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
 import { CheckoutAirwallexPanel } from '@/pages/user/CheckoutAirwallexPanel';
 
+function shoppingDbg(message: string, details?: unknown) {
+    console.log(`[shopping-pay] ${message}`, details ?? '');
+}
+
+function bindWalletDebugEvents(
+    label: string,
+    target: { on?: (code: string, handler: (ev?: unknown) => void) => void },
+) {
+    const on = target.on;
+    if (!on) {
+        shoppingDbg(`${label} 无 on() 监听能力`);
+        return;
+    }
+    const events = [
+        'ready',
+        'focus',
+        'blur',
+        'click',
+        'submit',
+        'clickConfirmButton',
+        'success',
+        'error',
+        '3ds',
+        '3ds-challenge',
+        'threeDS',
+        'three_ds',
+        'requiresAction',
+        'paymentAuthorized',
+        'paymentIntentSucceeded',
+        'paymentIntentFailed',
+    ];
+    for (const eventName of events) {
+        try {
+            on(eventName, (ev?: unknown) => {
+                shoppingDbg(`${label} 事件: ${eventName}`, ev);
+            });
+        } catch {
+            // 某些事件名 SDK 不支持会抛错，忽略。
+        }
+    }
+}
+
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
     return isApplePlatform() ? 1 : 2;
@@ -614,6 +656,10 @@ export default function RadixRcShoppingPaySection({
                         }
                         return;
                     }
+                    bindWalletDebugEvents(
+                        which === 'apple' ? 'applePayButton' : 'googlePayButton',
+                        el as unknown as { on?: (code: string, handler: (ev?: unknown) => void) => void },
+                    );
                     try {
                         (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
                             'click',

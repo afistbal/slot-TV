@@ -161,6 +161,11 @@ export default function RadixRc({
     }, [planProducts]);
     const walletProductId = currentId ?? defaultWalletProductId;
     const checkoutTargetProductId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
+    const currentCheckoutProduct = useMemo(
+        () => planProducts.find((p) => p.id === checkoutTargetProductId) ?? null,
+        [planProducts, checkoutTargetProductId],
+    );
+    const retryAmount = currentCheckoutProduct?.price ? `$${currentCheckoutProduct.price}` : '';
 
     function handleSelectPlan(productId: number) {
         setCurrentId(productId);
@@ -336,10 +341,11 @@ export default function RadixRc({
                                 <p>
                                     <FormattedMessage id="payment_processing_line_3" />
                                 </p>
-                                <p>
+                                <p className="rs-shopping__payModalCopyLine4">
                                     <span>
                                         <FormattedMessage id="payment_processing_line_4" />
                                     </span>
+                                    <span className="rs-shopping__payModalCopyAmount">{retryAmount}</span>
                                 </p>
                             </div>
                             <div className="rs-shopping__payStack">

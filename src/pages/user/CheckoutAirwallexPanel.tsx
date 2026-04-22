@@ -115,6 +115,44 @@ function checkoutDbg(说明: string, 详情?: unknown) {
   console.log(`[checkout] ${说明}`, 详情 ?? "");
 }
 
+function bindAirwallexDebugEvents(
+  label: string,
+  target: { on?: (code: string, handler: (ev?: unknown) => void) => void },
+) {
+  const on = target.on;
+  if (!on) {
+    checkoutDbg(`${label} 无 on() 监听能力`);
+    return;
+  }
+  const events = [
+    "ready",
+    "focus",
+    "blur",
+    "click",
+    "submit",
+    "clickConfirmButton",
+    "success",
+    "error",
+    "3ds",
+    "3ds-challenge",
+    "threeDS",
+    "three_ds",
+    "requiresAction",
+    "paymentAuthorized",
+    "paymentIntentSucceeded",
+    "paymentIntentFailed",
+  ];
+  for (const eventName of events) {
+    try {
+      on(eventName, (ev?: unknown) => {
+        checkoutDbg(`${label} 事件: ${eventName}`, ev);
+      });
+    } catch {
+      // 某些事件名 SDK 不支持时会抛错，忽略即可。
+    }
+  }
+}
+
 function mountToRef(
   el: AirwallexMounted,
   containerRef: RefObject<HTMLDivElement | null>,
@@ -459,6 +497,7 @@ export function CheckoutAirwallexPanel({
           setShowIncomplete(true);
           return;
         }
+        bindAirwallexDebugEvents("dropIn", dropInEl as unknown as { on?: (code: string, handler: (ev?: unknown) => void) => void });
         if (externalStatusMode) {
           // 仅在点击确认提交按钮后进入 processing，避免输入聚焦/悬停误触发 loading。
           try {
