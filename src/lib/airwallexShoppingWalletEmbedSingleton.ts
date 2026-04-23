@@ -3,7 +3,7 @@ import { init } from "@airwallex/components-sdk";
 type AirwallexInit = NonNullable<Parameters<typeof init>[0]>;
 type AirwallexInitLocale = NonNullable<AirwallexInit["locale"]>;
 
-/** 与 `CheckoutAirwallexPanel` 的 `normalizeAirwallexLocale` 行为一致（本文件仅供购物新组件使用） */
+/** 与 `Cards` / 购物钱包的 `normalizeAirwallexLocale` 行为一致 */
 export function normalizeAirwallexLocale(
   reactLocale: string,
 ): AirwallexInitLocale {

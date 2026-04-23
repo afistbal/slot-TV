@@ -11,7 +11,7 @@ import {
     Unlock,
     X,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { WebVTT } from 'videojs-vtt.js';
 import { Swiper, SwiperSlide, type SwiperClass, type SwiperRef } from 'swiper/react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
@@ -200,6 +200,7 @@ function Player({
     const [episodeStatus, setEpisodeStatus] = useState(false);
     const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
     const [vip, setVip] = useState(false);
+    const handleVipEmbedClose = useCallback(() => setVip(false), []);
     // const [unlockEpisodeOpen, setUnlockEpisodeOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [speedOpen, setSpeedOpen] = useState(false);
@@ -1069,7 +1070,12 @@ function Player({
                         </DrawerTitle>
                         <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort">
                             {vip ? (
-                                <RadixRc layout="embed" onEmbedClose={() => setVip(false)} />
+                                <RadixRc
+                                    layout="embed"
+                                    productFrom="video"
+                                    checkoutFrom="video"
+                                    onEmbedClose={handleVipEmbedClose}
+                                />
                             ) : null}
                         </div>
                     </DrawerContent>

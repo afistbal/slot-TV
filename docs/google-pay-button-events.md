@@ -1,23 +1,81 @@
-# Google Pay Button 事件调试清单
+object
 
-用于 `RadixRcShoppingPaySection.tsx` 的三方钱包按钮联调，确认 Google Pay 事件是否真实触发。
+authorized
+GooglePayAuthorizedEvent
 
-## 事件列表（GooglePayButtonEventHandler / GooglePayButtonEvent）
+This event will be fired when the user authorizes the payment.
 
-- `authorized`（`GooglePayAuthorizedEvent`）：用户授权支付时触发。
-- `cancel`（`undefined`）：用户取消支付时触发。
-- `click`（`undefined`）：用户点击按钮时触发。
-- `error`（`ErrorEvent`）：表单出现异常错误时触发。
-- `ready`（`undefined`）：表单可交互时触发。
-- `shippingAddressChange`（`GooglePayIntermediatePaymentData`）：收货地址变化时触发。
-- `shippingMethodChange`（`GooglePayIntermediatePaymentData`）：配送方式变化时触发。
-- `success`（`SuccessEvent`）：支付成功时触发，可用于跳转成功页。
+Example
+linkTypeScript
+  element.on('authorized', (e) => {
+    const { paymentData } = e.detail;
+    console.log('Payment authorized', paymentData);
+  });
+cancel
+undefined
 
-## 当前页面调试方式
+This event will be fired when payment is cancelled.
 
-在 `src/pages/user/RadixRcShoppingPaySection.tsx` 中，以上 8 个事件均已添加：
+Example
+linkTypeScript
+  element.on('cancel', ( ) => void);
+click
+undefined
 
-- `console.log`，前缀：`[shopping-wallet-probe]`
-- `window.alert`，文案包含：`googlePayButton.<eventName> 触发`
+This event will be fired when the user clicks the button.
 
-这样你在测试时可以同时从控制台和弹窗确认事件是否到达前端。
+Example
+linkTypeScript
+  element.on('click', () => void);
+error
+ErrorEvent
+
+This event will be fired when form encounters an unexpected error.
+
+Example
+linkTypeScript
+  element.on('error', (e) => {
+    const { error } = e.detail;
+     console.error('There is an error', error);
+  });
+ready
+undefined
+
+This event will be fired when form is ready to interact with the user.
+
+Example
+linkTypeScript
+  element.on('ready',( ) => void);
+shippingAddressChange
+GooglePayIntermediatePaymentData
+
+This event will be fired when the shipping address changes.
+
+Example
+linkTypeScript
+  element.on('shippingAddressChange', (e) => {
+    const { intermediatePaymentData } = e.detail;
+    console.log('Shipping address changed', intermediatePaymentData);
+  });
+shippingMethodChange
+GooglePayIntermediatePaymentData
+
+This event will be fired when the shipping method changes.
+
+Example
+linkTypeScript
+  element.on('shippingMethodChange', (e) => {
+    const { intermediatePaymentData } = e.detail;
+    console.log('Shipping method changed', intermediatePaymentData);
+  });
+success
+SuccessEvent
+
+This event will be fired when payment is successful. It can be used to redirect the user to the success page.
+
+Example
+linkTypeScript
+  element.on('success', (e) => {
+    const { intent, consent } = e.detail;
+    console.log('Payment is successful', { intent, consent });
+  });

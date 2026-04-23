@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api } from '@/api';
@@ -17,9 +19,49 @@ import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import Countdown from '@/widgets/Countdown';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
+import { MembershipInlinePanel } from '@/pages/user/Membership';
+import { refreshSessionFromStoredToken } from '@/lib/refreshSessionFromStoredToken';
+import { useUserStore } from '@/stores/user';
 
 function paywallImage(file: string) {
     return new URL(`../../assets/images/${file}`, import.meta.url).href;
+}
+
+/** 与 `layouts/user` 的 `Page` 顶栏一致（`/shopping` 已 VIP 时用，避免与未 VIP 的 `ReelShortTopNav` 视觉不一致） */
+function ShoppingVipMembershipHeader() {
+    const navigate = useNavigate();
+    if (
+        typeof window !== 'undefined' &&
+        // @ts-expect-error Flutter InAppWebView
+        window.flutter_inappwebview
+    ) {
+        return null;
+    }
+    return (
+        <div
+            className={cn(
+                'relative flex shrink-0 items-center justify-center border-b border-white/10 bg-app-canvas text-white',
+                'min-h-[calc(44/375*var(--app-vw))]',
+            )}
+        >
+            <div className="absolute left-1 top-1/2 -translate-y-1/2 md:left-6">
+                <button
+                    type="button"
+                    onClick={() => navigate('/profile')}
+                    className="flex h-10 w-10 items-center justify-center rounded-md text-white/90 hover:bg-white/10 active:bg-white/15"
+                >
+                    {document.body.style.direction === 'ltr' ? (
+                        <ChevronLeft className="h-7 w-7" />
+                    ) : (
+                        <ChevronRight className="h-7 w-7" />
+                    )}
+                </button>
+            </div>
+            <div className="mx-auto max-w-[70%] truncate text-center text-lg">
+                <FormattedMessage id="my_membership" />
+            </div>
+        </div>
+    );
 }
 
 /** 与 `widgets/Vip.tsx` 一致：相对续费价的展示折扣百分比 */
@@ -66,7 +108,11 @@ export default function RadixRc({
     checkoutFrom = 'shopping',
 }: RadixRcProps = {}) {
     const intl = useIntl();
+    const userStore = useUserStore();
     const scrollRef = useRef<HTMLDivElement>(null);
+    /** 整页 `/shopping`：已 VIP 展示会员信息，否则展示订阅套餐 */
+    const showMembershipOnShoppingPage =
+        layout === 'page' && productFrom === 'shopping' && userStore.isVIP();
 
     const [products, setProducts] = useState<Product[]>(() => shoppingProductCache.get(productFrom) ?? []);
     const [loadingProducts, setLoadingProducts] = useState(
@@ -80,30 +126,30 @@ export default function RadixRc({
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
     const [payModalStatus, setPayModalStatus] = useState<PayModalStatus>('idle');
     const [paySessionSeed, setPaySessionSeed] = useState(0);
-    const successAlertShownRef = useRef(false);
 
     function closePayModal() {
         setShowPaidServiceAgreement(false);
         setPayModalStatus('idle');
         setShowPayModal(false);
         setPaySessionSeed((prev) => prev + 1);
-        successAlertShownRef.current = false;
     }
 
     useEffect(() => {
         if (payModalStatus !== 'success' || !showPayModal) return;
-        if (!successAlertShownRef.current) {
-            successAlertShownRef.current = true;
-            window.alert('[shopping] success callback triggered');
-        }
         const timer = window.setTimeout(() => {
-            setShowPaidServiceAgreement(false);
-            setPayModalStatus('idle');
-            setShowPayModal(false);
-            window.location.reload();
-        }, 3000);
+            void (async () => {
+                await refreshSessionFromStoredToken();
+                setShowPaidServiceAgreement(false);
+                setPayModalStatus('idle');
+                setShowPayModal(false);
+                setPaySessionSeed((prev) => prev + 1);
+                if (layout === 'embed') {
+                    onEmbedClose?.();
+                }
+            })();
+        }, 2500);
         return () => window.clearTimeout(timer);
-    }, [payModalStatus, showPayModal]);
+    }, [payModalStatus, showPayModal, layout, onEmbedClose]);
 
     useEffect(() => {
         if (payModalStatus !== 'processing' || !showPayModal) return;
@@ -173,7 +219,6 @@ export default function RadixRc({
         setShowPaidServiceAgreement(false);
         setShowPayModal(true);
         setPaySessionSeed((prev) => prev + 1);
-        successAlertShownRef.current = false;
     }
 
     const showCountdown = !loadingProducts && products.length > 0;
@@ -587,6 +632,19 @@ export default function RadixRc({
                           )
                         : null}
                 </div>
+            </div>
+        );
+    }
+
+    /* 已 VIP：与 `layouts/user` 的 `Page` 同级结构 — 顶栏在滚动区外，正文单独 `overflow-auto`，避免顶栏跟着滚、也避免会员区 `min-height:100%` 在嵌套滚动里撑出大块空档 */
+    if (showMembershipOnShoppingPage) {
+        return (
+            <div className="rs-shopping rs-shopping--vipMembership">
+                <ShoppingVipMembershipHeader />
+                <div ref={scrollRef} className="rs-shopping__membershipPageBody">
+                    <MembershipInlinePanel />
+                </div>
+                {payModal}
             </div>
         );
     }

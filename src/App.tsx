@@ -2,8 +2,6 @@ import {
     createBrowserRouter,
     Navigate,
     RouterProvider,
-    useLocation,
-    useParams,
     useRouteError,
 } from "react-router";
 import { FormattedMessage, IntlProvider } from 'react-intl';
@@ -14,6 +12,7 @@ import { LoaderCircle } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "./components/ui/dialog";
 import { api, report, type TData } from "./api";
+import { refreshSessionFromStoredToken } from "./lib/refreshSessionFromStoredToken";
 import { useUserStore } from "./stores/user";
 import { useConfigStore } from "./stores/config";
 import { useRootStore } from "./stores/root";
@@ -44,13 +43,11 @@ import UserAbout from './pages/user/About';
 import UserText from './pages/user/Text';
 import UserLogin from './pages/user/Login';
 import UserPay from './pages/user/Pay';
-import UserMembership from './pages/user/Membership';
 import UserSearch from './pages/user/Search';
 import UserMyBalance from './pages/user/MyBanlance';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
-import UserCheckout from './pages/user/Checkout';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 
 import LayoutAdmin from './layouts/admin';
@@ -70,11 +67,9 @@ import Loader from "./components/Loader";
 import NotFound from './pages/NotFound';
 import { isApplePlatform } from "./lib/isApplePlatform";
 
-/** 旧书签 `/page/checkout/:id` → `/page/pay/:id` */
-function LegacyCheckoutToPayRedirect() {
-    const { id } = useParams();
-    const { search } = useLocation();
-    return <Navigate to={`/page/pay/${id ?? ''}${search}`} replace />;
+/** 旧书签 `/page/checkout/:id`、已废弃的整页收银 → 购物页 */
+function LegacyCheckoutToShoppingRedirect() {
+    return <Navigate to="/shopping" replace />;
 }
 
 /** config/登录完成前全屏占位 */
@@ -237,7 +232,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'pay/:id',
-                element: <UserCheckout />,
+                element: <Navigate to="/shopping" replace />,
             },
             {
                 path: 'pay',
@@ -245,11 +240,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'checkout/:id',
-                element: <LegacyCheckoutToPayRedirect />,
-            },
-            {
-                path: 'membership',
-                element: <UserMembership />,
+                element: <LegacyCheckoutToShoppingRedirect />,
             },
             {
                 path: 'search',
@@ -421,24 +412,10 @@ function App() {
         await initPixel(config.d);
 
         if (token) {
-            await api<TData>('login/token', {
-                method: 'post',
-                data: {
-                    token,
-                },
-                loading: false,
-            }).then((result) => {
-                if (result.c !== 0) {
-                    localStorage.removeItem('token');
-                    return;
-                }
-                localStorage.setItem('token', token);
-                const raw = result.d as TData;
-                // login/token 可能与 login/anonymous 一致为 { info }，也可能直接下发用户扁平字段
-                const info = (raw['info'] as TData | undefined) ?? raw;
-                userStore.signin(info);
+            const ok = await refreshSessionFromStoredToken();
+            if (ok) {
                 setChecked(true);
-            });
+            }
         } else {
             // const credential = await signInAnonymously(auth);
             // await api('login/uid', {

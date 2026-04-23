@@ -6,6 +6,7 @@
 .rs-shopping {
     display: flex;
     height: 100%;
+    min-height: 0;
     flex-direction: column;
     background-color: var(--app-canvas);
     color: #fff;
@@ -103,9 +104,25 @@
 
 
 
+    /** 与 `Page` 正文区一致：仅这一块滚动；`min-height:0` 避免 flex 子项撑破外层出现双层滚动 */
+    &.rs-shopping--vipMembership {
+        background-color: #1e1f21;
+    }
+
+    .rs-shopping__membershipPageBody {
+        min-width: 0;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background-color: #1e1f21;
+    }
+
     .rs-shopping__scroll {
         min-width: 0;
         flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
     }
 

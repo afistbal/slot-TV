@@ -1,5 +1,5 @@
 /**
- * /page/membership — 与 feedback / 登录 Drawer 同色：底 #1e1f21，卡片槽 rgba(255,255,255,0.08)
+ * 会员信息区：原独立 `/page/membership`，现嵌入 `/shopping`（VIP）与同套配色。
  */
 
 .rs-membership {
@@ -8,6 +8,20 @@
     color: rgba(255, 255, 255, 0.92);
     padding-top: max(16px, env(safe-area-inset-top));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.rs-membership--inlineShopping {
+    /* 顶栏单独一层，但版心须与旧 `Page`+`.rs-membership` 一致：保留根节点上下 safe-area/间距；仅取消 `min-height:100%` 避免嵌套滚动撑高 */
+    min-height: unset;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+/* `/shopping` VIP：与订阅区同样用 `--app-vw`，避免 hero 内边距在整页里显得偏高/与旧站比例不一致 */
+.rs-membership--inlineShopping .rs-membership__hero {
+    margin: calc(16 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw));
+    padding: calc(22 / 375 * var(--app-vw)) calc(20 / 375 * var(--app-vw))
+        calc(20 / 375 * var(--app-vw));
 }
 
 .rs-membership__loading {

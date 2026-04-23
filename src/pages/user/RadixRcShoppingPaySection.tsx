@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import { useNavigate } from 'react-router';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { api } from '@/api';
 import { cn } from '@/lib/utils';
@@ -17,55 +16,7 @@ import payMastercard from '@/assets/icons/shopping-pay/mastercard.svg';
 import payAmex from '@/assets/icons/shopping-pay/amex.svg';
 import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
-import { CheckoutAirwallexPanel } from '@/pages/user/CheckoutAirwallexPanel';
-
-function shoppingDbg(message: string, details?: unknown) {
-    console.log(`[shopping-pay] ${message}`, details ?? '');
-}
-
-function probeWalletEvent(label: string, eventName: string, ev?: unknown) {
-    console.log(`[购物钱包探针] ${label}.${eventName}`, ev);
-    try {
-        alert(`[购物钱包探针] ${label}.${eventName} 已触发`);
-    } catch {
-        // 当运行环境不支持 alert 时忽略异常。
-    }
-}
-
-function bindWalletDebugEvents(
-    label: string,
-    target: { on?: (code: string, handler: (ev?: unknown) => void) => void },
-) {
-    const on = target.on;
-    if (!on) {
-        shoppingDbg(`${label} 无 on() 监听能力`);
-        return;
-    }
-    /** 勿含 success/error（及与结果强相关的 PI 事件）：下面业务 `el.on` 会绑，若 SDK 只保留先注册的回调，调试会抢槽导致永远进不了 `onPayStateChange` */
-    const events = [
-        'ready',
-        'focus',
-        'blur',
-        'click',
-        'submit',
-        'clickConfirmButton',
-        '3ds',
-        '3ds-challenge',
-        'threeDS',
-        'three_ds',
-        'requiresAction',
-        'paymentAuthorized',
-    ];
-    for (const eventName of events) {
-        try {
-            on(eventName, (ev?: unknown) => {
-                shoppingDbg(`${label} 事件: ${eventName}`, ev);
-            });
-        } catch {
-            // 某些事件名 SDK 不支持会抛错，忽略。
-        }
-    }
-}
+import { Cards } from '@/pages/user/Cards';
 
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
@@ -101,6 +52,8 @@ export type RadixRcShoppingPaySectionProps = {
     checkoutTargetProductId: number | null;
     /** 跳转 `/page/pay/...` 的 `from=` */
     checkoutFrom: 'shopping' | 'video';
+    /** 与 `RadixRc` 重试按钮联动：递增后强制重建钱包会话，避免复用失效 intent */
+    paySessionSeed?: number;
     /** 支付状态回调（用于外层弹窗展示处理中/成功/失败） */
     onPayStateChange?: (state: 'idle' | 'processing' | 'checking' | 'success' | 'failed') => void;
 };
@@ -268,21 +221,28 @@ function WalletPayAction({
 
 type CardPayActionProps = {
     checkoutTargetProductId: number | null;
+    paySessionSeed?: number;
     onPayStateChange?: (state: 'idle' | 'processing' | 'checking' | 'success' | 'failed') => void;
     hidden?: boolean;
 };
 
-function CardPayAction({ checkoutTargetProductId, onPayStateChange, hidden = false }: CardPayActionProps) {
+function CardPayAction({
+    checkoutTargetProductId,
+    paySessionSeed = 0,
+    onPayStateChange,
+    hidden = false,
+}: CardPayActionProps) {
     if (!checkoutTargetProductId || hidden) return null;
     return (
         <div className="rs-shopping__cardDropin">
-            <CheckoutAirwallexPanel
+            <Cards
+                key={`checkout-dropin-${checkoutTargetProductId}-${paySessionSeed}`}
                 productId={checkoutTargetProductId}
-                payment={3}
                 redirectHref={typeof window !== 'undefined' ? window.location.href : ''}
-                successAction="reload"
+                successAction="navigate"
                 variant="embed"
                 externalStatusMode={true}
+                silent
                 onPayStateChange={onPayStateChange}
             />
         </div>
@@ -295,11 +255,11 @@ function CardPayAction({ checkoutTargetProductId, onPayStateChange, hidden = fal
 export default function RadixRcShoppingPaySection({
     walletProductId,
     checkoutTargetProductId,
-    checkoutFrom,
+    checkoutFrom: _checkoutFrom,
+    paySessionSeed = 0,
     onPayStateChange,
 }: RadixRcShoppingPaySectionProps) {
     const intl = useIntl();
-    const navigate = useNavigate();
     const canPickApple = isApplePlatform();
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
@@ -319,7 +279,8 @@ export default function RadixRcShoppingPaySection({
     const walletRunIdRef = useRef(0);
     const lastWalletPaymentRef = useRef<1 | 2 | null>(null);
     const pendingProcessingTimerRef = useRef<number | null>(null);
-    const successAlertShownRef = useRef(false);
+    /** 供 `WalletPayAction` 挂载层 pointerdown 调用，与 effect 内 `emitProcessing` 同步 */
+    const emitWalletProcessingRef = useRef<(source: string) => void>(() => {});
 
     const cleanupWalletFrameTriggers = useCallback(() => {
         for (const [, cleanup] of walletFrameTriggerCleanupRef.current) {
@@ -330,7 +291,6 @@ export default function RadixRcShoppingPaySection({
             window.clearTimeout(pendingProcessingTimerRef.current);
             pendingProcessingTimerRef.current = null;
         }
-        successAlertShownRef.current = false;
     }, []);
 
     const cleanupWalletOverlays = useCallback(() => {
@@ -359,6 +319,7 @@ export default function RadixRcShoppingPaySection({
 
     useEffect(() => {
         if (payment !== 1 && payment !== 2 || !walletEmbedSupported) {
+            emitWalletProcessingRef.current = () => {};
             cleanupWalletOverlays();
             return;
         }
@@ -392,9 +353,13 @@ export default function RadixRcShoppingPaySection({
             };
             const emitProcessing = (source: string) => {
                 if (!alive || walletRunIdRef.current !== runId) return;
-                const isSdkTriggered = source === 'sdk-click' || source === 'sdk-clickConfirmButton';
-                // Apple Pay 对手势链路敏感：仅接受 SDK 回调触发 processing，避免前置事件打断拉起。
-                if (which === 'apple' && !isSdkTriggered) return;
+                const isWalletProcessingSource =
+                    source === 'sdk-click' ||
+                    source === 'sdk-clickConfirmButton' ||
+                    /** 部分 iOS / Android 上 SDK 的 `click` 晚于或不触发，用挂载层 pointerdown + rAF 补一层 processing 浮层 */
+                    source === 'wallet-mount-pointerdown';
+                // Apple / Google 钱包：仅接受上述来源触发 processing，避免 iframe 内部 focus/pointerdown 误触导致整层不可点。
+                if ((which === 'apple' || which === 'google') && !isWalletProcessingSource) return;
                 if (pendingProcessingTimerRef.current) {
                     window.clearTimeout(pendingProcessingTimerRef.current);
                 }
@@ -402,9 +367,9 @@ export default function RadixRcShoppingPaySection({
                     pendingProcessingTimerRef.current = null;
                     if (!alive || walletRunIdRef.current !== runId) return;
                     onPayStateChange?.('processing');
-                    console.log('[shopping] processing triggered:', source);
                 }, 0);
             };
+            emitWalletProcessingRef.current = emitProcessing;
             const bindWalletFrameTrigger = (planId: number, host: HTMLDivElement) => {
                 const prevCleanup = walletFrameTriggerCleanupRef.current.get(planId);
                 if (prevCleanup) {
@@ -617,10 +582,6 @@ export default function RadixRcShoppingPaySection({
                     },
                 };
 
-                if (which === 'apple') {
-                    console.log(JSON.stringify(applePayButtonOptions, null, 2));
-                }
-
                 try {
                     const el =
                         which === 'google'
@@ -663,68 +624,69 @@ export default function RadixRcShoppingPaySection({
                         return;
                     }
                     el.mount(host);
-                    bindWalletDebugEvents(
-                        which === 'apple' ? 'applePayButton' : 'googlePayButton',
-                        el as unknown as { on?: (code: string, handler: (ev?: unknown) => void) => void },
-                    );
-                    const walletOn = (el as unknown as {
-                        on?: (code: string, handler: (ev?: unknown) => void) => void;
-                    }).on;
-                    const safeOn = (eventName: string, handler: (ev?: unknown) => void) => {
+                    const onBound = el.on.bind(el) as (
+                        code: string,
+                        handler: (ev?: unknown) => void,
+                    ) => void;
+                    const walletLabel = which === 'apple' ? 'applePayButton' : 'googlePayButton';
+                    /** Apple / Google 均不自写 `alert`，与视频抽屉/购物弹层一致，避免打断钱包 UI */
+                    const walletOwnDebugAlert = (_message: string) => {
+                        void _message;
+                    };
+                    /** 仅抑制购物自测 `console`，不改动 `onBound` 与 Airwallex */
+                    const walletOwnConsoleLog = (...args: unknown[]) => {
+                        if (which !== 'google') {
+                            console.log(...args);
+                        }
+                    };
+                    const walletOwnConsoleError = (...args: unknown[]) => {
+                        if (which !== 'google') {
+                            console.error(...args);
+                        }
+                    };
+                    try {
+                        onBound('ready', () => {
+                            walletOwnConsoleLog(`[shopping-${which}] ready`);
+                            walletOwnDebugAlert(`[shopping ${walletLabel}] element.on('ready')`);
+                        });
+                    } catch {
+                        /* 部分版本可能无 ready */
+                    }
+                    onBound('click', () => {
+                        emitProcessing('sdk-click');
+                        walletOwnDebugAlert(`[shopping ${walletLabel}] element.on('click')`);
+                    });
+                    onBound('success', (ev) => {
+                        walletOwnConsoleLog(`[shopping-${which}] success`, ev);
+                        walletOwnDebugAlert(
+                            `[shopping ${walletLabel}] element.on('success') — 见控制台 e.detail`,
+                        );
+                        onPayStateChange?.('success');
+                    });
+                    onBound('error', (ev) => {
+                        walletOwnConsoleError(`[shopping-${which}] error`, ev);
+                        walletOwnDebugAlert(
+                            `[shopping ${walletLabel}] element.on('error') — 见控制台 e.detail`,
+                        );
+                        onPayStateChange?.('failed');
+                    });
+                    /** Apple / Google 一致：取消钱包时清掉尚未执行的 processing 定时器，并回到 idle，避免卡在 checking/載入中 */
+                    onBound('cancel', () => {
+                        if (pendingProcessingTimerRef.current) {
+                            window.clearTimeout(pendingProcessingTimerRef.current);
+                            pendingProcessingTimerRef.current = null;
+                        }
+                        walletOwnDebugAlert(`[shopping ${walletLabel}] element.on('cancel')`);
+                        onPayStateChange?.('idle');
+                    });
+                    if (which === 'google') {
                         try {
-                            walletOn?.(eventName, handler);
+                            onBound('authorized', (_ev: unknown) => {
+                                /* 与 SDK 约定一致保留回调；不自写 log/alert，免与三方支付 UI 混淆 */
+                            });
                         } catch {
                             /* noop */
                         }
-                    };
-                    safeOn('click', (ev) => {
-                        if (which === 'google') {
-                            probeWalletEvent('googlePayButton', 'click', ev);
-                        }
-                        emitProcessing('sdk-click');
-                    });
-                    try {
-                        (el as unknown as { on?: (code: string, handler: () => void) => void }).on?.(
-                            'clickConfirmButton',
-                            () => {
-                                emitProcessing('sdk-clickConfirmButton');
-                            },
-                        );
-                    } catch {
-                        /* noop */
-                    }
-                    safeOn('success', (ev) => {
-                        if (which === 'google') {
-                            probeWalletEvent('googlePayButton', 'success', ev);
-                        }
-                        if (!successAlertShownRef.current) {
-                            successAlertShownRef.current = true;
-                            window.alert('[shopping-wallet] success callback triggered');
-                        }
-                        onPayStateChange?.('success');
-                    });
-                    safeOn('error', (ev) => {
-                        if (which === 'google') {
-                            probeWalletEvent('googlePayButton', 'error', ev);
-                        }
-                        onPayStateChange?.('failed');
-                    });
-                    if (which === 'google') {
-                        safeOn('authorized', (ev) => {
-                            probeWalletEvent('googlePayButton', 'authorized', ev);
-                        });
-                        safeOn('cancel', (ev) => {
-                            probeWalletEvent('googlePayButton', 'cancel', ev);
-                        });
-                        safeOn('ready', (ev) => {
-                            probeWalletEvent('googlePayButton', 'ready', ev);
-                        });
-                        safeOn('shippingAddressChange', (ev) => {
-                            probeWalletEvent('googlePayButton', 'shippingAddressChange', ev);
-                        });
-                        safeOn('shippingMethodChange', (ev) => {
-                            probeWalletEvent('googlePayButton', 'shippingMethodChange', ev);
-                        });
                     }
                     walletElementsRef.current.set(targetProductId, el as never);
                     bindWalletFrameTrigger(targetProductId, host);
@@ -757,6 +719,7 @@ export default function RadixRcShoppingPaySection({
 
         return () => {
             alive = false;
+            emitWalletProcessingRef.current = () => {};
             cleanupWalletOverlays();
         };
     }, [
@@ -765,20 +728,11 @@ export default function RadixRcShoppingPaySection({
         cleanupWalletOverlays,
         walletProductId,
         walletEmbedSupported,
+        paySessionSeed,
         onPayStateChange,
     ]);
 
-    function goCheckout(productId: number) {
-        navigate(`/page/pay/${productId}?payment=${payment}&from=${checkoutFrom}`);
-    }
-
-    function handleWalletCheckoutClick() {
-        const targetId = checkoutTargetProductId;
-        if (!targetId) return;
-        if (payment === 3 || !walletEmbedSupported) {
-            goCheckout(targetId);
-        }
-    }
+    function handleWalletCheckoutClick() {}
 
     function handlePaymentPick(payMethod: number) {
         if (payMethod === 1 && !canPickApple) {
@@ -789,6 +743,14 @@ export default function RadixRcShoppingPaySection({
 
     const walletDirectCheckout = payment === 3 || !walletEmbedSupported;
     const walletState = planWalletState.get(walletProductId ?? -1) ?? 'pending';
+    const walletMountPointerForProcessing =
+        !walletDirectCheckout && walletEmbedSupported && (payment === 1 || payment === 2)
+            ? () => {
+                  requestAnimationFrame(() => {
+                      emitWalletProcessingRef.current('wallet-mount-pointerdown');
+                  });
+              }
+            : undefined;
     useEffect(() => {
         if (!canPickApple && payment === 1) {
             setPayment(2);
@@ -809,17 +771,14 @@ export default function RadixRcShoppingPaySection({
                 walletState={walletState}
                 walletMethod={payment === 1 ? 'apple' : 'google'}
                 onCheckout={handleWalletCheckoutClick}
-                onWalletPointerDown={() => {
-                    if ((payment === 1 || payment === 2) && !walletDirectCheckout && walletState === 'ready') {
-                        onPayStateChange?.('processing');
-                    }
-                }}
+                onWalletPointerDown={walletMountPointerForProcessing}
                 mountRef={payWalletMountRef}
                 hidden={payment === 3}
             />
 
             <CardPayAction
                 checkoutTargetProductId={checkoutTargetProductId}
+                paySessionSeed={paySessionSeed}
                 onPayStateChange={onPayStateChange}
                 hidden={payment !== 3}
             />

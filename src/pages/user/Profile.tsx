@@ -37,11 +37,7 @@ export default function Component() {
     }
 
     function handleVipCardClick() {
-        if (!userStore.isVIP()) {
-            navigate('/shopping');
-            return;
-        }
-        navigate('/page/membership');
+        navigate('/shopping');
     }
 
     // function handleToggleCoin() {
