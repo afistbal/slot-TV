@@ -176,11 +176,6 @@ export default function Component() {
     async function handleLogout() {
         try {
             loadingStore.show();
-            if (isPc) {
-                setPcLoginOpen(true);
-            } else {
-                navigate('/page/login');
-            }
             localStorage.removeItem('token');
             localStorage.removeItem('login-method');
             localStorage.removeItem('user-avatar');

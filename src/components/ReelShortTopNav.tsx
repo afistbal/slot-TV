@@ -622,6 +622,8 @@ function NavProfileAvatar() {
     return () => mq.removeEventListener('change', sync);
   }, []);
 
+  const profileEntryHref = isDesktop ? '/profile?tab=topup' : '/profile';
+
   const avatarNode = hasPhoto ? (
     <img
       src={avatar}
@@ -648,7 +650,7 @@ function NavProfileAvatar() {
   if (!isDesktop) {
     return (
       <Link
-        to="/profile?tab=topup"
+        to={profileEntryHref}
         className="reelshort-topnav__profile-link"
         aria-label={intl.formatMessage({ id: 'profile' })}
       >
@@ -709,7 +711,7 @@ function NavProfileAvatar() {
     >
       <DropdownMenuTrigger asChild>
         <Link
-          to="/profile?tab=topup"
+          to={profileEntryHref}
           className="reelshort-topnav__profile-link reelshort-topnav__profile-trigger"
           aria-label={intl.formatMessage({ id: 'profile' })}
           onMouseEnter={openMenu}
@@ -727,7 +729,7 @@ function NavProfileAvatar() {
       >
         <div className="reelshort-topnav__profile-card">
           <div className="reelshort-topnav__profile-card-head">
-            <Link to="/profile?tab=topup" className="reelshort-topnav__profile-card-avatar-link">
+            <Link to={profileEntryHref} className="reelshort-topnav__profile-card-avatar-link">
               {avatarNode}
             </Link>
             <div className="reelshort-topnav__profile-card-user">

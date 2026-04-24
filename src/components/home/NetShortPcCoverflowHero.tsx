@@ -28,6 +28,7 @@ const ARROW_CIRCLE_PX = Math.round(68 * NS_HERO_BANNER_SCALE);
 const ARROW_TUCK_PER_SIDE_PX = Math.round(ARROW_CIRCLE_PX / 2) + 8;
 const HERO_CIRCLE_OFFSET_PX = Math.round(60 * NS_HERO_BANNER_SCALE);
 const HERO_CIRCLE_PX: [number, number] = [Math.round(1390 * NS_HERO_BANNER_SCALE), Math.round(116 * NS_HERO_BANNER_SCALE)];
+const RESPONSIVE_SAFE_GUTTER_PX = 100;
 
 /**
  * 五张时卡区几何外接宽（与 translateX(±BASE_X_OUTER) 一致），再每侧内收「约半圆+8」
@@ -87,46 +88,49 @@ function relFromCenter(slideIndex: number, k: number, total: number): number {
 }
 
 /** 镜像里 `getSlideLayout`（参数为 rel） */
-function getSlideLayout(rel: number) {
+function getSlideLayout(
+    rel: number,
+    geom: { xInner: number; xOuter: number; zFront: number; zInner: number; zOuter: number; zBack: number },
+) {
     const t = (x: number, rest: string) =>
         `translateX(calc(-50% + ${x}px)) translateY(-50%) ${rest}`;
     if (rel === 0) {
         return {
-            transform: t(0, 'translateZ(52px) scale(1) rotateY(0deg)'),
+            transform: t(0, `translateZ(${geom.zFront}px) scale(1) rotateY(0deg)`),
             zIndex: 30,
             wrapOpacity: 1,
         };
     }
     if (rel === 1) {
         return {
-            transform: t(BASE_X_INNER, 'translateZ(-34px) scale(0.95) rotateY(-26deg)'),
+            transform: t(geom.xInner, `translateZ(${geom.zInner}px) scale(0.95) rotateY(-26deg)`),
             zIndex: 20,
             wrapOpacity: 1,
         };
     }
     if (rel === -1) {
         return {
-            transform: t(-BASE_X_INNER, 'translateZ(-34px) scale(0.95) rotateY(26deg)'),
+            transform: t(-geom.xInner, `translateZ(${geom.zInner}px) scale(0.95) rotateY(26deg)`),
             zIndex: 20,
             wrapOpacity: 1,
         };
     }
     if (rel === 2) {
         return {
-            transform: t(BASE_X_OUTER, 'translateZ(-92px) scale(0.9) rotateY(-32deg)'),
+            transform: t(geom.xOuter, `translateZ(${geom.zOuter}px) scale(0.9) rotateY(-32deg)`),
             zIndex: 10,
             wrapOpacity: 1,
         };
     }
     if (rel === -2) {
         return {
-            transform: t(-BASE_X_OUTER, 'translateZ(-92px) scale(0.9) rotateY(32deg)'),
+            transform: t(-geom.xOuter, `translateZ(${geom.zOuter}px) scale(0.9) rotateY(32deg)`),
             zIndex: 10,
             wrapOpacity: 1,
         };
     }
     return {
-        transform: t(0, 'translateZ(-120px) scale(0.5) rotateY(0deg)'),
+        transform: t(0, `translateZ(${geom.zBack}px) scale(0.5) rotateY(0deg)`),
         zIndex: 5,
         wrapOpacity: 0,
     };
@@ -162,6 +166,8 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
     const k = n > 0 ? Math.min(Math.max(homeStore.current, 0), n - 1) : 0;
 
     const [isDragging, setIsDragging] = useState(false);
+    const [layoutScale, setLayoutScale] = useState(1);
+    const stageRef = useRef<HTMLDivElement | null>(null);
     const isDraggingRef = useRef(false);
     const dragStartX = useRef(0);
     /** 横向切张后同一次松手会合成 click，避免与 onCoverActivate 点进详情重复 */
@@ -210,6 +216,25 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
         [onNext, onPrev],
     );
 
+    useEffect(() => {
+        const el = stageRef.current;
+        if (!el) return;
+        const update = () => {
+            const width = el.clientWidth;
+            if (!width) return;
+            const baseTrack = coverflowTrackMaxWidthPx(n);
+            if (!baseTrack) return;
+            // 预留左右安全边距，避免到临界值才开始缩小（背景与白线图是一体视觉）
+            const available = Math.max(width - RESPONSIVE_SAFE_GUTTER_PX, 1);
+            const s = Math.max(0.55, Math.min(1, available / baseTrack));
+            setLayoutScale(s);
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [n]);
+
     // 预加载封面
     useEffect(() => {
         const urls = topList.map((it) => heroImageUrl(staticBase, it.image));
@@ -233,6 +258,22 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
 
     const noTransition = isDragging;
     const transformEase = 'cubic-bezier(0.23, 1, 0.32, 1)';
+    const stageHeight = Math.round(STAGE_PX * layoutScale);
+    const cardW = Math.round(COVER_CARD_W * layoutScale);
+    const cardH = Math.round(COVER_CARD_H * layoutScale);
+    const arrowSize = Math.round(ARROW_CIRCLE_PX * layoutScale);
+    const circleW = Math.round(HERO_CIRCLE_PX[0] * layoutScale);
+    const circleH = Math.round(HERO_CIRCLE_PX[1] * layoutScale);
+    const circleBottom = Math.round(HERO_CIRCLE_OFFSET_PX * layoutScale);
+    const trackMaxWidth = Math.round(coverflowTrackMaxWidthPx(n) * layoutScale);
+    const geom = {
+        xInner: Math.round(BASE_X_INNER * layoutScale),
+        xOuter: Math.round(BASE_X_OUTER * layoutScale),
+        zFront: Math.round(52 * layoutScale),
+        zInner: Math.round(-34 * layoutScale),
+        zOuter: Math.round(-92 * layoutScale),
+        zBack: Math.round(-120 * layoutScale),
+    };
 
     return (
         <div className={className} aria-hidden={false}>
@@ -246,9 +287,10 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                 <div className="alert-container pointer-events-none text-white" aria-hidden style={{ display: 'none' }} />
                 <div className="relative z-[1] mx-auto w-full min-w-0 max-w-screen-2xl px-2 md:w-[min(88%,1600px)]">
                     <div
+                        ref={stageRef}
                         className="relative w-full touch-none overflow-visible pb-6"
                         style={{
-                            height: STAGE_PX,
+                            height: stageHeight,
                             perspective: '1100px',
                             perspectiveOrigin: '50% 50%',
                         }}
@@ -258,7 +300,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                     >
                         {topList.map((item: IItem, t: number) => {
                             const rel = n <= 1 ? 0 : relFromCenter(t, k, n);
-                            const L = getSlideLayout(rel);
+                            const L = getSlideLayout(rel, geom);
                             const isCenter = rel === 0;
                             const isSide = Math.abs(rel) === 1;
                             const coverOp = coverOpacityForRel(rel);
@@ -288,8 +330,8 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                     key={`${item.id}-${t}`}
                                     className="absolute left-1/2 top-1/2 select-none pointer-events-none"
                                     style={{
-                                        width: COVER_CARD_W,
-                                        height: COVER_CARD_H,
+                                        width: cardW,
+                                        height: cardH,
                                         zIndex: L.zIndex,
                                         opacity: L.wrapOpacity,
                                         transform: L.transform,
@@ -326,8 +368,8 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                                     src={src}
                                                     alt={item.title}
                                                     draggable={false}
-                                                    width={COVER_CARD_W}
-                                                    height={COVER_CARD_H}
+                                                    width={cardW}
+                                                    height={cardH}
                                                     loading="eager"
                                                     decoding="async"
                                                     fetchPriority={t === 0 ? 'high' : 'auto'}
@@ -370,14 +412,14 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                 className="pointer-events-none absolute left-1/2 top-1/2 z-[100] flex items-center justify-between"
                                 style={{
                                     width: '100%',
-                                    maxWidth: coverflowTrackMaxWidthPx(n),
+                                    maxWidth: trackMaxWidth,
                                     transform: 'translate(-50%, -50%)',
                                 }}
                             >
                                 <button
                                     type="button"
                                     className="pointer-events-auto flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer bg-white/16"
-                                    style={{ width: ARROW_CIRCLE_PX, height: ARROW_CIRCLE_PX }}
+                                    style={{ width: arrowSize, height: arrowSize }}
                                     aria-label="Prev"
                                     onPointerDown={(e) => e.stopPropagation()}
                                     onClick={(e) => {
@@ -400,7 +442,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                 <button
                                     type="button"
                                     className="pointer-events-auto flex items-center justify-center rounded-full transition-all hover:scale-110 active:scale-95 cursor-pointer bg-white/16"
-                                    style={{ width: ARROW_CIRCLE_PX, height: ARROW_CIRCLE_PX }}
+                                    style={{ width: arrowSize, height: arrowSize }}
                                     aria-label="Next"
                                     onPointerDown={(e) => e.stopPropagation()}
                                     onClick={(e) => {
@@ -426,15 +468,15 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                         <img
                             src="/netshort/home-circle.png"
                             alt="home-circle"
-                            width={HERO_CIRCLE_PX[0]}
-                            height={HERO_CIRCLE_PX[1]}
+                            width={circleW}
+                            height={circleH}
                             loading="lazy"
                             decoding="async"
                             className="pointer-events-none absolute left-1/2 max-w-none -translate-x-1/2"
                             style={{
-                                bottom: -HERO_CIRCLE_OFFSET_PX,
-                                width: HERO_CIRCLE_PX[0],
-                                height: HERO_CIRCLE_PX[1],
+                                bottom: -circleBottom,
+                                width: circleW,
+                                height: circleH,
                             }}
                         />
                     </div>
