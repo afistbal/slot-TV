@@ -24,6 +24,7 @@ import iconTopnavDownload from '@/assets/icons/topnav-download.svg';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useConfigStore } from '@/stores/config';
+import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -449,10 +450,13 @@ function TopNavLanguageSwitcher() {
 }
 
 function TopNavInstallEntry() {
+  const navigate = useNavigate();
   const rootStore = useRootStore();
   const [isDesktop, setIsDesktop] = useState(false);
   const [open, setOpen] = useState(false);
   const closeTimerRef = useRef<number | undefined>(undefined);
+  const showIosAddHomeInstall = shouldShowIosAddHomeFab();
+  const showAndroidInstallPrompt = rootStore.showInstallPrompt;
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -483,7 +487,7 @@ function TopNavInstallEntry() {
 
   useEffect(() => clearCloseTimer, []);
 
-  if (!rootStore.showInstallPrompt || !isDesktop) {
+  if ((!showAndroidInstallPrompt && !showIosAddHomeInstall) || !isDesktop) {
     return null;
   }
 
@@ -531,6 +535,11 @@ function TopNavInstallEntry() {
               type="button"
               className="reelshort-topnav__download-open-btn"
               onClick={() => {
+                if (showIosAddHomeInstall) {
+                  setOpen(false);
+                  void navigate('/page/ios-add-home');
+                  return;
+                }
                 const installBtn = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
                 installBtn?.click();
               }}
