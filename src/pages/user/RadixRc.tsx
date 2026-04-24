@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api } from '@/api';
@@ -115,16 +115,21 @@ export default function RadixRc({
 }: RadixRcProps = {}) {
     const intl = useIntl();
     const userStore = useUserStore();
+    const [searchParams] = useSearchParams();
+    /** 仅整页 `/shopping` 支持从外链强制展示套餐；嵌入 profile / 抽屉不带该语义。 */
+    const forceShowPlans = layout === 'page' && searchParams.get('show_plans') === '1';
     const scrollRef = useRef<HTMLDivElement>(null);
-    /** 整页 `/shopping`：已 VIP 展示会员信息，否则展示订阅套餐 */
+
+    /** 整页 `/shopping`：已 VIP 展示会员信息，否则展示订阅套餐；`?show_plans=1` 时强制展示套餐。 */
     const showMembershipOnShoppingPage =
-        layout === 'page' && productFrom === 'shopping' && userStore.isVIP();
+        layout === 'page' && productFrom === 'shopping' && userStore.isVIP() && !forceShowPlans;
     /** PC `/profile?tab=topup`（embed plain）：已 VIP 也展示会员信息。 */
     const showMembershipOnProfileEmbedTopup =
         layout === 'embed' &&
         embedPresentation === 'plain' &&
         productFrom === 'shopping' &&
-        userStore.isVIP();
+        userStore.isVIP() &&
+        !forceShowPlans;
 
     const [products, setProducts] = useState<Product[]>(() => shoppingProductCache.get(productFrom) ?? []);
     const [loadingProducts, setLoadingProducts] = useState(

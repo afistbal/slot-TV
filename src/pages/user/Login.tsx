@@ -213,16 +213,21 @@ function useLoginBase(
     async function handleGoogleSignin() {
         try {
             loadingStore.show();
-            /* @ts-ignore */
-            await window.flutter_inappwebview.callHandler('googleSignin');
-            /* @ts-ignore */
+            const flutter = (window as unknown as {
+                flutter_inappwebview?: { callHandler: (name: string, ...args: unknown[]) => Promise<any> };
+            }).flutter_inappwebview;
+            if (!flutter) {
+                loadingStore.hide();
+                return;
+            }
+            await flutter.callHandler('googleSignin');
             let detail: {
                 uid: string;
                 avatar: string;
                 email: string;
                 name: string;
                 anonymous: boolean;
-            } = await window.flutter_inappwebview.callHandler('currentUser');
+            } = await flutter.callHandler('currentUser');
             if (!detail.uid) {
                 loadingStore.hide();
                 return;

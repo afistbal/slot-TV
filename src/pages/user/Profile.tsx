@@ -70,34 +70,6 @@ export default function Component() {
         }
     }
 
-    /** H5：带 `tab` 进 /profile 时转到与全页路由等价的页面（PC 留在双栏 profile）。 */
-    useEffect(() => {
-        if (isPc) {
-            return;
-        }
-        const tab = searchParams.get('tab')?.toLowerCase();
-        if (!tab) {
-            return;
-        }
-        const dest: Record<string, string> = {
-            topup: '/shopping',
-            wallet: '/shopping',
-            mylist: '/my-list',
-            favorite: '/my-list',
-            history: '/my-list/history',
-            feedback: '/page/feedback',
-            help: '/page/feedback',
-        };
-        const path = dest[tab];
-        if (path) {
-            const back = searchParams.get('sourceform');
-            const qs = back
-                ? `${path.includes('?') ? '&' : '?'}sourceform=${encodeURIComponent(back)}`
-                : '';
-            navigate(`${path}${qs}`, { replace: true });
-        }
-    }, [isPc, location.search, navigate]);
-
     /** PC：URL → 侧栏与主栏状态 */
     useEffect(() => {
         if (!isPc) {
@@ -317,7 +289,7 @@ export default function Component() {
                         </div>
                         <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
                     </Link>
-                    <Link to="/shopping" className="rs-profile__menuItem">
+                    <Link to="/shopping?show_plans=1" className="rs-profile__menuItem">
                         <div className="rs-profile__menuLeft">
                             <CircleUser className="w-5 h-5" />
                             <div className="rs-profile__menuText">产品列表</div>
@@ -478,7 +450,7 @@ export default function Component() {
                                                 </Link>
                                             </li>
                                             <li className="dashboard_pc_menu_item__GBkNY">
-                                                <Link to="/shopping" className="rs-profile__pc-menuHit">
+                                                <Link to="/shopping?show_plans=1" className="rs-profile__pc-menuHit">
                                                     <i>
                                                         <RsPcMyListMenuIcon />
                                                     </i>
