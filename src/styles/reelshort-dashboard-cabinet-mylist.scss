@@ -239,7 +239,8 @@
 }
 
 .rs-profile__pc-cabinet .rs-bi-title {
-    font-size: min(2.6vw, 20px);
+    /* vw 过小时 min(2.6vw,20px) 会过小；clamp 保最小可读、最大 20px */
+    font-size: clamp(13px, 2.2vw, 18px);
     width: 100%;
     font-weight: 500;
     color: #fff;
@@ -263,7 +264,7 @@
 }
 
 .rs-profile__pc-cabinet .rs-bi-chapter {
-    font-size: min(1.1vw, 16px);
+    font-size: clamp(12px, 1.1vw, 16px);
     font-weight: 500;
     color: #999;
     margin-top: 0.3rem;

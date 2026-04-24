@@ -42,6 +42,8 @@
     .dashboard_pc_dashboard_control__6d3Zj
     .dashboard_pc_user_info__NRQYu {
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
@@ -56,7 +58,9 @@
     .dashboard_pc_dashboard_control__6d3Zj
     .dashboard_pc_user_info__NRQYu
     .dashboard_pc_info__fonB9 {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
     margin-left: 12px;
     display: -webkit-box;
     display: -webkit-flex;
@@ -67,6 +71,17 @@
     -webkit-box-pack: justify;
     -webkit-justify-content: space-between;
     justify-content: space-between;
+    gap: 8px;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9 > div:first-of-type {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
 }
 
 .rs-profile__pc-reelshortMirror
@@ -75,6 +90,7 @@
     .dashboard_pc_user_info__NRQYu
     .dashboard_pc_info__fonB9
     .dashboard_pc_name__KWvOf {
+    /* 与 ReelShort 源稿一致；max 固定为 20px，不因容器变宽而放大 */
     max-width: 254px;
     line-height: 25px;
     font-size: 20px;
@@ -103,6 +119,21 @@
     -webkit-box-align: center;
     -webkit-align-items: center;
     align-items: center;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9
+    .dashboard_pc_uid__2riI1
+    > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .rs-profile__pc-reelshortMirror
@@ -125,6 +156,7 @@
     .dashboard_pc_info__fonB9
     .dashboard_pc_sign_in__CCBeS {
     /* ReelShort 源站为 14px / 5px 10px；本站 PC 侧栏略放大以提升可读与点击区域 */
+    flex-shrink: 0;
     padding: 8px 18px;
     font-size: 16px;
     font-weight: 400;

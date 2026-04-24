@@ -160,9 +160,12 @@ export default function Component() {
                 await auth.signOut();
             }
 
-            const result = await api<{ token: string; info: { [key: string]: unknown } }>('login/anonymous', {
-                loading: false,
-            });
+            const result = await api<{ token: string; info: { [key: string]: unknown } }>(
+                'login/anonymous',
+                {
+                    loading: false,
+                },
+            );
 
             if (result.c !== 0) {
                 return;
@@ -324,22 +327,27 @@ export default function Component() {
     );
 
     const pcDashboardMenuLiClass = (tab: ProfilePcTab) =>
-        cn('dashboard_pc_menu_item__GBkNY', pcTab === tab && 'dashboard_pc_menu_item_active__H7KVg');
+        cn(
+            'dashboard_pc_menu_item__GBkNY',
+            pcTab === tab && 'dashboard_pc_menu_item_active__H7KVg',
+        );
 
     const pcMyListSidebarLiClass = cn(
         'dashboard_pc_menu_item__GBkNY',
-        pcTab === 'mylist' && profileMyListSubTab === 'favorite' && 'dashboard_pc_menu_item_active__H7KVg',
+        pcTab === 'mylist' &&
+            profileMyListSubTab === 'favorite' &&
+            'dashboard_pc_menu_item_active__H7KVg',
     );
 
     const pcHistorySidebarLiClass = cn(
         'dashboard_pc_menu_item__GBkNY',
-        pcTab === 'mylist' && profileMyListSubTab === 'history' && 'dashboard_pc_menu_item_active__H7KVg',
+        pcTab === 'mylist' &&
+            profileMyListSubTab === 'history' &&
+            'dashboard_pc_menu_item_active__H7KVg',
     );
 
     const isSignedProfile = Boolean(userStore.signed && !userStore.isAnonymous());
-    const pcDisplayName = isSignedProfile
-        ? String(userStore.info?.['name'] ?? '')
-        : null;
+    const pcDisplayName = isSignedProfile ? String(userStore.info?.['name'] ?? '') : null;
 
     /** 与 ReelShort `dashboard_pc_*` DOM + `9cb3e9a284588d0e.css` 一致（见 `reelshort-dashboard-pc-mirror.scss`） */
     const pcUserInfo = (
@@ -388,9 +396,7 @@ export default function Component() {
                                     </span>
                                 </div>
                                 <div className="dashboard_pc_uid__2riI1">
-                                    <span>
-                                        UID {uniqueId || '--'}
-                                    </span>
+                                    <span>UID {uniqueId || '--'}</span>
                                 </div>
                             </div>
                             {userStore.isAnonymous() ? (
@@ -419,7 +425,10 @@ export default function Component() {
 
     return (
         <div className={cn('rs-profile', isPc && 'rs-profile--pc')}>
-            <div ref={scrollRef} className={cn('rs-profile__scroll', isPc && 'rs-profile__scroll--pc')}>
+            <div
+                ref={scrollRef}
+                className={cn('rs-profile__scroll', isPc && 'rs-profile__scroll--pc')}
+            >
                 <ReelShortTopNav
                     scrollParentRef={scrollRef}
                     showPrimaryNav={false}
@@ -450,7 +459,10 @@ export default function Component() {
                                                 </Link>
                                             </li>
                                             <li className="dashboard_pc_menu_item__GBkNY">
-                                                <Link to="/shopping?show_plans=1" className="rs-profile__pc-menuHit">
+                                                <Link
+                                                    to="/shopping?show_plans=1"
+                                                    className="rs-profile__pc-menuHit"
+                                                >
                                                     <i>
                                                         <RsPcMyListMenuIcon />
                                                     </i>
@@ -481,7 +493,10 @@ export default function Component() {
                                                 onClick={() => setProfileTabQuery('profile')}
                                             >
                                                 <i>
-                                                    <CircleUser className="h-6 w-6 shrink-0" strokeWidth={1.75} />
+                                                    <CircleUser
+                                                        className="h-6 w-6 shrink-0"
+                                                        strokeWidth={1.75}
+                                                    />
                                                 </i>
                                                 <span>
                                                     <FormattedMessage id="user_detail" />
@@ -552,7 +567,9 @@ export default function Component() {
                                         <ProfilePcMyListPane
                                             subTab={profileMyListSubTab}
                                             onSubTabChange={(v) =>
-                                                setProfileTabQuery(v === 'history' ? 'history' : 'mylist')
+                                                setProfileTabQuery(
+                                                    v === 'history' ? 'history' : 'mylist',
+                                                )
                                             }
                                             hideSubTabs
                                         />
@@ -568,7 +585,9 @@ export default function Component() {
                     </>
                 ) : (
                     <div className="rs-profile__content">
-                        {userStore.signed && !userStore.isAnonymous() ? loginCardSigned : loginCardGuest}
+                        {userStore.signed && !userStore.isAnonymous()
+                            ? loginCardSigned
+                            : loginCardGuest}
                         {vipCard}
                         {h5Menu}
                         {userStore.isAnonymous() ? (
@@ -576,7 +595,11 @@ export default function Component() {
                                 <FormattedMessage id="login" />
                             </Link>
                         ) : (
-                            <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>
+                            <button
+                                type="button"
+                                className="rs-profile__btnLogin"
+                                onClick={handleLogout}
+                            >
                                 <FormattedMessage id="logout" />
                             </button>
                         )}

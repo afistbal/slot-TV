@@ -309,9 +309,12 @@
     pointer-events: none;
 }
 
+/* flex-shrink:0 + min-width：主栏有宽/长内容时勿把侧栏压扁；宽度仍随视口 clamp 缩放 */
 .rs-profile__pc-aside {
-    flex: 0 1 clamp(272px, 30vw, 420px);
-    min-width: 0;
+    /* 与 flex 列宽同一套 clamp，供侧栏整列 zoom（用户卡 + 菜单同比） */
+    --rs-pc-aside-bw: clamp(272px, 30vw, 420px);
+    flex: 0 0 var(--rs-pc-aside-bw);
+    min-width: 272px;
     max-width: min(420px, 100%);
     padding-top: 24px;
     padding-right: 0;
@@ -323,6 +326,11 @@
     min-height: 0;
     overflow-x: hidden;
     overflow-y: visible;
+
+    /* 窄列时整列同比缩到「设计最大 420」比例下，一条 zoom 即可（Chromium / 新版 Firefox） */
+    @supports (zoom: 0.5) {
+        zoom: min(1, calc(var(--rs-pc-aside-bw) / 420px));
+    }
 }
 
 /* PC 侧栏个人信息：已迁至 `reelshort-dashboard-pc-mirror.scss`（ReelShort dashboard_pc_* 同源类名） */
@@ -352,7 +360,9 @@
     padding-top: 24px;
     display: flex;
     flex-direction: column;
-    overflow: visible;
+    /* 子内容最小宽度超过剩余空间时仅右栏横滚，不挤压侧栏 */
+    overflow-x: auto;
+    overflow-y: visible;
 }
 
 /**

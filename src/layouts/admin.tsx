@@ -55,9 +55,9 @@ export default function Component() {
     </div>;
 }
 
-interface IPage { title: string, titleClassName?: string, menu?: { id: string, name: string, confirm?: boolean, className?: string }[], menuButton?: React.ReactNode, onMenuClick?: (value: string) => void, children?: React.ReactNode }
+interface IPage { title: string, titleClassName?: string, className?: string, menu?: { id: string, name: string, confirm?: boolean, className?: string }[], menuButton?: React.ReactNode, onMenuClick?: (value: string) => void, children?: React.ReactNode }
 
-const Page = forwardRef<HTMLDivElement, IPage>(({ title, titleClassName, menu, menuButton, onMenuClick, children }: IPage, ref) => {
+const Page = forwardRef<HTMLDivElement, IPage>(({ title, titleClassName, className, menu, menuButton, onMenuClick, children }: IPage, ref) => {
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState('');
@@ -81,7 +81,7 @@ const Page = forwardRef<HTMLDivElement, IPage>(({ title, titleClassName, menu, m
         setConfirmOpen('');
     }
 
-    return <div className="flex flex-col h-full" ref={ref}>
+    return <div className={cn('flex flex-col h-full', className)} ref={ref}>
         <div className={cn("flex gap-2 pl-4 justify-between h-16 items-center border-b border-slate-200 text-slate-600", titleClassName || 'bg-white')}>
             {history.length > 0 ? <div onClick={handleBack}>
                 {document.body.style.direction === 'ltr' ? <ChevronLeft /> : <ChevronRight />}
