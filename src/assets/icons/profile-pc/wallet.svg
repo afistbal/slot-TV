@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+  <defs>
+    <style>
+      .rs-pc-wallet-stroke,.rs-pc-wallet-inner{fill:none}
+      .rs-pc-wallet-stroke{stroke:currentColor;stroke-width:2px}
+      .rs-pc-wallet-mask{stroke:none}
+    </style>
+  </defs>
+  <g transform="translate(57 27)">
+    <g class="rs-pc-wallet-stroke" transform="translate(-57 -27)">
+      <rect width="20" height="20" class="rs-pc-wallet-mask" rx="4"/>
+      <rect width="18" height="18" x="1" y="1" class="rs-pc-wallet-inner" rx="3"/>
+    </g>
+    <g class="rs-pc-wallet-stroke" transform="translate(-47 -21)">
+      <rect width="10" height="8" class="rs-pc-wallet-mask" rx="3"/>
+      <rect width="8" height="6" x="1" y="1" class="rs-pc-wallet-inner" rx="2"/>
+    </g>
+    <rect width="3" height="2" rx="1" transform="translate(-53 -23)"/>
+  </g>
+</svg>

@@ -35,7 +35,7 @@ export default function Component() {
 
     return <div className="flex h-full min-h-0 flex-col">
         {/* min-h-0 + overflow-hidden：纵滑只发生在各页内部 scroll 容器，避免与首页 home-page__scroll 双轨滚动导致页脚滚不到、顶栏 ref 的 scrollTop 恒为 0 */}
-        <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <Suspense key={location.key} fallback={<RouteSuspenseFallback />}>
                 <Outlet key={location.key} />
             </Suspense>

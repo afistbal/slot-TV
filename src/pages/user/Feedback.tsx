@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { toast } from "sonner";
 
-export default function Component() {
+export default function Component({ embedded = false }: { embedded?: boolean }) {
     const intl = useIntl();
     const userStore = useUserStore();
     const [content, setContent] = useState("");
@@ -47,8 +47,7 @@ export default function Component() {
             });
     }
 
-    return (
-        <Page title="feedback_help">
+    const body = (
             <div className="rs-feedback">
                 {submitted ? (
                     <div className="rs-feedback__success">
@@ -110,6 +109,11 @@ export default function Component() {
                     </>
                 )}
             </div>
-        </Page>
     );
+
+    if (embedded) {
+        return body;
+    }
+
+    return <Page title="feedback_help">{body}</Page>;
 }

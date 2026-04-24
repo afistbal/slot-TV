@@ -1,5 +1,5 @@
+import { LegalDocumentLink } from "@/components/LegalDocumentLink";
 import { Page } from "@/layouts/user";
-import { Link } from "react-router";
 import { FormattedMessage } from "react-intl";
 import Forward from "@/components/Forward";
 import { toast } from "sonner";
@@ -17,18 +17,26 @@ export default function Component() {
                 <div><FormattedMessage id="domain" /></div>
             </div>
             <div className="m-4 rounded-md bg-white">
-                <Link key="user_agreement" to="/page/text?title=user_agreement" className="flex gap-2 justify-between items-center p-4">
+                <LegalDocumentLink
+                    key="user_agreement"
+                    title="user_agreement"
+                    className="flex gap-2 justify-between items-center p-4"
+                >
                     <div className="flex gap-1 text-gray-600">
                         <div className="text-md"><FormattedMessage id="user_agreement" /></div>
                     </div>
                     <Forward className="text-slate-400" />
-                </Link>
-                <Link key="privacy_policy" to="/page/text?title=privacy_policy" className="flex gap-2 justify-between items-center p-4 border-t border-muted">
+                </LegalDocumentLink>
+                <LegalDocumentLink
+                    key="privacy_policy"
+                    title="privacy_policy"
+                    className="flex gap-2 justify-between items-center p-4 border-t border-muted"
+                >
                     <div className="flex gap-1 text-gray-600">
                         <div className="text-md"><FormattedMessage id="privacy_policy" /></div>
                     </div>
                     <Forward className="text-slate-400" />
-                </Link>
+                </LegalDocumentLink>
                 <div key="version" className="flex gap-2 justify-between items-center p-4 border-t border-muted" onClick={handleVersion}>
                     <div className="flex gap-1 text-gray-600">
                         <div className="text-md"><FormattedMessage id="version" /></div>

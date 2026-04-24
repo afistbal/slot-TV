@@ -11,10 +11,13 @@
     color: rgba(255, 255, 255, 0.9);
 
     @media (min-width: 768px) {
-        padding: 16px 18px 32px;
-        max-width: 480px;
-        margin-left: auto;
-        margin-right: auto;
+        /* PC：占满父级（如 profile 右栏 / Page 主区），不再 480 限宽居中 */
+        padding: 16px 18px 32px 18px;
+        width: 100%;
+        max-width: none;
+        margin-inline: 0;
+        align-self: stretch;
+        flex-shrink: 0;
     }
 
     &__field {

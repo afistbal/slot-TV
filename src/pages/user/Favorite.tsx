@@ -14,6 +14,7 @@ import { useGesture } from '@use-gesture/react';
 import FlixActionSheet from "@/widgets/FlixActionSheet";
 import { useConfigStore } from "@/stores/config";
 import { skipRemoteApi } from '@/env';
+import { offlineFavoriteList } from '@/mocks/myListOffline';
 
 export default function Component() {
     const configStore = useConfigStore();
@@ -93,6 +94,7 @@ export default function Component() {
         requesting.current = true;
         if (skipRemoteApi) {
             setPage(p);
+            setList([...offlineFavoriteList]);
             setMore(false);
             requesting.current = false;
             return;
@@ -106,6 +108,12 @@ export default function Component() {
             requesting.current = false;
         });
         const rows = result.d.data;
+        if (p === 1 && import.meta.env.DEV && rows.length === 0) {
+            setPage(p);
+            setList([...list, ...offlineFavoriteList]);
+            setMore(false);
+            return;
+        }
         setPage(p);
         setList([...list, ...rows]);
         setMore(result.d.per_page === rows.length);

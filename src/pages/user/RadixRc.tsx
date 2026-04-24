@@ -89,6 +89,11 @@ export type RadixRcProps = {
     layout?: RadixRcLayout;
     /** `layout=embed` 时：顶栏右侧关闭 */
     onEmbedClose?: () => void;
+    /**
+     * `layout=embed`：`drawer` 含倒计时条与关闭钮（剧集付费抽屉）；
+     * `plain` 仅主体，用于 PC 账户页右栏。
+     */
+    embedPresentation?: 'drawer' | 'plain';
     /** `product` 接口的 `from` */
     productFrom?: 'shopping' | 'video';
     /** 跳转收银台 URL 的 `from=` */
@@ -104,6 +109,7 @@ const shoppingProductCache = new Map<ProductFromKey, Product[]>();
 export default function RadixRc({
     layout = 'page',
     onEmbedClose,
+    embedPresentation = 'drawer',
     productFrom = 'shopping',
     checkoutFrom = 'shopping',
 }: RadixRcProps = {}) {
@@ -596,34 +602,48 @@ export default function RadixRc({
 
     if (layout === 'embed') {
         const closeAria = intl.formatMessage({ id: 'close', defaultMessage: 'Close' });
+        const showDrawerChrome = embedPresentation === 'drawer';
         return (
-            <div className="rs-shopping-drawer-sheet">
+            <div
+                className={cn(
+                    'rs-shopping-drawer-sheet',
+                    embedPresentation === 'plain' && 'rs-shopping-drawer-sheet--profilePlain',
+                )}
+            >
                 {/* embed 须包 `.rs-shopping`，否则 SCSS 中 `.rs-shopping .rs-shopping__*`（含顶栏倒计时）无法命中 */}
                 <div className="rs-shopping rs-shopping--drawerEmbed">
-                    <div className="rs-shopping-drawer-head rs-shopping-drawer-head--reelshort">
-                        <div className="rs-shopping-drawer-head__kvGroup">
-                            {showCountdown ? (
-                                countdownEl
-                            ) : (
-                                <span className="rs-shopping-drawer-head__vipUnlock">
-                                    <FormattedMessage id="shopping_vip_drawer_title" />
-                                </span>
-                            )}
-                        </div>
-                        <button
-                            type="button"
-                            className="rs-shopping-drawer-head__closeImgBtn"
-                            onClick={() => onEmbedClose?.()}
-                            aria-label={closeAria}
-                        >
-                            <img
-                                className="rs-shopping-drawer-head__closePixel"
-                                src={paywallImage('a9a3d800-ef98-11f0-84ad-6b5693b490dc.png')}
-                                alt=""
-                            />
-                        </button>
-                    </div>
-                    <div className="rs-shopping-drawer-head__divider" />
+                    {showDrawerChrome ? (
+                        <>
+                            <div className="rs-shopping-drawer-head rs-shopping-drawer-head--reelshort">
+                                <div className="rs-shopping-drawer-head__kvGroup">
+                                    {showCountdown ? (
+                                        countdownEl
+                                    ) : (
+                                        <span className="rs-shopping-drawer-head__vipUnlock">
+                                            <FormattedMessage id="shopping_vip_drawer_title" />
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    className="rs-shopping-drawer-head__closeImgBtn"
+                                    onClick={() => onEmbedClose?.()}
+                                    aria-label={closeAria}
+                                >
+                                    <img
+                                        className="rs-shopping-drawer-head__closePixel"
+                                        src={paywallImage('a9a3d800-ef98-11f0-84ad-6b5693b490dc.png')}
+                                        alt=""
+                                    />
+                                </button>
+                            </div>
+                            <div className="rs-shopping-drawer-head__divider" />
+                        </>
+                    ) : (
+                        showCountdown ? (
+                            <div className="rs-shopping-profile-embed-countdown">{countdownEl}</div>
+                        ) : null
+                    )}
                     {main}
                     {showPayModal && typeof document !== 'undefined'
                         ? createPortal(

@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 // import legacy from '@vitejs/plugin-legacy'
 import tailwindcss from '@tailwindcss/vite'
@@ -10,6 +10,44 @@ const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
 ) as { version?: string }
 const appVersion = packageJson.version ?? '0.0.0'
+
+/** 与 `scripts/sync-public-html-assets.mjs` 规则一致：为 HTML 内引用的本地图标/清单加 `?v=package.version`。 */
+function patchHtmlAssetRefs(html: string, version: string): string {
+  const q = `?v=${encodeURIComponent(version)}`
+  return html.replace(
+    /(href|src)="(\/(?:favorite\.svg|logo\.png|icons\/192\.png|icons\/512\.png|manifest\.json))(?:\?[^"#]*)?"/g,
+    (_m, attr, p) => `${attr}="${p}${q}"`,
+  )
+}
+
+function htmlAssetCacheBust(version: string): Plugin {
+  const publicHtmlNames = new Set(['reelshort-privacy-policy.html', 'airwallex.html'])
+  return {
+    name: 'html-asset-cache-bust',
+    enforce: 'pre',
+    transformIndexHtml(html) {
+      return patchHtmlAssetRefs(html, version)
+    },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const raw = req.url?.split('?')[0] ?? ''
+        const name = raw.startsWith('/') ? raw.slice(1) : raw
+        if (!publicHtmlNames.has(name)) {
+          next()
+          return
+        }
+        const fp = path.join(process.cwd(), 'public', name)
+        try {
+          const disk = readFileSync(fp, 'utf-8')
+          res.setHeader('Content-Type', 'text/html; charset=utf-8')
+          res.end(patchHtmlAssetRefs(disk, version))
+        } catch {
+          next()
+        }
+      })
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default ({ mode }: { mode: string }) => {
@@ -23,6 +61,7 @@ export default ({ mode }: { mode: string }) => {
       __APP_VERSION__: JSON.stringify(appVersion),
     },
     plugins: [
+      htmlAssetCacheBust(appVersion),
       react(),
       tailwindcss(),
       // legacy({

@@ -1654,6 +1654,23 @@
     }
 }
 
+/** PC 账户页右栏：无抽屉顶栏，仅购物主体 + 可选倒计时 */
+.rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--profilePlain {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    background: transparent;
+}
+
+.rs-shopping-profile-embed-countdown {
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
 /** 顶栏：左侧 kv 区（有倒计时时只显示倒计时，否则 VIP 解锁）+ 右侧关闭图 */
 .rs-shopping-drawer-head--reelshort {
     position: sticky;

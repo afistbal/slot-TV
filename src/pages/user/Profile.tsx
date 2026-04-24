@@ -1,8 +1,13 @@
 import { CircleUser } from 'lucide-react';
+import {
+    RsPcHelpMenuIcon,
+    RsPcHistoryMenuIcon,
+    RsPcMyListMenuIcon,
+    RsPcWalletMenuIcon,
+} from '@/components/icons/reelshortDashboardPcMenuIcons';
 import gift from '@/assets/gift.svg';
 import gem from '@/assets/gem.svg';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
-// import iconMyList from '@/assets/images/04905690-876c-11ee-aed2-cfe3d80f70eb.png';
 import iconFeedback from '@/assets/images/59f06ad0-876c-11ee-aed2-cfe3d80f70eb.png';
 import iconHistory from '@/assets/images/history.png';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
@@ -14,13 +19,16 @@ import { useUserStore } from '@/stores/user';
 import { cn } from '@/lib/utils';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
-// import { Button } from '@/components/ui/button';
-// import coinIcon from '@/assets/coin.svg';
-// import Coin from '@/widgets/Coin';
 import { api, type TData } from '@/api';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { useLoadingStore } from '@/stores/loading';
 import { auth } from '@/firebase';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import RadixRc from '@/pages/user/RadixRc';
+import FeedbackPanel from '@/pages/user/Feedback';
+import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
+
+type ProfilePcTab = 'topup' | 'mylist' | 'feedback';
 
 export default function Component() {
     const userStore = useUserStore();
@@ -30,23 +38,21 @@ export default function Component() {
     const loadingStore = useLoadingStore();
     const [vip, setVip] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-    // const [coin, setCoin] = useState(false);
+    const isPc = useMinWidth768();
+    const [pcTab, setPcTab] = useState<ProfilePcTab>('topup');
+    const [profileMyListSubTab, setProfileMyListSubTab] = useState<ProfileMyListSubTab>('favorite');
 
     function handleToggleVip() {
         setVip(!vip);
     }
 
     function handleVipCardClick() {
-        navigate('/shopping');
+        if (isPc) {
+            setPcTab('topup');
+        } else {
+            navigate('/shopping');
+        }
     }
-
-    // function handleToggleCoin() {
-    //     setCoin(!coin);
-    // }
-
-    // function handleGoMyBalance() {
-    //     navigate('/page/my-balance');
-    // }
 
     useEffect(() => {
         api<number>('user/balance', {
@@ -93,192 +99,392 @@ export default function Component() {
             ? getUserAvatarDisplayUrl(userStore.info as TData | undefined)
             : undefined;
 
+    const loginCardSigned = userStore.signed && !userStore.isAnonymous() && (
+        <Link to="/user/detail" className="rs-profile__loginCard">
+            <div className="rs-profile__avatarWrap">
+                {avatarUrl ? (
+                    <img
+                        className="rs-profile__avatarImg"
+                        src={avatarUrl}
+                        referrerPolicy="no-referrer"
+                        onError={() => {
+                            localStorage.removeItem('user-avatar');
+                            userStore.update({ avatar: '' });
+                        }}
+                        alt=""
+                    />
+                ) : (
+                    <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
+                )}
+            </div>
+            <div className="rs-profile__loginCardMain">
+                <div>
+                    <div className="rs-profile__name">
+                        <div>{userStore.info!['name'] as string}</div>
+                    </div>
+                    <div className="rs-profile__vip">
+                        {uniqueId ? (
+                            <>
+                                <span className="rs-profile__uidLabel">UID:</span>
+                                <span className="rs-profile__uidValue">{uniqueId}</span>
+                            </>
+                        ) : null}
+                    </div>
+                </div>
+                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+            </div>
+        </Link>
+    );
+
+    const loginCardGuest = (
+        <div className="rs-profile__loginCard">
+            <div className="rs-profile__avatarWrap">
+                <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
+            </div>
+            <div className="rs-profile__loginCardMain">
+                <div>
+                    <div className="rs-profile__name">
+                        <FormattedMessage id="guest" />
+                    </div>
+                    <div className="rs-profile__vip">
+                        <FormattedMessage id="vip_0" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const vipCard = (
+        <div
+            className="rs-profile__vipCard"
+            onClick={handleVipCardClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleVipCardClick();
+                }
+            }}
+        >
+            <img
+                src={gift}
+                className={cn(
+                    'w-20 h-20 absolute top-3',
+                    document.body.style.direction === 'ltr' ? 'right-2' : 'left-2',
+                )}
+                alt=""
+            />
+            <img
+                src={gem}
+                className={cn(
+                    'w-16 h-16 absolute bottom-2 -rotate-45',
+                    document.body.style.direction === 'ltr' ? 'right-10' : 'left-10',
+                )}
+                alt=""
+            />
+            <div className="rs-profile__vipCardText">
+                <div className="rs-profile__vipPill">
+                    <FormattedMessage id={userStore.isVIP() ? 'is_vip' : 'vip'} />
+                </div>
+                <div className="rs-profile__vipHint">
+                    <FormattedMessage id="enjoy" />
+                </div>
+            </div>
+        </div>
+    );
+
+    const h5Menu = (
+        <div className="rs-profile__menu">
+            {userStore.isAdmin() && (
+                <>
+                    <Link to="/z" className="rs-profile__menuItem">
+                        <div className="rs-profile__menuLeft">
+                            <CircleUser className="w-5 h-5" />
+                            <div className="rs-profile__menuText">
+                                <FormattedMessage id="admin" />
+                            </div>
+                        </div>
+                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                    </Link>
+                    <Link to="/shopping" className="rs-profile__menuItem">
+                        <div className="rs-profile__menuLeft">
+                            <CircleUser className="w-5 h-5" />
+                            <div className="rs-profile__menuText">产品列表</div>
+                        </div>
+                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                    </Link>
+                </>
+            )}
+            <Link
+                to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
+                state={{ sourceform }}
+                className="rs-profile__menuItem"
+            >
+                <div className="rs-profile__menuLeft">
+                    <img src={iconHistory} alt="" className="rs-profile__menuIcon" />
+                    <div className="rs-profile__menuText">
+                        <FormattedMessage id="history" />
+                    </div>
+                </div>
+                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+            </Link>
+            <Link to="/page/feedback" className="rs-profile__menuItem">
+                <div className="rs-profile__menuLeft">
+                    <img src={iconFeedback} alt="" className="rs-profile__menuIcon" />
+                    <div className="rs-profile__menuText">
+                        <FormattedMessage id="feedback_help" />
+                    </div>
+                </div>
+                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+            </Link>
+        </div>
+    );
+
+    const pcDashboardMenuLiClass = (tab: ProfilePcTab) =>
+        cn('dashboard_pc_menu_item__GBkNY', pcTab === tab && 'dashboard_pc_menu_item_active__H7KVg');
+
+    const pcMyListSidebarLiClass = cn(
+        'dashboard_pc_menu_item__GBkNY',
+        pcTab === 'mylist' && profileMyListSubTab === 'favorite' && 'dashboard_pc_menu_item_active__H7KVg',
+    );
+
+    const pcHistorySidebarLiClass = cn(
+        'dashboard_pc_menu_item__GBkNY',
+        pcTab === 'mylist' && profileMyListSubTab === 'history' && 'dashboard_pc_menu_item_active__H7KVg',
+    );
+
+    const isSignedProfile = Boolean(userStore.signed && !userStore.isAnonymous());
+    const pcDisplayName = isSignedProfile
+        ? String(userStore.info?.['name'] ?? '')
+        : null;
+
+    /** 与 ReelShort `dashboard_pc_*` DOM + `9cb3e9a284588d0e.css` 一致（见 `reelshort-dashboard-pc-mirror.scss`） */
+    const pcUserInfo = (
+        <div className="rs-profile__pc-reelshortMirror">
+            <div className="dashboard_pc_dashboard_pc__EjjRI">
+                <div className="dashboard_pc_dashboard_control__6d3Zj">
+                    <div className="dashboard_pc_user_info__NRQYu">
+                        <div
+                            className="relative flex h-full w-full flex-shrink-0 items-center justify-center"
+                            style={{ width: 62, height: 62 }}
+                        >
+                            <div className="relative" style={{ width: 50, height: 50 }}>
+                                {isSignedProfile && avatarUrl ? (
+                                    <img
+                                        alt=""
+                                        aria-hidden
+                                        className="block h-[50px] w-[50px] max-w-full rounded-[50%] object-cover"
+                                        src={avatarUrl}
+                                        referrerPolicy="no-referrer"
+                                        onError={() => {
+                                            localStorage.removeItem('user-avatar');
+                                            userStore.update({ avatar: '' });
+                                        }}
+                                    />
+                                ) : (
+                                    <img
+                                        alt="Guest"
+                                        className="block h-[50px] w-[50px] max-w-full rounded-[50%] object-cover"
+                                        src={iconHead}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                        <div className="dashboard_pc_info__fonB9">
+                            <div>
+                                <div className="dashboard_pc_name__KWvOf">
+                                    <span>
+                                        {isSignedProfile && pcDisplayName ? (
+                                            pcDisplayName
+                                        ) : (
+                                            <>
+                                                {' '}
+                                                <FormattedMessage id="guest" />
+                                            </>
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="dashboard_pc_uid__2riI1">
+                                    <span>
+                                        UID {uniqueId || '--'}
+                                    </span>
+                                </div>
+                            </div>
+                            {userStore.isAnonymous() ? (
+                                <Link to="/page/login" className="dashboard_pc_sign_in__CCBeS">
+                                    <FormattedMessage id="login" />
+                                </Link>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="dashboard_pc_sign_in__CCBeS"
+                                    onClick={() => void handleLogout()}
+                                >
+                                    <FormattedMessage id="logout" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
-        <div className="rs-profile">
-            <div ref={scrollRef} className="rs-profile__scroll">
+        <div className={cn('rs-profile', isPc && 'rs-profile--pc')}>
+            <div ref={scrollRef} className={cn('rs-profile__scroll', isPc && 'rs-profile__scroll--pc')}>
                 <ReelShortTopNav
                     scrollParentRef={scrollRef}
                     showPrimaryNav={false}
                     showSearch={true}
                     showProfile={false}
                     showLeftAction
+                    rightActionsMode={isPc ? 'profilePc' : 'default'}
                 />
-                <div className="rs-profile__content">
-                {userStore.signed && !userStore.isAnonymous() ? (
-                    <Link to="/user/detail" className="rs-profile__loginCard">
-                        <div className="rs-profile__avatarWrap">
-                            {avatarUrl ? (
-                                <img
-                                    className="rs-profile__avatarImg"
-                                    src={avatarUrl}
-                                    referrerPolicy="no-referrer"
-                                    onError={() => {
-                                        localStorage.removeItem('user-avatar');
-                                        userStore.update({ avatar: '' });
-                                    }}
-                                    alt=""
-                                />
-                            ) : (
-                                <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
-                            )}
-                        </div>
-                        <div className="rs-profile__loginCardMain">
-                            <div>
-                                <div className="rs-profile__name">
-                                    <div>{userStore.info!['name'] as string}</div>
-                                </div>
-                                <div className="rs-profile__vip">
-                                    {uniqueId ? (
+                {isPc ? (
+                    <>
+                        <div className="rs-profile__pc-dashboard">
+                            <aside className="rs-profile__pc-aside">
+                                {pcUserInfo}
+                                <ul className={cn('dashboard_pc_menu__5uzfK', 'rs-profile__menu')}>
+                                    {userStore.isAdmin() ? (
                                         <>
-                                            <span className="rs-profile__uidLabel">UID:</span>
-                                            <span className="rs-profile__uidValue">{uniqueId}</span>
+                                            <li className="dashboard_pc_menu_item__GBkNY">
+                                                <Link to="/z" className="rs-profile__pc-menuHit">
+                                                    <i>
+                                                        <CircleUser
+                                                            className="h-6 w-6 shrink-0"
+                                                            strokeWidth={1.75}
+                                                        />
+                                                    </i>
+                                                    <span>
+                                                        <FormattedMessage id="admin" />
+                                                    </span>
+                                                </Link>
+                                            </li>
+                                            <li className="dashboard_pc_menu_item__GBkNY">
+                                                <Link to="/shopping" className="rs-profile__pc-menuHit">
+                                                    <i>
+                                                        <RsPcMyListMenuIcon />
+                                                    </i>
+                                                    <span>产品列表</span>
+                                                </Link>
+                                            </li>
                                         </>
                                     ) : null}
+                                    <li className={pcDashboardMenuLiClass('topup')}>
+                                        <button
+                                            type="button"
+                                            className="rs-profile__pc-menuHit"
+                                            onClick={() => setPcTab('topup')}
+                                        >
+                                            <i>
+                                                <RsPcWalletMenuIcon />
+                                            </i>
+                                            <span>
+                                                <FormattedMessage id="top_up" />
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li className={pcMyListSidebarLiClass}>
+                                        <button
+                                            type="button"
+                                            className="rs-profile__pc-menuHit"
+                                            onClick={() => {
+                                                setPcTab('mylist');
+                                                setProfileMyListSubTab('favorite');
+                                            }}
+                                        >
+                                            <i>
+                                                <RsPcMyListMenuIcon />
+                                            </i>
+                                            <span>
+                                                <FormattedMessage id="my_list" />
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li className={pcHistorySidebarLiClass}>
+                                        <button
+                                            type="button"
+                                            className="rs-profile__pc-menuHit"
+                                            onClick={() => {
+                                                setPcTab('mylist');
+                                                setProfileMyListSubTab('history');
+                                            }}
+                                        >
+                                            <i>
+                                                <RsPcHistoryMenuIcon />
+                                            </i>
+                                            <span>
+                                                <FormattedMessage id="nav_watch_history" />
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li className={pcDashboardMenuLiClass('feedback')}>
+                                        <button
+                                            type="button"
+                                            className="rs-profile__pc-menuHit"
+                                            onClick={() => setPcTab('feedback')}
+                                        >
+                                            <i>
+                                                <RsPcHelpMenuIcon />
+                                            </i>
+                                            <span>
+                                                <FormattedMessage id="feedback_help" />
+                                            </span>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </aside>
+                            <div className="rs-profile__pc-main">
+                                <div
+                                    className={cn(
+                                        'rs-profile__pc-main-scroll',
+                                        pcTab === 'mylist' && 'rs-profile__pc-main-scroll--mylist',
+                                    )}
+                                >
+                                    {pcTab === 'topup' ? (
+                                        <RadixRc
+                                            layout="embed"
+                                            embedPresentation="plain"
+                                            productFrom="shopping"
+                                            checkoutFrom="shopping"
+                                        />
+                                    ) : null}
+                                    {pcTab === 'mylist' ? (
+                                        <ProfilePcMyListPane
+                                            subTab={profileMyListSubTab}
+                                            onSubTabChange={setProfileMyListSubTab}
+                                            hideSubTabs
+                                        />
+                                    ) : null}
+                                    {pcTab === 'feedback' ? <FeedbackPanel embedded /> : null}
                                 </div>
                             </div>
-                            <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
                         </div>
-                    </Link>
+                        <div className="rs-profile__pc-footer-wrap">
+                            <ReelShortFooter />
+                        </div>
+                    </>
                 ) : (
-                    <div className="rs-profile__loginCard">
-                        <div className="rs-profile__avatarWrap">
-                            <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
-                        </div>
-                        <div className="rs-profile__loginCardMain">
-                            <div>
-                                <div className="rs-profile__name">
-                                    <FormattedMessage id="guest" />
-                                </div>
-                                <div className="rs-profile__vip">
-                                    <FormattedMessage id="vip_0" />
-                                </div>
-                            </div>
-                        </div>
+                    <div className="rs-profile__content">
+                        {userStore.signed && !userStore.isAnonymous() ? loginCardSigned : loginCardGuest}
+                        {vipCard}
+                        {h5Menu}
+                        {userStore.isAnonymous() ? (
+                            <Link to="/page/login" className="rs-profile__btnLogin">
+                                <FormattedMessage id="login" />
+                            </Link>
+                        ) : (
+                            <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>
+                                <FormattedMessage id="logout" />
+                            </button>
+                        )}
+                        <ReelShortFooter />
                     </div>
                 )}
-                {/* <div className="rounded-md p-4 m-4 flex flex-col gap-2 bg-[#ff7575] text-white">
-                    <div className="flex gap-1 text-red-100" onClick={handleGoMyBalance}>
-                        <div>
-                            <FormattedMessage id="my_balance" />
-                        </div>
-                        <Forward />
-                    </div>
-                    <div className="flex justify-between">
-                        <div className="flex items-center gap-1">
-                            <img src={coinIcon} width={28} height={28} className="mt-1" />
-                            <div className="text-2xl">
-                                {userStore.balance === -1 ? '···' : userStore.balance}
-                            </div>
-                        </div>
-                        <div>
-                            <Button
-                                onClick={handleToggleCoin}
-                                className="h-10 shadow bg-white text-red-400 font-bold text-md"
-                            >
-                                <FormattedMessage id="top_up" />
-                            </Button>
-                        </div>
-                    </div>
-                </div> */}
-                <div className="rs-profile__vipCard" onClick={handleVipCardClick} role="button" tabIndex={0} onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleVipCardClick();
-                    }
-                }}>
-                    <img
-                        src={gift}
-                        className={cn(
-                            'w-20 h-20 absolute top-3',
-                            document.body.style.direction === 'ltr' ? 'right-2' : 'left-2',
-                        )}
-                    />
-                    <img
-                        src={gem}
-                        className={cn(
-                            'w-16 h-16 absolute bottom-2 -rotate-45',
-                            document.body.style.direction === 'ltr' ? 'right-10' : 'left-10',
-                        )}
-                    />
-                    <div className="rs-profile__vipCardText">
-                        <div className="rs-profile__vipPill">
-                            <FormattedMessage id={userStore.isVIP() ? 'is_vip' : 'vip'} />
-                        </div>
-                        <div className="rs-profile__vipHint">
-                            <FormattedMessage id="enjoy" />
-                        </div>
-                    </div>
-                </div>
-                <div className="rs-profile__menu">
-                    {userStore.isAdmin() && (
-                        <>
-                            <Link to="/z" className="rs-profile__menuItem">
-                                <div className="rs-profile__menuLeft">
-                                    <CircleUser className="w-5 h-5" />
-                                    <div className="rs-profile__menuText">
-                                        <FormattedMessage id="admin" />
-                                    </div>
-                                </div>
-                                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
-                            </Link>
-                            <Link to="/shopping" className="rs-profile__menuItem">
-                                <div className="rs-profile__menuLeft">
-                                    <CircleUser className="w-5 h-5" />
-                                    <div className="rs-profile__menuText">产品列表</div>
-                                </div>
-                                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
-                            </Link>
-                        </>
-                    )}
-                    {/* <Link to="/my-list" className="rs-profile__menuItem">
-                        <div className="rs-profile__menuLeft">
-                            <img src={iconMyList} alt="" className="rs-profile__menuIcon" />
-                            <div className="rs-profile__menuText">
-                                <FormattedMessage id="my_list" />
-                            </div>
-                        </div>
-                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
-                    </Link> */}
-                    <Link
-                        to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
-                        state={{ sourceform }}
-                        className="rs-profile__menuItem"
-                    >
-                        <div className="rs-profile__menuLeft">
-                            <img src={iconHistory} alt="" className="rs-profile__menuIcon" />
-                            <div className="rs-profile__menuText">
-                                <FormattedMessage id="history" />
-                            </div>
-                        </div>
-                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
-                    </Link>
-                    <Link
-                        to="/page/feedback"
-                        className="rs-profile__menuItem"
-                    >
-                        <div className="rs-profile__menuLeft">
-                            <img src={iconFeedback} alt="" className="rs-profile__menuIcon" />
-                            <div className="rs-profile__menuText">
-                                <FormattedMessage id="feedback_help" />
-                            </div>
-                        </div>
-                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
-                    </Link>
-                </div>
-
-                {userStore.isAnonymous() ? (
-                    <Link to="/page/login" className="rs-profile__btnLogin">
-                        <FormattedMessage id="login" />
-                    </Link>
-                ) : (
-                    <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>
-                        <FormattedMessage id="logout" />
-                    </button>
-                )}
-                    <ReelShortFooter />
-                </div>
                 <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
-                {/* <Coin open={coin} from="profile" onOpenChange={handleToggleCoin} /> */}
             </div>
         </div>
     );

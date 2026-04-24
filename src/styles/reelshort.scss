@@ -300,6 +300,27 @@ a.reelshort-topnav__brand-link {
     justify-content: center;
     gap: 8px;
     text-decoration: none;
+    border: 0;
+    outline: none;
+    outline-width: 0;
+    box-shadow: none;
+    /* 顶栏品牌区不要任何聚焦环（全局 `* { outline-ring/50 }` 会出金/灰细线） */
+    -webkit-tap-highlight-color: transparent;
+
+    &:focus,
+    &:focus-visible,
+    &:focus-within,
+    &:active {
+        border: 0 !important;
+        outline: none !important;
+        outline-width: 0 !important;
+        box-shadow: none !important;
+    }
+
+    img,
+    .reelshort-topnav__brand-text {
+        outline: none;
+    }
 }
 
 @media (min-width: 640px) {
@@ -425,6 +446,11 @@ a.reelshort-topnav__profile-link {
 }
 
 @media (min-width: 768px) {
+    /* PC 主区与顶栏左缘对齐（与 `.reelshort-topnav__row` 水平 padding、`.reelshort-topnav__left` 同源） */
+    :root {
+        --rs-pc-page-gutter-x: 16px;
+    }
+
     .reelshort-topnav__brand-logo {
         height: clamp(38px, 3vw, 45px);
         width: clamp(38px, 3vw, 45px);
@@ -478,11 +504,11 @@ a.reelshort-topnav__profile-link {
 
     .reelshort-topnav__row {
         min-height: 52px;
-        padding: 8px 16px;
+        padding: 8px var(--rs-pc-page-gutter-x);
     }
 
     .reelshort-topnav__left {
-        left: 16px;
+        left: var(--rs-pc-page-gutter-x);
         display: flex;
         align-items: center;
         gap: 8px;
@@ -500,7 +526,7 @@ a.reelshort-topnav__profile-link {
 
     .reelshort-topnav__right {
         position: relative;
-        right: 16px;
+        right: var(--rs-pc-page-gutter-x);
         top: auto;
         transform: none;
         margin-left: auto;
@@ -824,7 +850,7 @@ a.reelshort-topnav__profile-link {
         overflow: visible;
     }
 
-    /* 单层：无外层黑底套娃，padding 区内底色一致（对标 bg-white/10 + blur + 略压暗） */
+    /* 纯色实底：不用 backdrop-filter，避免边缘与中间色相不一致像「夹黑边」 */
     .reelshort-topnav__pc-search-barInner {
         display: flex;
         box-sizing: border-box;
@@ -835,10 +861,7 @@ a.reelshort-topnav__profile-link {
         padding: 0 12px;
         border: 1px solid rgba(255, 255, 255, 0.5);
         border-radius: 6px;
-        background-color: rgba(32, 32, 32, 0.58);
-        background-clip: padding-box;
-        -webkit-backdrop-filter: blur(12px);
-        backdrop-filter: blur(12px);
+        background-color: rgba(48, 48, 48, 0.96);
         gap: 0;
     }
 
@@ -862,6 +885,7 @@ a.reelshort-topnav__profile-link {
         line-height: 42px;
         color: #fff;
         outline: none;
+        box-shadow: none;
         -webkit-appearance: none;
         appearance: none;
 

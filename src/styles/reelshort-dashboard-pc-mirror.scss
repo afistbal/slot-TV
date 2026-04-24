@@ -1,0 +1,255 @@
+/**
+ * PC /profile 侧栏个人信息：与 ReelShort /dashboard 同源选择器 + 属性
+ * - 规则自镜像 `9cb3e9a284588d0e.css`（dashboard_pc_*）
+ * - `library.html` 主包为 `693b44cd8a8dffa7.css`：:root --fontFamily、body 14px
+ * - 侧栏嵌在本站时需收敛 `.dashboard_pc_dashboard_pc__EjjRI` 全页布局
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap');
+
+.rs-profile__pc-reelshortMirror {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+}
+
+.rs-profile__pc-reelshortMirror .dashboard_pc_dashboard_pc__EjjRI {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
+    display: block;
+    position: relative;
+}
+
+.rs-profile__pc-reelshortMirror .dashboard_pc_dashboard_pc__EjjRI::before {
+    content: none;
+}
+
+/* 宽度由侧栏 `.rs-profile__pc-aside` 决定，此处铺满不写死 324px */
+.rs-profile__pc-reelshortMirror .dashboard_pc_dashboard_control__6d3Zj {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* —— 以下块自 9cb3e9a284588d0e.css 897–965，选择器前缀 `.rs-profile__pc-reelshortMirror` —— */
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu {
+    width: 100%;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    background: #141414;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9 {
+    width: 100%;
+    margin-left: 12px;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+    -webkit-box-pack: justify;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9
+    .dashboard_pc_name__KWvOf {
+    max-width: 254px;
+    line-height: 25px;
+    font-size: 20px;
+    color: #fff;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-wrap: break-word;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9
+    .dashboard_pc_uid__2riI1 {
+    /* 源站 12px；与侧栏登录按钮（16px）协调略放大 */
+    font-size: 14px;
+    color: hsla(0, 0%, 100%, 0.5);
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9
+    .dashboard_pc_uid__2riI1
+    .dashboard_pc_uid_icon__A27Us {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9
+    .dashboard_pc_sign_in__CCBeS {
+    /* ReelShort 源站为 14px / 5px 10px；本站 PC 侧栏略放大以提升可读与点击区域 */
+    padding: 8px 18px;
+    font-size: 16px;
+    font-weight: 400;
+    color: #fff;
+    border-radius: 8px;
+    opacity: 1;
+    border: 1px solid #707070;
+    cursor: pointer;
+    line-height: 1;
+    margin-left: 32px;
+    font-family: inherit;
+    text-decoration: none;
+    text-align: center;
+    background: transparent;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    appearance: none;
+    white-space: nowrap;
+}
+
+.rs-profile__pc-reelshortMirror
+    .dashboard_pc_dashboard_pc__EjjRI
+    .dashboard_pc_dashboard_control__6d3Zj
+    .dashboard_pc_user_info__NRQYu
+    .dashboard_pc_info__fonB9
+    .dashboard_pc_sign_in__CCBeS:hover {
+    color: #fff;
+    border-color: #8a8a8a;
+}
+
+/**
+ * PC /profile 侧栏菜单：与 ReelShort `dashboard_pc_menu__5uzfK` / `dashboard_pc_menu_item_*` 同源
+ *（见 `9cb3e9a284588d0e.css`）。挂在 `.rs-profile__pc-aside` 下，与线上 DOM 一致用 ul/li/i/span。
+ */
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK {
+    list-style: none;
+    margin: 30px 0 0;
+    padding: 0;
+    width: 100%;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY {
+    width: 100%;
+    padding-left: 0;
+    margin: 0;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    cursor: pointer;
+    /* 线上 chunk 为 16px/49px；内层 button + 本地字体栈视觉上偏紧，略放大以对齐实机观感 */
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.2;
+    box-sizing: border-box;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY .rs-profile__pc-menuHit {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: 56px;
+    padding: 0 0 0 24px;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+    text-align: left;
+    text-decoration: none;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY span {
+    margin-left: 22px;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY i {
+    font-size: 24px !important;
+    font-style: normal;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    color: inherit;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY i .lucide {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY:hover,
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY:hover .rs-profile__pc-menuHit {
+    color: #e52e2e;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item_active__H7KVg,
+.rs-profile__pc-aside
+    .dashboard_pc_menu__5uzfK
+    .dashboard_pc_menu_item_active__H7KVg
+    .rs-profile__pc-menuHit,
+.rs-profile__pc-aside
+    .dashboard_pc_menu__5uzfK
+    .dashboard_pc_menu_item_active__H7KVg
+    i,
+.rs-profile__pc-aside
+    .dashboard_pc_menu__5uzfK
+    .dashboard_pc_menu_item_active__H7KVg
+    span,
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item_active__H7KVg .rs-profile__pc-menuSvg {
+    color: #e52e2e !important;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item_active__H7KVg {
+    background-color: #141414;
+    border-radius: 4px;
+}

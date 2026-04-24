@@ -1,0 +1,89 @@
+/**
+ * PC 法律页 — 与站内深色主题一致：黑底、白/浅白正文、高对比链接（rem 缩放逻辑仍对标 ReelShort）。
+ */
+.fn-rs-legal-pc-host {
+    box-sizing: border-box;
+    min-height: 100dvh;
+    background: var(--app-canvas, #000000);
+}
+
+.fn-rs-legal-pc {
+    box-sizing: border-box;
+    margin: 0 auto;
+    max-width: 1280px;
+    padding: 0.4rem;
+    font-size: 0.3rem;
+    line-height: normal;
+    color: rgba(255, 255, 255, 0.92);
+
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+        font-family:
+            Noto Sans,
+            -apple-system,
+            BlinkMacSystemFont,
+            "PingFang SC",
+            "Helvetica Neue",
+            STHeiti,
+            "Microsoft Yahei",
+            Tahoma,
+            Simsun,
+            sans-serif;
+    }
+
+    .fn-rs-legal-pc__kicker {
+        margin: 0.4rem 0;
+        font-size: 0.26rem;
+        line-height: 0.46rem;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    p {
+        margin: 0.4rem 0;
+        line-height: 0.46rem;
+    }
+
+    h2 {
+        margin: 0.4rem 0;
+        font-size: 0.4rem;
+        font-weight: 600;
+        line-height: 0.46rem;
+        color: #ffffff;
+    }
+
+    h3 {
+        margin: 0.4rem 0;
+        font-size: 0.3rem;
+        font-weight: 600;
+        line-height: 0.46rem;
+        color: rgba(255, 255, 255, 0.96);
+    }
+
+    ul {
+        margin: 0.2rem 0.4rem;
+    }
+
+    li {
+        margin: 6px 0;
+        line-height: 0.46rem;
+    }
+
+    a {
+        word-break: break-all;
+        color: var(--rs-brand, #d4a853);
+    }
+
+    a:hover {
+        color: #e0bc6a;
+    }
+
+    strong {
+        color: #ffffff;
+    }
+
+    p.fn-rs-legal-pc__caps {
+        font-weight: 600;
+    }
+}

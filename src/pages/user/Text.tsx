@@ -1,8 +1,12 @@
 import { Page } from "@/layouts/user";
 import { FormattedMessage, useIntl } from "react-intl";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router";
 import userAgreementEn from "@/content/user-agreement.en.txt?raw";
+import { useMinWidth768 } from "@/hooks/useMinWidth768";
+import { useReelShortLegalDocRem } from "@/hooks/useReelShortLegalDocRem";
+import { reelshortPrivacyPolicyIframeSrc } from "@/lib/legalDocumentUrl";
+import { BRAND_DISPLAY_NAME } from "@/constants/brand";
 
 function linkifyLine(text: string): React.ReactNode {
     const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
@@ -40,15 +44,18 @@ function isAllCapsNotice(s: string): boolean {
     return t.length > 40 && t === t.toUpperCase() && /^[A-Z0-9]/.test(t);
 }
 
-function UserAgreementBody() {
-    const blocks = useMemo(() => {
+function useUserAgreementBlocks() {
+    return useMemo(() => {
         return userAgreementEn
             .replace(/\r\n/g, "\n")
             .split(/\n\n+/)
             .map((s) => s.trim())
             .filter(Boolean);
     }, []);
+}
 
+function UserAgreementBody() {
+    const blocks = useUserAgreementBlocks();
     const kicker = blocks[0];
     const title = blocks[1];
     const meta = blocks[2];
@@ -86,6 +93,45 @@ function UserAgreementBody() {
                         {linkifyLine(t)}
                     </p>
                 );
+            })}
+        </>
+    );
+}
+
+/** PC：版式对齐 ReelShort 静态页（主标题用 strong，rem 由根字号驱动）。 */
+function UserAgreementReelshortPcBody() {
+    const blocks = useUserAgreementBlocks();
+    const kicker = blocks[0];
+    const title = blocks[1];
+    const meta = blocks[2];
+    const body = blocks.slice(3);
+
+    return (
+        <>
+            {kicker && kicker !== title ? <p className="fn-rs-legal-pc__kicker">{linkifyLine(kicker)}</p> : null}
+            <p>
+                <strong>{linkifyLine(title ?? kicker ?? "")}</strong>
+            </p>
+            {meta && meta !== title ? <p>{linkifyLine(meta)}</p> : null}
+            {body.map((block, idx) => {
+                const t = block.trim();
+                if (!t) {
+                    return null;
+                }
+                if (isMajorSectionHeading(t)) {
+                    return <h2 key={idx}>{linkifyLine(t)}</h2>;
+                }
+                if (isSubsectionHeading(t)) {
+                    return <h3 key={idx}>{linkifyLine(t)}</h3>;
+                }
+                if (isAllCapsNotice(t)) {
+                    return (
+                        <p key={idx} className="fn-rs-legal-pc__caps">
+                            {linkifyLine(t)}
+                        </p>
+                    );
+                }
+                return <p key={idx}>{linkifyLine(t)}</p>;
             })}
         </>
     );
@@ -227,9 +273,47 @@ function PrivacyPolicyBody() {
 }
 
 export default function Component() {
+    const intl = useIntl();
     const location = useLocation();
+    const mdUp = useMinWidth768();
     const titleParam = new URLSearchParams(location.search).get("title");
     const pageKey = titleParam === "privacy_policy" ? "privacy_policy" : "user_agreement";
+    const isLegalPc = mdUp && (pageKey === "privacy_policy" || pageKey === "user_agreement");
+
+    useReelShortLegalDocRem(isLegalPc && pageKey === "user_agreement");
+
+    /** 浏览器标签标题：全视口生效：`<文案> – YogoShort>`；图标见项目根目录 `index.html`（`/favorite.png`、`/logo.png`）。 */
+    useEffect(() => {
+        const prev = document.title;
+        const pageTitle =
+            pageKey === "privacy_policy"
+                ? intl.formatMessage({ id: "privacy_policy" })
+                : intl.formatMessage({ id: "user_agreement" });
+        document.title = `${pageTitle} – ${BRAND_DISPLAY_NAME}`;
+        return () => {
+            document.title = prev;
+        };
+    }, [pageKey, intl]);
+
+    if (isLegalPc && pageKey === "privacy_policy") {
+        return (
+            <iframe
+                title="Privacy Policy"
+                src={reelshortPrivacyPolicyIframeSrc()}
+                className="block h-[100dvh] w-full max-w-none border-0 bg-app-canvas"
+            />
+        );
+    }
+
+    if (isLegalPc && pageKey === "user_agreement") {
+        return (
+            <div className="fn-rs-legal-pc-host">
+                <article className="fn-rs-legal-pc">
+                    <UserAgreementReelshortPcBody />
+                </article>
+            </div>
+        );
+    }
 
     return (
         <Page title={pageKey} bodyClassName="bg-app-canvas">

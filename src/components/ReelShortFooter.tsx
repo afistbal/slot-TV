@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { cn } from '@/lib/utils';
@@ -35,12 +36,12 @@ export function ReelShortFooter() {
                             className={cn('reelshort-footer__collapsible', aboutOpen && 'reelshort-footer__collapsible--open')}
                             aria-hidden={!aboutOpen}
                         >
-                            <Link className="reelshort-footer__collapse-item" to="/page/text?title=user_agreement">
+                            <LegalDocumentLink title="user_agreement" className="reelshort-footer__collapse-item">
                                 <FormattedMessage id="user_agreement" />
-                            </Link>
-                            <Link className="reelshort-footer__collapse-item" to="/page/text?title=privacy_policy">
+                            </LegalDocumentLink>
+                            <LegalDocumentLink title="privacy_policy" className="reelshort-footer__collapse-item">
                                 <FormattedMessage id="privacy_policy" />
-                            </Link>
+                            </LegalDocumentLink>
                             <div className="reelshort-footer__collapse-item reelshort-footer__collapse-item--version">
                                 <span className="reelshort-footer__versionLabel">
                                     <FormattedMessage id="version" />
@@ -93,14 +94,14 @@ export function ReelShortFooter() {
                                 <FormattedMessage id="footer_about_us" />
                             </div>
                             <div className="Footer_item_sub_title__VYtUB">
-                                <Link to="/page/text?title=user_agreement" className="Footer_item_sub_text__EQ_F8">
+                                <LegalDocumentLink title="user_agreement" className="Footer_item_sub_text__EQ_F8">
                                     <FormattedMessage id="user_agreement" />
-                                </Link>
+                                </LegalDocumentLink>
                             </div>
                             <div className="Footer_item_sub_title__VYtUB">
-                                <Link to="/page/text?title=privacy_policy" className="Footer_item_sub_text__EQ_F8">
+                                <LegalDocumentLink title="privacy_policy" className="Footer_item_sub_text__EQ_F8">
                                     <FormattedMessage id="privacy_policy" />
-                                </Link>
+                                </LegalDocumentLink>
                             </div>
                             <div className="Footer_item_sub_title__VYtUB">
                                 <div className="reelshort-footer__pc-version-row">

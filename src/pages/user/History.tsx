@@ -113,9 +113,16 @@ export default function Component() {
         }).finally(() => {
             requesting.current = false;
         });
+        const rows = result.d.data;
+        if (p === 1 && import.meta.env.DEV && rows.length === 0) {
+            setPage(p);
+            setList([...list, ...offlineHistoryList]);
+            setMore(false);
+            return;
+        }
         setPage(p);
-        setList([...list, ...result.d.data]);
-        setMore(result.d.per_page === result.d.data.length);
+        setList([...list, ...rows]);
+        setMore(result.d.per_page === rows.length);
     }
 
     useEffect(() => {

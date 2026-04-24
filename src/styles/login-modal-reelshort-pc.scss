@@ -1,0 +1,279 @@
+/**
+ * PC /page/login：对标 ReelShort `LoginModal_login_modal__oygOe`（见镜像 `a4886d23115be918.css`）。
+ * 类名沿用 LoginModal_* 便于与源站对照；仅包在 `.rs-login-modal` 下避免污染全局。
+ */
+
+.rs-login-modal__overlay {
+    z-index: 1100 !important;
+    background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+.rs-login-modal__dialog {
+    z-index: 1100 !important;
+    /* 线上弹层常见 width:520px；背景图为 ReelShort `login_bg@2x` 本地副本 */
+    width: 520px !important;
+    max-width: 520px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    background: transparent !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+}
+
+.rs-login-modal .LoginModal_close_btn__KOxVA {
+    position: absolute;
+    top: 26px;
+    right: 30px;
+    z-index: 2;
+    height: 30px;
+    width: 30px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #222;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-login-modal .LoginModal_close_btn__KOxVA:hover {
+    opacity: 0.75;
+}
+
+.rs-login-modal .LoginModal_close_btn__KOxVA img,
+.rs-login-modal .LoginModal_close_btn__KOxVA svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+    flex-shrink: 0;
+}
+
+.rs-login-modal .LoginModal_login_body__DH86w {
+    position: relative;
+    width: 520px;
+    height: 600px;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center top;
+    border-radius: 12px;
+    padding-top: 123px;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.rs-login-modal .LoginModal_logo__ahMlI {
+    position: relative;
+    margin: 0 auto 10px;
+    width: 66px;
+    height: 66px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.rs-login-modal .LoginModal_logo__ahMlI img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.rs-login-modal .LoginModal_title__ObusB {
+    font-size: 24px;
+    font-weight: 700;
+    color: #222;
+    line-height: 34px;
+    height: 34px;
+}
+
+.rs-login-modal .LoginModal_login_body__DH86w > p {
+    margin-top: 2px;
+    margin-bottom: 30px;
+    min-height: 22px;
+    font-size: 14px;
+    color: #444;
+    line-height: 22px;
+}
+
+.rs-login-modal .LoginModal_login_btn_box__QKb14 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.rs-login-modal .LoginModal_login_btn_item__FxNs7 {
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    width: 340px;
+    height: 48px;
+    border-radius: 24px;
+    padding-left: 24px;
+    padding-right: 16px;
+    box-sizing: border-box;
+    color: #fff;
+    cursor: pointer;
+    position: relative;
+    border: 0;
+    font: inherit;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-login-modal .LoginModal_login_btn_item__FxNs7:last-child {
+    margin-bottom: 0;
+}
+
+.rs-login-modal .LoginModal_login_btn_item__FxNs7--google {
+    background: rgb(84, 125, 230);
+}
+
+.rs-login-modal .LoginModal_login_btn_item__FxNs7--email {
+    background: rgb(51, 51, 51);
+}
+
+.rs-login-modal .LoginModal_login_icon__Huj9u {
+    position: relative;
+    height: 24px;
+    width: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rs-login-modal .LoginModal_login_icon__Huj9u img {
+    width: 24px;
+    height: 24px;
+    display: block;
+    object-fit: contain;
+}
+
+.rs-login-modal__email-mail-icon {
+    filter: brightness(0) invert(1);
+}
+
+.rs-login-modal .LoginModal_login_text__3ZrIq {
+    margin-left: 20px;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.rs-login-modal .LoginModal_protocol__jVDhl {
+    text-align: center;
+    margin-top: auto;
+    padding-top: 24px;
+    width: 380px;
+    max-width: calc(100% - 48px);
+    font-size: 12px;
+    font-weight: 500;
+    color: #ababab;
+    line-height: 18px;
+}
+
+.rs-login-modal .LoginModal_protocol__jVDhl a {
+    cursor: pointer;
+    color: #6b6b6b;
+    text-decoration: underline;
+}
+
+/* 邮箱步骤：同卡片内表单，PC 交互 */
+.rs-login-modal__email-back {
+    position: absolute;
+    top: 26px;
+    left: 24px;
+    z-index: 2;
+    height: 30px;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    color: #222;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-login-modal__email-back:hover {
+    opacity: 0.7;
+}
+
+.rs-login-modal__email-fields {
+    width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 8px;
+}
+
+.rs-login-modal__email-field {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    border-radius: 24px;
+    padding: 0 18px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: rgba(255, 255, 255, 0.85);
+    box-sizing: border-box;
+}
+
+.rs-login-modal__email-field:focus-within {
+    border-color: rgba(84, 125, 230, 0.5);
+}
+
+.rs-login-modal__email-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font-size: 15px;
+    color: #222;
+    outline: none;
+}
+
+.rs-login-modal__email-input::placeholder {
+    color: #999;
+}
+
+.rs-login-modal__email-send {
+    flex-shrink: 0;
+    margin-left: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #e52e2e;
+    cursor: pointer;
+    user-select: none;
+}
+
+.rs-login-modal__email-submit {
+    width: 380px;
+    height: 48px;
+    margin-top: 8px;
+    border: 0;
+    border-radius: 24px;
+    background: linear-gradient(90deg, #e52e2e 0%, #c41e1e 100%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.rs-login-modal__email-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.rs-login-modal .LoginModal_login_body__DH86w--email {
+    padding-top: 100px;
+}

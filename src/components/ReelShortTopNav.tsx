@@ -558,7 +558,7 @@ function TopNavHistoryEntry() {
   );
 }
 
-/** 顶栏「我的」：已登录且非匿名时展示后端 / Google（含 localStorage user-avatar）头像，否则占位 */
+/** 顶栏「我的」：H5 点击进 /profile；PC 悬停展开卡片，头像点击仍进 /profile（下拉打开仅由 hover 控制） */
 function NavProfileAvatar() {
   const intl = useIntl();
   const navigate = useNavigate();
@@ -570,6 +570,7 @@ function NavProfileAvatar() {
       ? getUserAvatarDisplayUrl(userStore.info as { [key: string]: unknown } | undefined)
       : undefined;
   const hasPhoto = Boolean(avatar);
+
   const [open, setOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const closeTimerRef = useRef<number | undefined>(undefined);
@@ -674,17 +675,26 @@ function NavProfileAvatar() {
   const signOutIconUrl = 'https://v-mps.crazymaplestudios.com/images/3c2c9f20-2f21-11f1-9a5e-8b72f42f4895.png';
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      open={open}
+      modal={false}
+      onOpenChange={(next) => {
+        /* 打开仅由 hover 负责，避免点击头像时 Radix 与 Link 抢焦点；允许 false 以支持 Esc / 点外部关闭 */
+        if (!next) {
+          setOpen(false);
+        }
+      }}
+    >
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
+        <Link
+          to="/profile"
           className="reelshort-topnav__profile-link reelshort-topnav__profile-trigger"
           aria-label={intl.formatMessage({ id: 'profile' })}
           onMouseEnter={openMenu}
           onMouseLeave={closeMenuSoon}
         >
           {avatarNode}
-        </button>
+        </Link>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
@@ -727,9 +737,9 @@ function NavProfileAvatar() {
           </div>
           <div className="reelshort-topnav__profile-card-divider" />
           <button
-              type="button"
-              className="reelshort-topnav__profile-card-topup"
-              onClick={() => navigate('/shopping')}
+            type="button"
+            className="reelshort-topnav__profile-card-topup"
+            onClick={() => navigate('/shopping')}
           >
             <FormattedMessage id="top_up" />
           </button>
@@ -754,6 +764,8 @@ export type ReelShortTopNavProps = {
   showSearch?: boolean;
   /** 是否展示右侧头像（跳转 profile）入口 */
   showProfile?: boolean;
+  /** PC 账户页：右侧仅保留 Desktop 下载入口（窄屏仍为 default 全套按钮） */
+  rightActionsMode?: 'default' | 'profilePc';
 };
 
 /**
@@ -765,7 +777,10 @@ export function ReelShortTopNav({
   showLeftAction = true,
   showSearch = showPrimaryNav,
   showProfile = true,
+  rightActionsMode = 'default',
 }: ReelShortTopNavProps = {}) {
+  const isMd = useMinWidth768();
+  const profilePcActions = rightActionsMode === 'profilePc' && isMd;
   const intl = useIntl();
   const [menuOpen, setMenuOpen] = useState(false);
   const [brandVideoOpen, setBrandVideoOpen] = useState(false);
@@ -864,15 +879,21 @@ export function ReelShortTopNav({
 
             <div className="reelshort-topnav__right">
               <div className="reelshort-topnav__actions">
-                {showSearch ? (
-                  <div className="reelshort-topnav__search">
-                    <TopNavSearchEntry />
-                  </div>
-                ) : null}
-                <TopNavInstallEntry />
-                <TopNavHistoryEntry />
-                <TopNavLanguageSwitcher />
-                {showProfile ? <NavProfileAvatar /> : null}
+                {profilePcActions ? (
+                  <TopNavInstallEntry />
+                ) : (
+                  <>
+                    {showSearch ? (
+                      <div className="reelshort-topnav__search">
+                        <TopNavSearchEntry />
+                      </div>
+                    ) : null}
+                    <TopNavInstallEntry />
+                    <TopNavHistoryEntry />
+                    <TopNavLanguageSwitcher />
+                    {showProfile ? <NavProfileAvatar /> : null}
+                  </>
+                )}
               </div>
             </div>
           </div>

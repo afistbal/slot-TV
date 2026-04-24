@@ -21,3 +21,7 @@ pkg.version = nextVersion;
 
 await writeFile(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
 console.log(`[version] ${version} -> ${nextVersion}`);
+
+const { patchPublicHtmlFiles } = await import('./sync-public-html-assets.mjs');
+await patchPublicHtmlFiles(nextVersion);
+console.log(`[assets] public HTML icon refs -> ?v=${nextVersion}`);

@@ -1,24 +1,32 @@
-import { FormattedMessage, useIntl } from "react-intl";
-// import facebook from '@/assets/facebook.svg';
+import { FormattedMessage, useIntl } from 'react-intl';
 import google from '@/assets/google.svg';
+import loginPcGoogle from '@/assets/icons/login-pc-google.png';
+import loginModalClose from '@/assets/icons/login-modal-close.svg';
 import mail from '@/assets/email.svg';
 import bg from '@/assets/images/ec9725d0-83b2-11ee-aed2-cfe3d80f70eb.png';
+import loginPcModalBg from '@/assets/images/login-pc-modal-bg.png';
 import closeIcon from '@/assets/images/icon_close.webp';
 import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
-import type React from "react";
-import { toast } from "sonner";
-import { api, report, type TData } from "@/api";
-import { useUserStore } from "@/stores/user";
-import { emailVerify } from "@/utils";
-import { useLoadingStore } from "@/stores/loading";
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { auth } from "@/firebase";
-import usePixel from "@/hooks/usePixel";
-import { Link, useNavigate } from "react-router";
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import type React from 'react';
+import { toast } from 'sonner';
+import { api, report, type TData } from '@/api';
+import { useUserStore } from '@/stores/user';
+import { emailVerify } from '@/utils';
+import { useLoadingStore } from '@/stores/loading';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth } from '@/firebase';
+import usePixel from '@/hooks/usePixel';
+import { LegalDocumentLink } from '@/components/LegalDocumentLink';
+import { useNavigate } from 'react-router';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { cn } from '@/lib/utils';
+
+type PcLoginStep = 'providers' | 'email';
 
 export default function Component() {
     const intl = useIntl();
@@ -26,26 +34,60 @@ export default function Component() {
     const userStore = useUserStore();
     const loadingStore = useLoadingStore();
     const navigate = useNavigate();
+    const isPc = useMinWidth768();
     const [emailOpen, setEmailOpen] = useState(false);
+    const [pcStep, setPcStep] = useState<PcLoginStep>('providers');
     const [time, setTime] = useState(0);
     const [email, setEmail] = useState(localStorage.getItem('email') ?? '');
     const [code, setCode] = useState('');
 
     function handleToggleEmailLogin() {
-        setEmailOpen(!emailOpen);
+        if (isPc) {
+            setPcStep('email');
+        } else {
+            setEmailOpen(!emailOpen);
+        }
+    }
+
+    function handlePcBackToProviders() {
+        setPcStep('providers');
+    }
+
+    function handleDialogOpenChange(next: boolean) {
+        if (!next) {
+            navigate(-1);
+        }
+    }
+
+    function handlePcDialogEscape(e: Event) {
+        if (pcStep === 'email') {
+            e.preventDefault();
+            setPcStep('providers');
+        }
+    }
+
+    function handlePcDialogOutside(e: Event) {
+        if (pcStep === 'email') {
+            e.preventDefault();
+            setPcStep('providers');
+        }
     }
 
     async function handleSubmit() {
         if (!emailVerify(email)) {
-            return toast.error(intl.formatMessage({
-                id: 'invalid_email',
-            }));
+            return toast.error(
+                intl.formatMessage({
+                    id: 'invalid_email',
+                }),
+            );
         }
 
         if (!/[0-9]{6}/.test(code.trim())) {
-            return toast.error(intl.formatMessage({
-                id: 'invalid_email_code',
-            }));
+            return toast.error(
+                intl.formatMessage({
+                    id: 'invalid_email_code',
+                }),
+            );
         }
 
         loadingStore.show();
@@ -67,25 +109,37 @@ export default function Component() {
         /* @ts-ignore */
         if (window.flutter_inappwebview) {
             /* @ts-ignore */
-            const signin = await window.flutter_inappwebview.callHandler('emailSignIn', email.trim(), (result.d['info'] as TData)['password'], result.d['is_new']);
+            const signin = await window.flutter_inappwebview.callHandler(
+                'emailSignIn',
+                email.trim(),
+                (result.d['info'] as TData)['password'],
+                result.d['is_new'],
+            );
             if (signin !== 'success') {
-                toast.error(intl.formatMessage({
-                    id: 'login_failed',
-
-                }, {
-                    'eason': signin,
-                }));
+                toast.error(
+                    intl.formatMessage(
+                        {
+                            id: 'login_failed',
+                        },
+                        {
+                            eason: signin,
+                        },
+                    ),
+                );
                 localStorage.removeItem('token');
                 loadingStore.hide();
                 return;
             }
         }
 
-        toast.success(intl.formatMessage({
-            id: 'login_success',
-        }));
+        toast.success(
+            intl.formatMessage({
+                id: 'login_success',
+            }),
+        );
 
         setEmailOpen(false);
+        setPcStep('providers');
         localStorage.setItem('token', result.d['token'] as string);
         localStorage.setItem('email', email.trim());
         localStorage.setItem('login-method', 'email');
@@ -103,12 +157,14 @@ export default function Component() {
         }
 
         if (!emailVerify(email)) {
-            return toast.error(intl.formatMessage({
-                id: 'invalid_email',
-            }));
+            return toast.error(
+                intl.formatMessage({
+                    id: 'invalid_email',
+                }),
+            );
         }
 
-        let result = await api('login/email/code', {
+        const result = await api('login/email/code', {
             method: 'post',
             data: {
                 email: email.trim(),
@@ -120,13 +176,15 @@ export default function Component() {
             return;
         }
 
-        toast.success(intl.formatMessage({
-            id: 'email_code_sended',
-        }))
+        toast.success(
+            intl.formatMessage({
+                id: 'email_code_sended',
+            }),
+        );
 
         let currentTime = 60;
         setTime(currentTime);
-        localStorage.setItem('mail-code-expire', ((new Date).getTime() + 60000).toString());
+        localStorage.setItem('mail-code-expire', (new Date().getTime() + 60000).toString());
         const timer = window.setInterval(() => {
             if (currentTime === 0) {
                 window.clearInterval(timer);
@@ -150,12 +208,18 @@ export default function Component() {
             /* @ts-ignore */
             await window.flutter_inappwebview.callHandler('googleSignin');
             /* @ts-ignore */
-            let detail: { uid: string, avatar: string, email: string, name: string, anonymous: boolean, } = await window.flutter_inappwebview.callHandler('currentUser');
+            let detail: {
+                uid: string;
+                avatar: string;
+                email: string;
+                name: string;
+                anonymous: boolean;
+            } = await window.flutter_inappwebview.callHandler('currentUser');
             if (!detail.uid) {
                 loadingStore.hide();
                 return;
             }
-            let result = await api('login/uid', {
+            const result = await api('login/uid', {
                 method: 'post',
                 data: {
                     uid: detail.uid,
@@ -185,10 +249,9 @@ export default function Component() {
             loadingStore.hide();
             pixel.track('Register');
             navigate('/profile', { replace: true });
-        } catch (e) {
+        } catch {
             loadingStore.hide();
         }
-
     }
 
     async function handleGoogleSigninPopup() {
@@ -200,22 +263,32 @@ export default function Component() {
             const credential = GoogleAuthProvider.credentialFromResult(result);
             if (!credential) {
                 report('google login failed A');
-                toast.error(intl.formatMessage({
-                    id: 'login_failed',
-                }, {
-                    eason: 'A'
-                }));
+                toast.error(
+                    intl.formatMessage(
+                        {
+                            id: 'login_failed',
+                        },
+                        {
+                            eason: 'A',
+                        },
+                    ),
+                );
                 localStorage.removeItem('token');
                 return;
             }
 
             if (!result.user) {
                 report('google login failed B');
-                toast.error(intl.formatMessage({
-                    id: 'login_failed',
-                }, {
-                    eason: 'B'
-                }));
+                toast.error(
+                    intl.formatMessage(
+                        {
+                            id: 'login_failed',
+                        },
+                        {
+                            eason: 'B',
+                        },
+                    ),
+                );
                 localStorage.removeItem('token');
                 return;
             }
@@ -230,7 +303,7 @@ export default function Component() {
                     provider: 'google',
                 },
                 loading: false,
-            }).then(result2 => {
+            }).then((result2) => {
                 localStorage.setItem('token', result2.d['token'] as string);
                 const photo = result.user.photoURL || '';
                 if (photo) {
@@ -246,15 +319,19 @@ export default function Component() {
                 userStore.signin(info);
                 navigate('/profile', { replace: true });
             });
-
         } catch (error) {
-            const e = (error as Error);
+            const e = error as Error;
             report(JSON.stringify(e));
-            toast.error(intl.formatMessage({
-                id: 'login_failed',
-            }, {
-                eason: e.message,
-            }));
+            toast.error(
+                intl.formatMessage(
+                    {
+                        id: 'login_failed',
+                    },
+                    {
+                        eason: e.message,
+                    },
+                ),
+            );
             localStorage.removeItem('token');
         } finally {
             loadingStore.hide();
@@ -262,7 +339,7 @@ export default function Component() {
     }
 
     useEffect(() => {
-        const expire = (parseInt(localStorage.getItem('mail-code-expire') || '0', 10) || 0);
+        const expire = parseInt(localStorage.getItem('mail-code-expire') || '0', 10) || 0;
         const now = new Date().getTime();
         let timer = 0;
         if (expire > now) {
@@ -281,6 +358,179 @@ export default function Component() {
             window.clearInterval(timer);
         };
     }, []);
+
+    const protocolBlock = (
+        <div className="LoginModal_protocol__jVDhl">
+            <FormattedMessage
+                id="protocol"
+                values={{
+                    tos: (parts: React.ReactNode[]) => (
+                        <LegalDocumentLink title="user_agreement" className="underline">
+                            {parts}
+                        </LegalDocumentLink>
+                    ),
+                    pp: (parts: React.ReactNode[]) => (
+                        <LegalDocumentLink title="privacy_policy" className="underline">
+                            {parts}
+                        </LegalDocumentLink>
+                    ),
+                }}
+            />
+        </div>
+    );
+
+    if (isPc) {
+        return (
+            <>
+                <div className="rs-login--pcShell fixed inset-0 z-0 bg-black" aria-hidden />
+                <Dialog open onOpenChange={handleDialogOpenChange}>
+                    <DialogContent
+                        hideCloseButton
+                        overlayClassName="rs-login-modal__overlay"
+                        className="rs-login-modal__dialog rs-login-modal LoginModal_login_modal__oygOe"
+                        onEscapeKeyDown={handlePcDialogEscape}
+                        onPointerDownOutside={handlePcDialogOutside}
+                    >
+                        <DialogTitle className="sr-only">
+                            <FormattedMessage id="login" />
+                        </DialogTitle>
+                        <div
+                            className={cn(
+                                'LoginModal_login_body__DH86w',
+                                pcStep === 'email' && 'LoginModal_login_body__DH86w--email',
+                            )}
+                            style={{ backgroundImage: `url(${loginPcModalBg})` }}
+                        >
+                            {pcStep === 'email' ? (
+                                <button
+                                    type="button"
+                                    className="rs-login-modal__email-back"
+                                    onClick={handlePcBackToProviders}
+                                >
+                                    <FormattedMessage id="back" />
+                                </button>
+                            ) : null}
+                            <button
+                                type="button"
+                                className="LoginModal_close_btn__KOxVA"
+                                onClick={() => navigate(-1)}
+                                aria-label={intl.formatMessage({ id: 'close' })}
+                            >
+                                <img src={loginModalClose} alt="" width={16} height={16} />
+                            </button>
+
+                            {pcStep === 'providers' ? (
+                                <>
+                                    <div className="LoginModal_logo__ahMlI">
+                                        <img src={BRAND_LOGO_SRC} alt="" />
+                                    </div>
+                                    <div className="LoginModal_title__ObusB">{BRAND_DISPLAY_NAME}</div>
+                                    <p>
+                                        <FormattedMessage
+                                            id="welcome_to_site"
+                                            values={{ site: BRAND_DISPLAY_NAME }}
+                                        />
+                                    </p>
+                                    <div className="LoginModal_login_btn_box__QKb14">
+                                        <button
+                                            type="button"
+                                            id="google"
+                                            className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google"
+                                            onClick={
+                                                (window as unknown as { flutter_inappwebview?: unknown })
+                                                    .flutter_inappwebview !== undefined
+                                                    ? handleGoogleSignin
+                                                    : handleGoogleSigninPopup
+                                            }
+                                        >
+                                            <div className="LoginModal_login_icon__Huj9u">
+                                                <img src={loginPcGoogle} alt="" />
+                                            </div>
+                                            <div className="LoginModal_login_text__3ZrIq">
+                                                <FormattedMessage id="login_google" />
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            id="email"
+                                            className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--email"
+                                            onClick={handleToggleEmailLogin}
+                                        >
+                                            <div className="LoginModal_login_icon__Huj9u">
+                                                <img
+                                                    src={mail}
+                                                    alt=""
+                                                    className="rs-login-modal__email-mail-icon"
+                                                />
+                                            </div>
+                                            <div className="LoginModal_login_text__3ZrIq">
+                                                <FormattedMessage id="login_email" />
+                                            </div>
+                                        </button>
+                                    </div>
+                                    {protocolBlock}
+                                </>
+                            ) : (
+                                <>
+                                    <div className="LoginModal_title__ObusB" style={{ marginBottom: 8 }}>
+                                        <FormattedMessage id="login_email" />
+                                    </div>
+                                    <div className="rs-login-modal__email-fields">
+                                        <div className="rs-login-modal__email-field">
+                                            <input
+                                                className="rs-login-modal__email-input"
+                                                type="email"
+                                                value={email}
+                                                onChange={handleEmailChange}
+                                                autoComplete="email"
+                                                placeholder={intl.formatMessage({ id: 'email_placeholder' })}
+                                                maxLength={30}
+                                            />
+                                        </div>
+                                        <div className="rs-login-modal__email-field">
+                                            <input
+                                                className="rs-login-modal__email-input"
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={code}
+                                                onChange={handleCodeChange}
+                                                placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                                                maxLength={6}
+                                            />
+                                            <span
+                                                role="button"
+                                                tabIndex={0}
+                                                className="rs-login-modal__email-send"
+                                                onClick={handleSendCode}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault();
+                                                        void handleSendCode();
+                                                    }
+                                                }}
+                                            >
+                                                {time > 0
+                                                    ? `${time.toString().padStart(2, '0')}s`
+                                                    : intl.formatMessage({ id: 'send_code' })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="rs-login-modal__email-submit"
+                                        onClick={() => void handleSubmit()}
+                                    >
+                                        <FormattedMessage id="login" />
+                                    </button>
+                                    {protocolBlock}
+                                </>
+                            )}
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </>
+        );
+    }
 
     return (
         <div className="rs-login">
@@ -304,7 +554,12 @@ export default function Component() {
                         <div
                             id="google"
                             className="LoginPage_login_btn_item__OkeV1 rs-login__btn"
-                            onClick={(window as any).flutter_inappwebview !== undefined ? handleGoogleSignin : handleGoogleSigninPopup}
+                            onClick={
+                                (window as unknown as { flutter_inappwebview?: unknown }).flutter_inappwebview !==
+                                undefined
+                                    ? handleGoogleSignin
+                                    : handleGoogleSigninPopup
+                            }
                         >
                             <div className="LoginPage_login_icon__XK3jz">
                                 <img src={google} alt="" />
@@ -331,57 +586,67 @@ export default function Component() {
                         <FormattedMessage
                             id="protocol"
                             values={{
-                                tos: (parts: React.ReactNode[]) => <Link to="/page/text?title=user_agreement">{parts}</Link>,
-                                pp: (parts: React.ReactNode[]) => <Link to="/page/text?title=privacy_policy">{parts}</Link>,
+                                tos: (parts: React.ReactNode[]) => (
+                                    <LegalDocumentLink title="user_agreement" className="underline">
+                                        {parts}
+                                    </LegalDocumentLink>
+                                ),
+                                pp: (parts: React.ReactNode[]) => (
+                                    <LegalDocumentLink title="privacy_policy" className="underline">
+                                        {parts}
+                                    </LegalDocumentLink>
+                                ),
                             }}
                         />
                     </div>
                 </div>
-        <Drawer open={emailOpen} onOpenChange={handleToggleEmailLogin}>
-            <DrawerContent className="bg-linear-to-b from-[#ffe9d1] to-white" aria-describedby="login">
-                <DrawerTitle className="flex items-center gap-4 px-4 pt-4 mb-4">
-                    <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
-                        <FormattedMessage id="login_email" />
-                    </div>
-                    <div onClick={handleToggleEmailLogin}>
-                        <X />
-                    </div>
-                </DrawerTitle>
-                <div className="border-t p-8 flex flex-col gap-4">
-                    <div className="rs-login__drawerField">
-                        <input
-                            onChange={handleEmailChange}
-                            value={email}
-                            type="email"
-                            autoFocus
-                            maxLength={30}
-                            className="rs-login__drawerInput"
-                            placeholder={intl.formatMessage({ id: 'email_placeholder' })}
-                        />
-                    </div>
-                    <div className="rs-login__drawerField">
-                        <input
-                            onChange={handleCodeChange}
-                            value={code}
-                            type="number"
-                            maxLength={6}
-                            className="rs-login__drawerInput"
-                            placeholder={intl.formatMessage({ id: 'code_placeholder' })}
-                        />
-                        <div
-                            className="rs-login__drawerSend"
-                            onClick={handleSendCode}
-                            onMouseDown={e => e.preventDefault()}
-                        >
-                            {time > 0 ? `${time.toString().padStart(2, '0')}s` : <FormattedMessage id="send_code" />}
+                <Drawer open={emailOpen} onOpenChange={setEmailOpen}>
+                    <DrawerContent className="bg-linear-to-b from-[#ffe9d1] to-white" aria-describedby="login">
+                        <DrawerTitle className="flex items-center gap-4 px-4 pt-4 mb-4">
+                            <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
+                                <FormattedMessage id="login_email" />
+                            </div>
+                            <div onClick={() => setEmailOpen(false)}>
+                                <X />
+                            </div>
+                        </DrawerTitle>
+                        <div className="border-t p-8 flex flex-col gap-4">
+                            <div className="rs-login__drawerField">
+                                <input
+                                    onChange={handleEmailChange}
+                                    value={email}
+                                    type="email"
+                                    autoFocus
+                                    maxLength={30}
+                                    className="rs-login__drawerInput"
+                                    placeholder={intl.formatMessage({ id: 'email_placeholder' })}
+                                />
+                            </div>
+                            <div className="rs-login__drawerField">
+                                <input
+                                    onChange={handleCodeChange}
+                                    value={code}
+                                    type="number"
+                                    maxLength={6}
+                                    className="rs-login__drawerInput"
+                                    placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                                />
+                                <div
+                                    className="rs-login__drawerSend"
+                                    onClick={handleSendCode}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                >
+                                    {time > 0 ? `${time.toString().padStart(2, '0')}s` : <FormattedMessage id="send_code" />}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div className="p-8 pt-0">
-                    <Button onClick={handleSubmit}><FormattedMessage id="login" /></Button>
-                </div>
-            </DrawerContent>
-        </Drawer>
+                        <div className="p-8 pt-0">
+                            <Button onClick={() => void handleSubmit()}>
+                                <FormattedMessage id="login" />
+                            </Button>
+                        </div>
+                    </DrawerContent>
+                </Drawer>
             </div>
         </div>
     );

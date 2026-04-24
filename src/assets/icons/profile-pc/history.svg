@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+  <g transform="translate(46 17)" opacity=".92">
+    <g transform="translate(-46 -17)" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="10" cy="10" r="10" stroke="none"/>
+      <circle cx="10" cy="10" r="9"/>
+    </g>
+    <rect width="2" height="8.701" rx="1" transform="translate(-37.272 -14.429)"/>
+    <rect width="2" height="8.701" rx="1" transform="rotate(90 -10.422 -18.149)"/>
+  </g>
+</svg>

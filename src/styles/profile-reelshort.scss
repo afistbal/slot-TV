@@ -245,3 +245,189 @@
     overflow-wrap: anywhere;
 }
 
+/* —— PC /profile：ReelShort dashboard 式双栏（H5 不挂这些修饰符） —— */
+.rs-profile--pc {
+    /* PC 不写死 height:100%，靠 user layout flex 占满；H5 仍用 .rs-profile { height:100% } */
+    height: auto;
+    flex: 1 1 0%;
+    min-height: 0;
+
+    /**
+     * PC：主列随内容增高，页脚下推；纵向滚动发生在本层（顶栏 → 双栏 → 页脚一条轨道），
+     * 避免右侧购物区单独 `overflow-y: auto`（H5 仍用 `.rs-profile__scroll` 默认行为）。
+     */
+    .rs-profile__scroll--pc {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 0%;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+    }
+}
+
+.rs-profile__pc-dashboard {
+    width: 100%;
+    max-width: 1636px;
+    min-width: 0;
+    margin: 0 auto;
+    /* 与顶栏 `.reelshort-topnav__inner` 同宽盒内：左右 gutter 与顶栏图标竖线对齐 */
+    padding: 0 var(--rs-pc-page-gutter-x, 16px);
+    display: flex;
+    align-items: stretch;
+    column-gap: clamp(12px, 2.4vw, 32px);
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+    position: relative;
+    box-sizing: border-box;
+
+    /**
+     * PC：双栏至少占满「首屏减顶栏」高度，右侧与左侧同高铺底；页脚在文档流紧随其后，
+     * 首屏一般看不到页脚，轻微向下滚动即可露出（与 `.reelshort-topnav__row` 高度公式一致）。
+     */
+    @media (min-width: 768px) {
+        min-height: calc(100dvh - (44 / 375 * var(--app-vw)) - 12px);
+    }
+
+    @media (max-width: 767.98px) {
+        display: none;
+    }
+}
+
+.rs-profile__pc-dashboard::before {
+    content: "";
+    position: absolute;
+    height: 1px;
+    width: 100%;
+    top: 0;
+    left: 0;
+    background-color: #fff;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.rs-profile__pc-aside {
+    flex: 0 1 clamp(272px, 30vw, 420px);
+    min-width: 0;
+    max-width: min(420px, 100%);
+    padding-top: 24px;
+    padding-right: 0;
+    padding-bottom: 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+/* PC 侧栏个人信息：已迁至 `reelshort-dashboard-pc-mirror.scss`（ReelShort dashboard_pc_* 同源类名） */
+
+.rs-profile__pc-aside .rs-profile__menu {
+    margin: 30px 0 0;
+    border-radius: 0;
+    overflow: visible;
+}
+
+/* ReelShort dashboard_pc 同源 PC 菜单矢量（内联 SVG，继承侧栏 color；布局见 reelshort-dashboard-pc-mirror.scss） */
+.rs-profile__pc-menuSvg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: block;
+}
+
+.rs-profile__pc-aside .rs-profile__menuChevronIcon {
+    display: none;
+}
+
+.rs-profile__pc-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    padding-top: 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+
+/**
+ * 在 `.rs-profile__pc-dashboard` 有首屏 min-height 时，`flex:1` 让右侧主列在竖向上铺满该行；
+ * 购物内容超出时整行仍随内容增高，由 `.rs-profile__scroll--pc` 滚动。
+ */
+.rs-profile__pc-main-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    border-radius: 4px;
+    background: transparent;
+}
+
+@media (min-width: 768px) {
+    /* 全站把 webkit 滚动条宽设为 0，PC /profile 整页滚动条做成本层可见 */
+    .rs-profile--pc .rs-profile__scroll--pc::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .rs-profile--pc .rs-profile__scroll--pc::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.28);
+        border-radius: 4px;
+    }
+
+    .rs-profile--pc .rs-profile__scroll--pc::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    /**
+     * RadixRc 嵌入：仅 PC 取消 `height:100%` 拉满，高度随内容，由 `.rs-profile__scroll--pc` 滚动。
+     * H5 无此 DOM；整页 `/shopping` 仍用 shopping-reelshort 里的 `.rs-shopping { height:100% }`。
+     */
+    .rs-profile__pc-main-scroll .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--profilePlain {
+        flex: 1 1 auto;
+        height: unset;
+        min-height: 0;
+    }
+
+    .rs-profile__pc-main-scroll .rs-shopping.rs-shopping--drawerEmbed {
+        flex: 1 1 auto;
+        height: unset;
+        min-height: 0;
+    }
+}
+
+.rs-profile__pc-main-scroll--mylist {
+    background: var(--app-canvas);
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.rs-profile__pc-my-list {
+    background: var(--app-canvas);
+}
+
+.rs-profile__pc-my-list-tabs {
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.rs-profile__pc-my-list-body {
+    box-sizing: border-box;
+    padding: 16px;
+}
+
+/* 全宽铺底：背景在 `.reelshort-footer` / `__pc` 上；勿限 max-width，否则两侧露画布色 */
+.rs-profile__pc-footer-wrap {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0 0 max(12px, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+}
+
