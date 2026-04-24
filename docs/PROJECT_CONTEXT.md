@@ -81,7 +81,6 @@
 | 离线开关 | `src/env.ts`，`VITE_SKIP_API` |
 | 首页 mock | `src/mocks/homeOffline.ts` |
 | 视频详情 mock | `src/mocks/videoOffline.ts`，`src/types/videoPlayer.ts` |
-| 我的列表 mock | `src/mocks/myListOffline.ts` |
 | 视频页 | `src/pages/user/Video.tsx`（含离线分支） |
 | 首页 | `src/pages/user/Home.tsx`（Banner + 内嵌顶栏叠层 + **ReelShort 式书架** `HomePage_main__BzEnK` / `HomeBookShelf`） |
 | 首页顶栏 | `src/components/ReelShortTopNav.tsx`（汉堡、字标、二级导航、侧栏） |

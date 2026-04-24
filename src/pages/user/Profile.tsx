@@ -11,7 +11,7 @@ import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconFeedback from '@/assets/images/59f06ad0-876c-11ee-aed2-cfe3d80f70eb.png';
 import iconHistory from '@/assets/images/history.png';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import Vip from '@/widgets/Vip';
 import { FormattedMessage } from 'react-intl';
@@ -26,21 +26,37 @@ import { auth } from '@/firebase';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import RadixRc from '@/pages/user/RadixRc';
 import FeedbackPanel from '@/pages/user/Feedback';
+import UserDetailPanel from '@/pages/user/UserDetail';
 import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
+import { PcLoginDialog } from '@/pages/user/Login';
 
-type ProfilePcTab = 'topup' | 'mylist' | 'feedback';
+type ProfilePcTab = 'topup' | 'profile' | 'mylist' | 'feedback';
 
 export default function Component() {
     const userStore = useUserStore();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const location = useLocation();
     const sourceform = `${location.pathname}${location.search}`;
     const loadingStore = useLoadingStore();
     const [vip, setVip] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPc = useMinWidth768();
+    const [pcLoginOpen, setPcLoginOpen] = useState(false);
     const [pcTab, setPcTab] = useState<ProfilePcTab>('topup');
     const [profileMyListSubTab, setProfileMyListSubTab] = useState<ProfileMyListSubTab>('favorite');
+
+    /** PC：与 ReelShort `?tab=mylist` / `history` 类似，用查询串驱动侧栏（可分享、可外链）。 */
+    function setProfileTabQuery(tab: 'topup' | 'profile' | 'mylist' | 'history' | 'feedback') {
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.set('tab', tab);
+                return next;
+            },
+            { replace: true },
+        );
+    }
 
     function handleToggleVip() {
         setVip(!vip);
@@ -48,11 +64,106 @@ export default function Component() {
 
     function handleVipCardClick() {
         if (isPc) {
-            setPcTab('topup');
+            setProfileTabQuery('topup');
         } else {
             navigate('/shopping');
         }
     }
+
+    /** H5：带 `tab` 进 /profile 时转到与全页路由等价的页面（PC 留在双栏 profile）。 */
+    useEffect(() => {
+        if (isPc) {
+            return;
+        }
+        const tab = searchParams.get('tab')?.toLowerCase();
+        if (!tab) {
+            return;
+        }
+        const dest: Record<string, string> = {
+            topup: '/shopping',
+            wallet: '/shopping',
+            mylist: '/my-list',
+            favorite: '/my-list',
+            history: '/my-list/history',
+            feedback: '/page/feedback',
+            help: '/page/feedback',
+        };
+        const path = dest[tab];
+        if (path) {
+            const back = searchParams.get('sourceform');
+            const qs = back
+                ? `${path.includes('?') ? '&' : '?'}sourceform=${encodeURIComponent(back)}`
+                : '';
+            navigate(`${path}${qs}`, { replace: true });
+        }
+    }, [isPc, location.search, navigate]);
+
+    /** PC：URL → 侧栏与主栏状态 */
+    useEffect(() => {
+        if (!isPc) {
+            return;
+        }
+        const tab = searchParams.get('tab')?.toLowerCase();
+        if (!tab || tab === 'topup' || tab === 'wallet') {
+            setPcTab('topup');
+            return;
+        }
+        if (tab === 'profile') {
+            if (userStore.isAnonymous()) {
+                setPcTab('topup');
+                return;
+            }
+            setPcTab('profile');
+            return;
+        }
+        if (tab === 'mylist' || tab === 'favorite') {
+            setPcTab('mylist');
+            setProfileMyListSubTab('favorite');
+            return;
+        }
+        if (tab === 'history') {
+            setPcTab('mylist');
+            setProfileMyListSubTab('history');
+            return;
+        }
+        if (tab === 'feedback' || tab === 'help') {
+            setPcTab('feedback');
+            return;
+        }
+        setPcTab('topup');
+    }, [isPc, location.search, userStore]);
+
+    /** PC 登录：由 `navigate('/profile', { state: { openPcLogin: true } })` 打开，不写 URL 查询串。 */
+    useEffect(() => {
+        const st = location.state as { openPcLogin?: boolean } | null | undefined;
+        if (!st?.openPcLogin) {
+            return;
+        }
+        setPcLoginOpen(true);
+        navigate(
+            { pathname: location.pathname, search: location.search, hash: location.hash },
+            { replace: true, state: {} },
+        );
+    }, [location.state, location.pathname, location.search, location.hash, navigate]);
+
+    /** 兼容旧链 `/profile?login=1`：去掉查询串并仅拉起弹窗。 */
+    useEffect(() => {
+        if (!isPc) {
+            return;
+        }
+        if (searchParams.get('login') !== '1') {
+            return;
+        }
+        setPcLoginOpen(true);
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete('login');
+                return next;
+            },
+            { replace: true },
+        );
+    }, [isPc, searchParams, setSearchParams]);
 
     useEffect(() => {
         api<number>('user/balance', {
@@ -65,7 +176,11 @@ export default function Component() {
     async function handleLogout() {
         try {
             loadingStore.show();
-            navigate('/page/login');
+            if (isPc) {
+                setPcLoginOpen(true);
+            } else {
+                navigate('/page/login');
+            }
             localStorage.removeItem('token');
             localStorage.removeItem('login-method');
             localStorage.removeItem('user-avatar');
@@ -312,9 +427,13 @@ export default function Component() {
                                 </div>
                             </div>
                             {userStore.isAnonymous() ? (
-                                <Link to="/page/login" className="dashboard_pc_sign_in__CCBeS">
+                                <button
+                                    type="button"
+                                    className="dashboard_pc_sign_in__CCBeS"
+                                    onClick={() => setPcLoginOpen(true)}
+                                >
                                     <FormattedMessage id="login" />
-                                </Link>
+                                </button>
                             ) : (
                                 <button
                                     type="button"
@@ -377,7 +496,7 @@ export default function Component() {
                                         <button
                                             type="button"
                                             className="rs-profile__pc-menuHit"
-                                            onClick={() => setPcTab('topup')}
+                                            onClick={() => setProfileTabQuery('topup')}
                                         >
                                             <i>
                                                 <RsPcWalletMenuIcon />
@@ -387,14 +506,27 @@ export default function Component() {
                                             </span>
                                         </button>
                                     </li>
+                                    {!userStore.isAnonymous() ? (
+                                        <li className={pcDashboardMenuLiClass('profile')}>
+                                            <button
+                                                type="button"
+                                                className="rs-profile__pc-menuHit"
+                                                onClick={() => setProfileTabQuery('profile')}
+                                            >
+                                                <i>
+                                                    <CircleUser className="h-6 w-6 shrink-0" strokeWidth={1.75} />
+                                                </i>
+                                                <span>
+                                                    <FormattedMessage id="user_detail" />
+                                                </span>
+                                            </button>
+                                        </li>
+                                    ) : null}
                                     <li className={pcMyListSidebarLiClass}>
                                         <button
                                             type="button"
                                             className="rs-profile__pc-menuHit"
-                                            onClick={() => {
-                                                setPcTab('mylist');
-                                                setProfileMyListSubTab('favorite');
-                                            }}
+                                            onClick={() => setProfileTabQuery('mylist')}
                                         >
                                             <i>
                                                 <RsPcMyListMenuIcon />
@@ -408,10 +540,7 @@ export default function Component() {
                                         <button
                                             type="button"
                                             className="rs-profile__pc-menuHit"
-                                            onClick={() => {
-                                                setPcTab('mylist');
-                                                setProfileMyListSubTab('history');
-                                            }}
+                                            onClick={() => setProfileTabQuery('history')}
                                         >
                                             <i>
                                                 <RsPcHistoryMenuIcon />
@@ -425,7 +554,7 @@ export default function Component() {
                                         <button
                                             type="button"
                                             className="rs-profile__pc-menuHit"
-                                            onClick={() => setPcTab('feedback')}
+                                            onClick={() => setProfileTabQuery('feedback')}
                                         >
                                             <i>
                                                 <RsPcHelpMenuIcon />
@@ -455,10 +584,13 @@ export default function Component() {
                                     {pcTab === 'mylist' ? (
                                         <ProfilePcMyListPane
                                             subTab={profileMyListSubTab}
-                                            onSubTabChange={setProfileMyListSubTab}
+                                            onSubTabChange={(v) =>
+                                                setProfileTabQuery(v === 'history' ? 'history' : 'mylist')
+                                            }
                                             hideSubTabs
                                         />
                                     ) : null}
+                                    {pcTab === 'profile' ? <UserDetailPanel embedded /> : null}
                                     {pcTab === 'feedback' ? <FeedbackPanel embedded /> : null}
                                 </div>
                             </div>
@@ -485,6 +617,7 @@ export default function Component() {
                     </div>
                 )}
                 <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
+                {isPc ? <PcLoginDialog open={pcLoginOpen} onOpenChange={setPcLoginOpen} /> : null}
             </div>
         </div>
     );

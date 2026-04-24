@@ -101,6 +101,8 @@
     "ok": "Ok",
     "delete": "Delete",
     "my_list_manage": "Manage the list",
+    "my_list_confirm_remove_story": "Are you sure you want to remove this story?",
+    "my_list_confirm_ok": "ok",
     "flix_add": "Add Film",
     "flix_list": "List Film",
     "magnet": "Magnet",

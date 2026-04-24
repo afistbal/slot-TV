@@ -405,10 +405,16 @@
     background: var(--app-canvas);
     padding: 0;
     box-sizing: border-box;
+    /* 占满 `.rs-profile__pc-main` 竖向剩余空间；勿用 flex-basis:auto，否则子项随内容高度，空态无法垂直居中 */
+    flex: 1 1 0%;
+    min-height: 0;
 }
 
 .rs-profile__pc-my-list {
     background: var(--app-canvas);
+    flex: 1 1 0%;
+    min-height: 0;
+    min-width: 0;
 }
 
 .rs-profile__pc-my-list-tabs {

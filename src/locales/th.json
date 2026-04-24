@@ -97,6 +97,8 @@
     "ok": "ตกลง",
     "delete": "ลบ",
     "my_list_manage": "จัดการรายการ",
+    "my_list_confirm_remove_story": "คุณแน่ใจหรือไม่ว่าต้องการนำเรื่องราวนี้ออก?",
+    "my_list_confirm_ok": "ตกลง",
     "flix_add": "เพิ่มภาพยนตร์",
     "flix_list": "รายการภาพยนตร์",
     "magnet": "แม่เหล็ก",

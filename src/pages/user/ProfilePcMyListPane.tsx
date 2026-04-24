@@ -2,6 +2,7 @@ import UserFavorite from '@/pages/user/Favorite';
 import UserHistory from '@/pages/user/History';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormattedMessage } from 'react-intl';
+import { cn } from '@/lib/utils';
 
 export type ProfileMyListSubTab = 'favorite' | 'history';
 
@@ -19,8 +20,19 @@ export function ProfilePcMyListPane({ subTab, onSubTabChange, hideSubTabs }: Pro
     if (hideSubTabs) {
         return (
             <div className="rs-profile__pc-my-list flex min-h-0 min-w-0 flex-1 flex-col text-white">
-                <div className="rs-profile__pc-my-list-body min-h-0 min-w-0 flex-1">
-                    {subTab === 'favorite' ? <UserFavorite /> : <UserHistory />}
+                <div
+                    className={cn(
+                        'rs-profile__pc-my-list-body flex min-h-0 min-w-0 flex-1 flex-col',
+                        'rs-profile__pc-my-list-body--cabinet',
+                    )}
+                >
+                    <div className="rs-profile__pc-cabinet">
+                        {subTab === 'favorite' ? (
+                            <UserFavorite variant="cabinet" />
+                        ) : (
+                            <UserHistory variant="cabinet" />
+                        )}
+                    </div>
                 </div>
             </div>
         );
@@ -47,7 +59,7 @@ export function ProfilePcMyListPane({ subTab, onSubTabChange, hideSubTabs }: Pro
                         <FormattedMessage id="nav_watch_history" />
                     </TabsTrigger>
                 </TabsList>
-                <div className="rs-profile__pc-my-list-body min-h-0 min-w-0 flex-1">
+                <div className="rs-profile__pc-my-list-body flex min-h-0 min-w-0 flex-1 flex-col">
                     {subTab === 'favorite' ? <UserFavorite /> : <UserHistory />}
                 </div>
             </Tabs>

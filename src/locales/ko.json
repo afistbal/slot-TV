@@ -97,6 +97,8 @@
     "ok": "확인",
     "delete": "삭제",
     "my_list_manage": "목록 관리",
+    "my_list_confirm_remove_story": "정말 이 스토리를 제거하시겠습니까?",
+    "my_list_confirm_ok": "확인",
     "flix_add": "영화 추가",
     "flix_list": "영화 목록",
     "magnet": "마그넷",

@@ -164,6 +164,8 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
     const [isDragging, setIsDragging] = useState(false);
     const isDraggingRef = useRef(false);
     const dragStartX = useRef(0);
+    /** 横向切张后同一次松手会合成 click，避免与 onCoverActivate 点进详情重复 */
+    const suppressNextCoverClickRef = useRef(false);
 
     const onPrev = useCallback(() => {
         if (n <= 1) return;
@@ -179,12 +181,10 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
         (e: React.PointerEvent<HTMLDivElement>) => {
             if (e.button !== 0) return;
             if (isInteractiveUI(e.target)) return;
-            e.preventDefault();
-            e.stopPropagation();
+            // 不可对封面/图片 preventDefault，否则不派发 click；亦勿 setPointerCapture，否则部分环境下不合成 click
             isDraggingRef.current = true;
             setIsDragging(true);
             dragStartX.current = e.clientX;
-            e.currentTarget.setPointerCapture(e.pointerId);
         },
         [],
     );
@@ -194,16 +194,17 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
             if (!isDraggingRef.current) return;
             isDraggingRef.current = false;
             setIsDragging(false);
-            try {
-                e.currentTarget.releasePointerCapture(e.pointerId);
-            } catch {
-                // ignore
-            }
             const dx = e.clientX - dragStartX.current;
-            if (dx > 50) {
-                onPrev();
-            } else if (dx < -50) {
-                onNext();
+            if (Math.abs(dx) > 50) {
+                suppressNextCoverClickRef.current = true;
+                if (dx > 50) {
+                    onPrev();
+                } else {
+                    onNext();
+                }
+                window.setTimeout(() => {
+                    suppressNextCoverClickRef.current = false;
+                }, 100);
             }
         },
         [onNext, onPrev],
@@ -269,6 +270,11 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
 
                             /** 对方每张 slide 始终同一套 Image 节点；不可在「中间 / 非中间」时切换不同标签，否则会卸载 img 造成闪黑。 */
                             const onCoverActivate = (e: React.SyntheticEvent) => {
+                                if (suppressNextCoverClickRef.current) {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    return;
+                                }
                                 e.stopPropagation();
                                 if (isCenter) {
                                     void navigate(href);
@@ -299,8 +305,9 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                     <div
                                         className={cn(
                                             'relative h-full w-full rounded-[20px]',
-                                            L.wrapOpacity === 0 ? 'pointer-events-none' : 'pointer-events-auto',
-                                            isCenter ? 'cursor-default' : 'cursor-pointer',
+                                            L.wrapOpacity === 0
+                                                ? 'pointer-events-none'
+                                                : 'pointer-events-auto cursor-pointer',
                                         )}
                                         style={{ backfaceVisibility: 'hidden' }}
                                         role={L.wrapOpacity === 0 ? undefined : 'button'}

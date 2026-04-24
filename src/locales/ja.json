@@ -100,6 +100,8 @@
     "ok": "OK",
     "delete": "削除",
     "my_list_manage": "リストを管理",
+    "my_list_confirm_remove_story": "このストーリーを削除してもよろしいですか？",
+    "my_list_confirm_ok": "OK",
     "flix_add": "フィルムを追加",
     "flix_list": "フィルムリスト",
     "magnet": "マグネット",

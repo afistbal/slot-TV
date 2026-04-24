@@ -488,23 +488,41 @@ function TopNavInstallEntry() {
   }
 
   return (
-    <div
-      className="reelshort-topnav__download"
-      onMouseEnter={openPanel}
-      onMouseLeave={closePanelSoon}
+    <DropdownMenu
+      open={open}
+      modal={false}
+      onOpenChange={(next) => {
+        if (!next) {
+          setOpen(false);
+        }
+      }}
     >
-      <button type="button" className="reelshort-topnav__download-trigger" aria-label="Download">
-        <span
-          className="reelshort-topnav__download-icon"
-          aria-hidden
-          style={{ ['--download-icon-url' as string]: `url("${iconTopnavDownload}")` }}
-        />
-        <span className="reelshort-topnav__download-label">
-          <FormattedMessage id="add_desktop_short" />
-        </span>
-      </button>
-      {open ? (
-        <div className="reelshort-topnav__download-popover" role="tooltip">
+      <div
+        className="reelshort-topnav__download"
+        onMouseEnter={openPanel}
+        onMouseLeave={closePanelSoon}
+      >
+        <DropdownMenuTrigger asChild>
+          <button type="button" className="reelshort-topnav__download-trigger" aria-label="Download">
+            <span
+              className="reelshort-topnav__download-icon"
+              aria-hidden
+              style={{ ['--download-icon-url' as string]: `url("${iconTopnavDownload}")` }}
+            />
+            <span className="reelshort-topnav__download-label">
+              <FormattedMessage id="add_desktop_short" />
+            </span>
+          </button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent
+          align="end"
+          side="bottom"
+          sideOffset={12}
+          className="reelshort-topnav__download-popover"
+          onMouseEnter={openPanel}
+          onMouseLeave={closePanelSoon}
+        >
           <div className="reelshort-topnav__download-copy">
             <p className="reelshort-topnav__download-title">
               <FormattedMessage id="add_desktop" />
@@ -521,9 +539,9 @@ function TopNavInstallEntry() {
             </button>
           </div>
           <img src="/logo.png" alt="logo" className="reelshort-topnav__download-logo" />
-        </div>
-      ) : null}
-    </div>
+        </DropdownMenuContent>
+      </div>
+    </DropdownMenu>
   );
 }
 
@@ -547,7 +565,7 @@ function TopNavHistoryEntry() {
     <button
       type="button"
       className="reelshort-topnav__history"
-      onClick={() => navigate('/my-list/history')}
+      onClick={() => navigate('/profile?tab=history')}
       aria-label="Watch history"
     >
       <TopNavHistoryIcon />
@@ -630,7 +648,7 @@ function NavProfileAvatar() {
   if (!isDesktop) {
     return (
       <Link
-        to="/profile"
+        to="/profile?tab=topup"
         className="reelshort-topnav__profile-link"
         aria-label={intl.formatMessage({ id: 'profile' })}
       >
@@ -642,7 +660,11 @@ function NavProfileAvatar() {
   async function handleLogout() {
     try {
       loadingStore.show();
-      navigate('/page/login');
+      if (isDesktop) {
+        navigate('/profile', { state: { openPcLogin: true }, replace: true });
+      } else {
+        navigate('/page/login');
+      }
       localStorage.removeItem('token');
       localStorage.removeItem('login-method');
       localStorage.removeItem('user-avatar');
@@ -687,7 +709,7 @@ function NavProfileAvatar() {
     >
       <DropdownMenuTrigger asChild>
         <Link
-          to="/profile"
+          to="/profile?tab=topup"
           className="reelshort-topnav__profile-link reelshort-topnav__profile-trigger"
           aria-label={intl.formatMessage({ id: 'profile' })}
           onMouseEnter={openMenu}
@@ -705,7 +727,7 @@ function NavProfileAvatar() {
       >
         <div className="reelshort-topnav__profile-card">
           <div className="reelshort-topnav__profile-card-head">
-            <Link to="/profile" className="reelshort-topnav__profile-card-avatar-link">
+            <Link to="/profile?tab=topup" className="reelshort-topnav__profile-card-avatar-link">
               {avatarNode}
             </Link>
             <div className="reelshort-topnav__profile-card-user">
@@ -729,7 +751,13 @@ function NavProfileAvatar() {
               <button
                 type="button"
                 className="reelshort-topnav__profile-card-login"
-                onClick={() => navigate('/page/login')}
+                onClick={() => {
+                  if (isDesktop) {
+                    navigate('/profile', { state: { openPcLogin: true } });
+                    return;
+                  }
+                  navigate('/page/login');
+                }}
               >
                 <FormattedMessage id="login" />
               </button>
@@ -739,7 +767,7 @@ function NavProfileAvatar() {
           <button
             type="button"
             className="reelshort-topnav__profile-card-topup"
-            onClick={() => navigate('/shopping')}
+            onClick={() => navigate('/profile?tab=topup')}
           >
             <FormattedMessage id="top_up" />
           </button>

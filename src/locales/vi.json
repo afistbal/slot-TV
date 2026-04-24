@@ -97,6 +97,8 @@
     "ok": "Đồng ý",
     "delete": "Xóa",
     "my_list_manage": "Quản lý danh sách",
+    "my_list_confirm_remove_story": "Bạn có chắc chắn muốn gỡ câu chuyện này không?",
+    "my_list_confirm_ok": "OK",
     "flix_add": "Thêm phim",
     "flix_list": "Danh sách phim",
     "magnet": "Magnet",

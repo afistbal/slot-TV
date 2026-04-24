@@ -97,6 +97,8 @@
     "ok": "Ok",
     "delete": "Excluir",
     "my_list_manage": "Gerenciar a lista",
+    "my_list_confirm_remove_story": "Tem certeza de que deseja remover esta história?",
+    "my_list_confirm_ok": "ok",
     "flix_add": "Adicionar Filme",
     "flix_list": "Listar Filme",
     "magnet": "Magnet",

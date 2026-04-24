@@ -73,7 +73,7 @@ export function ReelShortFooter() {
                             )}
                             aria-hidden={!supportOpen}
                         >
-                            <Link className="reelshort-footer__collapse-item" to="/page/feedback">
+                            <Link className="reelshort-footer__collapse-item" to="/profile?tab=feedback">
                                 <FormattedMessage id="feedback_help" />
                             </Link>
                         </div>
@@ -118,7 +118,7 @@ export function ReelShortFooter() {
                                 <FormattedMessage id="footer_support_center" />
                             </div>
                             <div className="Footer_item_sub_title__VYtUB">
-                                <Link to="/page/feedback" className="Footer_item_sub_text__EQ_F8">
+                                <Link to="/profile?tab=feedback" className="Footer_item_sub_text__EQ_F8">
                                     <FormattedMessage id="feedback_help" />
                                 </Link>
                             </div>

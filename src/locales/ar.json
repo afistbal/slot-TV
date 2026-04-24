@@ -97,6 +97,8 @@
     "ok": "موافق",
     "delete": "حذف",
     "my_list_manage": "إدارة القائمة",
+    "my_list_confirm_remove_story": "هل أنت متأكد أنك تريد إزالة هذه القصة؟",
+    "my_list_confirm_ok": "موافق",
     "flix_add": "إضافة فيلم",
     "flix_list": "قائمة الأفلام",
     "magnet": "مغناطيس",

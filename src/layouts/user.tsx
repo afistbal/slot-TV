@@ -73,7 +73,7 @@ export default function Component() {
                     </div>
                 </NavLink>
                 <NavLink
-                    to="/profile"
+                    to="/profile?tab=topup"
                     className={({ isActive }) =>
                         cn(
                             'flex flex-col items-center gap-0.5 rounded-md py-1',

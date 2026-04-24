@@ -5,13 +5,15 @@ import { useLoadingStore } from '@/stores/loading';
 import { auth } from '@/firebase';
 import { api } from '@/api';
 import { useNavigate } from 'react-router';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { Page } from '@/layouts/user';
 
-export default function Component() {
+export default function Component({ embedded = false }: { embedded?: boolean } = {}) {
   const intl = useIntl();
   const userStore = useUserStore();
   const loadingStore = useLoadingStore();
   const navigate = useNavigate();
+  const isPc = useMinWidth768();
 
   const isRealAccount = userStore.signed && userStore.info && userStore.info['anonymous'] !== 1;
 
@@ -24,7 +26,11 @@ export default function Component() {
   async function handleLogout() {
     try {
       loadingStore.show();
-      navigate('/page/login', { replace: true });
+      if (isPc) {
+        navigate('/profile', { state: { openPcLogin: true }, replace: true });
+      } else {
+        navigate('/page/login', { replace: true });
+      }
       localStorage.removeItem('token');
       localStorage.removeItem('login-method');
       localStorage.removeItem('user-avatar');
@@ -50,15 +56,16 @@ export default function Component() {
   }
 
   if (!isRealAccount) {
-    return <Page title="account_infomation">
+    const guestContent = (
       <div className="p-6 text-white/75">
         <FormattedMessage id="login" />
       </div>
-    </Page>;
+    );
+    return embedded ? guestContent : <Page title="account_infomation">{guestContent}</Page>;
   }
 
-  return (
-    <Page title="account_infomation">
+  const detailContent = (
+    <>
       <div className="rs-user-detail">
         <div className="rs-user-detail__card">
           <button type="button" className="rs-user-detail__row" onClick={handleCopyId}>
@@ -87,7 +94,9 @@ export default function Component() {
       <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>
         <FormattedMessage id="logout" />
       </button>
-    </Page>
+    </>
   );
+
+  return embedded ? detailContent : <Page title="account_infomation">{detailContent}</Page>;
 }
 

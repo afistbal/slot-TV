@@ -47,7 +47,7 @@ function ShoppingVipMembershipHeader() {
             <div className="absolute left-1 top-1/2 -translate-y-1/2 md:left-6">
                 <button
                     type="button"
-                    onClick={() => navigate('/profile')}
+                    onClick={() => navigate('/profile?tab=topup')}
                     className="flex h-10 w-10 items-center justify-center rounded-md text-white/90 hover:bg-white/10 active:bg-white/15"
                 >
                     {document.body.style.direction === 'ltr' ? (
@@ -119,6 +119,12 @@ export default function RadixRc({
     /** 整页 `/shopping`：已 VIP 展示会员信息，否则展示订阅套餐 */
     const showMembershipOnShoppingPage =
         layout === 'page' && productFrom === 'shopping' && userStore.isVIP();
+    /** PC `/profile?tab=topup`（embed plain）：已 VIP 也展示会员信息。 */
+    const showMembershipOnProfileEmbedTopup =
+        layout === 'embed' &&
+        embedPresentation === 'plain' &&
+        productFrom === 'shopping' &&
+        userStore.isVIP();
 
     const [products, setProducts] = useState<Product[]>(() => shoppingProductCache.get(productFrom) ?? []);
     const [loadingProducts, setLoadingProducts] = useState(
@@ -132,6 +138,42 @@ export default function RadixRc({
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
     const [payModalStatus, setPayModalStatus] = useState<PayModalStatus>('idle');
     const [paySessionSeed, setPaySessionSeed] = useState(0);
+
+    useEffect(() => {
+        let cancelled = false;
+        async function syncSession() {
+            if (!localStorage.getItem('token')) {
+                return;
+            }
+            try {
+                await refreshSessionFromStoredToken();
+            } catch {
+                // 静默失败：保留当前会话，不阻塞页面渲染。
+            }
+        }
+
+        void syncSession();
+
+        function handleFocus() {
+            if (cancelled) return;
+            void syncSession();
+        }
+
+        function handleVisibilityChange() {
+            if (cancelled) return;
+            if (document.visibilityState === 'visible') {
+                void syncSession();
+            }
+        }
+
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            cancelled = true;
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
 
     function closePayModal() {
         setShowPaidServiceAgreement(false);
@@ -252,7 +294,7 @@ export default function RadixRc({
 
             {layout !== 'embed' ? countdownEl : null}
 
-            <div className="rs-shopping__plans rs-shopping__plans--singleColAlways">
+            <div className="rs-shopping__plans">
                 {(loadingProducts ? [] : planProducts).map((p) => {
                     const enableInteraction = true;
                     return (
@@ -601,6 +643,24 @@ export default function RadixRc({
     ) : null;
 
     if (layout === 'embed') {
+        if (showMembershipOnProfileEmbedTopup) {
+            return (
+                <div className="rs-shopping-drawer-sheet rs-shopping-drawer-sheet--profilePlain">
+                    <div className="rs-shopping rs-shopping--drawerEmbed rs-shopping--vipMembership">
+                        <div ref={scrollRef} className="rs-shopping__membershipPageBody">
+                            <MembershipInlinePanel />
+                        </div>
+                        {showPayModal && typeof document !== 'undefined'
+                            ? createPortal(
+                                  <div className="rs-shopping rs-shopping--payModalEmbedPortal">{payModal}</div>,
+                                  document.body,
+                              )
+                            : null}
+                    </div>
+                </div>
+            );
+        }
+
         const closeAria = intl.formatMessage({ id: 'close', defaultMessage: 'Close' });
         const showDrawerChrome = embedPresentation === 'drawer';
         return (

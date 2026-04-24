@@ -1,0 +1,409 @@
+/**
+ * PC /profile 主栏「My List / Watch history」：对标 ReelShort
+ * `DashboardCabinet_mylist__2lAlz` + `BookItem_*__sK4Qp`（源：`9cb3e9a284588d0e.css`）
+ * 类名用 `rs-dc-*` / `rs-bi-*`，避免与 Next hash 耦合。
+ */
+
+.rs-profile__pc-cabinet {
+    width: 100%;
+    color: #fff;
+    box-sizing: border-box;
+    /* 空列表时 NoContent 需在主栏可视高度内垂直居中：父链须可分配高度 */
+    display: flex;
+    flex: 1 1 0%;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.rs-profile__pc-my-list-body--cabinet {
+    padding-top: 8px;
+    padding-left: 40px;
+    padding-right: 16px;
+    padding-bottom: 24px;
+    flex: 1 1 0%;
+    min-height: 0;
+
+    @media (max-width: 900px) {
+        padding-left: 16px;
+    }
+}
+
+.rs-profile__pc-cabinet .rs-dc-mylist {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 48px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* 与 DashboardCabinet_bookItem 一致；每行 5 张（20%），勿对同节点内层再写 width:100% 盖掉列宽 */
+.rs-profile__pc-cabinet .rs-dc-bookItem {
+    flex: 0 0 20%;
+    width: 20%;
+    max-width: 20%;
+    padding: 0 0.45%;
+    box-sizing: border-box;
+    vertical-align: top;
+    min-width: 0;
+}
+
+@media (max-width: 1200px) {
+    .rs-profile__pc-cabinet .rs-dc-bookItem {
+        flex-basis: 25%;
+        width: 25%;
+        max-width: 25%;
+    }
+}
+
+@media (max-width: 900px) {
+    .rs-profile__pc-cabinet .rs-dc-bookItem {
+        flex-basis: 33.3333333333%;
+        width: 33.3333333333%;
+        max-width: 33.3333333333%;
+    }
+}
+
+@media (max-width: 640px) {
+    .rs-profile__pc-cabinet .rs-dc-bookItem {
+        flex-basis: 50%;
+        width: 50%;
+        max-width: 50%;
+    }
+}
+
+/* BookItem：与 .rs-dc-bookItem 同节点时禁止在此设 width，否则会覆盖 20% 列宽 */
+.rs-profile__pc-cabinet .rs-bi-bookItem {
+    position: relative;
+    white-space: normal;
+    touch-action: none;
+    user-select: none;
+}
+
+/* 与 BookItem_expoItem__MBqy6 一致：占位，利于曝光埋点结构对齐 */
+.rs-profile__pc-cabinet .rs-bi-expoItem {
+    position: absolute;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.rs-profile__pc-cabinet .rs-bi-poster {
+    position: relative;
+    cursor: pointer;
+    border-radius: 8px;
+    background: #000;
+    overflow: hidden;
+    transition: transform 0.5s ease;
+    will-change: transform;
+}
+
+/* 整卡 hover：等同 BookItem_hover__lqwJY / BookItem_historyHover__QuZIY */
+.rs-profile__pc-cabinet .rs-bi-bookItem:hover .rs-bi-playMask {
+    opacity: 1;
+}
+
+.rs-profile__pc-cabinet .rs-bi-bookItem.rs-bi-bookItem--history:hover .rs-bi-cover {
+    transform: scale(1.1);
+}
+
+.rs-profile__pc-cabinet .rs-bi-bookItem:not(.rs-bi-bookItem--history):hover .rs-bi-cover {
+    transform: scale(1.2);
+}
+
+.rs-profile__pc-cabinet .rs-bi-cover {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: #000 url('../assets/reelshort-dashboard/reelshort-poster-placeholder.png') 50% no-repeat;
+    background-size: cover;
+    overflow: hidden;
+    transition: transform 0.5s ease;
+    will-change: transform;
+    font-size: 0;
+    border-radius: 8px;
+}
+
+.rs-profile__pc-cabinet .rs-bi-cover .lazy-load-image-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    overflow: hidden;
+}
+
+.rs-profile__pc-cabinet .rs-bi-cover .lazy-load-image-wrapper img,
+.rs-profile__pc-cabinet .rs-bi-cover > img {
+    border-radius: inherit;
+}
+
+.rs-profile__pc-cabinet .rs-bi-coverSkeleton {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.rs-profile__pc-cabinet .rs-bi-coverSkeletonInner {
+    color: hsla(0, 0%, 91%, 0.62);
+}
+
+.rs-profile__pc-cabinet .rs-bi-playMask {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    will-change: opacity;
+    pointer-events: none;
+    border-radius: 8px;
+}
+
+.rs-profile__pc-cabinet .rs-bi-item-mask {
+    position: absolute;
+    inset: 0;
+    isolation: isolate;
+    background-color: rgba(0, 0, 0, 0.24);
+    border-radius: inherit;
+}
+
+/* 与 BookItem_coverIconPlay__7iBKQ 一致：本地 `icon_play.png`（源自 ReelShort static） */
+.rs-profile__pc-cabinet .rs-bi-coverIconPlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    padding-left: 10px;
+    box-sizing: border-box;
+    pointer-events: none;
+    background: url('../assets/reelshort-dashboard/icon_play.png') no-repeat 24px 50% / 50% 50%
+        rgba(0, 0, 0, 0.6);
+}
+
+.rs-profile__pc-cabinet .rs-bi-iconRemove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    isolation: isolate;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: #fff;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 与 BookItem_imgIcon___fGXl 一致：本地 `icon_remove.png` */
+.rs-profile__pc-cabinet .rs-bi-imgIconRemove {
+    width: 8px;
+    height: 8px;
+    display: block;
+    flex-shrink: 0;
+    background: url('../assets/reelshort-dashboard/icon_remove.png') no-repeat 50% / contain;
+}
+
+.rs-profile__pc-cabinet .rs-bi-readProgressBar {
+    background-color: hsla(0, 0%, 100%, 0.16);
+    height: 4px;
+    margin-top: -4px;
+    isolation: isolate;
+    overflow: hidden;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    border-radius: 0 0 8px 8px;
+}
+
+.rs-profile__pc-cabinet .rs-bi-readProgress {
+    background-color: #fe4167;
+    height: 4px;
+    border-top-right-radius: 30px;
+    border-bottom-right-radius: 30px;
+}
+
+.rs-profile__pc-cabinet .rs-bi-title {
+    font-size: min(2.6vw, 20px);
+    width: 100%;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.5;
+    margin: 3.5% 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-wrap: break-word;
+}
+
+.rs-profile__pc-cabinet .rs-bi-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.rs-profile__pc-cabinet .rs-bi-title a:hover {
+    color: #e52e2e;
+}
+
+.rs-profile__pc-cabinet .rs-bi-chapter {
+    font-size: min(1.1vw, 16px);
+    font-weight: 500;
+    color: #999;
+    margin-top: 0.3rem;
+    width: 100%;
+}
+
+.rs-profile__pc-cabinet .rs-bi-chapterProgress {
+    color: #d5495b;
+}
+
+/* DashboardCabinet_loadingMore__HXK8e */
+.rs-profile__pc-cabinet .rs-dc-loadMore {
+    flex-basis: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    margin-top: 18px;
+    text-align: center;
+    color: hsla(0, 0%, 100%, 0.5);
+    position: relative;
+    height: 42px;
+    line-height: 42px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.rs-profile__pc-cabinet .rs-dc-loadMore .rs-dc-loadMoreSpinner {
+    color: hsla(0, 0%, 100%, 0.5);
+}
+
+/**
+ * 移除确认气泡：ReelShort Library 海报上浮动提示（无全屏蒙层），带向下三角指向移除按钮。
+ */
+.rs-cabinet-confirm-popover {
+    pointer-events: auto;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(480px, calc(100vw - 24px));
+}
+
+.rs-cabinet-confirm-popover__inner {
+    border-radius: 8px;
+    background-color: #2b2b2b;
+    padding: 12px 14px 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    box-sizing: border-box;
+}
+
+.rs-cabinet-confirm-popover__row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.rs-cabinet-confirm-popover__warnIcon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #f5c518;
+    color: #111;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 20px;
+    text-align: center;
+}
+
+.rs-cabinet-confirm-popover__text {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #e83a57;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rs-cabinet-confirm-popover__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.rs-cabinet-confirm-popover__btnCancel {
+    margin: 0;
+    cursor: pointer;
+    border: 0;
+    border-radius: 4px;
+    background: #fff;
+    color: #222;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    line-height: 1.2;
+    outline: none;
+}
+
+.rs-cabinet-confirm-popover__btnCancel:hover {
+    background: #f0f0f0;
+}
+
+.rs-cabinet-confirm-popover__btnCancel:focus-visible {
+    box-shadow: 0 0 0 2px #2b2b2b, 0 0 0 4px rgba(255, 255, 255, 0.5);
+}
+
+.rs-cabinet-confirm-popover__btnOk {
+    margin: 0;
+    cursor: pointer;
+    border: 0;
+    border-radius: 4px;
+    background: #e83a57;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    line-height: 1.2;
+    outline: none;
+}
+
+.rs-cabinet-confirm-popover__btnOk:hover {
+    background: #e51f40;
+}
+
+.rs-cabinet-confirm-popover__btnOk:focus-visible {
+    box-shadow: 0 0 0 2px #2b2b2b, 0 0 0 4px rgba(232, 58, 87, 0.45);
+}
+
+.rs-cabinet-confirm-popover__caret {
+    width: 0;
+    height: 0;
+    margin: -1px auto 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 8px solid #2b2b2b;
+    filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.2));
+}

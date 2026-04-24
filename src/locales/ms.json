@@ -97,6 +97,8 @@
     "ok": "Ok",
     "delete": "Padam",
     "my_list_manage": "Urus senarai",
+    "my_list_confirm_remove_story": "Adakah anda pasti mahu membuang cerita ini?",
+    "my_list_confirm_ok": "OK",
     "flix_add": "Tambah Filem",
     "flix_list": "Senarai Filem",
     "magnet": "Magnet",

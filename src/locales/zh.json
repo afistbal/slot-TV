@@ -102,6 +102,8 @@
     "ok": "確認",
     "delete": "刪除",
     "my_list_manage": "管理清單",
+    "my_list_confirm_remove_story": "您確定要移除此故事嗎？",
+    "my_list_confirm_ok": "好",
     "flix_add": "新增影片",
     "flix_list": "影片列表",
     "magnet": "磁力",

@@ -155,7 +155,7 @@ export function ReelShortNavDrawer({
 
                         <div>
                             <Link
-                                to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
+                                to={`/profile?tab=history&sourceform=${encodeURIComponent(sourceform)}`}
                                 state={{ sourceform }}
                                 className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
                                 onClick={() => onOpenChange(false)}

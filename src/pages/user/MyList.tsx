@@ -80,11 +80,18 @@ export default function Component() {
                 </Tabs>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
-                <Suspense key={location.key} fallback={<Loader />}>
-                    <Outlet key={location.key} />
-                </Suspense>
-                <ReelShortFooter />
+            {/* 列表单独滚动，页脚固定在视口底部（内容少时也在最下方，不跟在首屏内容后） */}
+            <div className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+                    <div className="flex min-h-full min-w-0 flex-1 flex-col">
+                        <Suspense key={location.key} fallback={<Loader />}>
+                            <Outlet key={location.key} />
+                        </Suspense>
+                    </div>
+                </div>
+                <div className="shrink-0">
+                    <ReelShortFooter />
+                </div>
             </div>
         </div>
     );

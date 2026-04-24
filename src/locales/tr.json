@@ -97,6 +97,8 @@
     "ok": "Tamam",
     "delete": "Sil",
     "my_list_manage": "Listeyi Yönet",
+    "my_list_confirm_remove_story": "Bu hikayeyi kaldırmak istediğinizden emin misiniz?",
+    "my_list_confirm_ok": "tamam",
     "flix_add": "Film Ekle",
     "flix_list": "Film Listesi",
     "magnet": "Magnet",

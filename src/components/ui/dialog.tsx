@@ -44,25 +44,32 @@ function DialogOverlay({
   )
 }
 
+const dialogContentPresetClassNames = {
+  default:
+    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg p-6 shadow-lg duration-200 sm:max-w-lg",
+  /** 无 shadcn 面板样式，仅定位与入场动画；用于完全自定义外观（如对标 Ant Modal） */
+  plain:
+    "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] translate-x-[-50%] translate-y-[-50%] duration-200 outline-none focus:outline-none border-0 bg-transparent p-0 shadow-none gap-0",
+} as const
+
 function DialogContent({
   className,
   children,
   hideCloseButton,
   overlayClassName,
+  contentPreset = "default",
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   hideCloseButton?: boolean
   overlayClassName?: string
+  contentPreset?: keyof typeof dialogContentPresetClassNames
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
-        className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-[200] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
-        )}
+        className={cn(dialogContentPresetClassNames[contentPreset], className)}
         {...props}
       >
         {children}
@@ -102,12 +109,15 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
 
 function DialogTitle({
   className,
+  unsetTypography,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+}: React.ComponentProps<typeof DialogPrimitive.Title> & {
+  unsetTypography?: boolean
+}) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn(!unsetTypography && "text-lg leading-none font-semibold", className)}
       {...props}
     />
   )
@@ -115,12 +125,15 @@ function DialogTitle({
 
 function DialogDescription({
   className,
+  unsetTypography,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+}: React.ComponentProps<typeof DialogPrimitive.Description> & {
+  unsetTypography?: boolean
+}) {
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn(!unsetTypography && "text-muted-foreground text-sm", className)}
       {...props}
     />
   )

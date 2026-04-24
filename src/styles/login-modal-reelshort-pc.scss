@@ -1,6 +1,5 @@
 /**
- * PC /page/login：对标 ReelShort `LoginModal_login_modal__oygOe`（见镜像 `a4886d23115be918.css`）。
- * 类名沿用 LoginModal_* 便于与源站对照；仅包在 `.rs-login-modal` 下避免污染全局。
+ * PC 登录弹层：主区背景图为 `src/assets/images/login-pc-modal-bg.png`（Vite 打包，cover 铺底）。
  */
 
 .rs-login-modal__overlay {
@@ -8,18 +7,22 @@
     background-color: rgba(0, 0, 0, 0.7) !important;
 }
 
+/* Radix DialogContent / 对标 `.ant-modal-content`：460×600 写死；窄屏时宽度不超出视口 */
 .rs-login-modal__dialog {
     z-index: 1100 !important;
-    /* 线上弹层常见 width:520px；背景图为 ReelShort `login_bg@2x` 本地副本 */
-    width: 520px !important;
-    max-width: 520px !important;
+    width: min(460px, calc(100% - 2rem)) !important;
+    max-width: min(460px, calc(100% - 2rem)) !important;
+    height: 600px !important;
+    min-height: 600px !important;
+    max-height: 600px !important;
     padding: 0 !important;
     gap: 0 !important;
     border: 0 !important;
-    border-radius: 12px !important;
+    border-radius: 12px 12px 12px 12px !important;
     overflow: hidden;
     background: transparent !important;
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+    box-sizing: border-box;
 }
 
 .rs-login-modal .LoginModal_close_btn__KOxVA {
@@ -55,7 +58,7 @@
 
 .rs-login-modal .LoginModal_login_body__DH86w {
     position: relative;
-    width: 520px;
+    width: 100%;
     height: 600px;
     background-repeat: no-repeat;
     background-size: cover;
@@ -70,6 +73,13 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
+}
+
+/* 主面板：PC 底图用同目录 `login-pc-modal-bg.png`（Vite 从本 SCSS 解析 url） */
+.rs-login-modal .LoginModal_login_body__DH86w.rs-login-modal__body-panel {
+    background-color: #e8d4c4;
+    background-image: url('../assets/images/login-pc-modal-bg.png');
+    /* cover / position 继承自 .LoginModal_login_body__DH86w */
 }
 
 .rs-login-modal .LoginModal_logo__ahMlI {
@@ -138,10 +148,18 @@
 
 .rs-login-modal .LoginModal_login_btn_item__FxNs7--google {
     background: rgb(84, 125, 230);
+    overflow: visible;
 }
 
 .rs-login-modal .LoginModal_login_btn_item__FxNs7--email {
-    background: rgb(51, 51, 51);
+    background: linear-gradient(180deg, #4b5059 0%, #3a3f48 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 1px 2px rgba(0, 0, 0, 0.14);
+}
+
+.rs-login-modal .LoginModal_login_btn_item__FxNs7--email:hover {
+    background: linear-gradient(180deg, #555b65 0%, #444a54 100%);
 }
 
 .rs-login-modal .LoginModal_login_icon__Huj9u {
@@ -159,10 +177,6 @@
     height: 24px;
     display: block;
     object-fit: contain;
-}
-
-.rs-login-modal__email-mail-icon {
-    filter: brightness(0) invert(1);
 }
 
 .rs-login-modal .LoginModal_login_text__3ZrIq {

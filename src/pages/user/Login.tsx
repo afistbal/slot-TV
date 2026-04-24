@@ -1,48 +1,53 @@
 import { FormattedMessage, useIntl } from 'react-intl';
-import google from '@/assets/google.svg';
-import loginPcGoogle from '@/assets/icons/login-pc-google.png';
-import loginModalClose from '@/assets/icons/login-modal-close.svg';
-import mail from '@/assets/email.svg';
-import bg from '@/assets/images/ec9725d0-83b2-11ee-aed2-cfe3d80f70eb.png';
-import loginPcModalBg from '@/assets/images/login-pc-modal-bg.png';
-import closeIcon from '@/assets/images/icon_close.webp';
-import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Navigate, useNavigate } from 'react-router';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
-import type React from 'react';
-import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import google from '@/assets/google.svg';
+import loginPcGoogle from '@/assets/icons/login-pc-google.png';
+import mail from '@/assets/email.svg';
+import mailPc from '@/assets/icons/login-pc-email.svg';
+import bg from '@/assets/images/ec9725d0-83b2-11ee-aed2-cfe3d80f70eb.png';
+import closeIcon from '@/assets/images/icon_close.webp';
+import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
 import { api, report, type TData } from '@/api';
 import { useUserStore } from '@/stores/user';
 import { emailVerify } from '@/utils';
 import { useLoadingStore } from '@/stores/loading';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/firebase';
 import usePixel from '@/hooks/usePixel';
 import { LegalDocumentLink } from '@/components/LegalDocumentLink';
-import { useNavigate } from 'react-router';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 
 type PcLoginStep = 'providers' | 'email';
 
-export default function Component() {
+type LoginVariant = 'h5' | 'pc';
+
+function useLoginBase(
+    variant: LoginVariant,
+    pcOpts?: { onRequestClose: () => void },
+) {
     const intl = useIntl();
     const pixel = usePixel();
     const userStore = useUserStore();
     const loadingStore = useLoadingStore();
     const navigate = useNavigate();
-    const isPc = useMinWidth768();
     const [emailOpen, setEmailOpen] = useState(false);
     const [pcStep, setPcStep] = useState<PcLoginStep>('providers');
     const [time, setTime] = useState(0);
     const [email, setEmail] = useState(localStorage.getItem('email') ?? '');
     const [code, setCode] = useState('');
 
+    const isPcVariant = variant === 'pc';
+
     function handleToggleEmailLogin() {
-        if (isPc) {
+        if (isPcVariant) {
             setPcStep('email');
         } else {
             setEmailOpen(!emailOpen);
@@ -54,8 +59,11 @@ export default function Component() {
     }
 
     function handleDialogOpenChange(next: boolean) {
-        if (!next) {
-            navigate(-1);
+        if (next) {
+            return;
+        }
+        if (isPcVariant && pcOpts) {
+            pcOpts.onRequestClose();
         }
     }
 
@@ -147,7 +155,7 @@ export default function Component() {
         userStore.signin(result.d['info'] as { [key: string]: unknown });
         pixel.track('Register');
 
-        navigate('/profile', { replace: true });
+        navigate('/profile?tab=topup', { replace: true });
         loadingStore.hide();
     }
 
@@ -248,7 +256,7 @@ export default function Component() {
             userStore.signin(info);
             loadingStore.hide();
             pixel.track('Register');
-            navigate('/profile', { replace: true });
+            navigate('/profile?tab=topup', { replace: true });
         } catch {
             loadingStore.hide();
         }
@@ -317,7 +325,7 @@ export default function Component() {
                 info['email'] = result.user.email || '';
                 info['anonymous'] = result.user.isAnonymous ? 1 : 0;
                 userStore.signin(info);
-                navigate('/profile', { replace: true });
+                navigate('/profile?tab=topup', { replace: true });
             });
         } catch (error) {
             const e = error as Error;
@@ -359,6 +367,57 @@ export default function Component() {
         };
     }, []);
 
+    return {
+        intl,
+        email,
+        setEmail,
+        code,
+        time,
+        emailOpen,
+        setEmailOpen,
+        pcStep,
+        setPcStep,
+        handleToggleEmailLogin,
+        handlePcBackToProviders,
+        handleDialogOpenChange,
+        handlePcDialogEscape,
+        handlePcDialogOutside,
+        handleSubmit,
+        handleSendCode,
+        handleEmailChange,
+        handleCodeChange,
+        handleGoogleSignin,
+        handleGoogleSigninPopup,
+    };
+}
+
+export function PcLoginDialog({
+    open,
+    onOpenChange,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const onRequestClose = () => onOpenChange(false);
+    const {
+        intl,
+        email,
+        code,
+        pcStep,
+        time,
+        handleToggleEmailLogin,
+        handlePcBackToProviders,
+        handleDialogOpenChange,
+        handlePcDialogEscape,
+        handlePcDialogOutside,
+        handleSubmit,
+        handleSendCode,
+        handleEmailChange,
+        handleCodeChange,
+        handleGoogleSignin,
+        handleGoogleSigninPopup,
+    } = useLoginBase('pc', { onRequestClose });
+
     const protocolBlock = (
         <div className="LoginModal_protocol__jVDhl">
             <FormattedMessage
@@ -379,157 +438,183 @@ export default function Component() {
         </div>
     );
 
-    if (isPc) {
-        return (
-            <>
-                <div className="rs-login--pcShell fixed inset-0 z-0 bg-black" aria-hidden />
-                <Dialog open onOpenChange={handleDialogOpenChange}>
-                    <DialogContent
-                        hideCloseButton
-                        overlayClassName="rs-login-modal__overlay"
-                        className="rs-login-modal__dialog rs-login-modal LoginModal_login_modal__oygOe"
-                        onEscapeKeyDown={handlePcDialogEscape}
-                        onPointerDownOutside={handlePcDialogOutside}
-                    >
-                        <DialogTitle className="sr-only">
-                            <FormattedMessage id="login" />
-                        </DialogTitle>
-                        <div
-                            className={cn(
-                                'LoginModal_login_body__DH86w',
-                                pcStep === 'email' && 'LoginModal_login_body__DH86w--email',
-                            )}
-                            style={{ backgroundImage: `url(${loginPcModalBg})` }}
+    return (
+        <Dialog
+            open={open}
+            onOpenChange={(v) => {
+                if (v) {
+                    return;
+                }
+                handleDialogOpenChange(false);
+            }}
+        >
+            <DialogContent
+                hideCloseButton
+                overlayClassName="rs-login-modal__overlay"
+                className={cn(
+                    'rs-login-modal__dialog rs-login-modal LoginModal_login_modal__oygOe',
+                    /* 对标 ant-modal-content：460×600；窄屏 width 用 min 避免溢出 */
+                    '!w-[min(460px,calc(100%-2rem))] !h-[600px] !min-h-[600px] !max-h-[600px] !max-w-[min(460px,calc(100%-2rem))] sm:!max-w-[min(460px,calc(100%-2rem))] !p-0 !box-border',
+                )}
+                onEscapeKeyDown={handlePcDialogEscape}
+                onPointerDownOutside={handlePcDialogOutside}
+            >
+                <DialogTitle className="sr-only">
+                    <FormattedMessage id="login" />
+                </DialogTitle>
+                <div
+                    className={cn(
+                        'LoginModal_login_body__DH86w rs-login-modal__body-panel',
+                        pcStep === 'email' && 'LoginModal_login_body__DH86w--email',
+                    )}
+                >
+                    {pcStep === 'email' ? (
+                        <button
+                            type="button"
+                            className="rs-login-modal__email-back"
+                            onClick={handlePcBackToProviders}
                         >
-                            {pcStep === 'email' ? (
+                            <FormattedMessage id="back" />
+                        </button>
+                    ) : null}
+                    <button
+                        type="button"
+                        className="LoginModal_close_btn__KOxVA"
+                        onClick={onRequestClose}
+                        aria-label={intl.formatMessage({ id: 'close' })}
+                    >
+                        <X className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                    </button>
+
+                    {pcStep === 'providers' ? (
+                        <>
+                            <div className="LoginModal_logo__ahMlI">
+                                <img src={BRAND_LOGO_SRC} alt="" />
+                            </div>
+                            <div className="LoginModal_title__ObusB">{BRAND_DISPLAY_NAME}</div>
+                            <p>
+                                <FormattedMessage
+                                    id="welcome_to_site"
+                                    values={{ site: BRAND_DISPLAY_NAME }}
+                                />
+                            </p>
+                            <div className="LoginModal_login_btn_box__QKb14">
                                 <button
                                     type="button"
-                                    className="rs-login-modal__email-back"
-                                    onClick={handlePcBackToProviders}
+                                    id="google"
+                                    className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google"
+                                    onClick={
+                                        (window as unknown as { flutter_inappwebview?: unknown })
+                                            .flutter_inappwebview !== undefined
+                                            ? handleGoogleSignin
+                                            : handleGoogleSigninPopup
+                                    }
                                 >
-                                    <FormattedMessage id="back" />
+                                    <div className="LoginModal_login_icon__Huj9u">
+                                        <img src={loginPcGoogle} alt="" />
+                                    </div>
+                                    <div className="LoginModal_login_text__3ZrIq">
+                                        <FormattedMessage id="login_google" />
+                                    </div>
                                 </button>
-                            ) : null}
-                            <button
-                                type="button"
-                                className="LoginModal_close_btn__KOxVA"
-                                onClick={() => navigate(-1)}
-                                aria-label={intl.formatMessage({ id: 'close' })}
-                            >
-                                <img src={loginModalClose} alt="" width={16} height={16} />
-                            </button>
-
-                            {pcStep === 'providers' ? (
-                                <>
-                                    <div className="LoginModal_logo__ahMlI">
-                                        <img src={BRAND_LOGO_SRC} alt="" />
+                                <button
+                                    type="button"
+                                    id="email"
+                                    className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--email"
+                                    onClick={handleToggleEmailLogin}
+                                >
+                                    <div className="LoginModal_login_icon__Huj9u">
+                                        <img src={mailPc} alt="" />
                                     </div>
-                                    <div className="LoginModal_title__ObusB">{BRAND_DISPLAY_NAME}</div>
-                                    <p>
-                                        <FormattedMessage
-                                            id="welcome_to_site"
-                                            values={{ site: BRAND_DISPLAY_NAME }}
-                                        />
-                                    </p>
-                                    <div className="LoginModal_login_btn_box__QKb14">
-                                        <button
-                                            type="button"
-                                            id="google"
-                                            className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google"
-                                            onClick={
-                                                (window as unknown as { flutter_inappwebview?: unknown })
-                                                    .flutter_inappwebview !== undefined
-                                                    ? handleGoogleSignin
-                                                    : handleGoogleSigninPopup
-                                            }
-                                        >
-                                            <div className="LoginModal_login_icon__Huj9u">
-                                                <img src={loginPcGoogle} alt="" />
-                                            </div>
-                                            <div className="LoginModal_login_text__3ZrIq">
-                                                <FormattedMessage id="login_google" />
-                                            </div>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            id="email"
-                                            className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--email"
-                                            onClick={handleToggleEmailLogin}
-                                        >
-                                            <div className="LoginModal_login_icon__Huj9u">
-                                                <img
-                                                    src={mail}
-                                                    alt=""
-                                                    className="rs-login-modal__email-mail-icon"
-                                                />
-                                            </div>
-                                            <div className="LoginModal_login_text__3ZrIq">
-                                                <FormattedMessage id="login_email" />
-                                            </div>
-                                        </button>
-                                    </div>
-                                    {protocolBlock}
-                                </>
-                            ) : (
-                                <>
-                                    <div className="LoginModal_title__ObusB" style={{ marginBottom: 8 }}>
+                                    <div className="LoginModal_login_text__3ZrIq">
                                         <FormattedMessage id="login_email" />
                                     </div>
-                                    <div className="rs-login-modal__email-fields">
-                                        <div className="rs-login-modal__email-field">
-                                            <input
-                                                className="rs-login-modal__email-input"
-                                                type="email"
-                                                value={email}
-                                                onChange={handleEmailChange}
-                                                autoComplete="email"
-                                                placeholder={intl.formatMessage({ id: 'email_placeholder' })}
-                                                maxLength={30}
-                                            />
-                                        </div>
-                                        <div className="rs-login-modal__email-field">
-                                            <input
-                                                className="rs-login-modal__email-input"
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={code}
-                                                onChange={handleCodeChange}
-                                                placeholder={intl.formatMessage({ id: 'code_placeholder' })}
-                                                maxLength={6}
-                                            />
-                                            <span
-                                                role="button"
-                                                tabIndex={0}
-                                                className="rs-login-modal__email-send"
-                                                onClick={handleSendCode}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' || e.key === ' ') {
-                                                        e.preventDefault();
-                                                        void handleSendCode();
-                                                    }
-                                                }}
-                                            >
-                                                {time > 0
-                                                    ? `${time.toString().padStart(2, '0')}s`
-                                                    : intl.formatMessage({ id: 'send_code' })}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="rs-login-modal__email-submit"
-                                        onClick={() => void handleSubmit()}
+                                </button>
+                            </div>
+                            {protocolBlock}
+                        </>
+                    ) : (
+                        <>
+                            <div className="LoginModal_title__ObusB" style={{ marginBottom: 8 }}>
+                                <FormattedMessage id="login_email" />
+                            </div>
+                            <div className="rs-login-modal__email-fields">
+                                <div className="rs-login-modal__email-field">
+                                    <input
+                                        className="rs-login-modal__email-input"
+                                        type="email"
+                                        value={email}
+                                        onChange={handleEmailChange}
+                                        autoComplete="email"
+                                        placeholder={intl.formatMessage({ id: 'email_placeholder' })}
+                                        maxLength={30}
+                                    />
+                                </div>
+                                <div className="rs-login-modal__email-field">
+                                    <input
+                                        className="rs-login-modal__email-input"
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={code}
+                                        onChange={handleCodeChange}
+                                        placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                                        maxLength={6}
+                                    />
+                                    <span
+                                        role="button"
+                                        tabIndex={0}
+                                        className="rs-login-modal__email-send"
+                                        onClick={handleSendCode}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                void handleSendCode();
+                                            }
+                                        }}
                                     >
-                                        <FormattedMessage id="login" />
-                                    </button>
-                                    {protocolBlock}
-                                </>
-                            )}
-                        </div>
-                    </DialogContent>
-                </Dialog>
-            </>
-        );
+                                        {time > 0
+                                            ? `${time.toString().padStart(2, '0')}s`
+                                            : intl.formatMessage({ id: 'send_code' })}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="rs-login-modal__email-submit"
+                                onClick={() => void handleSubmit()}
+                            >
+                                <FormattedMessage id="login" />
+                            </button>
+                            {protocolBlock}
+                        </>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+export default function Component() {
+    const isPc = useMinWidth768();
+    const navigate = useNavigate();
+    const {
+        intl,
+        email,
+        code,
+        time,
+        emailOpen,
+        setEmailOpen,
+        handleToggleEmailLogin,
+        handleSubmit,
+        handleSendCode,
+        handleEmailChange,
+        handleCodeChange,
+        handleGoogleSignin,
+        handleGoogleSigninPopup,
+    } = useLoginBase('h5');
+
+    if (isPc) {
+        return <Navigate to="/profile" replace state={{ openPcLogin: true }} />;
     }
 
     return (
@@ -537,7 +622,12 @@ export default function Component() {
             <div className="rs-login__bg" style={{ backgroundImage: `url(${bg})` }} />
             <div className="rs-login__shade" />
             <div className="rs-login__panel">
-                <button type="button" className="rs-login__close" onClick={() => navigate(-1)} aria-label="Close">
+                <button
+                    type="button"
+                    className="rs-login__close"
+                    onClick={() => navigate(-1)}
+                    aria-label="Close"
+                >
                     <img src={closeIcon} alt="" />
                 </button>
 
