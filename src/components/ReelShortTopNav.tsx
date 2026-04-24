@@ -574,36 +574,38 @@ export function ReelShortTopNav({
           headerSolid ? 'reelshort-topnav--solid' : 'reelshort-topnav--transparent',
         )}
       >
-        <div className="reelshort-topnav__row">
-          <div className="reelshort-topnav__left">
-            {showLeftAction ? (
-              <button
-                type="button"
-                className="reelshort-topnav__menu-btn"
-                onClick={() => setMenuOpen(true)}
-                aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
-              >
-                <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
-              </button>
-            ) : null}
-          </div>
+        <div className="reelshort-topnav__inner">
+          <div className="reelshort-topnav__row">
+            <div className="reelshort-topnav__left">
+              {showLeftAction ? (
+                <button
+                  type="button"
+                  className="reelshort-topnav__menu-btn"
+                  onClick={() => setMenuOpen(true)}
+                  aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
+                >
+                  <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
+                </button>
+              ) : null}
+            </div>
 
-          <Link to="/" className="reelshort-topnav__brand-link">
+            <Link to="/" className="reelshort-topnav__brand-link">
               <img src={BRAND_LOGO_SRC} alt="" className="reelshort-topnav__brand-logo" />
               <BrandWordmark />
             </Link>
 
-          <div className="reelshort-topnav__right">
-            <div className="reelshort-topnav__actions">
-              {showSearch ? (
-                <div className="reelshort-topnav__search">
-                  <TopNavSearchEntry />
-                </div>
-              ) : null}
-              <TopNavInstallEntry />
-              <TopNavHistoryEntry />
-              <TopNavLanguageSwitcher />
-              {showProfile ? <NavProfileAvatar /> : null}
+            <div className="reelshort-topnav__right">
+              <div className="reelshort-topnav__actions">
+                {showSearch ? (
+                  <div className="reelshort-topnav__search">
+                    <TopNavSearchEntry />
+                  </div>
+                ) : null}
+                <TopNavInstallEntry />
+                <TopNavHistoryEntry />
+                <TopNavLanguageSwitcher />
+                {showProfile ? <NavProfileAvatar /> : null}
+              </div>
             </div>
           </div>
         </div>

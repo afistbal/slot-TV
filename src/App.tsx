@@ -66,6 +66,7 @@ import AdminActivityLog from './pages/admin/ActivityLog';
 import Loader from "./components/Loader";
 import NotFound from './pages/NotFound';
 import { isApplePlatform } from "./lib/isApplePlatform";
+import { useMinWidth768 } from "@/hooks/useMinWidth768";
 
 /** 旧书签 `/page/checkout/:id`、已废弃的整页收银 → 购物页 */
 function LegacyCheckoutToShoppingRedirect() {
@@ -361,6 +362,7 @@ function getInitialIntlMessages(): TIntlMessages {
 }
 
 function App() {
+    const mdUp = useMinWidth768();
     const rootStore = useRootStore();
     const rootShowInstallPrompt = useRootStore((state) => state.showInstallPrompt);
     const setRootShowInstallPrompt = useRootStore((state) => state.setShowInstallPrompt);
@@ -618,6 +620,8 @@ function App() {
     const appPathSegments = window.location.pathname.toLowerCase().split('/').filter(Boolean);
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     const showInstallPrompt = install > 0 && !isApplePlatform() && !isShoppingRoute;
+    /** 底部固定安装条 + root 垫高仅窄屏需要；PC（md+）用顶栏下载入口，避免多 60px padding。 */
+    const showPwaBottomBar = showInstallPrompt && !mdUp;
 
     useEffect(() => {
         if (rootShowInstallPrompt !== showInstallPrompt) {
@@ -628,9 +632,9 @@ function App() {
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
         <div
             className={cn('root', `root-${rootStore.theme}`)}
-            style={showInstallPrompt ? { paddingBottom: '60px' } : undefined}
+            style={showPwaBottomBar ? { paddingBottom: '60px' } : undefined}
         >
-            {showInstallPrompt && (
+            {showPwaBottomBar && (
                 <div className="pwa-install-shell pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center">
                     <div
                         id="install"
@@ -659,6 +663,15 @@ function App() {
                     </div>
                 </div>
             )}
+            {showInstallPrompt && mdUp ? (
+                <button
+                    type="button"
+                    className="pwa-install-open-btn fixed top-0 left-0 h-px w-px overflow-hidden opacity-0"
+                    tabIndex={-1}
+                    aria-hidden
+                    onClick={handleExecuteInstall}
+                />
+            ) : null}
             {checked ? <RouterProvider router={router} /> : <InitialBootLoading />}
         </div>
         <Dialog open={loadingStore.status}>

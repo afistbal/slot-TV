@@ -169,6 +169,21 @@ button.reelshort-nav-drawer__close {
     }
 }
 
+/* 与 HomePage_main 一致：仅 ≥768px（PC 顶栏与主区同宽断点）限制 1636 + 居中；≤480/小程序不换行布局不受影响 */
+.reelshort-topnav__inner {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+    .reelshort-topnav__inner {
+        max-width: min(1636px, 100%);
+    }
+}
+
 .reelshort-topnav__row {
     pointer-events: auto;
     position: relative;

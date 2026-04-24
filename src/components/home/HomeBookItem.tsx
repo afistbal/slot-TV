@@ -56,6 +56,13 @@ export function HomeBookItem({
             <div className="BookItem_cover__W2qbR">
                 <img src={src} alt={item.title} loading="lazy" decoding="async" />
                 <div className="BookItem_mask__bz19c" aria-hidden />
+                {item.showPlayMask ? null : (
+                    <>
+                        {/* 对站 fb8bb5c8… .BookItem_item_mask__EE98C + .BookItem_coverIconPlay__7iBKQ，hover 时与封面动效同现 */}
+                        <div className="BookItem_item_mask__EE98C" aria-hidden />
+                        <div className="BookItem_coverIconPlay__7iBKQ" aria-hidden />
+                    </>
+                )}
                 {item.showPlayMask ? (
                     <div className="BookItem_playMask__lJJFO" aria-hidden>
                         <div className="BookItem_playIconBg__pZ9wk">

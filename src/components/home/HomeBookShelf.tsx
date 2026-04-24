@@ -1,7 +1,8 @@
 import { Link } from 'react-router';
-import { useCallback, useEffect, useRef } from 'react';
 import { FormattedMessage } from 'react-intl';
+import { useMinWidth481 } from '@/hooks/useMinWidth481';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
+import { useHomeType1H5Scroll } from './useHomeType1H5Scroll';
 
 function normalizeEpisodeSlug(raw?: string) {
     if (!raw) return undefined;
@@ -29,9 +30,6 @@ function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
     return slug ? `/episodes/${slug}` : `/video/${item.id}`;
 }
 
-/** 从封面 Link 上拖：超过该阈值才算横向拖拽，避免误伤点击跳转 */
-const TYPE1_LINK_DRAG_THRESHOLD_PX = 8;
-
 export function HomeBookShelf({
     titleMessageId,
     titleHref,
@@ -51,171 +49,10 @@ export function HomeBookShelf({
     showMoreMoviesButton?: boolean;
     onMoreMoviesClick?: () => void;
 }) {
-    const type1ScrollRef = useRef<HTMLDivElement>(null);
-    const type1DragRef = useRef<{
-        pointerId: number;
-        startX: number;
-        startScroll: number;
-        moved: boolean;
-        startedOnLink: boolean;
-    } | null>(null);
-    const type1UnbindDocDragRef = useRef<(() => void) | null>(null);
-
-    const blockShelfMisclick = useCallback((shelf: HTMLDivElement) => {
-        const blockMisclick = (ev: MouseEvent) => {
-            if (!shelf.contains(ev.target as Node)) {
-                return;
-            }
-            ev.preventDefault();
-            ev.stopPropagation();
-            ev.stopImmediatePropagation();
-        };
-        window.addEventListener('click', blockMisclick, { capture: true, once: true });
-    }, []);
-
-    const handleType1PointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-        if (e.button !== 0) {
-            return;
-        }
-        const el = type1ScrollRef.current;
-        if (!el || el.scrollWidth <= el.clientWidth + 2) {
-            return;
-        }
-        const t = e.target as HTMLElement | null;
-        const startedOnLink = !!t?.closest('a[href], button');
-
-        type1DragRef.current = {
-            pointerId: e.pointerId,
-            startX: e.clientX,
-            startScroll: el.scrollLeft,
-            moved: false,
-            startedOnLink,
-        };
-
-        if (!startedOnLink) {
-            el.setPointerCapture(e.pointerId);
-            return;
-        }
-
-        type1UnbindDocDragRef.current?.();
-
-        const onDocMove = (ev: PointerEvent) => {
-            const d = type1DragRef.current;
-            if (!d || ev.pointerId !== d.pointerId || !d.startedOnLink) {
-                return;
-            }
-            const shelf = type1ScrollRef.current;
-            if (!shelf) {
-                return;
-            }
-            const dx = ev.clientX - d.startX;
-            if (Math.abs(dx) < TYPE1_LINK_DRAG_THRESHOLD_PX) {
-                return;
-            }
-            d.moved = true;
-            shelf.scrollLeft = d.startScroll - dx;
-            ev.preventDefault();
-        };
-
-        const onDocEnd = (ev: PointerEvent) => {
-            const d = type1DragRef.current;
-            if (!d || ev.pointerId !== d.pointerId || !d.startedOnLink) {
-                return;
-            }
-            type1UnbindDocDragRef.current?.();
-            type1UnbindDocDragRef.current = null;
-            type1DragRef.current = null;
-            const shelf = type1ScrollRef.current;
-            if (d.moved && shelf) {
-                blockShelfMisclick(shelf);
-            }
-        };
-
-        document.addEventListener('pointermove', onDocMove, { capture: true, passive: false });
-        document.addEventListener('pointerup', onDocEnd, { capture: true });
-        document.addEventListener('pointercancel', onDocEnd, { capture: true });
-        type1UnbindDocDragRef.current = () => {
-            document.removeEventListener('pointermove', onDocMove, { capture: true });
-            document.removeEventListener('pointerup', onDocEnd, { capture: true });
-            document.removeEventListener('pointercancel', onDocEnd, { capture: true });
-        };
-    }, [blockShelfMisclick]);
-
-    const handleType1PointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-        const d = type1DragRef.current;
-        if (!d || e.pointerId !== d.pointerId || d.startedOnLink) {
-            return;
-        }
-        const el = type1ScrollRef.current;
-        if (!el) {
-            return;
-        }
-        const dx = e.clientX - d.startX;
-        if (Math.abs(dx) > 4) {
-            d.moved = true;
-        }
-        el.scrollLeft = d.startScroll - dx;
-    }, []);
-
-    const endType1Drag = useCallback(
-        (e: React.PointerEvent<HTMLDivElement>) => {
-            const d = type1DragRef.current;
-            if (!d || e.pointerId !== d.pointerId || d.startedOnLink) {
-                return;
-            }
-            const el = type1ScrollRef.current;
-            type1DragRef.current = null;
-            el?.releasePointerCapture(e.pointerId);
-            if (d.moved && el) {
-                blockShelfMisclick(el);
-            }
-        },
-        [blockShelfMisclick],
-    );
-
-    useEffect(() => {
-        if (type !== 'type_1') {
-            return;
-        }
-        const el = type1ScrollRef.current;
-        if (!el) {
-            return;
-        }
-        const onWheel = (e: WheelEvent) => {
-            if (el.scrollWidth <= el.clientWidth + 2) {
-                return;
-            }
-            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-                return;
-            }
-            if (e.shiftKey) {
-                el.scrollLeft += e.deltaY;
-                e.preventDefault();
-                return;
-            }
-            const { scrollLeft, clientWidth, scrollWidth } = el;
-            const maxLeft = Math.max(0, scrollWidth - clientWidth);
-            const atStart = scrollLeft <= 1;
-            const atEnd = scrollLeft >= maxLeft - 1;
-            if (e.deltaY > 0 && !atEnd) {
-                el.scrollLeft += e.deltaY;
-                e.preventDefault();
-            } else if (e.deltaY < 0 && !atStart) {
-                el.scrollLeft += e.deltaY;
-                e.preventDefault();
-            }
-        };
-        el.addEventListener('wheel', onWheel, { passive: false });
-        return () => el.removeEventListener('wheel', onWheel);
-    }, [type, items.length]);
-
-    useEffect(() => {
-        return () => {
-            type1UnbindDocDragRef.current?.();
-            type1UnbindDocDragRef.current = null;
-            type1DragRef.current = null;
-        };
-    }, []);
+    /** 非 H5 时 type_1 为 CSS 网格、无横滑，不挂载拖拽/滚轮与 ref */
+    const notH5 = useMinWidth481();
+    const type1Enabled = type === 'type_1' && !notH5;
+    const type1Scroll = useHomeType1H5Scroll(type1Enabled, items.length);
 
     if (items.length === 0) {
         return null;
@@ -238,9 +75,9 @@ export function HomeBookShelf({
             </div>
             {type === 'type_5' ? (
                 <div>
-                    <div className="HomePage_content__DZ4dU HomePage_type_5__SK5Rv">
-                        <div className="HomePage_colunm__1XbhV">
-                            {items.filter((_, idx) => idx % 2 === 0).map((item) => (
+                    {notH5 ? (
+                        <div className="HomePage_content__DZ4dU HomePage_type_5__SK5Rv HomePage_type_5--pc">
+                            {items.map((item) => (
                                 <HomeBookItem
                                     key={item.id}
                                     to={toEpisodeOrVideoHref(item)}
@@ -250,18 +87,32 @@ export function HomeBookShelf({
                                 />
                             ))}
                         </div>
-                        <div className="HomePage_colunm__1XbhV">
-                            {items.filter((_, idx) => idx % 2 === 1).map((item) => (
-                                <HomeBookItem
-                                    key={item.id}
-                                    to={toEpisodeOrVideoHref(item)}
-                                    staticBase={staticBase}
-                                    item={{ ...item, showExpo: true, showPlayMask: false }}
-                                    variant="style5"
-                                />
-                            ))}
+                    ) : (
+                        <div className="HomePage_content__DZ4dU HomePage_type_5__SK5Rv">
+                            <div className="HomePage_colunm__1XbhV">
+                                {items.filter((_, idx) => idx % 2 === 0).map((item) => (
+                                    <HomeBookItem
+                                        key={item.id}
+                                        to={toEpisodeOrVideoHref(item)}
+                                        staticBase={staticBase}
+                                        item={{ ...item, showExpo: true, showPlayMask: false }}
+                                        variant="style5"
+                                    />
+                                ))}
+                            </div>
+                            <div className="HomePage_colunm__1XbhV">
+                                {items.filter((_, idx) => idx % 2 === 1).map((item) => (
+                                    <HomeBookItem
+                                        key={item.id}
+                                        to={toEpisodeOrVideoHref(item)}
+                                        staticBase={staticBase}
+                                        item={{ ...item, showExpo: true, showPlayMask: false }}
+                                        variant="style5"
+                                    />
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                     {showMoreMoviesButton ? (
                         <button
                             type="button"
@@ -275,12 +126,12 @@ export function HomeBookShelf({
                 </div>
             ) : (
                 <div
-                    ref={type1ScrollRef}
+                    ref={notH5 ? undefined : type1Scroll.scrollRef}
                     className="HomePage_content__DZ4dU HomePage_type_1__uTWfT"
-                    onPointerDown={handleType1PointerDown}
-                    onPointerMove={handleType1PointerMove}
-                    onPointerUp={endType1Drag}
-                    onPointerCancel={endType1Drag}
+                    onPointerDown={notH5 ? undefined : type1Scroll.onPointerDown}
+                    onPointerMove={notH5 ? undefined : type1Scroll.onPointerMove}
+                    onPointerUp={notH5 ? undefined : type1Scroll.onPointerUp}
+                    onPointerCancel={notH5 ? undefined : type1Scroll.onPointerCancel}
                 >
                     {items.map((item) => (
                         <HomeBookItem

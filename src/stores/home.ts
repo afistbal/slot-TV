@@ -2,7 +2,7 @@ import type { TData } from '@/api';
 import { create } from 'zustand';
 
 
-interface IItem {
+export interface IItem {
     id: number,
     title: string,
     image: string,

@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router';
 import { useCallback, useEffect, useRef } from 'react';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { api, type IPagination } from '@/api';
 import { cn } from '@/lib/utils';
 import { FormattedMessage } from 'react-intl';
@@ -12,7 +13,9 @@ import Loader from '@/components/Loader';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { HomeBookShelf } from '@/components/home/HomeBookShelf';
+import { HomeRowPagerShelf } from '@/components/home/HomeRowPagerShelf';
 import type { HomeBookItemData } from '@/components/home/HomeBookItem';
+import { NetShortPcCoverflowHero } from '@/components/home/NetShortPcCoverflowHero';
 
 const HERO_FADE_MS = 600;
 const HERO_AUTOPLAY_MS = 5000;
@@ -150,6 +153,7 @@ function HeroPlayIcon({ className }: { className?: string }) {
 
 
 export default function Component() {
+    const mdUp = useMinWidth768();
     const configStore = useConfigStore();
     const homeStore = useHomeStore();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -334,14 +338,62 @@ export default function Component() {
         };
     }, [firstHeroSrc]);
 
-    return <div className='home-page flex h-full min-h-0 flex-col bg-app-canvas'>
-        {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div className='home-page__scroll min-w-0 flex-1 overflow-y-auto' ref={scrollRef} onScroll={handleScroll}>
-            <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
-            <div className="h-10"></div>
+    return <div
+        className={cn(
+            'home-page relative flex h-full min-h-0 flex-col bg-app-canvas',
+            mdUp && 'bg-[#151314]',
+        )}
+    >
+        {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div
+            className={cn(
+                /* 不要加 overflow-x-hidden：与 overflow-y 同用会破坏子元素 position:sticky，顶栏无法钉在容器顶部 */
+                'home-page__scroll relative z-[1] min-w-0 flex-1 overflow-y-auto',
+            )}
+            ref={scrollRef}
+            onScroll={handleScroll}
+        >
+            {mdUp ? (
+                <div
+                    className="relative w-full min-w-0 max-w-full shrink-0 pb-24 md:pb-32"
+                >
+                    {/*
+                     * 对站根层 homeBg 为整段 h-full 顺滑延伸；我们幕布在首块内。下加 pb 让 inset 背景层有「向下延伸」的绘制带，
+                     * 再叠 from-transparent → #151314 的渐变，避免与下方列表区硬切；主内容区用 -mt 略上叠，排名/货架压住幕布尾。
+                     */}
+                    <div
+                        className="pointer-events-none absolute inset-0 z-0 w-full overflow-hidden"
+                        aria-hidden
+                    >
+                        <img
+                            alt=""
+                            src="/netshort/home-bg.png"
+                            decoding="async"
+                            className="block h-full w-full min-h-full min-w-full object-cover object-top"
+                        />
+                    </div>
+                    <div
+                        className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-40 min-h-[7rem] bg-gradient-to-b from-transparent via-[#151314]/25 to-[#151314] md:h-48 md:min-h-[8rem]"
+                        aria-hidden
+                    />
+                    <div className="relative z-[2] w-full min-w-0 max-w-full">
+                        <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
+                        <div className="h-10"></div>
+                        <div className="min-w-0 max-w-full overflow-x-clip">
+                            <NetShortPcCoverflowHero goHeroIndex={goHeroIndex} />
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
+                    <div className="h-10"></div>
+                </>
+            )}
+            {!mdUp ? (
             <div className="relative z-10 -mt-[min(calc(22*var(--app-vw)/100),5.5rem)]">
                 <div className="home-hero-shell w-full overflow-hidden" style={{ direction: 'ltr' }}>
                     <div
-                        className="home-hero-viewport relative touch-pan-y overflow-hidden"
+                        className="home-hero-viewport relative overflow-hidden"
                         onTouchStart={handleHeroTouchStart}
                         onTouchEnd={handleHeroTouchEnd}
                         onPointerDown={handleHeroPointerDown}
@@ -462,7 +514,13 @@ export default function Component() {
                     </div>
                 </div>
             </div>
-            <div className="HomePage_main__BzEnK">
+            ) : null}
+            <div
+                className={cn(
+                    'HomePage_main__BzEnK',
+                    mdUp && 'relative z-[2] -mt-32',
+                )}
+            >
                 {homeStore.data?.shelves?.map((shelf) => (
                     <HomeBookShelf
                         key={shelf.titleMessageId}
@@ -487,20 +545,19 @@ export default function Component() {
                 ))}
 
                 {homeStore.data?.rank?.length ? (
-                    <HomeBookShelf
+                    <HomeRowPagerShelf
+                        shelfId="home-shelf-rank"
                         titleMessageId="rankings"
                         titleHref="/"
-                        viewAllHref="/"
                         staticBase={configStore.config['static'] as string}
                         items={itemsFromHomeRail(homeStore.data.rank)}
                     />
                 ) : null}
 
-                {/* 为您推荐：来自 home.recommend（不做分页追加） */}
-                <HomeBookShelf
+                <HomeRowPagerShelf
+                    shelfId="home-shelf-for-you"
                     titleMessageId="for_you"
                     titleHref="/"
-                    viewAllHref="/"
                     staticBase={configStore.config['static'] as string}
                     items={itemsFromHomeRail(homeStore.data?.recommend ?? [])}
                 />

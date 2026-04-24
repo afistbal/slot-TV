@@ -1,7 +1,7 @@
 /**
  * ReelShort 首页主内容区 — 对标 `44bb0e7b9e0672c8.css` 中 `.HomePage_main__*`、`.BookItem_*`。
  * DOM class 名与镜像一致（含 hash 后缀），便于对照镜像 HTML。
- * 尺寸统一用 `var(--app-vw)`（min(100vw,480px)），PC 与 480px 手机同比例。
+ * 尺寸统一用 `var(--app-vw)`（min(100vw,480px)）；≥481px 时主内容区与海报见下方 `@media (min-width: 481px)`，不改动 ≤480 的 H5。
  */
 
 // --- BookItem（对标镜像）---
@@ -32,20 +32,62 @@
         img {
             position: absolute;
             inset: 0;
+            z-index: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
             object-position: center;
             display: block;
+            transform-origin: center center;
+            transition: transform 0.5s ease;
+            will-change: transform;
         }
 
         .BookItem_mask__bz19c {
+            /* 在 item_mask 之下，底缘渐变不压住全幅 0.24 灰层（对标对站层叠） */
+            z-index: 1;
             width: 100%;
             height: calc(9.06667 * var(--app-vw) / 100);
             position: absolute;
             bottom: 0;
             left: 0;
             background: linear-gradient(0deg, #000, transparent);
+            pointer-events: none;
+        }
+
+        /* 对站 .BookItem_item_mask__EE98C：全幅半透明，叠在底图上 */
+        .BookItem_item_mask__EE98C {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 2;
+            isolation: isolate;
+            background-color: rgba(0, 0, 0, 0.24);
+            pointer-events: none;
+        }
+
+        /* 对站 .BookItem_coverIconPlay__7iBKQ + icon_play.5e125d09.png，默认隐、hover 显 */
+        .BookItem_coverIconPlay__7iBKQ {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            z-index: 3;
+            width: min(11.2vw, 56px);
+            height: min(11.2vw, 56px);
+            margin: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.6);
+            background-image: url('../assets/images/reelshort-home-icon-play.png');
+            background-repeat: no-repeat;
+            /* 对站: 20px 水平偏移 + 50% 尺寸；再略右移以对齐视觉中心 */
+            background-position: 20px 50%;
+            background-size: 50% 50%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            will-change: opacity;
             pointer-events: none;
         }
 
@@ -56,6 +98,7 @@
             top: 0;
             width: 100%;
             height: 100%;
+            z-index: 3;
 
             .BookItem_playIconBg__pZ9wk {
                 background: rgba(0, 0, 0, 0.72);
@@ -82,6 +125,7 @@
         }
 
         .BookItem_read_progress_bar__5HCyD {
+            z-index: 4;
             background-color: hsla(0, 0%, 100%, 0.16);
             height: calc(0.53333 * var(--app-vw) / 100);
             isolation: isolate;
@@ -113,6 +157,7 @@
         flex-shrink: 0;
     }
 
+    /* H5 标题区距：与早期 home-reelshort 一致（PC 在 ≥481 段覆盖） */
     .BookItem_title__85fqs {
         width: 100%;
         color: #fff;
@@ -140,6 +185,7 @@
     }
 
     .BookItem_playCount__klKNX {
+        z-index: 5;
         display: flex;
         align-items: center;
         position: absolute;
@@ -158,6 +204,23 @@
             margin-right: calc(0.53333 * var(--app-vw) / 100);
             background: url('../assets/images/cb15a110-82c3-11ee-aed2-cfe3d80f70eb.png')
                 no-repeat 0 / contain;
+        }
+    }
+
+    /* 对站 .BookItem_bookItem…:hover .BookItem_cover__qlmBl { transform:scale(1.2) } + 播放钮显隐；仅精细指针避免误触 */
+    @media (hover: hover) and (pointer: fine) {
+        &:has(.BookItem_item_mask__EE98C):hover {
+            .BookItem_cover__W2qbR img {
+                transform: scale(1.2);
+            }
+
+            .BookItem_coverIconPlay__7iBKQ {
+                opacity: 1;
+            }
+        }
+
+        &:has(.BookItem_playMask__lJJFO):hover .BookItem_cover__W2qbR img {
+            transform: scale(1.2);
         }
     }
 }
@@ -188,13 +251,15 @@
             }
         }
 
-        // 对标 Uno：`flex items-center justify-between text-white/90 mb-12/vw`
+        /* 对标旧 H5：Uno `mb-12/vw` → 12/375*app-vw */
         .HomePage_shelfHead {
             display: flex;
             align-items: center;
             justify-content: space-between;
             color: hsla(0, 0%, 100%, 0.9);
             margin-bottom: calc(12 / 375 * var(--app-vw));
+            padding-right: 0.4%;
+            box-sizing: border-box;
 
             .HomePage_shelfHead__more {
                 display: flex;
@@ -245,6 +310,7 @@
                 display: none;
             }
 
+            /* 旧 H5 type_1 横滑：卡间距 4.26667% app-vw（非 0.8% 百分比槽） */
             .book-item {
                 margin-right: calc(4.26667 * var(--app-vw) / 100);
 
@@ -263,7 +329,8 @@
             }
         }
 
-        &.HomePage_type_5__SK5Rv {
+        /* 旧 H5 type_5 两栏（PC 另加 .HomePage_type_5--pc，此处排除以免干扰 grid） */
+        &.HomePage_type_5__SK5Rv:not(.HomePage_type_5--pc) {
             display: flex;
 
             .book-item {
@@ -308,9 +375,192 @@
     cursor: pointer;
 }
 
+/* 排名/为您推荐：ReelShort 镜像 `fb8bb5c8…css` 中 Slider 分页 + 行内一屏（`www.reelshort.com` 离线图） */
+.home-page {
+    /* 本地：`public/netshort/icon-right-outline.png`（对站 media `icon_right_outline.*.png`） */
+    $reel-pager-icon: url('/netshort/icon-right-outline.png');
+
+    .HomePage_reelSlider__root.Slider_slider__g_dkb {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    /*
+     * 用 CSS Grid 复现镜像中「每行 N 个等分格，末页只填前几格，右侧留空」；
+     * --row-cols 必须等于 `pageSize`（见 HomeRowPagerShelf），对站为 inline-block + 固定百分比宽。
+     */
+    /* 多页横移轨：对站 `Slider_sliderList` 的 transition 0.5s，只动 transform */
+    .HomePage_reelSliderTrack {
+        transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .HomePage_reelSlider__root--paged {
+        padding-bottom: min(4vw, 32px);
+    }
+
+    .HomePage_reelSlider__root .HomePage_reelSliderList--pageGrid {
+        display: grid !important;
+        white-space: normal !important;
+        grid-template-columns: repeat(var(--row-cols, 7), minmax(0, 1fr));
+        /* 与主货架 type_1 一致列距；全用 gap，避免与 item padding 叠成过紧 */
+        column-gap: 0.8%;
+        will-change: auto;
+        letter-spacing: 0;
+    }
+
+    .HomePage_reelSlider__root .HomePage_reelSliderList--pageGrid > .Slider_item__28DWA {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        display: block;
+        box-sizing: border-box;
+        padding: 0;
+    }
+
+    /*
+     * 仅 PC 分页宫格：BookItem 需铺满列宽。H5 排名/推荐走 type_1 横滑，保留全局 BookItem 固定 vw 宽。
+     */
+    .HomePage_reelSlider__root .HomePage_reelSliderList--pageGrid .BookItem_bookItem__wWmbf {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .HomePage_reelSlider__root .HomePage_reelSliderList--pageGrid .BookItem_bookItem__wWmbf .BookItem_cover__W2qbR {
+        width: 100% !important;
+        max-width: 100%;
+        height: auto !important;
+        aspect-ratio: 36.8 / 49.06667;
+    }
+
+    .HomePage_reelSlider__root .Slider_sliderContainer__2F8gq {
+        width: 100%;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .HomePage_reelSlider__root .home_floorTitle__cIyIp.HomePage_shelfHead {
+        margin-bottom: min(2vw, 20px);
+    }
+
+    .HomePage_reelSlider__root .Slider_pageButtons__jvO9V {
+        display: none;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        position: absolute;
+        box-sizing: border-box;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        z-index: 10;
+        border: 0;
+        padding: 0;
+        background-color: hsla(0, 0%, 100%, 0.1);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+    }
+
+    .HomePage_reelSlider__root .Slider_pageButtons__jvO9V:hover {
+        background-color: hsla(0, 0%, 100%, 0.3);
+    }
+
+    .HomePage_reelSlider__root .Slider_pageButtons__jvO9V.Slider_disable__GAXYV {
+        display: none !important;
+    }
+
+    .HomePage_reelSlider__root .Slider_pageButtons__jvO9V::after {
+        content: '';
+        display: block;
+        width: 40%;
+        height: 40%;
+        background: $reel-pager-icon no-repeat 50% / contain;
+    }
+
+    .HomePage_reelSlider__root .Slider_nextButton__a5KCv {
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%) translateX(50%);
+    }
+
+    .HomePage_reelSlider__root .Slider_prevButton__5XAPR {
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%) translateX(-50%) scaleX(-1);
+    }
+
+    @media screen and (max-width: 1766.88px) {
+        .HomePage_reelSlider__root .Slider_nextButton__a5KCv {
+            right: 4vw;
+        }
+
+        .HomePage_reelSlider__root .Slider_prevButton__5XAPR {
+            left: 4vw;
+        }
+    }
+
+    @media screen and (max-width: 1400px) {
+        .HomePage_reelSlider__root .Slider_pageButtons__jvO9V {
+            width: 60px;
+            height: 60px;
+        }
+    }
+
+    @media screen and (max-width: 800px) {
+        .HomePage_reelSlider__root .Slider_pageButtons__jvO9V {
+            width: 50px;
+            height: 50px;
+        }
+    }
+
+    .Slider_sliderWrapper__66_q7 {
+        width: 100%;
+    }
+
+    .Slider_sliderWrapper__66_q7:hover .HomePage_reelSlider__root .Slider_pageButtons__jvO9V:not(.Slider_disable__GAXYV) {
+        display: flex;
+    }
+
+    /**
+     * H5：主货架 type_1 / 排名推荐横滑层只认横向；排名/推荐在 PC 分页宫格若被窄窗打开则锁 2 列。
+     */
+    @media (max-width: 480px) {
+        /* 主货架横划：本层只认横向，纵滑交给 .home-page__scroll，避免与整页滚动手势抢焦点 */
+        .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT {
+            touch-action: pan-x;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .HomePage_reelSlider__root .HomePage_reelSliderList--pageGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            width: 100%;
+            min-width: 0;
+            overflow-x: hidden;
+            row-gap: min(2vw, 24px);
+        }
+
+        .HomePage_reelSlider__root .Slider_sliderContainer__2F8gq {
+            overflow-x: hidden;
+            max-width: 100%;
+            touch-action: pan-y;
+        }
+
+        .HomePage_reelSlider__root .HomePage_reelSliderList--pageGrid .BookItem_bookItem__wWmbf {
+            width: 100% !important;
+            max-width: 100%;
+        }
+
+        .HomePage_reelSlider__root .Slider_pageButtons__jvO9V {
+            display: none !important;
+        }
+    }
+}
+
 /**
- * 首页 PC 架构层（仅 >480 生效）：
- * 当前阶段先做容器与滚动语义约束，不改 H5 视觉参数。
+ * 首页非 H5（≥481，与 useMinWidth481 一致）：
+ * 对标 ReelShort 镜像 `fb8bb5c8…css`：`.home_floorTitle__cIyIp h2`、`BookItem_title__E6dtd`、`Slider` 多列无横滑。
+ * H5（≤480）仍用上方 `var(--app-vw)` 与横滑 type_1。
  */
 @media (min-width: 481px) {
     .home-page {
@@ -323,75 +573,178 @@
     }
 
     .HomePage_main__BzEnK {
-        padding-left: 16px;
-        padding-right: 16px;
-        padding-top: 28px;
+        --home-shelf-pad-x: 16px;
+        box-sizing: border-box;
+        width: 100%;
+        /* 对站 .home_list / Slider max 1636px */
+        max-width: min(1636px, 100%);
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: var(--home-shelf-pad-x);
+        padding-right: var(--home-shelf-pad-x);
+        /* 对站 .home_main_content__GxekS padding-top:36px；叠 hero 时略收紧 */
+        padding-top: 20px;
         padding-bottom: 68px;
     }
 
-    .HomePage_main__BzEnK .HomePage_bookShelf__W2tPD {
-        margin-bottom: 16px;
+    @media (min-width: 768px) {
+        .HomePage_main__BzEnK {
+            --home-shelf-pad-x: 24px;
+        }
     }
 
-    .HomePage_main__BzEnK .HomePage_bookShelf__W2tPD h2 {
-        font-size: 18px;
-        line-height: 1.25;
+    @media (min-width: 1280px) {
+        .HomePage_main__BzEnK {
+            --home-shelf-pad-x: 32px;
+        }
     }
 
+    /* 对站 .home_floor__yv9HP margin-bottom:2.2% — 主区 .HomePage_bookShelf 已统一见上 */
+
+    /* 对站 .home_floorTitle__cIyIp h2 { font-size: min(3vw,32px) } */
+    .HomePage_main__BzEnK .HomePage_bookShelf__W2tPD h2,
+    .HomePage_main__BzEnK .HomePage_shelfHead h2 {
+        font-size: min(3vw, 32px);
+        line-height: 1.2;
+        font-weight: 700;
+    }
+
+    /* 标题区与首行卡：与 Slider 行距同阶 min(2vw,24px)；对站 floorTitle 仅见 padding-right:.4%（H5 已设） */
     .HomePage_main__BzEnK .HomePage_bookShelf__W2tPD .HomePage_shelfHead {
-        margin-bottom: 12px;
+        margin-bottom: min(2vw, 24px);
     }
 
     .HomePage_main__BzEnK .HomePage_content__DZ4dU {
-        padding-bottom: 12px;
+        padding-bottom: 0;
     }
 
-    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT .book-item {
-        margin-right: 14px;
+    /**
+     * type_1：仅首页 .home-page；对站 Slider 多列不横滑，grid 等效 7/6/5/4/3 列断点。
+     */
+    /* type_1 与 type_5（.HomePage_type_5--pc）在 PC 上同 Slider 多列；H5 的 type_5 仍为两列分栏，不用 --pc */
+    .home-page .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT,
+    .home-page
+        .HomePage_main__BzEnK
+        .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        /* 对站 .Slider_item padding:0 .4% → 列向 0.8% ；行向同 .Slider_item>div */
+        column-gap: 0.8%;
+        row-gap: min(2vw, 30px);
+        width: 100%;
+        min-width: 0;
+        overflow: visible;
+        -webkit-overflow-scrolling: auto;
+
+        &::after {
+            content: none;
+        }
+
+        .book-item {
+            margin-right: 0;
+            min-width: 0;
+        }
     }
 
-    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT::after {
-        flex-basis: 16px;
+    @media (min-width: 1000px) {
+        .home-page .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT,
+        .home-page
+            .HomePage_main__BzEnK
+            .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
     }
 
-    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv .book-item {
-        margin-bottom: 30px;
+    @media (min-width: 1200px) {
+        .home-page .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT,
+        .home-page
+            .HomePage_main__BzEnK
+            .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
     }
 
-    .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv .HomePage_colunm__1XbhV {
-        margin-right: 14px;
+    @media (min-width: 1400px) {
+        .home-page .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT,
+        .home-page
+            .HomePage_main__BzEnK
+            .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
     }
 
-    .BookItem_bookItem__wWmbf .BookItem_title__85fqs {
-        font-size: 14px;
-        margin-top: 8px;
-        line-height: 21px;
+    @media (min-width: 1700px) {
+        .home-page .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT,
+        .home-page
+            .HomePage_main__BzEnK
+            .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
     }
 
-    .BookItem_bookItem__wWmbf .BookItem_chapter__8RIez {
-        font-size: 12px;
+    .home-page .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT .BookItem_bookItem__wWmbf {
+        width: 100%;
+
+        .BookItem_cover__W2qbR {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 36.8 / 49.06667;
+            border-radius: 6px;
+        }
+    }
+
+    .home-page .HomePage_reelSlider__root .BookItem_bookItem__wWmbf .BookItem_cover__W2qbR {
+        border-radius: 6px;
+    }
+
+    /* PC type5 与对站一致：多列网格与 type1 同，封面也用车位 36.8×49.07（H5 仍用 43.2×57.6 分栏在 ≤480 段） */
+    .home-page
+        .HomePage_main__BzEnK
+        .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc
+        .BookItem_bookItem__wWmbf.BookItem_bookStyle5__Hn17I {
+        width: 100%;
+
+        .BookItem_cover__W2qbR {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 36.8 / 49.06667;
+            border-radius: 6px;
+        }
+    }
+
+    /* 对站 BookItem_title__E6dtd: min(2.6vw,18px) font-weight:500 line-height:1.5 */
+    .HomePage_main__BzEnK .BookItem_bookItem__wWmbf .BookItem_title__85fqs {
+        font-size: min(2.6vw, 18px);
+        font-weight: 500;
+        line-height: 1.5;
+        margin: 3% 0;
+    }
+
+    .HomePage_main__BzEnK .BookItem_bookItem__wWmbf .BookItem_chapter__8RIez {
+        font-size: min(1vw, 14px);
+        font-weight: 500;
         margin-top: 3px;
     }
 
-    .BookItem_bookItem__wWmbf .BookItem_playCount__klKNX {
+    .HomePage_main__BzEnK .BookItem_bookItem__wWmbf .BookItem_playCount__klKNX {
         font-size: 11px;
         right: 6px;
         bottom: 6px;
         height: 14px;
     }
 
-    .HomePage_more_movies_btn__z0biE {
-        border-radius: 8px;
-        margin-top: 12px;
-        width: 276px;
-        height: 54px;
-        font-size: 20px;
+    .HomePage_main__BzEnK .HomePage_more_movies_btn__z0biE {
+        /* 对站 .home_more_movies_btn: 216x42, 18px, radius 6 */
+        border-radius: 6px;
+        margin: 18px auto 0;
+        width: 216px;
+        height: 42px;
+        font-size: 18px;
     }
 
     .HomePage_listLoader__rs {
-        margin-top: 12px;
-        min-height: 54px;
-        line-height: 54px;
         font-size: 14px;
+        min-height: 42px;
+        line-height: 42px;
     }
 }
