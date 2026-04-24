@@ -92,6 +92,8 @@
     "no_content": "Không có nội dung",
     "feedback_content_invalid": "Phản hồi phải có ít nhất 5 ký tự.",
     "unlock_now": "Mở khóa ngay",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "Mở khóa ngay",
     "is_vip": "Bạn là VIP",
     "cancel": "Hủy",
     "ok": "Đồng ý",

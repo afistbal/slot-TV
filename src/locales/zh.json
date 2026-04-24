@@ -97,6 +97,8 @@
     "no_content": "沒有內容",
     "feedback_content_invalid": "反饋內容不能少於 5 個字",
     "unlock_now": "立即解鎖",
+    "pay_unlock_toast_locked_episode": "這是付費劇集，解鎖後即可觀看。",
+    "pay_unlock_btn_price": "立即解鎖",
     "is_vip": "您是VIP用戶",
     "cancel": "取消",
     "ok": "確認",

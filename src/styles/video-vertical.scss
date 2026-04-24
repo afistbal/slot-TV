@@ -20,6 +20,75 @@
     -webkit-font-smoothing: subpixel-antialiased;
 }
 
+.video-player-pc-close-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 9999px;
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.26);
+    transition: background-color 0.15s ease;
+}
+
+.video-player-pc-close-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.video-player-pc-close-btn:active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.video-pc-episode-btn--active {
+    background-image: radial-gradient(
+        116.67% 135.17% at 95.16% 96%,
+        rgba(255, 61, 93, 0.32) 0,
+        rgba(45, 45, 45, 0) 80%
+    ) !important;
+}
+
+/* 视频页 VIP 弹窗：套餐区在 PC 也保持单列（不影响我的页） */
+.video-vip-dialog .rs-shopping__plans {
+    grid-template-columns: 1fr !important;
+}
+
+/* 简介弹窗：彻底移除金色焦点边框/阴影 */
+.video-intro-drawer,
+.video-intro-drawer:focus,
+.video-intro-drawer:focus-visible,
+.video-intro-drawer *:focus,
+.video-intro-drawer *:focus-visible {
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    --tw-ring-color: transparent !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+/* 仅 Video 页抽屉：去掉全局 focus 的金色 outline */
+.video-player-root [data-slot='drawer-content']:focus,
+.video-player-root [data-slot='drawer-content']:focus-visible,
+.video-player-root [data-slot='drawer-content'] *:focus,
+.video-player-root [data-slot='drawer-content'] *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* vaul 实际可聚焦节点（简介弹窗命中这里） */
+.video-player-root [data-vaul-drawer]:focus,
+.video-player-root [data-vaul-drawer]:focus-visible,
+.video-player-root [role='dialog']:focus,
+.video-player-root [role='dialog']:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
 /** 相邻集占位：避免多重 text-shadow 在合成层上糊成一团 */
 .video-vertical-slide-label {
     -webkit-font-smoothing: subpixel-antialiased;

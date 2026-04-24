@@ -92,6 +92,8 @@
     "no_content": "Kein Inhalt",
     "feedback_content_invalid": "Feedback muss mindestens 5 Zeichen lang sein.",
     "unlock_now": "Jetzt freischalten",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "Jetzt freischalten",
     "is_vip": "Sie sind ein VIP",
     "cancel": "Abbrechen",
     "ok": "Ok",

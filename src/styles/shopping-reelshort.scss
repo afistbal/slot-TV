@@ -1681,6 +1681,12 @@
 
     .rs-shopping__plans {
         grid-template-columns: minmax(0, 1fr);
+        padding-top: calc(6 / 375 * var(--app-vw));
+        gap: calc(10 / 375 * var(--app-vw));
+    }
+
+    .rs-shopping__intro {
+        margin-bottom: calc(14 / 375 * var(--app-vw));
     }
 
     .rs-shopping__countdown {
@@ -1692,8 +1698,17 @@
     }
 
     @media (min-width: 768px) {
+        .rs-shopping__plans {
+            padding-top: 8px;
+            gap: 10px;
+        }
+
+        .rs-shopping__intro {
+            margin-bottom: 16px;
+        }
+
         .rs-shopping__plan {
-            min-height: 166px;
+            min-height: 136px;
         }
     }
 
@@ -1706,7 +1721,22 @@
 
 .rs-shopping-profile-embed-countdown {
     flex-shrink: 0;
-    margin-bottom: 8px;
+    margin-bottom: 16px;
+}
+
+.rs-shopping-profile-embed-countdown .text-sm {
+    font-size: 16px;
+    line-height: 1.15;
+}
+
+.rs-shopping-profile-embed-countdown .p-2 {
+    padding: 10px 12px;
+}
+
+@media (min-width: 768px) {
+    .rs-shopping-profile-embed-countdown {
+        margin-bottom: 18px;
+    }
 }
 
 /** 顶栏：左侧 kv 区（有倒计时时只显示倒计时，否则 VIP 解锁）+ 右侧关闭图 */
@@ -1763,6 +1793,17 @@
     background: transparent;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+}
+
+.rs-shopping-drawer-head__closeImgBtn:focus,
+.rs-shopping-drawer-head__closeImgBtn:focus-visible,
+.rs-shopping-drawer-head__closeImgBtn:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+    --tw-ring-color: transparent !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
 .rs-shopping-drawer-head__closePixel {
@@ -1845,6 +1886,18 @@
  */
 .rs-shopping.rs-shopping--payModalEmbedPortal .rs-shopping__payModalMask {
     z-index: 220;
+}
+
+/* 视频页 VIP 弹窗内：支付层与套餐层同一高度、同一垂直定位（看起来像同一个弹窗） */
+@media (min-width: 768px) {
+    .rs-shopping.rs-shopping--payModalEmbedPortal .rs-shopping__payModalMask {
+        align-items: center;
+    }
+
+    .rs-shopping.rs-shopping--payModalEmbedPortal .rs-shopping__payModalPanel {
+        align-self: center;
+        margin-bottom: 0;
+    }
 }
 
 .rs-shopping.rs-shopping--payModalEmbedPortal .rs-shopping__paidAgreementDialogOverlay {

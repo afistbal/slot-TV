@@ -15,8 +15,14 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react
 import { WebVTT } from 'videojs-vtt.js';
 import { Swiper, SwiperSlide, type SwiperClass, type SwiperRef } from 'swiper/react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import lockIcon from '@/assets/lock.svg';
+import episodeLockBadgeIcon from '@/assets/icons/episode-lock-badge.svg';
+import activeEpisodeBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
 import fullscreenIcon from '@/assets/images/is_full_screen_icon.88dfd7dd.png';
+import pcBackIcon from '@/assets/icons/video-pc-back.svg';
+import pcFullscreenExitHandleBg from '@/assets/images/9061da60-c404-11ef-a2d6-41216ff1602c.png';
+import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
 import { cn } from '@/lib/utils';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
@@ -30,12 +36,37 @@ import Loader from '@/components/Loader';
 import { useUserStore } from '@/stores/user';
 import { useConfigStore } from '@/stores/config';
 import { useRootStore } from '@/stores/root';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 // import UnlockEpisode from '@/widgets/UnlockEpisode';
 import Forward from '@/components/Forward';
 import Image from '@/components/Image';
 // import { useLoadingStore } from "@/stores/loading";
 
 const SPEED = [0.75, 1.0, 1.25, 1.5, 2.0];
+
+function isOpaqueTagId(value: string) {
+    return /^[a-f0-9]{10,}$/i.test(value);
+}
+
+function formatTagText(value: string) {
+    return value
+        .replace(/[_-]+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (s) => s.toUpperCase());
+}
+
+function getTagDisplayText(tag: { name: string; unique_id: string }) {
+    const name = String(tag.name ?? '').trim();
+    const uid = String(tag.unique_id ?? '').trim();
+    // 某些接口会把 name 返回为内部哈希ID，优先展示更可读的字段
+    if (name && !isOpaqueTagId(name)) {
+        return name;
+    }
+    if (uid && !isOpaqueTagId(uid)) {
+        return formatTagText(uid);
+    }
+    return name || uid || '-';
+}
 
 export default function Component() {
     // const configStore = useConfigStore();
@@ -206,6 +237,9 @@ function Player({
     const [speedOpen, setSpeedOpen] = useState(false);
     const [speed, setSpeed] = useState(parseInt(localStorage.getItem('playback_speed') || '1', 10));
     const [introduction, setIntroduction] = useState(false);
+    const isDesktop = useMinWidth768();
+    const [desktopEpisodeTab, setDesktopEpisodeTab] = useState(0);
+    const [pcFullscreen, setPcFullscreen] = useState(false);
 
     function handleBack() {
         if (window.history.length > 1) {
@@ -247,6 +281,14 @@ function Player({
         window.clearTimeout(controllerTimerRef.current);
         controllerRef.current.style.opacity = '0';
         controllerIsShow.current = false;
+    }
+
+    function handleDesktopControllerMouseEnter() {
+        showController(false);
+    }
+
+    function handleDesktopControllerMouseLeave() {
+        hideController();
     }
 
     function setProgress(value: number) {
@@ -577,8 +619,14 @@ function Player({
 
     async function handleToggleFullscreen(e: React.MouseEvent<HTMLDivElement>) {
         e.stopPropagation();
-        await toggleVideoFullscreen(videoRef, wrapRef);
+        await toggleVideoFullscreen(videoRef, wrapRef, { preferContainer: isDesktop });
         showController();
+    }
+
+    async function handleExitPcFullscreen() {
+        if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        }
     }
 
     useEffect(() => {
@@ -696,6 +744,487 @@ function Player({
         }
     }, [episode]);
 
+    useEffect(() => {
+        if (!isDesktop) {
+            return;
+        }
+        const onFullscreenChange = () => {
+            setPcFullscreen(Boolean(document.fullscreenElement));
+        };
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        onFullscreenChange();
+        return () => {
+            document.removeEventListener('fullscreenchange', onFullscreenChange);
+        };
+    }, [isDesktop]);
+
+    if (isDesktop) {
+        const currentEpisodeNo = episode?.episode ?? props.index + 1;
+        const maxEpisode = data.episodes.reduce((m, v) => Math.max(m, v.episode), 0);
+        const tabRanges = Array.from({ length: Math.ceil((maxEpisode + 1) / 50) }, (_, i) => {
+            const start = i * 50;
+            const end = Math.min(start + 49, maxEpisode);
+            return { start, end };
+        });
+        const activeTab = Math.min(desktopEpisodeTab, Math.max(0, tabRanges.length - 1));
+        const selectedRange = tabRanges[activeTab] ?? { start: 0, end: maxEpisode };
+        const filteredEpisodes = data.episodes.filter((v) => {
+            if (selectedRange.start === 0) return v.episode >= 1 && v.episode <= selectedRange.end;
+            return v.episode >= selectedRange.start && v.episode <= selectedRange.end;
+        });
+
+        return (
+            <div className="video-player-root h-full w-full relative" ref={wrapRef}>
+                {loading && (
+                    <div className="h-full w-full flex flex-col">
+                        <div
+                            className="shrink-0 flex justify-between h-16 items-center bg-black absolute top-0 w-full transition-opacity ease-linear"
+                            onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                        >
+                            <div
+                                onClick={handleBack}
+                                className="text-white w-10 h-16 flex justify-center items-center shrink-0"
+                            >
+                                {history.length > 1 ? (
+                                    <ChevronLeft className="w-5 h-5" />
+                                ) : (
+                                    <Home className="w-5 h-5" />
+                                )}
+                            </div>
+                            <div className="text-white text-lg font-bold text-ellipsis flex-1 whitespace-nowrap overflow-hidden pr-2">
+                                {data.info.title}
+                            </div>
+                            <div className="text-white shrink-0 font-bold">
+                                {episode?.episode ?? '..'} / {data.episodes.length}
+                            </div>
+                            <Link
+                                to="/"
+                                className="text-white w-10 h-16 flex justify-center items-center shrink-0"
+                            >
+                                <Home className="w-5 h-5" />
+                            </Link>
+                        </div>
+                        <div className="flex-1 flex justify-center items-center">
+                            <Loader color="light" />
+                        </div>
+                    </div>
+                )}
+                <div
+                    className={cn(
+                        'h-full w-full relative opacity-0 transition-opacity duration-500',
+                        loading ? '' : 'opacity-100',
+                    )}
+                >
+                    <div className="absolute inset-0 flex bg-black">
+                        <div className="relative flex-1 flex justify-center items-center bg-black">
+                            {!pcFullscreen && (
+                                <div className="video-player-pc-close-btn" onClick={handleBack}>
+                                    <img src={pcBackIcon} alt="back" className="w-6 h-6" />
+                                </div>
+                            )}
+                            <div className="relative h-full max-h-full aspect-[9/16] w-auto max-w-full overflow-hidden">
+                            <video
+                                ref={videoRef}
+                                className="w-full h-full object-cover absolute"
+                                playsInline
+                                controlsList="nodownload noplaybackrate noremoteplayback"
+                                disablePictureInPicture
+                                disableRemotePlayback
+                                onContextMenu={(e) => e.preventDefault()}
+                            />
+                            <div
+                                className="absolute w-10/12 h-4/12 m-auto left-0 right-0 bottom-10 flex justify-center items-start text-center"
+                                ref={subtitleRef}
+                            >
+                                {subtitle > -1 && subtitlesRef.current.length > 0 && (
+                                    <div className="video-player-subtitle-text text-white px-2 py-1 rounded-md text-2xl font-bold">
+                                        {subtitlesRef.current[subtitle].text.replace(/<[^>]*>?/gm, '')}
+                                    </div>
+                                )}
+                            </div>
+                            <div
+                                className="video-player-ui relative w-full h-full transition-opacity duration-300 ease-linear"
+                                ref={controllerRef}
+                                onMouseEnter={handleDesktopControllerMouseEnter}
+                                onMouseLeave={handleDesktopControllerMouseLeave}
+                            >
+                                {canPlay && episode?.lock === false && (
+                                    <div
+                                        className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto"
+                                        onClick={handleTogglePlay}
+                                    >
+                                        {playing ? (
+                                            <Pause className="text-white w-10 h-10" />
+                                        ) : (
+                                            <PlayIcon className="text-white w-10 h-10" />
+                                        )}
+                                    </div>
+                                )}
+                                {episode?.lock === true && (
+                                    <div className="absolute inset-0 flex-center flex-col leading-normal mb-6 text-sm px-8 md:px-[70px]">
+                                        <img src={paidEpisodeLockIcon} alt="" className="h-16 w-16" />
+                                        <p className="text-center text-[20px] font-bold text-white/90 mt-6 mb-10 w-[320px]">
+                                            <FormattedMessage id="pay_unlock_toast_locked_episode" />
+                                        </p>
+                                        <div
+                                            className="flex justify-center items-center p-4 px-12 gap-2 text-white text-xl rounded-full bg-linear-to-r from-amber-400 to-red-400 font-bold cursor-pointer"
+                                            onClick={() => handleToggleUnlockEpisode(true)}
+                                        >
+                                            <Unlock className="w-5 h-5 stroke-4" />
+                                            <div>
+                                                <FormattedMessage id="unlock_now" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {episode?.lock === false && (
+                                    <div
+                                        className="absolute bg-black/30 w-full bottom-0 text-white h-[76px] overflow-hidden text-sm p-4 pt-0 flex gap-1 items-center"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleIntroduction();
+                                        }}
+                                    >
+                                        {data.info.introduction ? (
+                                            <>
+                                                <div className="text-ellipsis line-clamp-3 leading-5 text-white/90">
+                                                    {data.info.introduction}
+                                                </div>
+                                                <div>
+                                                    <Forward />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex justify-center items-center w-full">
+                                                <FormattedMessage id="no_introduction_available" />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {episode?.lock === false && (
+                                    <div
+                                        className="absolute bg-black/30 w-full mx-auto pl-4 pr-2 left-0 right-0 h-10 flex bottom-0 mb-[76px] items-center"
+                                        ref={progressWrapRef}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div
+                                            className="flex-1 flex items-center justify-center"
+                                            ref={progressRef}
+                                            onMouseDown={handleProgressMouseDown}
+                                            onMouseMove={handleProgressMouseMove}
+                                            onTouchStart={handleProgressTouchStart}
+                                            onTouchMove={handleProgressTouchMove}
+                                        >
+                                            <div className="w-full h-1 bg-white/50 rounded-full overflow-hidden">
+                                                <div className="bg-white/80 h-1 w-0" ref={progressCurrentRef} />
+                                            </div>
+                                        </div>
+                                        <div className="text-white text-xs flex items-center justify-center pl-3 whitespace-nowrap text-nowrap">
+                                            {current === 'NaN:NaN' ? '00:00' : current} /{' '}
+                                            {duration === 'NaN:NaN' ? '00:00' : duration}
+                                        </div>
+                                        <div
+                                            className="text-white text-xs flex items-center justify-center px-3"
+                                            onClick={handleSpeedOpen}
+                                        >
+                                            {SPEED[speed]}x
+                                        </div>
+                                        <div
+                                            className="text-white text-xs flex items-center justify-center px-3 cursor-pointer"
+                                            onClick={handleToggleFullscreen}
+                                        >
+                                            <img src={fullscreenIcon} alt="" className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            {waiting && (
+                                <div className="w-10 h-10 pointer-events-none rounded-full flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto animate-[spin_1.5s_ease_infinite]">
+                                    <LoaderCircle className="w-8 h-8 text-slate-100" />
+                                </div>
+                            )}
+                            </div>
+                        </div>
+                        <aside
+                            className={cn(
+                                'w-[480px] h-full border-l border-white/20 bg-black transition-transform duration-500 ease-in-out',
+                                pcFullscreen ? 'translate-x-full absolute right-0 top-0' : 'translate-x-0 relative',
+                            )}
+                        >
+                            {pcFullscreen && (
+                                <div
+                                    className="absolute top-1/2 h-[122px] w-[34px] cursor-pointer bg-cover transition-all duration-300 -left-[34px] -translate-y-1/2"
+                                    style={{ backgroundImage: `url(${pcFullscreenExitHandleBg})` }}
+                                    onClick={() => {
+                                        void handleExitPcFullscreen();
+                                    }}
+                                />
+                            )}
+                            <div className="h-full w-[480px] overflow-y-auto px-[30px] pb-[30px] pt-[24px]">
+                                <nav aria-label="Breadcrumb" className="text-white/50 flex text-[14px] leading-normal mb-[24px]">
+                                    <Link to="/">
+                                        <FormattedMessage id="home" />
+                                    </Link>
+                                    <span className="mx-2">/</span>
+                                    <span className="max-w-[180px] line-clamp-1 break-all text-white">
+                                        Episode {currentEpisodeNo}
+                                    </span>
+                                </nav>
+                                <h1 className="line-clamp-2 break-words text-[24px] font-bold leading-[1.2]">
+                                    Episode {currentEpisodeNo} - {data.info.title} Full Movie
+                                </h1>
+                                <h3 className="line-clamp-2 mt-[24px] font-normal text-[18px]">
+                                    Plot of Episode {currentEpisodeNo}
+                                </h3>
+                                <div className="mt-[8px] break-words text-[14px] text-white/50 leading-[1.5] line-clamp-3">
+                                    {data.info.introduction}
+                                </div>
+                                <div className="flex flex-wrap overflow-hidden max-h-none mt-[16px]">
+                                    {data.tags.map((v) => (
+                                        <div
+                                            key={v.name}
+                                            className="mr-[10px] mb-[10px] text-[12px] line-clamp-1 break-all max-w-[152px] px-[8px] h-[27px] leading-[27px] rounded-[3px] text-white/90 bg-white/10"
+                                        >
+                                            {getTagDisplayText(v)}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-[14px] h-[90px] border-t border-white/20">
+                                    <div className="h-full w-full grid grid-cols-3 items-center">
+                                        <div
+                                            className="flex flex-col cursor-pointer items-center text-white/90 md:text-white/70"
+                                            onClick={handleToggleFavorite}
+                                        >
+                                            <div className="flex text-[32px]">
+                                                <Star className={cn('w-8 h-8 text-white fill-white', favorite && 'fill-[#ffd000] stroke-[#ffd000]')} />
+                                            </div>
+                                            <span className="flex mt-[4px] text-[14px]">{data.info.favorite}K</span>
+                                        </div>
+                                        <div
+                                            className="flex flex-col cursor-pointer items-center text-white/90 md:text-white/70"
+                                            onClick={(e) => handleToggleVip(e)}
+                                        >
+                                            <div className="flex text-[32px]">
+                                                <Crown className="w-8 h-8 text-[#ffd000] fill-[#ffd000]" />
+                                            </div>
+                                            <span className="flex mt-[4px] text-[14px]">VIP</span>
+                                        </div>
+                                        <div />
+                                    </div>
+                                </div>
+                                <div className="border-t border-white/20 pt-[24px]">
+                                    <div className="flex text-[16px] text-white/50">
+                                        {tabRanges.map((r, idx) => (
+                                            <div
+                                                key={`${r.start}-${r.end}`}
+                                                className={cn(
+                                                    'min-w-[35px] text-center cursor-pointer',
+                                                    idx === 0 ? '' : 'ml-[25px]',
+                                                    idx === activeTab && 'text-[#E52E2E] relative',
+                                                )}
+                                                onClick={() => setDesktopEpisodeTab(idx)}
+                                            >
+                                                {r.start} - {r.end}
+                                                {idx === activeTab && (
+                                                    <span className="absolute -bottom-[8px] left-1/2 -ml-[10px] w-[20px] h-[3px] bg-[#E52E2E] rounded-[2px]" />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-[23px] grid grid-cols-6 gap-[8px] overflow-hidden">
+                                        {filteredEpisodes.map((v) => {
+                                            const rawIndex = data.episodes.findIndex((e) => e.id === v.id);
+                                            const locked = v.vip !== 0 && v.locked === 1;
+                                            return (
+                                                <div
+                                                    key={v.id}
+                                                    onClick={() => handleSetEpisode(rawIndex)}
+                                                    className={cn(
+                                                        'video-pc-episode-btn flex items-center justify-center w-full h-[46px] bg-white/10 text-[16px] text-white/90 rounded-[4px] cursor-pointer relative',
+                                                        v.episode === currentEpisodeNo &&
+                                                            'video-pc-episode-btn--active text-[14px] text-white/50 font-medium',
+                                                    )}
+                                                >
+                                                    {v.episode}
+                                                    {v.episode === currentEpisodeNo && (
+                                                        <div className="absolute right-[2px] bottom-[2px] flex w-[12px] h-[12px]">
+                                                            <img
+                                                                alt=""
+                                                                src={activeEpisodeBadgeGif}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {locked && (
+                                                        <div className="absolute right-0 top-0 w-4 h-3 bg-[#e52e2e] rounded-[0_6px_0_6px] flex items-center justify-center">
+                                                            <img src={episodeLockBadgeIcon} alt="" className="w-2.5 h-2.5" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                    <Drawer open={episodeStatus} onOpenChange={() => handleToggleEpisode()}>
+                        <DrawerContent className="bg-slate-800" aria-describedby="Episode">
+                            <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
+                                <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
+                                    {data.info.title}
+                                </div>
+                                <div onClick={handleToggleEpisode}>
+                                    <X />
+                                </div>
+                            </DrawerTitle>
+                            <DrawerDescription className="text-slate-300 px-4 text-sm pt-1 line-clamp-2 overflow-hidden text-ellipsis">
+                                <FormattedMessage id="episode" /> {episode?.episode} /{' '}
+                                {data.episodes.length}
+                            </DrawerDescription>
+                            <div className="border-t border-slate-700 mt-4" />
+                            <div
+                                className="gap-2 p-4 text-white h-[45vh] overflow-auto grid grid-cols-6"
+                                ref={episodeRef}
+                            >
+                                {data.episodes.map((v, k) => (
+                                    <div
+                                        data-episode={v.episode}
+                                        onClick={() => handleSetEpisode(k)}
+                                        key={v.id}
+                                        className={cn(
+                                            'bg-slate-600 rounded-md relative pb-[100%]',
+                                            v.episode === episode?.episode && 'bg-red-400',
+                                        )}
+                                    >
+                                        <div className="font-bold absolute w-full h-full flex justify-center items-center">
+                                            {k + 1}
+                                        </div>
+                                        {v.vip !== 0 && v.locked === 1 && (
+                                            <div className="absolute text-white top-1 right-1">
+                                                <img src={lockIcon} alt="" className="w-3 h-3" />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="h-4" />
+                        </DrawerContent>
+                    </Drawer>
+                    <Drawer open={speedOpen} onOpenChange={handleSpeedOpen}>
+                        <DrawerContent className="bg-slate-800" aria-describedby="PlaybackSpeed">
+                            <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
+                                <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
+                                    <FormattedMessage id="playback_speed" />
+                                </div>
+                                <div onClick={handleSpeedOpen}>
+                                    <X />
+                                </div>
+                            </DrawerTitle>
+                            <div className="border-t border-slate-700 mt-4" />
+                            <div className="flex flex-col gap-2 p-4 text-white">
+                                {SPEED.map((v, k) => (
+                                    <div
+                                        key={k}
+                                        className="py-2 flex justify-between"
+                                        onClick={() => handleSelectSpeed(k)}
+                                    >
+                                        <div>{v.toFixed(2)} x</div>
+                                        <div
+                                            className={cn(
+                                                'rounded-full w-6 h-6 flex justify-center items-center',
+                                                speed === k ? 'bg-red-400' : 'bg-slate-50/10',
+                                            )}
+                                        >
+                                            {speed === k && <Check className="w-4 h-4" />}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="h-4" />
+                        </DrawerContent>
+                    </Drawer>
+                    <Drawer open={introduction} onOpenChange={handleIntroduction}>
+                        <DrawerContent className="bg-slate-800 video-intro-drawer" aria-describedby="Introduction">
+                            <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
+                                <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
+                                    <FormattedMessage id="introduction" />
+                                </div>
+                                <div onClick={handleIntroduction}>
+                                    <X />
+                                </div>
+                            </DrawerTitle>
+                            <div className="border-t border-slate-700 mt-4" />
+                            <div className="flex flex-col gap-4 p-4 text-white">
+                                <div className="flex gap-4">
+                                    <div className="w-28 shrink-0">
+                                        <Image
+                                            height={1.3325}
+                                            src={`${configStore.config['static']}/${data.info.image}`}
+                                            alt={data.info.title}
+                                        />
+                                    </div>
+                                    <div className="flex-1 flex flex-col gap-2">
+                                        <div className="font-bold line-clamp-2 overflow-ellipsis text-slate-300">
+                                            {data.info.title}
+                                        </div>
+                                        <div className='text-sm text-slate-400 mb-1'>
+                                            <FormattedMessage id="episode"/>: {props.index + 1} / {data.episodes.length}
+                                        </div>
+                                        <div className="flex gap-1 flex-wrap text-sm ">
+                                            {data.tags.map((v) => (
+                                                <div
+                                                    key={v.name}
+                                                    className="bg-slate-600 px-2 py-1 rounded-sm text-slate-300"
+                                                >
+                                                    {v.unique_id.split('').map((v, k) => {
+                                                        if (k === 0) {
+                                                            v = v.toUpperCase();
+                                                        }
+                                                        if (v === '_') {
+                                                            v = ' ';
+                                                        }
+                                                        return v;
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-md text-slate-300">{data.info.introduction}</div>
+                            </div>
+                            <div className="h-4" />
+                        </DrawerContent>
+                    </Drawer>
+                    <Dialog open={vip} onOpenChange={setVip}>
+                        <DialogContent
+                            contentPreset="plain"
+                            hideCloseButton
+                            className="video-vip-dialog w-[min(100%,620px)] max-w-[calc(100vw-32px)] h-[min(88vh,840px)]"
+                        >
+                            <div className="h-full w-full overflow-hidden rounded-[16px] border border-white/10 bg-[#141414] text-white">
+                                <DialogTitle className="sr-only" unsetTypography>
+                                    {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
+                                </DialogTitle>
+                                <div className="h-full overflow-y-auto">
+                                    {vip ? (
+                                        <RadixRc
+                                            layout="embed"
+                                            productFrom="video"
+                                            checkoutFrom="video"
+                                            onEmbedClose={handleVipEmbedClose}
+                                        />
+                                    ) : null}
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="video-player-root h-full w-full relative" ref={wrapRef}>
             {loading && (
@@ -741,7 +1270,7 @@ function Player({
             >
                 <video
                     ref={videoRef}
-                    className="w-full h-full object-contain absolute"
+                    className="w-full h-full object-cover absolute"
                     playsInline
                     controlsList="nodownload noplaybackrate noremoteplayback"
                     disablePictureInPicture
@@ -759,7 +1288,7 @@ function Player({
                     )}
                 </div>
                 <div
-                    className="video-player-ui relative w-full h-full"
+                    className="video-player-ui relative w-full h-full transition-opacity duration-300 ease-linear"
                     ref={controllerRef}
                     onClick={handleControllerTouchStart}
                 >
@@ -1009,7 +1538,7 @@ function Player({
                     </DrawerContent>
                 </Drawer>
                 <Drawer open={introduction} onOpenChange={handleIntroduction}>
-                    <DrawerContent className="bg-slate-800" aria-describedby="Introduction">
+                    <DrawerContent className="bg-slate-800 video-intro-drawer" aria-describedby="Introduction">
                         <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
                             <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
                                 <FormattedMessage id="introduction" />

@@ -96,6 +96,8 @@
     "no_content": "No Content",
     "feedback_content_invalid": "Feedback must be at least 5 characters.",
     "unlock_now": "Unlock Now",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "Unlock Now",
     "is_vip": "You are a VIP",
     "cancel": "Cancel",
     "ok": "Ok",

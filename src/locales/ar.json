@@ -92,6 +92,8 @@
     "no_content": "لا يوجد محتوى",
     "feedback_content_invalid": "يجب أن تتكون الملاحظات من 5 أحرف على الأقل.",
     "unlock_now": "فتح الآن",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "فتح الآن",
     "is_vip": "أنت من مستخدمي VIP",
     "cancel": "إلغاء",
     "ok": "موافق",

@@ -24,10 +24,12 @@ type FullscreenContainerElement = HTMLElement & {
 export async function toggleVideoFullscreen(
   videoRef: RefObject<HTMLVideoElement | null>,
   containerRef?: RefObject<HTMLElement | null>,
+  options?: { preferContainer?: boolean },
 ) {
   const wrap = containerRef?.current ?? null;
   const video = videoRef.current as FullscreenVideoElement | null;
   if (!video) return;
+  const preferContainer = options?.preferContainer === true;
 
   const doc = document as FullscreenDocument;
   const fsEl = document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
@@ -64,12 +66,23 @@ export async function toggleVideoFullscreen(
     return;
   }
 
+  const el = (wrap ?? video.parentElement) as FullscreenContainerElement | null;
+  if (preferContainer) {
+    if (el?.requestFullscreen) {
+      await el.requestFullscreen().catch(() => {});
+      return;
+    }
+    if (el?.webkitRequestFullscreen) {
+      await Promise.resolve(el.webkitRequestFullscreen()).catch(() => {});
+      return;
+    }
+  }
+
   if (video.requestFullscreen) {
     await video.requestFullscreen().catch(() => {});
     return;
   }
 
-  const el = (wrap ?? video.parentElement) as FullscreenContainerElement | null;
   if (el?.requestFullscreen) {
     await el.requestFullscreen().catch(() => {});
     return;

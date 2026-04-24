@@ -234,7 +234,7 @@ video::cue {
     --destructive: oklch(0.577 0.245 27.325);
     --border: rgb(255 255 255 / 0.1);
     --input: rgb(255 255 255 / 0.15);
-    --ring: #d4a853;
+    --ring: transparent;
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
@@ -300,7 +300,7 @@ video::cue {
 
 @layer base {
     * {
-        @apply border-border outline-ring/50;
+        @apply border-border outline-none;
     }
 
     body {

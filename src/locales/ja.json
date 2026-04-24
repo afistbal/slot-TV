@@ -94,6 +94,8 @@
     "no_content": "コンテンツがありません",
     "feedback_content_invalid": "フィードバックは5文字以上である必要があります。",
     "unlock_now": "今すぐロック解除",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "今すぐロック解除",
     "is_vip": "あなたはVIPです",
     "cancel": "キャンセル",
     "close": "閉じる",

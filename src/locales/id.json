@@ -92,6 +92,8 @@
     "no_content": "Tidak Ada Konten",
     "feedback_content_invalid": "Saran harus terdiri dari minimal 5 karakter.",
     "unlock_now": "Buka Sekarang",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "Buka Sekarang",
     "is_vip": "Anda adalah seorang VIP",
     "cancel": "Batal",
     "ok": "Oke",

@@ -92,6 +92,8 @@
     "no_content": "İçerik Yok",
     "feedback_content_invalid": "Geri bildirim en az 5 karakter olmalı.",
     "unlock_now": "Şimdi Kilidi Aç",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "Şimdi Kilidi Aç",
     "is_vip": "VIP kullanıcısın",
     "cancel": "İptal",
     "ok": "Tamam",

@@ -92,6 +92,8 @@
     "no_content": "Tiada Kandungan",
     "feedback_content_invalid": "Maklum balas mesti sekurang-kurangnya 5 aksara.",
     "unlock_now": "Buka Kunci Sekarang",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "Buka Kunci Sekarang",
     "is_vip": "Anda ialah VIP",
     "cancel": "Batal",
     "ok": "Ok",

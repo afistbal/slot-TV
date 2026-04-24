@@ -92,6 +92,8 @@
     "no_content": "ไม่มีเนื้อหา",
     "feedback_content_invalid": "ข้อเสนอแนะต้องมีความยาวอย่างน้อย 5 ตัวอักษร",
     "unlock_now": "ปลดล็อกตอนนี้",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "ปลดล็อกตอนนี้",
     "is_vip": "คุณคือ VIP",
     "cancel": "ยกเลิก",
     "ok": "ตกลง",

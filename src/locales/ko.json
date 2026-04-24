@@ -92,6 +92,8 @@
     "no_content": "콘텐츠 없음",
     "feedback_content_invalid": "피드백은 5자 이상이어야 합니다.",
     "unlock_now": "지금 잠금 해제",
+    "pay_unlock_toast_locked_episode": "This is a paid episode. Please unlock to watch.",
+    "pay_unlock_btn_price": "지금 잠금 해제",
     "is_vip": "당신은 VIP입니다",
     "cancel": "취소",
     "ok": "확인",
