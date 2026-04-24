@@ -347,7 +347,8 @@ export default function Component() {
         {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div
             className={cn(
                 /* 不要加 overflow-x-hidden：与 overflow-y 同用会破坏子元素 position:sticky，顶栏无法钉在容器顶部 */
-                'home-page__scroll relative z-[1] min-w-0 flex-1 overflow-y-auto',
+                /* min-h-0：flex 子项默认可按内容撑满屏外高度，不压缩则 overflow-y 不生效、页脚可能滚不到或只在外层乱滚 */
+                'home-page__scroll relative z-[1] min-h-0 min-w-0 flex-1 overflow-y-auto',
             )}
             ref={scrollRef}
             onScroll={handleScroll}
@@ -370,6 +371,14 @@ export default function Component() {
                             decoding="async"
                             className="block h-full w-full min-h-full min-w-full object-cover object-top"
                         />
+                        {/*
+                         * 与 H5 同套压暗：叠在大幕布 `home-bg.png` 上，不压在 3D 轮播卡片区（原误放在 coverflow 舞台内）
+                         */}
+                        <div className="ns-pc-hero-vignette" aria-hidden>
+                            <div className="ns-pc-hero-vignette__bottom" />
+                            <div className="ns-pc-hero-vignette__left home-hero-gradient-l" />
+                            <div className="ns-pc-hero-vignette__right home-hero-gradient-r" />
+                        </div>
                     </div>
                     <div
                         className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-40 min-h-[7rem] bg-gradient-to-b from-transparent via-[#151314]/25 to-[#151314] md:h-48 md:min-h-[8rem]"

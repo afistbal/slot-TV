@@ -187,6 +187,7 @@
     "magnet_placeholder": "輸入關鍵字搜索",
     "search": "搜索",
     "search_placeholder": "搜尋任何你喜歡的內容",
+    "search_hot_movies": "热门影片",
     "downloaded": "已新增至下載佇列",
     "today_uploaded": "共 {total} 部影片，今日上傳 {today} 部",
     "episode_repeated": "該集數已存在",

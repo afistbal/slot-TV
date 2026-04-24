@@ -138,8 +138,9 @@ function coverOpacityForRel(rel: number) {
     return 0.3;
 }
 
+/** 不将封面 slide（div[role=button]）算入：否则在封面上无法开始横向拖拽。真实 <button> / 链接 仍会排除。 */
 function isInteractiveUI(target: EventTarget | null) {
-    return target instanceof HTMLElement && !!target.closest('button, a, input, textarea, select, [role="button"]');
+    return target instanceof HTMLElement && !!target.closest('button, a, input, textarea, select');
 }
 
 type Props = {
@@ -301,7 +302,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                             L.wrapOpacity === 0 ? 'pointer-events-none' : 'pointer-events-auto',
                                             isCenter ? 'cursor-default' : 'cursor-pointer',
                                         )}
-                                        style={{ boxShadow: '0px 0px 24px 0px rgba(0,0,0,0.8)', backfaceVisibility: 'hidden' }}
+                                        style={{ backfaceVisibility: 'hidden' }}
                                         role={L.wrapOpacity === 0 ? undefined : 'button'}
                                         tabIndex={L.wrapOpacity === 0 ? undefined : 0}
                                         onClick={onCoverActivate}
@@ -311,10 +312,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                             onCoverActivate(e);
                                         }}
                                     >
-                                        <div
-                                            className="relative h-full w-full overflow-hidden rounded-[20px]"
-                                            style={{ boxShadow: '0px 0px 24px 0px rgba(0,0,0,0.8)' }}
-                                        >
+                                        <div className="relative h-full w-full overflow-hidden rounded-[20px]">
                                             <div className="pointer-events-none absolute inset-0 z-0 bg-black" />
                                             <div className="absolute inset-0 z-[1]">
                                                 <img
@@ -334,7 +332,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                     </div>
                                     {isCenter && (
                                         <div className="absolute left-0 right-0 top-full mt-[12px] flex flex-col justify-center px-2 text-left">
-                                            <span className="truncate font-[Inter] text-[22px] font-medium leading-snug text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]">
+                                            <span className="truncate font-[Inter] text-[22px] font-medium leading-snug text-white">
                                                 {item.title}
                                             </span>
                                         </div>
@@ -348,7 +346,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                         >
                                             <span
                                                 className={cn(
-                                                    'truncate font-[Inter] text-[15px] font-medium leading-snug text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]',
+                                                    'truncate font-[Inter] text-[15px] font-medium leading-snug text-white/80',
                                                     rel === 1 ? 'w-full' : 'w-[70%]',
                                                 )}
                                             >

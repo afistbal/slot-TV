@@ -169,7 +169,7 @@ button.reelshort-nav-drawer__close {
     }
 }
 
-/* 与 HomePage_main 一致：仅 ≥768px（PC 顶栏与主区同宽断点）限制 1636 + 居中；≤480/小程序不换行布局不受影响 */
+/* 与 HomePage_main 一致：仅 ≥768px（PC 顶栏与主区同宽断点）限制 1636 + 居中；≤767/小程序不换行布局不受影响 */
 .reelshort-topnav__inner {
     width: 100%;
     max-width: 100%;
@@ -424,7 +424,7 @@ a.reelshort-topnav__profile-link {
     }
 }
 
-@media (min-width: 481px) {
+@media (min-width: 768px) {
     .reelshort-topnav__brand-logo {
         height: clamp(38px, 3vw, 45px);
         width: clamp(38px, 3vw, 45px);
@@ -521,6 +521,13 @@ a.reelshort-topnav__profile-link {
         width: auto;
         height: var(--rs-nav-hit-size);
         flex: 0 0 auto;
+    }
+
+    /* 顶栏搜索展开：输入条与右侧按钮同一行，避免整块 absolute 掉到第二行 */
+    .reelshort-topnav__search:has(.reelshort-topnav__search-inner--panel-open) {
+        height: auto;
+        min-height: var(--rs-nav-hit-size);
+        align-self: center;
     }
 
     .reelshort-topnav__download {
@@ -765,6 +772,250 @@ a.reelshort-topnav__profile-link {
         .reelshort-topnav__search-label {
             display: block;
         }
+    }
+
+    /* PC 顶栏下拉搜索（对标 ReelShort search-panel） */
+    .reelshort-topnav__search-inner {
+        position: relative;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .reelshort-topnav__search-inner--panel-open {
+        flex-direction: row;
+        align-items: center;
+        width: auto;
+        min-width: 0;
+        flex-shrink: 0;
+    }
+
+    /* 固定 480×42：空/有输入同一套尺寸，避免「两个搜索框」观感 */
+    .reelshort-topnav__pc-search-anchor {
+        position: relative;
+        z-index: 100;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 480px;
+        max-width: min(480px, calc(100vw - 48px));
+        color: #fff;
+        text-align: left;
+    }
+
+    .reelshort-topnav__pc-search-panel {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        flex: 0 0 auto;
+    }
+
+    /* 外层不参与铺色，避免出现「白边与内容之间夹一层黑」的双层盒 */
+    .reelshort-topnav__pc-search-bar {
+        position: relative;
+        z-index: 10;
+        display: block;
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+    }
+
+    /* 单层：无外层黑底套娃，padding 区内底色一致（对标 bg-white/10 + blur + 略压暗） */
+    .reelshort-topnav__pc-search-barInner {
+        display: flex;
+        box-sizing: border-box;
+        width: 100%;
+        align-items: center;
+        height: 42px;
+        margin: 0;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 6px;
+        background-color: rgba(32, 32, 32, 0.58);
+        background-clip: padding-box;
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        gap: 0;
+    }
+
+    .reelshort-topnav__pc-search-icon {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        opacity: 0.5;
+        color: #fff;
+    }
+
+    .reelshort-topnav__pc-search-input {
+        width: 100%;
+        min-width: 0;
+        height: 100%;
+        border: 0;
+        margin: 0;
+        background: transparent;
+        padding: 0 8px;
+        font-size: 16px;
+        line-height: 42px;
+        color: #fff;
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+
+        &::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 16px;
+        }
+    }
+
+    /* 与搜索页同源 ant close-circle，PC 缩小为清晰圆标（非浏览器原生 search 清除） */
+    .reelshort-topnav__pc-search-clearWrap {
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: flex-end;
+        width: 28px;
+        min-width: 28px;
+        height: 100%;
+    }
+
+    .reelshort-topnav__pc-search-clear {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.55);
+        line-height: 0;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.15s ease, background-color 0.15s ease;
+
+        &:hover {
+            color: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.12);
+        }
+    }
+
+    .reelshort-topnav__pc-search-clearSvg {
+        display: block;
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+    }
+
+    /* popup-result：md mt-15px rounded-6px bg-#222 search-shadow */
+    .reelshort-topnav__pc-search-results {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        left: 0;
+        margin-top: 15px;
+        border-radius: 6px;
+        background: #222;
+        box-shadow: 0 0 30px 0 rgba(0, 0, 0, 0.36);
+        max-height: min(420px, 70vh);
+        overflow: hidden auto;
+    }
+
+    .reelshort-topnav__pc-search-resultsInner {
+        padding: 12px 16px;
+    }
+
+    /* h3：md text-18px h-40px font-700 text-white */
+    .reelshort-topnav__pc-search-hotTitle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-sizing: border-box;
+        height: 40px;
+        margin: 0;
+        padding: 0;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #fff;
+        cursor: default;
+        user-select: none;
+    }
+
+    .reelshort-topnav__pc-search-hotIcon {
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .reelshort-topnav__pc-search-loading,
+    .reelshort-topnav__pc-search-empty {
+        padding: 8px 0;
+        font-size: 14px;
+        line-height: 1.25;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .reelshort-topnav__pc-search-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 列表行：md h-36px text-14px */
+    .reelshort-topnav__pc-search-row {
+        display: block;
+        text-decoration: none;
+        color: rgba(255, 255, 255, 0.92);
+        border-radius: 0;
+
+        &:hover {
+            color: #e52e2e;
+        }
+    }
+
+    .reelshort-topnav__pc-search-rowInner {
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        height: 36px;
+        gap: 0;
+        padding: 0;
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.25;
+    }
+
+    .reelshort-topnav__pc-search-rowFire {
+        flex-shrink: 0;
+        margin-right: 6px;
+        font-size: 14px;
+        line-height: 1;
+    }
+
+    .reelshort-topnav__pc-search-thumb {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin-right: 6px;
+        border-radius: 2px;
+        background-size: cover;
+        background-position: center;
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .reelshort-topnav__pc-search-rowTitle {
+        min-width: 0;
+        flex: 1;
+        font-size: 14px;
+        line-height: 1.25;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
     }
 
     .reelshort-topnav__brand-text {
@@ -1067,48 +1318,6 @@ a.reelshort-topnav__profile-link {
         .reelshort-topnav__lang-text {
             display: inline;
         }
-    }
-
-    .reelshort-footer {
-        margin-top: 28px;
-        padding-bottom: 12px;
-        border-top-width: 1.5px;
-    }
-
-    .reelshort-footer__collapse-item {
-        min-height: 48px;
-        padding: 14px 17px 14px 16px;
-    }
-
-    .reelshort-footer__title {
-        font-size: 16px;
-    }
-
-    .reelshort-footer__collapsible--open {
-        font-size: 14px;
-    }
-
-    .reelshort-footer__community {
-        margin-top: 24px;
-    }
-
-    .reelshort-footer__community-title {
-        font-size: 16px;
-    }
-
-    .reelshort-footer__community-list {
-        margin: 16px auto 36px;
-    }
-
-    .reelshort-footer__community-list a {
-        width: 32px;
-        height: 32px;
-        margin: 0 16px;
-        font-size: 32px;
-    }
-
-    .reelshort-footer__copyright {
-        font-size: 12px;
     }
 }
 

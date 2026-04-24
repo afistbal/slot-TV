@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { useMinWidth481 } from '@/hooks/useMinWidth481';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
 import { useHomeType1H5Scroll } from './useHomeType1H5Scroll';
@@ -32,7 +32,7 @@ function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
 
 /** 对齐镜像 `fb8bb5c8…css` 中 `.Slider_item` 列数断点 */
 function pageSizeForViewportWidth(w: number) {
-    if (w < 481) {
+    if (w < 768) {
         return 2;
     }
     if (w <= 700) {
@@ -51,7 +51,7 @@ function pageSizeForViewportWidth(w: number) {
 }
 
 function useRowPagerSize() {
-    /* SSR/首屏与 useMinWidth481 的 getServerSnapshot 对齐：先按 H5(≤480) 用窄视口，避免 --row-cols=5+ 的 HTML 与客户端 hydration 前错位成「多列/横滑感」 */
+    /* SSR/首屏与 useMinWidth768 的 getServerSnapshot 对齐：先按 H5(<768) 用窄视口，避免 --row-cols=5+ 的 HTML 与客户端 hydration 前错位成「多列/横滑感」 */
     const [size, setSize] = useState(() =>
         pageSizeForViewportWidth(typeof window === 'undefined' ? 375 : window.innerWidth),
     );
@@ -69,7 +69,7 @@ function useRowPagerSize() {
 }
 
 /**
- * 排名 / 为您推荐：PC(≥481) Slider 分页轨 + 圆钮；H5(≤480) DOM 与 `HomeBookShelf` type_1 一致（书架 → 标题 → 横滑列表），尺寸用全局 BookItem 36.8vw。
+ * 排名 / 为您推荐：PC(≥768) Slider 分页轨 + 圆钮；H5(<768) DOM 与 `HomeBookShelf` type_1 一致（书架 → 标题 → 横滑列表），尺寸用全局 BookItem 36.8vw。
  */
 export function HomeRowPagerShelf({
     titleMessageId,
@@ -85,10 +85,10 @@ export function HomeRowPagerShelf({
     shelfId: string;
 }) {
     const intl = useIntl();
-    const isPc = useMinWidth481();
+    const isPc = useMinWidth768();
     const h5Scroll = useHomeType1H5Scroll(!isPc, items.length);
     const pageSizeByViewport = useRowPagerSize();
-    /** H5(≤480) 固定 2 列，与对站/设计稿两列宫格一致，避免与 PC 共用的视口分栏逻辑在边界情况下错位。 */
+    /** H5(<768) 固定 2 列，与对站/设计稿两列宫格一致，避免与 PC 共用的视口分栏逻辑在边界情况下错位。 */
     const pageSize = isPc ? pageSizeByViewport : 2;
     const [page, setPage] = useState(0);
 

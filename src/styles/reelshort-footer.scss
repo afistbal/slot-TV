@@ -1,0 +1,424 @@
+/**
+ * ReelShort 页脚（`ReelShortFooter.tsx`）
+ * 自管 H5/PC 显隐：勿再用 Tailwind `hidden` + `md:block` 同节点 —— 在部分构建/顺序下会双 `display:none`，整只 footer 只剩 ~13px（边框+边距）。
+ * 断点 768px 与 `useMinWidth768`、Tailwind `md` 一致。
+ */
+
+$rs-footer-bp: 768px;
+
+.reelshort-footer {
+    position: relative;
+    z-index: 5;
+    flex-shrink: 0;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 2rem;
+    padding-bottom: 3.2vw;
+    background: hsla(0, 0%, 100%, 0.06);
+    border-top: 0.4vw solid hsla(0, 0%, 100%, 0.122);
+    color: #fff;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer {
+        margin-top: 28px;
+        padding-bottom: 12px;
+        border-top-width: 1.5px;
+    }
+}
+
+/* —— H5 / PC 互斥显示（只在这里写 display，不依赖工具类） —— */
+.reelshort-footer__h5 {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.reelshort-footer__pc {
+    display: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__h5 {
+        display: none;
+    }
+
+    .reelshort-footer__pc {
+        display: block;
+    }
+}
+
+/* —— H5 折叠行 —— */
+.reelshort-footer__collapse-item {
+    box-sizing: border-box;
+    min-height: 12.8vw;
+    width: 100%;
+    padding: 3.73333vw 4.53333vw 3.73333vw 4.26667vw;
+    border-bottom: 1px solid hsla(0, 0%, 100%, 0.122);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    text-align: left;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__collapse-item {
+        min-height: 48px;
+        padding: 14px 17px 14px 16px;
+    }
+}
+
+a.reelshort-footer__collapse-item {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.reelshort-footer__collapse-item--multiline {
+    align-items: flex-start;
+}
+
+.reelshort-footer__collapse-item img[alt=''] {
+    pointer-events: none;
+    transition: transform 0.3s ease;
+}
+
+.reelshort-footer__collapse-head--open img {
+    transform: rotate(180deg);
+}
+
+.reelshort-footer__title {
+    font-size: 4.26667vw;
+    font-weight: 500;
+    color: #fff;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__title {
+        font-size: 16px;
+    }
+}
+
+.reelshort-footer__collapsible {
+    display: none;
+}
+
+.reelshort-footer__collapsible--open {
+    display: block;
+    font-size: 3.73333vw;
+    color: hsla(0, 0%, 100%, 0.5);
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__collapsible--open {
+        font-size: 14px;
+    }
+}
+
+.reelshort-footer__collapsible--open .reelshort-footer__collapse-item {
+    color: inherit;
+}
+
+.reelshort-footer__tips {
+    margin-top: 1.06667vw;
+    font-size: 2.66667vw;
+    font-style: italic;
+    color: hsla(0, 0%, 100%, 0.5);
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__tips {
+        margin-top: 4px;
+        font-size: 10px;
+    }
+}
+
+.reelshort-footer__community {
+    margin-top: 6.4vw;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__community {
+        margin-top: 24px;
+    }
+}
+
+.reelshort-footer__community-title {
+    font-size: 4.26667vw;
+    font-weight: 500;
+    text-align: center;
+    color: #fff;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__community-title {
+        font-size: 16px;
+    }
+}
+
+.reelshort-footer__community-list {
+    margin: 4.26667vw auto 9.6vw;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__community-list {
+        margin: 16px auto 36px;
+    }
+}
+
+.reelshort-footer__community-list a {
+    box-sizing: border-box;
+    margin: 0 4.26667vw;
+    width: 8.53333vw;
+    height: 8.53333vw;
+    font-size: 8.53333vw;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__community-list a {
+        width: 32px;
+        height: 32px;
+        margin: 0 16px;
+        font-size: 32px;
+    }
+}
+
+.reelshort-footer__community-list a svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.reelshort-footer__copyright {
+    color: hsla(0, 0%, 100%, 0.5);
+    font-size: 3.2vw;
+    text-align: center;
+    margin-top: 16px;
+}
+
+@media (min-width: $rs-footer-bp) {
+    .reelshort-footer__copyright {
+        font-size: 12px;
+    }
+}
+
+.reelshort-footer__collapse-item--version {
+    color: hsla(0, 0%, 100%, 0.4);
+    font-size: inherit;
+    cursor: default;
+}
+
+.reelshort-footer__versionLabel,
+.reelshort-footer__versionValue {
+    font-size: inherit;
+}
+
+/* —— PC `Footer_*`：摘自 reelshort `693b44cd8a8dffa7.css`（DOM 同 H5，仅多栏+类名） —— */
+@media (min-width: $rs-footer-bp) {
+    /* 全宽同底 #111，避免内层 max-width 居中时两侧露出另一色（原外层 #000 会成「黑柱」） */
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb {
+        background-color: #111;
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -webkit-flex-direction: column;
+        flex-direction: column;
+        -webkit-box-align: start;
+        -webkit-align-items: flex-start;
+        align-items: flex-start;
+        box-sizing: border-box;
+        /* 与 home-reelshort `.HomePage_main__BzEnK`（≥768）同列：min(1636px) + 左右 24/32 */
+        max-width: min(1636px, 100%);
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+        padding: 37px 24px 24px;
+        color: #fff;
+        background-color: transparent;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH,
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH .Footer_footer_list__BY2Iy {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+        width: 100%;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH .Footer_footer_list__BY2Iy {
+        -webkit-flex-wrap: wrap;
+        flex-wrap: wrap;
+        -webkit-box-pack: start;
+        -webkit-justify-content: flex-start;
+        justify-content: flex-start;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH .Footer_footer_list__BY2Iy .Footer_footer_item__Jzv7v {
+        width: 310px;
+        box-sizing: border-box;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_footer_item__Jzv7v
+        .Footer_item_title__7csub {
+        font-size: min(3vw, 24px);
+        line-height: 34px;
+        font-weight: 700;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_footer_item__Jzv7v
+        .Footer_item_sub_title__VYtUB {
+        margin-top: 12px;
+        font-weight: 500;
+        font-size: min(2.5vw, 16px);
+        line-height: 22px;
+        color: hsla(0, 0%, 100%, 0.5);
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_footer_item__Jzv7v
+        .Footer_item_sub_title__VYtUB
+        .Footer_item_sub_text__EQ_F8 {
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_footer_item__Jzv7v
+        .Footer_item_sub_title__VYtUB
+        .Footer_tips__9X00v {
+        margin-top: 6px;
+        font-size: 12px;
+        font-style: italic;
+        line-height: 16px;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_direction_horizontal__JXJpf {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+        -webkit-box-orient: horizontal;
+        -webkit-box-direction: normal;
+        -webkit-flex-direction: row;
+        flex-direction: row;
+        margin-top: 12px;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_direction_horizontal__JXJpf
+        .Footer_icons__CM1hG {
+        margin-right: 12px;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_direction_horizontal__JXJpf
+        .Footer_icons__CM1hG
+        a {
+        display: inline-block;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_direction_vertical__AzlqL {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+        -webkit-box-orient: vertical;
+        -webkit-box-direction: normal;
+        -webkit-flex-direction: column;
+        flex-direction: column;
+        margin-top: 12px;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_direction_vertical__AzlqL
+        .Footer_icons__CM1hG {
+        width: -webkit-max-content;
+        width: max-content;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_direction_vertical__AzlqL
+        .Footer_icons__CM1hG:not(:first-child) {
+        margin-top: 12px;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH .Footer_copyright__ygL71 {
+        margin-top: 46px;
+        line-height: 19px;
+        color: hsla(0, 0%, 100%, 0.5);
+        text-align: center;
+        width: 100%;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH a:hover {
+        color: hsla(0, 0%, 100%, 0.5);
+    }
+
+    /* 版本行：与对站子行同字号/行高/色（H5 折叠同款文案） */
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_footer_item__Jzv7v
+        .reelshort-footer__pc-version-row {
+        margin-top: 12px;
+        font-weight: 500;
+        font-size: min(2.5vw, 16px);
+        line-height: 22px;
+        color: hsla(0, 0%, 100%, 0.5);
+    }
+
+    @media (min-width: 1280px) {
+        .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH {
+            padding-left: 32px;
+            padding-right: 32px;
+        }
+    }
+}

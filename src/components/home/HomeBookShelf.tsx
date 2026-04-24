@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
-import { useMinWidth481 } from '@/hooks/useMinWidth481';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
 import { useHomeType1H5Scroll } from './useHomeType1H5Scroll';
 
@@ -50,7 +50,7 @@ export function HomeBookShelf({
     onMoreMoviesClick?: () => void;
 }) {
     /** 非 H5 时 type_1 为 CSS 网格、无横滑，不挂载拖拽/滚轮与 ref */
-    const notH5 = useMinWidth481();
+    const notH5 = useMinWidth768();
     const type1Enabled = type === 'type_1' && !notH5;
     const type1Scroll = useHomeType1H5Scroll(type1Enabled, items.length);
 

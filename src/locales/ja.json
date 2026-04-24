@@ -185,6 +185,7 @@
     "magnet_placeholder": "検索するキーワードを入力してください",
     "search": "検索",
     "search_placeholder": "好きな作品を検索",
+    "search_hot_movies": "人気作品",
     "downloaded": "ダウンロードキューに追加されました",
     "today_uploaded": "合計 {total} 本のフィルム; 今日アップロードされたのは {today} 本です。",
     "episode_repeated": "エピソードが重複しています",

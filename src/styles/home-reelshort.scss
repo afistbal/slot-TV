@@ -1,7 +1,7 @@
 /**
  * ReelShort 首页主内容区 — 对标 `44bb0e7b9e0672c8.css` 中 `.HomePage_main__*`、`.BookItem_*`。
  * DOM class 名与镜像一致（含 hash 后缀），便于对照镜像 HTML。
- * 尺寸统一用 `var(--app-vw)`（min(100vw,480px)）；≥481px 时主内容区与海报见下方 `@media (min-width: 481px)`，不改动 ≤480 的 H5。
+ * 尺寸统一用 `var(--app-vw)`（min(100vw,480px)）；≥768px 时主内容区与海报见下方 `@media (min-width: 768px)`，不改动 ≤767 的 H5。
  */
 
 // --- BookItem（对标镜像）---
@@ -157,7 +157,7 @@
         flex-shrink: 0;
     }
 
-    /* H5 标题区距：与早期 home-reelshort 一致（PC 在 ≥481 段覆盖） */
+    /* H5 标题区距：与早期 home-reelshort 一致（PC 在 ≥768 段覆盖） */
     .BookItem_title__85fqs {
         width: 100%;
         color: #fff;
@@ -518,14 +518,31 @@
         width: 100%;
     }
 
-    .Slider_sliderWrapper__66_q7:hover .HomePage_reelSlider__root .Slider_pageButtons__jvO9V:not(.Slider_disable__GAXYV) {
-        display: flex;
+    /**
+     * 翻页圆钮默认 display:none，原仅靠 wrapper :hover 显示（对标 PC）。
+     * iPad 等无「真实悬停」：:hover 不触发，按钮永远不出 —— 在 hover:none 下改为始终显示（非 disable）。
+     * 有鼠标时再保留「划区才出现」的交互。
+     */
+    @media (hover: none), (pointer: coarse) {
+        .Slider_sliderWrapper__66_q7
+            .HomePage_reelSlider__root
+            .Slider_pageButtons__jvO9V:not(.Slider_disable__GAXYV) {
+            display: flex;
+        }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .Slider_sliderWrapper__66_q7:hover
+            .HomePage_reelSlider__root
+            .Slider_pageButtons__jvO9V:not(.Slider_disable__GAXYV) {
+            display: flex;
+        }
     }
 
     /**
      * H5：主货架 type_1 / 排名推荐横滑层只认横向；排名/推荐在 PC 分页宫格若被窄窗打开则锁 2 列。
      */
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
         /* 主货架横划：本层只认横向，纵滑交给 .home-page__scroll，避免与整页滚动手势抢焦点 */
         .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_1__uTWfT {
             touch-action: pan-x;
@@ -558,11 +575,11 @@
 }
 
 /**
- * 首页非 H5（≥481，与 useMinWidth481 一致）：
+ * 首页非 H5（≥768，与 useMinWidth768 一致）：
  * 对标 ReelShort 镜像 `fb8bb5c8…css`：`.home_floorTitle__cIyIp h2`、`BookItem_title__E6dtd`、`Slider` 多列无横滑。
- * H5（≤480）仍用上方 `var(--app-vw)` 与横滑 type_1。
+ * H5（≤767）仍用上方 `var(--app-vw)` 与横滑 type_1。
  */
-@media (min-width: 481px) {
+@media (min-width: 768px) {
     .home-page {
         min-width: 0;
     }
@@ -573,7 +590,7 @@
     }
 
     .HomePage_main__BzEnK {
-        --home-shelf-pad-x: 16px;
+        --home-shelf-pad-x: 24px;
         box-sizing: border-box;
         width: 100%;
         /* 对站 .home_list / Slider max 1636px */
@@ -585,12 +602,6 @@
         /* 对站 .home_main_content__GxekS padding-top:36px；叠 hero 时略收紧 */
         padding-top: 20px;
         padding-bottom: 68px;
-    }
-
-    @media (min-width: 768px) {
-        .HomePage_main__BzEnK {
-            --home-shelf-pad-x: 24px;
-        }
     }
 
     @media (min-width: 1280px) {
@@ -697,7 +708,7 @@
         border-radius: 6px;
     }
 
-    /* PC type5 与对站一致：多列网格与 type1 同，封面也用车位 36.8×49.07（H5 仍用 43.2×57.6 分栏在 ≤480 段） */
+    /* PC type5 与对站一致：多列网格与 type1 同，封面也用车位 36.8×49.07（H5 仍用 43.2×57.6 分栏在 ≤767 段） */
     .home-page
         .HomePage_main__BzEnK
         .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc
@@ -746,5 +757,55 @@
         font-size: 14px;
         min-height: 42px;
         line-height: 42px;
+    }
+}
+
+/* PC 首屏大幕布 `home-bg.png` 上叠层（`Home.tsx` z-0 容器内，在轮播/顶栏之下），与 H5 同套压暗逻辑 */
+@media (min-width: 768px) {
+    .ns-pc-hero-vignette {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    /* PC 不叠顶条与径向层，避免最上方/顶缘再发灰（H5 首屏仍用 `home-hero-radial-glow` 自己的一层） */
+    /* H5 同 `bg-gradient-to-t from-black`；PC 加高一截 + 多段压暗，接近 H5 底缘+圆点行整体「沉进黑底」感 */
+    .ns-pc-hero-vignette__bottom {
+        position: absolute;
+        z-index: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 48%;
+        max-height: 240px;
+        background: linear-gradient(
+            0deg,
+            #000 0%,
+            rgba(0, 0, 0, 0.88) 18%,
+            rgba(0, 0, 0, 0.45) 55%,
+            rgba(0, 0, 0, 0) 100%
+        );
+    }
+
+    /* 与 H5 同 19% 宽；PC 只减弱「两侧」压暗约一半，顶/底条不改 */
+    .ns-pc-hero-vignette__left,
+    .ns-pc-hero-vignette__right {
+        position: absolute;
+        z-index: 1;
+        top: 0;
+        bottom: 0;
+        width: 19%;
+    }
+
+    .ns-pc-hero-vignette__left.home-hero-gradient-l {
+        left: 0;
+        /* 原 app-canvas 实黑 → 边缘强度约 50% */
+        background: linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
+    }
+
+    .ns-pc-hero-vignette__right.home-hero-gradient-r {
+        right: 0;
+        background: linear-gradient(270deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
     }
 }

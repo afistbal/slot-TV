@@ -1,0 +1,108 @@
+/**
+ * 法律文档正文区 — PC 对标 ReelShort 静态条款页：窄栏居中、层级字号与行高；背景由外层 bg-app-canvas 提供。
+ */
+.rs-legal-doc {
+    box-sizing: border-box;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 15px;
+    line-height: 1.75;
+    padding: calc(16 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw))
+        calc(40 / 375 * var(--app-vw));
+    max-width: 720px;
+    margin: 0 auto;
+    -webkit-font-smoothing: antialiased;
+
+    @media (min-width: 768px) {
+        padding: 48px 40px 96px;
+        font-size: 16px;
+        line-height: 1.8;
+        max-width: 800px;
+    }
+
+    .rs-legal-doc__kicker {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        margin: 0 0 8px;
+        @media (min-width: 768px) {
+            font-size: 14px;
+        }
+    }
+
+    .rs-legal-doc__title {
+        color: #fff;
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.25;
+        margin: 0 0 12px;
+        @media (min-width: 768px) {
+            font-size: 28px;
+        }
+    }
+
+    .rs-legal-doc__meta {
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0 0 28px;
+        @media (min-width: 768px) {
+            margin-bottom: 36px;
+        }
+    }
+
+    h2,
+    .rs-legal-doc__h2 {
+        color: #fff;
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 1.35;
+        margin: 28px 0 12px;
+        @media (min-width: 768px) {
+            font-size: 18px;
+            margin-top: 36px;
+        }
+    }
+
+    h3,
+    .rs-legal-doc__h3 {
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 15px;
+        font-weight: 600;
+        margin: 20px 0 8px;
+        @media (min-width: 768px) {
+            font-size: 16px;
+        }
+    }
+
+    p {
+        margin: 0 0 14px;
+        @media (min-width: 768px) {
+            margin-bottom: 16px;
+        }
+    }
+
+    p.rs-legal-doc__emph {
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.95);
+    }
+
+    a {
+        color: var(--rs-brand);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        &:hover {
+            color: #e0bc6a;
+        }
+    }
+
+    ul {
+        margin: 0 0 14px;
+        padding-left: 1.25em;
+        list-style: disc;
+    }
+
+    li {
+        margin-bottom: 6px;
+    }
+}

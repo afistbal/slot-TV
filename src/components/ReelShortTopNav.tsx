@@ -1,9 +1,9 @@
 import type { RefObject } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { cn } from '@/lib/utils';
-import { api } from '@/api';
+import { api, type IPagination, type TData } from '@/api';
 import { auth } from '@/firebase';
 import { ReelShortNavDrawer } from '@/components/ReelShortNavDrawer';
 import { ReelShortDramaWorldDialog } from '@/components/ReelShortDramaWorldDialog';
@@ -22,6 +22,8 @@ import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
 import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
 import iconTopnavDownload from '@/assets/icons/topnav-download.svg';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { useConfigStore } from '@/stores/config';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -95,12 +97,134 @@ function TopNavHistoryIcon({ className }: { className?: string }) {
   );
 }
 
-/** 顶栏「进入搜索页」入口（与 /search 页内大搜索框分离，不共用 ReelShortNavSearch 组件） */
+function dedupeMovieRowsById(rows: TData[]): TData[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const k = String(row['id']);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+async function fetchSearchDropdownMovies(keyword: string): Promise<TData[]> {
+  const res = await api<IPagination>('movie', {
+    loading: false,
+    data: {
+      page: 1,
+      keyword: keyword.trim(),
+      tag: '',
+    },
+  });
+  return dedupeMovieRowsById([...res.d.data]).slice(0, 10);
+}
+
+/** 顶栏搜索：H5 跳转 /search；PC（md+）为对标 ReelShort 的下拉搜索面板 */
 function TopNavSearchEntry() {
   const intl = useIntl();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isMd = useMinWidth768();
+  const configStore = useConfigStore();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [list, setList] = useState<TData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const hotCacheRef = useRef<TData[] | null>(null);
+  const debounceRef = useRef(0);
+  const fetchSeqRef = useRef(0);
 
-  return (
+  useEffect(() => {
+    if (!isMd || !open) return;
+    inputRef.current?.focus();
+  }, [isMd, open]);
+
+  useEffect(() => {
+    if (!isMd) {
+      setOpen(false);
+      setQuery('');
+      return;
+    }
+    setOpen(false);
+    setQuery('');
+  }, [isMd, location.pathname]);
+
+  useEffect(() => {
+    if (!isMd || !open) return;
+
+    const run = async () => {
+      const kw = query.trim();
+      if (!kw) {
+        if (hotCacheRef.current) {
+          setList(hotCacheRef.current);
+          setLoading(false);
+          return;
+        }
+        const seq = ++fetchSeqRef.current;
+        setLoading(true);
+        try {
+          const rows = await fetchSearchDropdownMovies('');
+          if (seq !== fetchSeqRef.current) return;
+          hotCacheRef.current = rows;
+          setList(rows);
+        } finally {
+          if (seq === fetchSeqRef.current) {
+            setLoading(false);
+          }
+        }
+        return;
+      }
+
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        const seq = ++fetchSeqRef.current;
+        void (async () => {
+          setLoading(true);
+          try {
+            const rows = await fetchSearchDropdownMovies(kw);
+            if (seq !== fetchSeqRef.current) return;
+            setList(rows);
+          } finally {
+            if (seq === fetchSeqRef.current) {
+              setLoading(false);
+            }
+          }
+        })();
+      }, 320);
+    };
+
+    void run();
+    return () => window.clearTimeout(debounceRef.current);
+  }, [isMd, open, query]);
+
+  useEffect(() => {
+    if (!isMd || !open) return;
+    const onDocDown = (e: MouseEvent) => {
+      const el = wrapRef.current;
+      if (!el?.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isMd, open]);
+
+  const searchPlaceholder = intl.formatMessage({ id: 'search_placeholder' });
+
+  const mobileButton = (
     <button
       type="button"
       role="search-control"
@@ -119,6 +243,150 @@ function TopNavSearchEntry() {
         <FormattedMessage id="nav_search_label" />
       </div>
     </button>
+  );
+
+  if (!isMd) {
+    return mobileButton;
+  }
+
+  return (
+    <div
+      ref={wrapRef}
+      className={cn('reelshort-topnav__search-inner', open && 'reelshort-topnav__search-inner--panel-open')}
+    >
+      {!open ? (
+        <button
+          type="button"
+          role="search-control"
+          aria-label={intl.formatMessage({ id: 'flix_search' })}
+          aria-expanded={false}
+          className={cn(
+            'reelshort-topnav__search-entry',
+            'relative flex cursor-pointer flex-col items-center justify-center text-white',
+            'hover:text-[var(--rs-brand,#d4a853)]',
+          )}
+          onClick={() => setOpen(true)}
+        >
+          <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current md:text-2xl">
+            <TopNavSearchIcon className="h-[1em] w-[1em]" />
+          </span>
+          <div className="reelshort-topnav__search-label">
+            <FormattedMessage id="nav_search_label" />
+          </div>
+        </button>
+      ) : null}
+
+      {open ? (
+        <div className="reelshort-topnav__pc-search-anchor">
+          <div role="search-panel" className="reelshort-topnav__pc-search-panel">
+            <div role="search-bar" className="reelshort-topnav__pc-search-bar">
+              <div className="reelshort-topnav__pc-search-barInner">
+                <TopNavSearchIcon className="reelshort-topnav__pc-search-icon" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  inputMode="search"
+                  name="topnav-search"
+                  maxLength={100}
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  value={query}
+                  placeholder={searchPlaceholder}
+                  className="reelshort-topnav__pc-search-input"
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return;
+                    e.preventDefault();
+                    const q = query.trim();
+                    if (q) {
+                      navigate(`/search?q=${encodeURIComponent(q)}`);
+                    } else {
+                      navigate('/search');
+                    }
+                    setOpen(false);
+                    setQuery('');
+                  }}
+                />
+                <div className="reelshort-topnav__pc-search-clearWrap">
+                  {query.trim().length > 0 ? (
+                    <button
+                      type="button"
+                      className="reelshort-topnav__pc-search-clear"
+                      aria-label={intl.formatMessage({ id: 'close' })}
+                      onClick={() => setQuery('')}
+                    >
+                      <svg
+                        className="reelshort-topnav__pc-search-clearSvg"
+                        viewBox="64 64 896 896"
+                        fill="currentColor"
+                        aria-hidden
+                        focusable="false"
+                      >
+                        <path d="M512 64c247.4 0 448 200.6 448 448S759.4 960 512 960 64 759.4 64 512 264.6 64 512 64zm127.98 274.82h-.04l-.08.06L512 466.75 384.14 338.88c-.04-.05-.06-.06-.08-.06a.12.12 0 00-.07 0c-.03 0-.05.01-.09.05l-45.02 45.02a.2.2 0 00-.05.09.12.12 0 000 .07v.02a.27.27 0 00.06.06L466.75 512 338.88 639.86c-.05.04-.06.06-.06.08a.12.12 0 000 .07c0 .03.01.05.05.09l45.02 45.02a.2.2 0 00.09.05.12.12 0 00.07 0c.02 0 .04-.01.08-.05L512 557.25l127.86 127.87c.04.04.06.05.08.05a.12.12 0 00.07 0c.03 0 .05-.01.09-.05l45.02-45.02a.2.2 0 00.05-.09.12.12 0 000-.07v-.02a.27.27 0 00-.05-.06L557.25 512l127.87-127.86c.04-.04.05-.06.05-.08a.12.12 0 000-.07c0-.03-.01-.05-.05-.09l-45.02-45.02a.2.2 0 00-.09-.05.12.12 0 00-.07 0z" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div role="popup-result" className="reelshort-topnav__pc-search-results">
+            <div className="reelshort-topnav__pc-search-resultsInner">
+              {!query.trim() ? (
+                <h3 className="reelshort-topnav__pc-search-hotTitle">
+                  <span className="reelshort-topnav__pc-search-hotIcon" aria-hidden>
+                    🔥
+                  </span>
+                  <FormattedMessage id="search_hot_movies" />
+                </h3>
+              ) : null}
+
+              {loading ? (
+                <div className="reelshort-topnav__pc-search-loading">{intl.formatMessage({ id: 'loading' })}</div>
+              ) : list.length === 0 ? (
+                <div className="reelshort-topnav__pc-search-empty">{intl.formatMessage({ id: 'no_content' })}</div>
+              ) : (
+                <div className="reelshort-topnav__pc-search-list">
+                  {list.map((row) => {
+                    const id = String(row['id']);
+                    const title = String(row['title'] ?? '');
+                    const img = row['image'] ? `${configStore.config['static']}/${row['image']}` : '';
+                    const showFire = !query.trim();
+                    return (
+                      <Link
+                        key={id}
+                        to={`/video/${id}`}
+                        className="reelshort-topnav__pc-search-row"
+                        onClick={() => {
+                          setOpen(false);
+                          setQuery('');
+                        }}
+                      >
+                        <div className="reelshort-topnav__pc-search-rowInner">
+                          {showFire ? (
+                            <span className="reelshort-topnav__pc-search-rowFire" aria-hidden>
+                              🔥
+                            </span>
+                          ) : null}
+                          {img ? (
+                            <span
+                              className="reelshort-topnav__pc-search-thumb"
+                              style={{ backgroundImage: `url("${img}")` }}
+                            />
+                          ) : null}
+                          <span className="reelshort-topnav__pc-search-rowTitle">{title}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -187,7 +455,7 @@ function TopNavInstallEntry() {
   const closeTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 481px)');
+    const mq = window.matchMedia('(min-width: 768px)');
     const sync = () => setIsDesktop(mq.matches);
     sync();
     mq.addEventListener('change', sync);
@@ -264,7 +532,7 @@ function TopNavHistoryEntry() {
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 481px)');
+    const mq = window.matchMedia('(min-width: 768px)');
     const sync = () => setIsDesktop(mq.matches);
     sync();
     mq.addEventListener('change', sync);
@@ -328,7 +596,7 @@ function NavProfileAvatar() {
   useEffect(() => clearCloseTimer, []);
 
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 481px)');
+    const mq = window.matchMedia('(min-width: 768px)');
     const sync = () => setIsDesktop(mq.matches);
     sync();
     mq.addEventListener('change', sync);

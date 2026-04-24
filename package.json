@@ -1,7 +1,7 @@
 {
   "name": "tv",
   "private": true,
-  "version": "1.0.8",
+  "version": "1.0.10",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
-"dependencies": {
+  "dependencies": {
     "@adjustcom/adjust-web-sdk": "^5.7.2",
     "@airwallex/components-sdk": "^1.28.4",
     "@formatjs/cli": "^6.7.1",
