@@ -232,9 +232,13 @@ function CardPayAction({
     onPayStateChange,
     hidden = false,
 }: CardPayActionProps) {
-    if (!checkoutTargetProductId || hidden) return null;
+    if (!checkoutTargetProductId) return null;
     return (
-        <div className="rs-shopping__cardDropin">
+        <div
+            className="rs-shopping__cardDropin"
+            style={{ display: hidden ? 'none' : undefined }}
+            aria-hidden={hidden || undefined}
+        >
             <Cards
                 key={`checkout-dropin-${checkoutTargetProductId}-${paySessionSeed}`}
                 productId={checkoutTargetProductId}
