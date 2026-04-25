@@ -535,13 +535,15 @@ function TopNavInstallEntry() {
               type="button"
               className="reelshort-topnav__download-open-btn"
               onClick={() => {
+                const installBtn = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
+                if (installBtn) {
+                  installBtn.click();
+                  return;
+                }
                 if (showIosAddHomeInstall) {
                   setOpen(false);
                   void navigate('/page/ios-add-home');
-                  return;
                 }
-                const installBtn = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
-                installBtn?.click();
               }}
             >
               <FormattedMessage id="pwa_open" />

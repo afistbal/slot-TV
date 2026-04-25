@@ -65,7 +65,7 @@ import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminActivityLog from './pages/admin/ActivityLog';
 import Loader from "./components/Loader";
 import NotFound from './pages/NotFound';
-import { isApplePlatform } from "./lib/isApplePlatform";
+import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { useMinWidth768 } from "@/hooks/useMinWidth768";
 
 /** 旧书签 `/page/checkout/:id`、已废弃的整页收银 → 购物页 */
@@ -619,7 +619,8 @@ function App() {
 
     const appPathSegments = window.location.pathname.toLowerCase().split('/').filter(Boolean);
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
-    const showInstallPrompt = install > 0 && !isApplePlatform() && !isShoppingRoute;
+    // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
+    const showInstallPrompt = install > 0 && !isIosLikeDevice() && !isShoppingRoute;
     /** 底部固定安装条 + root 垫高仅窄屏需要；PC（md+）用顶栏下载入口，避免多 60px padding。 */
     const showPwaBottomBar = showInstallPrompt && !mdUp;
 
