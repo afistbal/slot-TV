@@ -11,7 +11,7 @@ import {
     Unlock,
     X,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type RefObject } from 'react';
 import { WebVTT } from 'videojs-vtt.js';
 import { Swiper, SwiperSlide, type SwiperClass, type SwiperRef } from 'swiper/react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
@@ -20,6 +20,7 @@ import lockIcon from '@/assets/lock.svg';
 import episodeLockBadgeIcon from '@/assets/icons/episode-lock-badge.svg';
 import activeEpisodeBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
 import fullscreenIcon from '@/assets/images/is_full_screen_icon.88dfd7dd.png';
+import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
 import pcBackIcon from '@/assets/icons/video-pc-back.svg';
 import pcFullscreenExitHandleBg from '@/assets/images/9061da60-c404-11ef-a2d6-41216ff1602c.png';
 import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
@@ -78,11 +79,35 @@ export default function Component() {
     const [current, setCurrent] = useState(0);
     const [loading, setLoading] = useState(true);
     const [initialized, setInitialized] = useState(false);
+    const [keepFullscreen, setKeepFullscreen] = useState(false);
+    const fullscreenTargetRef = useRef<HTMLDivElement>(null);
+    const suppressFullscreenExitUntilRef = useRef(0);
+    const switchingEpisodeInFullscreenRef = useRef(false);
+
+    function markFullscreenTransition() {
+        if (!keepFullscreen) {
+            return;
+        }
+        switchingEpisodeInFullscreenRef.current = true;
+        suppressFullscreenExitUntilRef.current = Date.now() + 1800;
+    }
+
+    const handleEpisodeFullscreenReady = useCallback(() => {
+        switchingEpisodeInFullscreenRef.current = false;
+    }, []);
+
+    const shouldIgnoreFullscreenExit = useCallback(
+        () =>
+            switchingEpisodeInFullscreenRef.current ||
+            Date.now() <= suppressFullscreenExitUntilRef.current,
+        [],
+    );
 
     function handleSetEpisode(index: number) {
         if (swiperRef.current === null) {
             return;
         }
+        markFullscreenTransition();
         if (index > (data?.episodes.length ?? 0) - 1) {
             index = (data?.episodes.length ?? 0) - 1;
         }
@@ -97,6 +122,7 @@ export default function Component() {
     }
 
     function handleSlideChange(swiper: SwiperClass) {
+        markFullscreenTransition();
         setCurrent(swiper.activeIndex);
         navigate(`/video/${params['id']}/${swiper.activeIndex + 1}${location.search}`, {
             replace: true,
@@ -154,42 +180,49 @@ export default function Component() {
             <Loader color="light" />
         </div>
     ) : (
-        <Swiper
-            ref={swiperRef}
-            slidesPerView={1}
-            onSlideChange={handleSlideChange}
-            onAfterInit={handleAfterInit}
-            direction="vertical"
-            touchStartPreventDefault={false}
-            className="video-vertical-swiper w-full h-full overflow-hidden bg-black select-none"
-        >
-            {data?.episodes.map((v, k) => (
-                <SwiperSlide
-                    key={v.id}
-                    className={`w-full h-full bg-center bg-cover`}
-                    // style={{
-                    //     backgroundImage: `url('${configStore.config['static']}/${data.info.image}')`,
-                    // }}
-                >
-                    {current === k && initialized && (
-                        <Player
-                            id={v.id}
-                            index={k}
-                            data={data}
-                            onSetEpisode={handleSetEpisode}
-                        />
-                    )}
-                    {(current - 1 === k || current + 1 === k) && (
-                        <div className="video-vertical-slide-label w-full h-full flex justify-center items-center text-2xl text-white">
-                            <div>
-                                <FormattedMessage id="episode" /> {v.episode} /{' '}
-                                {data.episodes.length}
+        <div ref={fullscreenTargetRef} className="w-full h-full">
+            <Swiper
+                ref={swiperRef}
+                slidesPerView={1}
+                onSlideChange={handleSlideChange}
+                onAfterInit={handleAfterInit}
+                direction="vertical"
+                touchStartPreventDefault={false}
+                className="video-vertical-swiper w-full h-full overflow-hidden bg-black select-none"
+            >
+                {data?.episodes.map((v, k) => (
+                    <SwiperSlide
+                        key={v.id}
+                        className={`w-full h-full bg-center bg-cover`}
+                        // style={{
+                        //     backgroundImage: `url('${configStore.config['static']}/${data.info.image}')`,
+                        // }}
+                    >
+                        {current === k && initialized && (
+                            <Player
+                                id={v.id}
+                                index={k}
+                                data={data}
+                                onSetEpisode={handleSetEpisode}
+                                fullscreenTargetRef={fullscreenTargetRef}
+                                shouldKeepFullscreen={keepFullscreen}
+                                onFullscreenPrefChange={setKeepFullscreen}
+                                onEpisodeFullscreenReady={handleEpisodeFullscreenReady}
+                                shouldIgnoreFullscreenExit={shouldIgnoreFullscreenExit}
+                            />
+                        )}
+                        {(current - 1 === k || current + 1 === k) && (
+                            <div className="video-vertical-slide-label w-full h-full flex justify-center items-center text-2xl text-white">
+                                <div>
+                                    <FormattedMessage id="episode" /> {v.episode} /{' '}
+                                    {data.episodes.length}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </SwiperSlide>
-            ))}
-        </Swiper>
+                        )}
+                    </SwiperSlide>
+                ))}
+            </Swiper>
+        </div>
     );
 }
 
@@ -203,6 +236,11 @@ function Player({
     index: number;
     data: IPlayerData;
     onSetEpisode: (index: number) => void;
+    fullscreenTargetRef: RefObject<HTMLDivElement | null>;
+    shouldKeepFullscreen: boolean;
+    onFullscreenPrefChange: (value: boolean) => void;
+    onEpisodeFullscreenReady: () => void;
+    shouldIgnoreFullscreenExit: () => boolean;
 }) {
     // const loadingStore = useLoadingStore();
     const configStore = useConfigStore();
@@ -240,6 +278,44 @@ function Player({
     const isDesktop = useMinWidth768();
     const [desktopEpisodeTab, setDesktopEpisodeTab] = useState(0);
     const [pcFullscreen, setPcFullscreen] = useState(false);
+    const [progressHover, setProgressHover] = useState(false);
+    const [progressDragging, setProgressDragging] = useState(false);
+    const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
+    const fullscreenRestoreInFlightRef = useRef(false);
+    const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
+    const {
+        fullscreenTargetRef,
+        shouldKeepFullscreen,
+        onFullscreenPrefChange,
+        onEpisodeFullscreenReady,
+        shouldIgnoreFullscreenExit,
+    } = props;
+    const isFullscreenUi = shouldKeepFullscreen || pcFullscreen;
+
+    function getFullscreenElement() {
+        const doc = document as Document & { webkitFullscreenElement?: Element | null };
+        return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+    }
+
+    async function forceExitFullscreen() {
+        const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
+        const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
+        if (document.fullscreenElement) {
+            await document.exitFullscreen().catch(() => {});
+        }
+        if (video?.webkitExitFullscreen) {
+            try {
+                video.webkitExitFullscreen();
+            } catch {
+                // ignore
+            }
+        }
+        if (doc.webkitExitFullscreen) {
+            await Promise.resolve(doc.webkitExitFullscreen()).catch(() => {});
+        }
+        onFullscreenPrefChange(false);
+        setPcFullscreen(false);
+    }
 
     function handleBack() {
         if (window.history.length > 1) {
@@ -410,6 +486,20 @@ function Player({
         onSetEpisode(index);
     }
 
+    function hasNextEpisode() {
+        return props.index < data.episodes.length - 1;
+    }
+
+    function handleJumpNextEpisode(ev?: MouseEvent | React.MouseEvent<HTMLElement>) {
+        ev?.preventDefault();
+        ev?.stopPropagation();
+        if (!hasNextEpisode()) {
+            return;
+        }
+        showController();
+        handleSetEpisode(props.index + 1);
+    }
+
     function handleToggleEpisode() {
         setEpisodeStatus(!episodeStatus);
         if (!episodeStatus) {
@@ -451,6 +541,7 @@ function Player({
             return;
         }
         if (!vip) {
+            void forceExitFullscreen();
             showController();
         }
         setVip((open) => !open);
@@ -472,7 +563,9 @@ function Player({
         //         location.reload();
         //     }
         // });
-
+        if (open) {
+            void forceExitFullscreen();
+        }
         setVip(open);
     }
 
@@ -544,16 +637,22 @@ function Player({
         if (!videoRef.current) {
             return;
         }
+        if (videoRef.current.duration <= 0) {
+            return;
+        }
         showController();
         progressDragStartRef.current = true;
-        let width = x - element.offsetLeft - (progressWrapRef.current?.offsetLeft ?? 0);
+        progressActiveElementRef.current = element;
+        setProgressDragging(true);
+        const rect = element.getBoundingClientRect();
+        let width = x - rect.left;
         if (width < 0) {
             width = 0;
-        } else if (width > element.clientWidth) {
-            width = element.clientWidth;
+        } else if (width > rect.width) {
+            width = rect.width;
         }
         progressCurrentRef.current!.style.width = `${width}px`;
-        videoRef.current.currentTime = (width / element.clientWidth) * videoRef.current.duration;
+        videoRef.current.currentTime = (width / rect.width) * videoRef.current.duration;
     }
 
     function processTouchMove(element: HTMLDivElement, x: number) {
@@ -563,18 +662,22 @@ function Player({
         if (!videoRef.current) {
             return;
         }
+        if (videoRef.current.duration <= 0) {
+            return;
+        }
         if (!progressDragStartRef.current) {
             return;
         }
         showController();
-        let width = x - element.offsetLeft - (progressWrapRef.current?.offsetLeft ?? 0);
+        const rect = element.getBoundingClientRect();
+        let width = x - rect.left;
         if (width < 0) {
             width = 0;
-        } else if (width > element.clientWidth) {
-            width = element.clientWidth;
+        } else if (width > rect.width) {
+            width = rect.width;
         }
         progressCurrentRef.current!.style.width = `${width}px`;
-        videoRef.current.currentTime = (width / element.clientWidth) * videoRef.current.duration;
+        videoRef.current.currentTime = (width / rect.width) * videoRef.current.duration;
     }
 
     function handleProgressTouchStart(e: React.TouchEvent<HTMLDivElement>) {
@@ -586,21 +689,29 @@ function Player({
     }
 
     function handleProgressMouseDown(e: React.MouseEvent<HTMLDivElement>) {
-        processTouchStart(
-            e.currentTarget as HTMLDivElement,
-            e.clientX - (document.documentElement.clientWidth - document.body.clientWidth) / 2,
-        );
+        processTouchStart(e.currentTarget as HTMLDivElement, e.clientX);
     }
 
     function handleProgressMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-        processTouchMove(
-            e.currentTarget as HTMLDivElement,
-            e.clientX - (document.documentElement.clientWidth - document.body.clientWidth) / 2,
-        );
+        processTouchMove(e.currentTarget as HTMLDivElement, e.clientX);
     }
 
-    function handleSpeedOpen() {
-        setSpeedOpen(!speedOpen);
+    function handleProgressMouseEnter() {
+        setProgressHover(true);
+    }
+
+    function handleProgressMouseLeave() {
+        if (!progressDragging) {
+            setProgressHover(false);
+        }
+    }
+
+    function handleSpeedOpen(open?: boolean) {
+        if (typeof open === 'boolean') {
+            setSpeedOpen(open);
+            return;
+        }
+        setSpeedOpen((prev) => !prev);
     }
 
     function handleSelectSpeed(index: number) {
@@ -613,13 +724,29 @@ function Player({
         videoRef.current.playbackRate = SPEED[index];
     }
 
+    function handleSpeedControlClick(e: React.MouseEvent<HTMLDivElement>) {
+        e.stopPropagation();
+        if (isFullscreenUi) {
+            const next = (speed + 1) % SPEED.length;
+            handleSelectSpeed(next);
+            showController();
+            return;
+        }
+        handleSpeedOpen();
+    }
+
     function handleIntroduction() {
         setIntroduction(!introduction);
     }
 
     async function handleToggleFullscreen(e: React.MouseEvent<HTMLDivElement>) {
         e.stopPropagation();
-        await toggleVideoFullscreen(videoRef, wrapRef, { preferContainer: isDesktop });
+        const wasFullscreen = Boolean(getFullscreenElement());
+        await toggleVideoFullscreen(videoRef, fullscreenTargetRef, { preferContainer: true });
+        const nowFullscreen = Boolean(getFullscreenElement());
+        // iOS video fullscreen 不一定挂到 document.fullscreenElement，先按用户操作意图兜底
+        onFullscreenPrefChange(wasFullscreen ? false : true);
+        setPcFullscreen(nowFullscreen);
         showController();
     }
 
@@ -689,6 +816,7 @@ function Player({
         const videoCanPlay = () => {
             setCanPlay(true);
             setWaiting(false);
+            onEpisodeFullscreenReady();
         };
 
         videoRef.current?.addEventListener('canplay', videoCanPlay);
@@ -701,9 +829,30 @@ function Player({
 
         const mouseUp = () => {
             progressDragStartRef.current = false;
+            progressActiveElementRef.current = null;
+            setProgressDragging(false);
+        };
+        const mouseMove = (e: globalThis.MouseEvent) => {
+            if (!progressDragStartRef.current || !progressActiveElementRef.current) {
+                return;
+            }
+            processTouchMove(progressActiveElementRef.current, e.clientX);
+        };
+        const touchMoveWhenDrag = (e: TouchEvent) => {
+            if (!progressDragStartRef.current || !progressActiveElementRef.current) {
+                return;
+            }
+            e.preventDefault();
+            processTouchMove(progressActiveElementRef.current, e.touches[0]?.clientX ?? 0);
+        };
+        const touchEnd = () => {
+            mouseUp();
         };
         window.addEventListener('mouseup', mouseUp);
-        window.addEventListener('touchend', mouseUp);
+        window.addEventListener('mousemove', mouseMove);
+        window.addEventListener('touchmove', touchMoveWhenDrag, { passive: false });
+        window.addEventListener('touchend', touchEnd);
+        window.addEventListener('touchcancel', touchEnd);
 
         return () => {
             videoRef.current?.removeEventListener('timeupdate', videoTimeUpdate);
@@ -712,7 +861,10 @@ function Player({
             videoRef.current?.removeEventListener('waiting', videoWaiting);
             progressWrapRef.current?.removeEventListener('touchmove', progressTouchMove);
             window.removeEventListener('mouseup', mouseUp);
-            window.removeEventListener('touchend', mouseUp);
+            window.removeEventListener('mousemove', mouseMove);
+            window.removeEventListener('touchmove', touchMoveWhenDrag);
+            window.removeEventListener('touchend', touchEnd);
+            window.removeEventListener('touchcancel', touchEnd);
         };
     }, [loading]);
 
@@ -740,23 +892,109 @@ function Player({
         //     setUnlockEpisodeOpen(true);
         // }
         if (episode.lock) {
+            void forceExitFullscreen();
             setVip(true);
         }
     }, [episode]);
 
     useEffect(() => {
-        if (!isDesktop) {
-            return;
-        }
+        const video = videoRef.current as
+            | (HTMLVideoElement & {
+                  webkitDisplayingFullscreen?: boolean;
+              })
+            | null;
         const onFullscreenChange = () => {
-            setPcFullscreen(Boolean(document.fullscreenElement));
+            const inFullscreen = Boolean(getFullscreenElement());
+            setPcFullscreen(inFullscreen);
+            if (!inFullscreen && !isDesktop && props.shouldKeepFullscreen) {
+                return;
+            }
+            if (!inFullscreen && shouldKeepFullscreen && shouldIgnoreFullscreenExit()) {
+                return;
+            }
+            onFullscreenPrefChange(inFullscreen);
+        };
+        const onWebkitBeginFullscreen = () => {
+            setPcFullscreen(true);
+            onFullscreenPrefChange(true);
+        };
+        const onWebkitEndFullscreen = () => {
+            setPcFullscreen(false);
+            if (!isDesktop && shouldKeepFullscreen) {
+                return;
+            }
+            if (shouldIgnoreFullscreenExit()) {
+                return;
+            }
+            onFullscreenPrefChange(false);
         };
         document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange as EventListener);
+        video?.addEventListener('webkitbeginfullscreen', onWebkitBeginFullscreen as EventListener);
+        video?.addEventListener('webkitendfullscreen', onWebkitEndFullscreen as EventListener);
         onFullscreenChange();
         return () => {
             document.removeEventListener('fullscreenchange', onFullscreenChange);
+            document.removeEventListener(
+                'webkitfullscreenchange',
+                onFullscreenChange as EventListener,
+            );
+            video?.removeEventListener(
+                'webkitbeginfullscreen',
+                onWebkitBeginFullscreen as EventListener,
+            );
+            video?.removeEventListener(
+                'webkitendfullscreen',
+                onWebkitEndFullscreen as EventListener,
+            );
         };
-    }, [isDesktop]);
+    }, [isDesktop, shouldKeepFullscreen, shouldIgnoreFullscreenExit, onFullscreenPrefChange]);
+
+    useEffect(() => {
+        fullscreenRestoreInFlightRef.current = false;
+        fullscreenRestoreEpisodeRef.current = null;
+    }, [id]);
+
+    useEffect(() => {
+        if (!shouldKeepFullscreen) {
+            return;
+        }
+        if (fullscreenRestoreEpisodeRef.current === id || fullscreenRestoreInFlightRef.current) {
+            return;
+        }
+        if (getFullscreenElement()) {
+            return;
+        }
+        if (!videoRef.current || !canPlay || loading || episode?.lock) {
+            return;
+        }
+        fullscreenRestoreInFlightRef.current = true;
+        void toggleVideoFullscreen(videoRef, fullscreenTargetRef, { preferContainer: true })
+            .then(() => {
+                const inFullscreen = Boolean(getFullscreenElement());
+                setPcFullscreen(inFullscreen);
+                if (isDesktop) {
+                    onFullscreenPrefChange(inFullscreen);
+                    return;
+                }
+                if (!inFullscreen && !shouldKeepFullscreen) {
+                    onFullscreenPrefChange(false);
+                }
+            })
+            .finally(() => {
+                fullscreenRestoreInFlightRef.current = false;
+                fullscreenRestoreEpisodeRef.current = id;
+            });
+    }, [
+        canPlay,
+        loading,
+        episode?.lock,
+        isDesktop,
+        id,
+        shouldKeepFullscreen,
+        fullscreenTargetRef,
+        onFullscreenPrefChange,
+    ]);
 
     if (isDesktop) {
         const currentEpisodeNo = episode?.episode ?? props.index + 1;
@@ -913,11 +1151,21 @@ function Player({
                                             ref={progressRef}
                                             onMouseDown={handleProgressMouseDown}
                                             onMouseMove={handleProgressMouseMove}
+                                            onMouseEnter={handleProgressMouseEnter}
+                                            onMouseLeave={handleProgressMouseLeave}
                                             onTouchStart={handleProgressTouchStart}
                                             onTouchMove={handleProgressTouchMove}
                                         >
-                                            <div className="w-full h-1 bg-white/50 rounded-full overflow-hidden">
-                                                <div className="bg-white/80 h-1 w-0" ref={progressCurrentRef} />
+                                            <div className="video-player-progress-track w-full h-1 bg-white/50 rounded-full overflow-visible">
+                                                <div className="bg-white/80 h-1 w-0 rounded-full relative" ref={progressCurrentRef}>
+                                                    <span
+                                                        className={cn(
+                                                            'video-player-progress-thumb',
+                                                            (progressHover || progressDragging) &&
+                                                                'video-player-progress-thumb--visible',
+                                                        )}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="text-white text-xs flex items-center justify-center pl-3 whitespace-nowrap text-nowrap">
@@ -926,10 +1174,22 @@ function Player({
                                         </div>
                                         <div
                                             className="text-white text-xs flex items-center justify-center px-3"
-                                            onClick={handleSpeedOpen}
+                                            onClick={handleSpeedControlClick}
                                         >
                                             {SPEED[speed]}x
                                         </div>
+                                        {hasNextEpisode() && (
+                                            <div
+                                                className="video-player-next-episode-trigger text-white text-xs flex items-center justify-center px-2 cursor-pointer"
+                                                onClick={(e) => void handleJumpNextEpisode(e)}
+                                            >
+                                                <img
+                                                    src={nextEpisodeIcon}
+                                                    alt="next episode"
+                                                    className="video-player-next-episode-icon"
+                                                />
+                                            </div>
+                                        )}
                                         <div
                                             className="text-white text-xs flex items-center justify-center px-3 cursor-pointer"
                                             onClick={handleToggleFullscreen}
@@ -1118,7 +1378,7 @@ function Player({
                                 <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
                                     <FormattedMessage id="playback_speed" />
                                 </div>
-                                <div onClick={handleSpeedOpen}>
+                                <div onClick={() => handleSpeedOpen()}>
                                     <X />
                                 </div>
                             </DrawerTitle>
@@ -1292,34 +1552,36 @@ function Player({
                     ref={controllerRef}
                     onClick={handleControllerTouchStart}
                 >
-                    <div
-                        className="flex justify-between h-16 items-center bg-black absolute top-0 w-full transition-opacity ease-linear"
-                        onClick={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
-                    >
+                    {!isFullscreenUi && (
                         <div
-                            onClick={handleBack}
-                            className="text-white w-10 h-16 flex justify-center items-center shrink-0"
+                            className="flex justify-between h-16 items-center bg-black absolute top-0 w-full transition-opacity ease-linear"
+                            onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
                         >
-                            {history.length > 1 ? (
-                                <ChevronLeft className="w-5 h-5" />
-                            ) : (
+                            <div
+                                onClick={handleBack}
+                                className="text-white w-10 h-16 flex justify-center items-center shrink-0"
+                            >
+                                {history.length > 1 ? (
+                                    <ChevronLeft className="w-5 h-5" />
+                                ) : (
+                                    <Home className="w-5 h-5" />
+                                )}
+                            </div>
+                            <div className="text-white text-lg font-bold text-ellipsis flex-1 whitespace-nowrap overflow-hidden pr-2">
+                                {data.info.title}
+                            </div>
+                            <div className="text-white shrink-0 font-bold">
+                                {episode?.episode ?? '..'} / {data.episodes.length}
+                            </div>
+                            <Link
+                                to="/"
+                                className="text-white w-10 h-16 flex justify-center items-center shrink-0"
+                            >
                                 <Home className="w-5 h-5" />
-                            )}
+                            </Link>
                         </div>
-                        <div className="text-white text-lg font-bold text-ellipsis flex-1 whitespace-nowrap overflow-hidden pr-2">
-                            {data.info.title}
-                        </div>
-                        <div className="text-white shrink-0 font-bold">
-                            {episode?.episode ?? '..'} / {data.episodes.length}
-                        </div>
-                        <Link
-                            to="/"
-                            className="text-white w-10 h-16 flex justify-center items-center shrink-0"
-                        >
-                            <Home className="w-5 h-5" />
-                        </Link>
-                    </div>
+                    )}
                     {canPlay && episode?.lock === false && (
                         <div
                             className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto"
@@ -1347,55 +1609,57 @@ function Player({
                             </div>
                         </div>
                     )}
-                    <div
-                        className="w-10 h-36 absolute right-4 m-auto bottom-56 flex flex-col gap-4"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            showController();
-                        }}
-                    >
+                    {!isFullscreenUi && (
                         <div
-                            className={cn(
-                                'flex flex-col gap-1 items-center',
-                                userStore.signed && userStore.isVIP() && 'hidden',
-                            )}
-                            onClick={
-                                userStore.signed && userStore.isVIP()
-                                    ? undefined
-                                    : (e) => handleToggleVip(e)
-                            }
+                            className="w-10 h-36 absolute right-4 m-auto bottom-56 flex flex-col gap-4"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                showController();
+                            }}
                         >
-                            <Crown className="w-8 h-8 text-[#ffd000] fill-[#ffd000]" />
-                            <div className="h-4 leading-4 text-[#ffd000] text-xs text-center">
-                                <FormattedMessage id="shopping_vip_fab_label" />
-                            </div>
-                        </div>
-                        <div
-                            className="flex flex-col gap-1 items-center relative"
-                            onClick={handleToggleFavorite}
-                        >
-                            <Star
+                            <div
                                 className={cn(
-                                    'w-8 h-8 text-white fill-white',
-                                    favorite && 'fill-[#ffd000] stroke-[#ffd000]',
+                                    'flex flex-col gap-1 items-center',
+                                    userStore.signed && userStore.isVIP() && 'hidden',
                                 )}
-                            />
-                            <div className="h-4 leading-4 text-white text-xs text-center">
-                                {data.info.favorite}K
+                                onClick={
+                                    userStore.signed && userStore.isVIP()
+                                        ? undefined
+                                        : (e) => handleToggleVip(e)
+                                }
+                            >
+                                <Crown className="w-8 h-8 text-[#ffd000] fill-[#ffd000]" />
+                                <div className="h-4 leading-4 text-[#ffd000] text-xs text-center">
+                                    <FormattedMessage id="shopping_vip_fab_label" />
+                                </div>
+                            </div>
+                            <div
+                                className="flex flex-col gap-1 items-center relative"
+                                onClick={handleToggleFavorite}
+                            >
+                                <Star
+                                    className={cn(
+                                        'w-8 h-8 text-white fill-white',
+                                        favorite && 'fill-[#ffd000] stroke-[#ffd000]',
+                                    )}
+                                />
+                                <div className="h-4 leading-4 text-white text-xs text-center">
+                                    {data.info.favorite}K
+                                </div>
+                            </div>
+                            <div
+                                className="flex flex-col gap-1 items-center"
+                                onClick={handleToggleEpisode}
+                            >
+                                <LayoutGrid className="w-8 h-8 text-white fill-white" />
+                                <div className="h-4 leading-4 text-white text-xs text-center">
+                                    <FormattedMessage id="episode_list" />
+                                </div>
                             </div>
                         </div>
-                        <div
-                            className="flex flex-col gap-1 items-center"
-                            onClick={handleToggleEpisode}
-                        >
-                            <LayoutGrid className="w-8 h-8 text-white fill-white" />
-                            <div className="h-4 leading-4 text-white text-xs text-center">
-                                <FormattedMessage id="episode_list" />
-                            </div>
-                        </div>
-                    </div>
-                    {episode?.lock === false && (
+                    )}
+                    {!isFullscreenUi && episode?.lock === false && (
                         <div
                             className="absolute bg-black/30 w-full bottom-0 text-white h-[76px] overflow-hidden text-sm p-4 pt-0 flex gap-1 items-center"
                             onClick={(e) => {
@@ -1421,7 +1685,10 @@ function Player({
                     )}
                     {episode?.lock === false && (
                         <div
-                            className="absolute bg-black/30 w-full mx-auto pl-4 pr-2 left-0 right-0 h-10 flex bottom-0 mb-[76px]"
+                            className={cn(
+                                'absolute bg-black/30 w-full mx-auto pl-4 pr-2 left-0 right-0 h-10 flex bottom-0',
+                                isFullscreenUi ? 'mb-0' : 'mb-[76px]',
+                            )}
                             ref={progressWrapRef}
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -1430,11 +1697,21 @@ function Player({
                                 ref={progressRef}
                                 onMouseDown={handleProgressMouseDown}
                                 onMouseMove={handleProgressMouseMove}
+                                onMouseEnter={handleProgressMouseEnter}
+                                onMouseLeave={handleProgressMouseLeave}
                                 onTouchStart={handleProgressTouchStart}
                                 onTouchMove={handleProgressTouchMove}
                             >
-                                <div className="w-full h-1 bg-white/50 rounded-full overflow-hidden">
-                                    <div className="bg-white/80 h-1 w-0" ref={progressCurrentRef} />
+                                <div className="video-player-progress-track w-full h-1 bg-white/50 rounded-full overflow-visible">
+                                    <div className="bg-white/80 h-1 w-0 rounded-full relative" ref={progressCurrentRef}>
+                                        <span
+                                            className={cn(
+                                                'video-player-progress-thumb',
+                                                (progressHover || progressDragging) &&
+                                                    'video-player-progress-thumb--visible',
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <div className="text-white text-xs flex items-center justify-center pl-4 whitespace-nowrap text-nowrap">
@@ -1443,10 +1720,22 @@ function Player({
                             </div>
                             <div
                                 className="text-white text-xs flex items-center justify-center px-4"
-                                onClick={handleSpeedOpen}
+                                onClick={handleSpeedControlClick}
                             >
                                 {SPEED[speed]}x
                             </div>
+                            {hasNextEpisode() && (
+                                <div
+                                    className="video-player-next-episode-trigger text-white text-xs flex items-center justify-center px-2 cursor-pointer"
+                                    onClick={(e) => void handleJumpNextEpisode(e)}
+                                >
+                                    <img
+                                        src={nextEpisodeIcon}
+                                        alt="next episode"
+                                        className="video-player-next-episode-icon"
+                                    />
+                                </div>
+                            )}
                             <div
                                 className="text-white text-xs flex items-center justify-center px-4 cursor-pointer"
                                 onClick={handleToggleFullscreen}
@@ -1510,7 +1799,7 @@ function Player({
                             <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
                                 <FormattedMessage id="playback_speed" />
                             </div>
-                            <div onClick={handleSpeedOpen}>
+                            <div onClick={() => handleSpeedOpen()}>
                                 <X />
                             </div>
                         </DrawerTitle>

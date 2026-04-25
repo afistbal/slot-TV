@@ -49,6 +49,27 @@ export async function toggleVideoFullscreen(
     return;
   }
 
+  const el = (wrap ?? video.parentElement) as FullscreenContainerElement | null;
+  if (preferContainer) {
+    if (el?.requestFullscreen) {
+      const ok = await el
+        .requestFullscreen()
+        .then(() => true)
+        .catch(() => false);
+      if (ok) {
+        return;
+      }
+    }
+    if (el?.webkitRequestFullscreen) {
+      const ok = await Promise.resolve(el.webkitRequestFullscreen())
+        .then(() => true)
+        .catch(() => false);
+      if (ok) {
+        return;
+      }
+    }
+  }
+
   if (video.webkitEnterFullscreen) {
     try {
       video.webkitEnterFullscreen();
@@ -64,18 +85,6 @@ export async function toggleVideoFullscreen(
       // ignore
     }
     return;
-  }
-
-  const el = (wrap ?? video.parentElement) as FullscreenContainerElement | null;
-  if (preferContainer) {
-    if (el?.requestFullscreen) {
-      await el.requestFullscreen().catch(() => {});
-      return;
-    }
-    if (el?.webkitRequestFullscreen) {
-      await Promise.resolve(el.webkitRequestFullscreen()).catch(() => {});
-      return;
-    }
   }
 
   if (video.requestFullscreen) {

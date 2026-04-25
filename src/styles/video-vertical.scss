@@ -52,6 +52,51 @@
     ) !important;
 }
 
+.video-player-progress-track {
+    cursor: pointer;
+}
+
+.video-player-progress-thumb {
+    position: absolute;
+    right: -7px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    background: #fff;
+    transform: translateY(-50%) scale(0.4);
+    opacity: 0;
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+}
+
+.video-player-progress-thumb--visible {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+}
+
+.video-player-next-episode-trigger {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+}
+
+.video-player-next-episode-icon {
+    width: 20px !important;
+    height: 20px !important;
+    display: block;
+    object-fit: contain;
+}
+
+@media (min-width: 768px) {
+    .video-player-next-episode-icon {
+        width: 23px !important;
+        height: 23px !important;
+    }
+}
+
 /* 视频页 VIP 弹窗：套餐区在 PC 也保持单列（不影响我的页） */
 .video-vip-dialog .rs-shopping__plans {
     grid-template-columns: 1fr !important;

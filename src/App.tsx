@@ -48,6 +48,7 @@ import UserMyBalance from './pages/user/MyBanlance';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
+import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 
 import LayoutAdmin from './layouts/admin';
@@ -254,6 +255,10 @@ const router = createBrowserRouter([
             {
                 path: 'demo',
                 element: <UserApplePayNativeButtonDemo />,
+            },
+            {
+                path: 'demo/airwallex-triple',
+                element: <UserDemoAirwallexTriple />,
             },
         ],
     },
