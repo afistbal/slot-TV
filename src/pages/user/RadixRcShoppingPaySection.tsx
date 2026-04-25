@@ -223,21 +223,28 @@ type CardPayActionProps = {
     checkoutTargetProductId: number | null;
     paySessionSeed?: number;
     onPayStateChange?: (state: 'idle' | 'processing' | 'checking' | 'success' | 'failed') => void;
-    hidden?: boolean;
+    /**
+     * 为 false 时不挂载 `Cards`，避免默认钱包时与钱包区双 `pay/create`。
+     * 用户曾选过卡后为 true，切回钱包仍保持挂载，再切回卡不重复 create。
+     */
+    mountCards: boolean;
+    /** 已挂载时仅隐藏 DOM，不卸载 */
+    visuallyHidden: boolean;
 };
 
 function CardPayAction({
     checkoutTargetProductId,
     paySessionSeed = 0,
     onPayStateChange,
-    hidden = false,
+    mountCards,
+    visuallyHidden,
 }: CardPayActionProps) {
-    if (!checkoutTargetProductId) return null;
+    if (!checkoutTargetProductId || !mountCards) return null;
     return (
         <div
             className="rs-shopping__cardDropin"
-            style={{ display: hidden ? 'none' : undefined }}
-            aria-hidden={hidden || undefined}
+            style={{ display: visuallyHidden ? 'none' : undefined }}
+            aria-hidden={visuallyHidden || undefined}
         >
             <Cards
                 key={`checkout-dropin-${checkoutTargetProductId}-${paySessionSeed}`}
@@ -267,6 +274,8 @@ export default function RadixRcShoppingPaySection({
     const canPickApple = isApplePlatform();
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
+    /** 本弹层内是否曾进入过「信用卡」tab；用于切回钱包后仍挂载 Drop-in，避免再次 pay/create */
+    const [cardTabPrimed, setCardTabPrimed] = useState(false);
     const walletEmbedSupported = (payment === 1 && canPickApple) || payment === 2;
     const [planWalletState, setPlanWalletState] = useState<Map<number, 'pending' | 'ready' | 'failed'>>(
         () => new Map(),
@@ -742,6 +751,9 @@ export default function RadixRcShoppingPaySection({
         if (payMethod === 1 && !canPickApple) {
             return;
         }
+        if (payMethod === 3) {
+            setCardTabPrimed(true);
+        }
         setPayment(payMethod);
     }
 
@@ -784,7 +796,8 @@ export default function RadixRcShoppingPaySection({
                 checkoutTargetProductId={checkoutTargetProductId}
                 paySessionSeed={paySessionSeed}
                 onPayStateChange={onPayStateChange}
-                hidden={payment !== 3}
+                mountCards={Boolean(checkoutTargetProductId && (payment === 3 || cardTabPrimed))}
+                visuallyHidden={payment !== 3}
             />
         </div>
     );
