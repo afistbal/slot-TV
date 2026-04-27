@@ -120,8 +120,7 @@
     display: block;
     width: 100%;
     aspect-ratio: 3 / 4;
-    background: #000 url('../assets/reelshort-dashboard/reelshort-poster-placeholder.png') 50% no-repeat;
-    background-size: cover;
+    background: #000;
     overflow: hidden;
     transition: transform 0.5s ease;
     will-change: transform;
