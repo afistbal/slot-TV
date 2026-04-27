@@ -45,6 +45,7 @@ function useLoginBase(
     const [code, setCode] = useState('');
 
     const isPcVariant = variant === 'pc';
+    const profilePathAfterLogin = isPcVariant ? '/profile?tab=topup' : '/profile';
 
     function handleToggleEmailLogin() {
         if (isPcVariant) {
@@ -155,7 +156,7 @@ function useLoginBase(
         userStore.signin(result.d['info'] as { [key: string]: unknown });
         pixel.track('Register');
 
-        navigate('/profile?tab=topup', { replace: true });
+        navigate(profilePathAfterLogin, { replace: true });
         loadingStore.hide();
     }
 
@@ -261,7 +262,7 @@ function useLoginBase(
             userStore.signin(info);
             loadingStore.hide();
             pixel.track('Register');
-            navigate('/profile?tab=topup', { replace: true });
+            navigate(profilePathAfterLogin, { replace: true });
         } catch {
             loadingStore.hide();
         }
@@ -330,7 +331,7 @@ function useLoginBase(
                 info['email'] = result.user.email || '';
                 info['anonymous'] = result.user.isAnonymous ? 1 : 0;
                 userStore.signin(info);
-                navigate('/profile?tab=topup', { replace: true });
+                navigate(profilePathAfterLogin, { replace: true });
             });
         } catch (error) {
             const e = error as Error;

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { api } from '@/api';
 import { cn } from '@/lib/utils';
 import {
     airwallexEnsureShoppingWalletInit,
-    airwallexRunShoppingWalletExclusive,
     normalizeAirwallexLocale,
 } from '@/lib/airwallexShoppingWalletEmbedSingleton';
 import { createElement, type ElementTypes } from '@airwallex/components-sdk';
@@ -16,7 +15,6 @@ import payMastercard from '@/assets/icons/shopping-pay/mastercard.svg';
 import payAmex from '@/assets/icons/shopping-pay/amex.svg';
 import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
-import { Cards } from '@/pages/user/Cards';
 
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
@@ -220,42 +218,22 @@ function WalletPayAction({
 }
 
 type CardPayActionProps = {
-    checkoutTargetProductId: number | null;
-    paySessionSeed?: number;
-    onPayStateChange?: (state: 'idle' | 'processing' | 'checking' | 'success' | 'failed') => void;
-    /**
-     * 为 false 时不挂载 `Cards`，避免默认钱包时与钱包区双 `pay/create`。
-     * 用户曾选过卡后为 true，切回钱包仍保持挂载，再切回卡不重复 create。
-     */
-    mountCards: boolean;
-    /** 已挂载时仅隐藏 DOM，不卸载 */
+    mountRef: RefObject<HTMLDivElement | null>;
     visuallyHidden: boolean;
 };
 
-function CardPayAction({
-    checkoutTargetProductId,
-    paySessionSeed = 0,
-    onPayStateChange,
-    mountCards,
-    visuallyHidden,
-}: CardPayActionProps) {
-    if (!checkoutTargetProductId || !mountCards) return null;
+function CardPayAction({ mountRef, visuallyHidden }: CardPayActionProps) {
     return (
         <div
             className="rs-shopping__cardDropin"
             style={{ display: visuallyHidden ? 'none' : undefined }}
             aria-hidden={visuallyHidden || undefined}
         >
-            <Cards
-                key={`checkout-dropin-${checkoutTargetProductId}-${paySessionSeed}`}
-                productId={checkoutTargetProductId}
-                redirectHref={typeof window !== 'undefined' ? window.location.href : ''}
-                successAction="navigate"
-                variant="embed"
-                externalStatusMode={true}
-                silent
-                onPayStateChange={onPayStateChange}
-            />
+            <div className={cn('rs-checkout rs-checkout-h5 rs-checkout-h5--embedded')}>
+                <div className="rs-checkout-h5__inner">
+                    <div ref={mountRef} className="rs-checkout-h5__dropInMount" />
+                </div>
+            </div>
         </div>
     );
 }
@@ -274,476 +252,243 @@ export default function RadixRcShoppingPaySection({
     const canPickApple = isApplePlatform();
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
-    /** 本弹层内是否曾进入过「信用卡」tab；用于切回钱包后仍挂载 Drop-in，避免再次 pay/create */
-    const [cardTabPrimed, setCardTabPrimed] = useState(false);
-    const walletEmbedSupported = (payment === 1 && canPickApple) || payment === 2;
-    const [planWalletState, setPlanWalletState] = useState<Map<number, 'pending' | 'ready' | 'failed'>>(
-        () => new Map(),
-    );
-    const planWalletTimersRef = useRef<Map<number, number>>(new Map());
-    const planWalletReadyDelayTimersRef = useRef<Map<number, number>>(new Map());
-    const walletElementsRef = useRef<
-        Map<number, ElementTypes['googlePayButton'] | ElementTypes['applePayButton']>
-    >(new Map());
-    const payWalletMountRef = useRef<HTMLDivElement | null>(null);
-    const planWalletSeenNonZeroHeightRef = useRef<Map<number, boolean>>(new Map());
-    const walletObsRef = useRef<MutationObserver[]>([]);
-    const walletFrameTriggerCleanupRef = useRef<Map<number, () => void>>(new Map());
-    const walletRunIdRef = useRef(0);
-    const lastWalletPaymentRef = useRef<1 | 2 | null>(null);
-    const pendingProcessingTimerRef = useRef<number | null>(null);
-    /** 供 `WalletPayAction` 挂载层 pointerdown 调用，与 effect 内 `emitProcessing` 同步 */
-    const emitWalletProcessingRef = useRef<(source: string) => void>(() => {});
+    const [sessionReady, setSessionReady] = useState(false);
+    const [walletState, setWalletState] = useState<{ apple: 'pending' | 'ready' | 'failed'; google: 'pending' | 'ready' | 'failed' }>({
+        apple: 'pending',
+        google: 'pending',
+    });
+    const appleMountRef = useRef<HTMLDivElement | null>(null);
+    const googleMountRef = useRef<HTMLDivElement | null>(null);
+    const cardMountRef = useRef<HTMLDivElement | null>(null);
+    const instancesRef = useRef<
+        Array<
+            | ElementTypes['applePayButton']
+            | ElementTypes['googlePayButton']
+            | ElementTypes['dropIn']
+        >
+    >([]);
+    const sessionRef = useRef<{
+        intent_id: string;
+        client_secret: string;
+        customer_id: string;
+        currency: string;
+        amountValue: number;
+    } | null>(null);
 
-    const cleanupWalletFrameTriggers = useCallback(() => {
-        for (const [, cleanup] of walletFrameTriggerCleanupRef.current) {
-            cleanup();
-        }
-        walletFrameTriggerCleanupRef.current.clear();
-        if (pendingProcessingTimerRef.current) {
-            window.clearTimeout(pendingProcessingTimerRef.current);
-            pendingProcessingTimerRef.current = null;
-        }
-    }, []);
-
-    const cleanupWalletOverlays = useCallback(() => {
-        walletObsRef.current.forEach((o) => o.disconnect());
-        walletObsRef.current = [];
-        cleanupWalletFrameTriggers();
-        for (const [, el] of walletElementsRef.current) {
+    function cleanupElements() {
+        for (const inst of instancesRef.current) {
             try {
-                el.unmount();
-                el.destroy();
+                inst.unmount();
             } catch {
-                /* noop */
+                // noop
+            }
+            try {
+                inst.destroy();
+            } catch {
+                // noop
             }
         }
-        walletElementsRef.current.clear();
-        for (const [, t] of planWalletTimersRef.current) {
-            window.clearTimeout(t);
-        }
-        planWalletTimersRef.current.clear();
-        for (const [, t] of planWalletReadyDelayTimersRef.current) {
-            window.clearTimeout(t);
-        }
-        planWalletReadyDelayTimersRef.current.clear();
-        setPlanWalletState(new Map());
-    }, [cleanupWalletFrameTriggers]);
+        instancesRef.current = [];
+        appleMountRef.current?.replaceChildren();
+        googleMountRef.current?.replaceChildren();
+        cardMountRef.current?.replaceChildren();
+    }
 
     useEffect(() => {
-        if (payment !== 1 && payment !== 2 || !walletEmbedSupported) {
-            emitWalletProcessingRef.current = () => {};
-            cleanupWalletOverlays();
-            return;
-        }
-
         let alive = true;
-        walletRunIdRef.current += 1;
-        const runId = walletRunIdRef.current;
-        if (lastWalletPaymentRef.current && lastWalletPaymentRef.current !== payment) {
-            cleanupWalletOverlays();
-        }
-        lastWalletPaymentRef.current = payment;
-
-        const which = payment === 1 ? ('apple' as const) : ('google' as const);
-        const readyDelayMs = 350;
-
         const targetProductId = walletProductId;
-        void airwallexRunShoppingWalletExclusive(async () => {
-            const READY_H = 40;
-            const READY_TIMEOUT_MS = 12000;
-            const readPx = (v: string | null | undefined): number => {
-                if (!v) return NaN;
-                const n = parseFloat(v);
-                return Number.isFinite(n) ? n : NaN;
-            };
-            const frameHeightPx = (frame: HTMLIFrameElement): number => {
-                const inlineH = readPx(frame.style.height);
-                if (Number.isFinite(inlineH)) return inlineH;
-                const csH = readPx(window.getComputedStyle(frame).height);
-                if (Number.isFinite(csH)) return csH;
-                return frame.getBoundingClientRect().height;
-            };
-            const emitProcessing = (source: string) => {
-                if (!alive || walletRunIdRef.current !== runId) return;
-                const isWalletProcessingSource =
-                    source === 'sdk-click' ||
-                    source === 'sdk-clickConfirmButton' ||
-                    /** 部分 iOS / Android 上 SDK 的 `click` 晚于或不触发，用挂载层 pointerdown + rAF 补一层 processing 浮层 */
-                    source === 'wallet-mount-pointerdown';
-                // Apple / Google 钱包：仅接受上述来源触发 processing，避免 iframe 内部 focus/pointerdown 误触导致整层不可点。
-                if ((which === 'apple' || which === 'google') && !isWalletProcessingSource) return;
-                if (pendingProcessingTimerRef.current) {
-                    window.clearTimeout(pendingProcessingTimerRef.current);
-                }
-                pendingProcessingTimerRef.current = window.setTimeout(() => {
-                    pendingProcessingTimerRef.current = null;
-                    if (!alive || walletRunIdRef.current !== runId) return;
-                    onPayStateChange?.('processing');
-                }, 0);
-            };
-            emitWalletProcessingRef.current = emitProcessing;
-            const bindWalletFrameTrigger = (planId: number, host: HTMLDivElement) => {
-                const prevCleanup = walletFrameTriggerCleanupRef.current.get(planId);
-                if (prevCleanup) {
-                    prevCleanup();
-                }
-                const frame = host.querySelector('iframe') as HTMLIFrameElement | null;
-                if (!frame) {
-                    walletFrameTriggerCleanupRef.current.delete(planId);
-                    return;
-                }
-                const onFocus = () => emitProcessing('iframe-focus');
-                const onPointerDown = () => emitProcessing('iframe-pointerdown');
-                const onDocumentFocusIn = () => {
-                    if (document.activeElement === frame) {
-                        emitProcessing('document-focusin-iframe');
-                    }
-                };
-                const onWindowBlur = () => {
-                    if (document.activeElement === frame) {
-                        emitProcessing('window-blur-after-iframe-focus');
-                    }
-                };
-                frame.addEventListener('focus', onFocus);
-                frame.addEventListener('pointerdown', onPointerDown);
-                frame.addEventListener('mousedown', onPointerDown);
-                frame.addEventListener('touchstart', onPointerDown, { passive: true });
-                document.addEventListener('focusin', onDocumentFocusIn, true);
-                window.addEventListener('blur', onWindowBlur);
-                walletFrameTriggerCleanupRef.current.set(planId, () => {
-                    frame.removeEventListener('focus', onFocus);
-                    frame.removeEventListener('pointerdown', onPointerDown);
-                    frame.removeEventListener('mousedown', onPointerDown);
-                    frame.removeEventListener('touchstart', onPointerDown);
-                    document.removeEventListener('focusin', onDocumentFocusIn, true);
-                    window.removeEventListener('blur', onWindowBlur);
+        setSessionReady(false);
+        setWalletState({ apple: 'pending', google: 'pending' });
+        sessionRef.current = null;
+        cleanupElements();
+        if (!targetProductId) return;
+
+        void (async () => {
+            let payCreate: Awaited<ReturnType<typeof api<PayCreateResp>>>;
+            try {
+                payCreate = await api<PayCreateResp>('pay/create', {
+                    method: 'post',
+                    loading: false,
+                    data: {
+                        payment: defaultPayMethodFromUa(),
+                        product_id: targetProductId,
+                        redirect: window.location.href,
+                    },
                 });
-            };
-            const isHostReady = (host: HTMLDivElement, planId: number) => {
-                const frame = host.querySelector('iframe') as HTMLIFrameElement | null;
-                if (!frame) return false;
-                const h = frameHeightPx(frame);
-                const inlineH = readPx(frame.style.height);
-                if (Number.isFinite(inlineH) && inlineH > 0) {
-                    planWalletSeenNonZeroHeightRef.current.set(planId, true);
-                }
-                return h >= READY_H;
-            };
-            const scheduleReady = (planId: number) => {
-                const prevTid = planWalletReadyDelayTimersRef.current.get(planId);
-                if (prevTid) {
-                    window.clearTimeout(prevTid);
-                }
-                const tid = window.setTimeout(() => {
-                    if (!alive || walletRunIdRef.current !== runId) return;
-                    setPlanWalletState((prev) => {
-                        const n = new Map(prev);
-                        n.set(planId, 'ready');
-                        return n;
-                    });
-                }, readyDelayMs);
-                planWalletReadyDelayTimersRef.current.set(planId, tid);
-            };
-            const markReady = (planId: number, host: HTMLDivElement) => {
-                const startAt = performance.now();
-                const tick = () => {
-                    if (!alive || walletRunIdRef.current !== runId) return;
-                    if (isHostReady(host, planId)) {
-                        scheduleReady(planId);
-                        return;
-                    }
-                    if (performance.now() - startAt > READY_TIMEOUT_MS) {
-                        setPlanWalletState((prev) => {
-                            const n = new Map(prev);
-                            if (n.get(planId) !== 'ready') n.set(planId, 'failed');
-                            return n;
-                        });
-                        return;
-                    }
-                    requestAnimationFrame(tick);
-                };
-                requestAnimationFrame(tick);
-            };
-            if (!targetProductId) return;
-            const host = payWalletMountRef.current;
-            if (!host) return;
-            const existingElement = walletElementsRef.current.get(targetProductId);
-            // Apple Pay 在切换后复用旧 iframe 容易导致无法再次拉起；Apple 一律重建。
-            if (which !== 'apple' && existingElement && host.childElementCount > 0) {
-                bindWalletFrameTrigger(targetProductId, host);
-                if (isHostReady(host, targetProductId)) {
-                    scheduleReady(targetProductId);
-                } else {
-                    markReady(targetProductId, host);
-                }
+            } catch (e) {
+                console.error('[shopping] pay/create failed', e);
+                if (alive) onPayStateChange?.('failed');
                 return;
             }
-            /**
-             * 只保留单一挂载位：切套餐/切意图时强制销毁旧 element，避免复用陈旧 intent
-             * 导致 Apple Pay 首次可用、切换后失效（或切回也失效）。
-             */
-            for (const [, el] of walletElementsRef.current) {
-                try {
-                    el.unmount();
-                    el.destroy();
-                } catch {
-                    /* noop */
-                }
+            if (!alive) return;
+            if (payCreate.c !== 0 || !payCreate.d) {
+                onPayStateChange?.('failed');
+                return;
             }
-            walletElementsRef.current.clear();
-            host.replaceChildren();
 
-            planWalletSeenNonZeroHeightRef.current.set(targetProductId, false);
-            const prevDelayTid = planWalletReadyDelayTimersRef.current.get(targetProductId);
-            if (prevDelayTid) {
-                window.clearTimeout(prevDelayTid);
-            }
-            planWalletReadyDelayTimersRef.current.delete(targetProductId);
-            const prevFailTid = planWalletTimersRef.current.get(targetProductId);
-            if (prevFailTid) {
-                window.clearTimeout(prevFailTid);
-            }
-            planWalletTimersRef.current.delete(targetProductId);
-            const prevFrameCleanup = walletFrameTriggerCleanupRef.current.get(targetProductId);
-            if (prevFrameCleanup) {
-                prevFrameCleanup();
-            }
-            walletFrameTriggerCleanupRef.current.delete(targetProductId);
-            setPlanWalletState((prev) => {
-                const n = new Map(prev);
-                n.set(targetProductId, 'pending');
-                return n;
-            });
-            const tid = window.setTimeout(() => {
-                setPlanWalletState((prev) => {
-                    const n = new Map(prev);
-                    if (n.get(targetProductId) !== 'ready') n.set(targetProductId, 'failed');
-                    return n;
-                });
-            }, 10000);
-            planWalletTimersRef.current.set(targetProductId, tid);
-
-            {
-                let payCreate: Awaited<ReturnType<typeof api<PayCreateResp>>>;
-                try {
-                    payCreate = await api<PayCreateResp>('pay/create', {
-                        method: 'post',
-                        loading: false,
-                        data: {
-                            payment,
-                            product_id: targetProductId,
-                            redirect: window.location.href,
-                        },
-                    });
-                } catch (e) {
-                    console.error('[shopping] pay/create failed', e);
-                    setPlanWalletState((prev) => {
-                        const n = new Map(prev);
-                        n.set(targetProductId, 'failed');
-                        return n;
-                    });
-                    return;
-                }
-                if (!alive || walletRunIdRef.current !== runId) return;
-                if (payCreate.c !== 0) {
-                    setPlanWalletState((prev) => {
-                        const n = new Map(prev);
-                        n.set(targetProductId, 'failed');
-                        return n;
-                    });
-                    return;
-                }
-
-                const initEnv = (payCreate.d?.env as 'prod' | 'demo' | undefined) ?? 'demo';
-                try {
-                    await airwallexEnsureShoppingWalletInit(
-                        normalizeAirwallexLocale(intl.locale),
-                        initEnv,
-                    );
-                } catch (e) {
-                    console.error('[shopping] airwallex init failed', e);
-                    setPlanWalletState((prev) => {
-                        const n = new Map(prev);
-                        n.set(targetProductId, 'failed');
-                        return n;
-                    });
-                    return;
-                }
-                if (!alive || walletRunIdRef.current !== runId) return;
-
-                const intent_id = payCreate.d.pi;
-                const client_secret = payCreate.d.client_secret;
-                const customer_id = payCreate.d.customer_id;
-                const currency = payCreate.d.currency || 'USD';
-                const amountValue = majorAmount(
-                    payCreate.d.amount ?? payCreate.d.amount_major ?? payCreate.d.pay_amount ?? payCreate.d.price,
+            const initEnv = (payCreate.d.env as 'prod' | 'demo' | undefined) ?? 'demo';
+            try {
+                await airwallexEnsureShoppingWalletInit(
+                    normalizeAirwallexLocale(intl.locale),
+                    initEnv,
                 );
+            } catch (e) {
+                console.error('[shopping] airwallex init failed', e);
+                if (alive) onPayStateChange?.('failed');
+                return;
+            }
+            if (!alive) return;
 
-                const applePayButtonOptions = {
-                    mode: 'recurring' as const,
+            sessionRef.current = {
+                intent_id: payCreate.d.pi,
+                client_secret: payCreate.d.client_secret,
+                customer_id: payCreate.d.customer_id,
+                currency: payCreate.d.currency || 'USD',
+                amountValue: majorAmount(
+                    payCreate.d.amount ??
+                        payCreate.d.amount_major ??
+                        payCreate.d.pay_amount ??
+                        payCreate.d.price,
+                ),
+            };
+            setSessionReady(true);
+        })();
+
+        return () => {
+            alive = false;
+        };
+    }, [paySessionSeed, onPayStateChange]);
+
+    useEffect(() => {
+        let cancelled = false;
+        if (!sessionReady || !sessionRef.current) {
+            return;
+        }
+        const appleHost = appleMountRef.current;
+        const googleHost = googleMountRef.current;
+        const cardHost = cardMountRef.current;
+        if (!googleHost || !cardHost) {
+            return;
+        }
+        cleanupElements();
+        setWalletState({ apple: 'pending', google: 'pending' });
+
+        void (async () => {
+            const { intent_id, client_secret, customer_id, currency, amountValue } = sessionRef.current!;
+            const bindCommon = (element: any) => {
+                element.on('success', () => onPayStateChange?.('success'));
+                element.on('error', () => onPayStateChange?.('failed'));
+                element.on('cancel', () => onPayStateChange?.('idle'));
+            };
+
+            if (canPickApple && appleHost) {
+                try {
+                    const apple = await createElement('applePayButton', {
+                        mode: 'recurring',
+                        intent_id,
+                        client_secret,
+                        customer_id,
+                        amount: { value: amountValue, currency },
+                        countryCode: 'HK',
+                        buttonType: 'plain',
+                        buttonColor: 'black',
+                        style: { width: '100%', height: '40px' },
+                    } as Parameters<typeof createElement<'applePayButton'>>[1]);
+                    if (!apple || cancelled) return;
+                    apple.mount(appleHost);
+                    apple.on('click', () => onPayStateChange?.('processing'));
+                    bindCommon(apple);
+                    instancesRef.current.push(apple);
+                    setWalletState((prev) => ({ ...prev, apple: 'ready' }));
+                } catch {
+                    setWalletState((prev) => ({ ...prev, apple: 'failed' }));
+                }
+            } else {
+                setWalletState((prev) => ({ ...prev, apple: 'failed' }));
+            }
+
+            try {
+                const google = await createElement('googlePayButton', {
+                    mode: 'recurring',
                     intent_id,
                     client_secret,
                     customer_id,
                     amount: { value: amountValue, currency },
                     countryCode: 'HK',
-                    buttonType: 'plain' as const,
-                    buttonColor: 'black' as const,
-                    style: {
-                        width: '100%',
-                        height: '40px',
+                    buttonSizeMode: 'fill',
+                    buttonColor: 'default',
+                    appearance: {
+                        rules: {
+                            '.GooglePayButton': {
+                                width: '100%',
+                                height: '40px',
+                                borderRadius: '4px',
+                            },
+                        },
                     },
-                };
-
-                try {
-                    const el =
-                        which === 'google'
-                            ? await createElement('googlePayButton', {
-                                  mode: 'recurring',
-                                  intent_id,
-                                  client_secret,
-                                  customer_id,
-                                  amount: { value: amountValue, currency },
-                                  countryCode: 'HK',
-                                  buttonSizeMode: 'fill',
-                                  buttonColor: 'default',
-                                  appearance: {
-                                      rules: {
-                                          '.GooglePayButton': {
-                                              width: '100%',
-                                              height: '40px',
-                                              borderRadius: '4px',
-                                          },
-                                      },
-                                  },
-                                  style: {
-                                      width: '100%',
-                                      height: '40px',
-                                  },
-                              })
-                            : await createElement(
-                                  'applePayButton',
-                                  applePayButtonOptions as unknown as Parameters<
-                                      typeof createElement<'applePayButton'>
-                                  >[1],
-                              );
-                    if (!el) return;
-                    if (!alive || walletRunIdRef.current !== runId) {
-                        try {
-                            el.destroy();
-                        } catch {
-                            /* noop */
-                        }
-                        return;
-                    }
-                    el.mount(host);
-                    const onBound = el.on.bind(el) as (
-                        code: string,
-                        handler: (ev?: unknown) => void,
-                    ) => void;
-                    const walletLabel = which === 'apple' ? 'applePayButton' : 'googlePayButton';
-                    /** Apple / Google 均不自写 `alert`，与视频抽屉/购物弹层一致，避免打断钱包 UI */
-                    const walletOwnDebugAlert = (_message: string) => {
-                        void _message;
-                    };
-                    /** 仅抑制购物自测 `console`，不改动 `onBound` 与 Airwallex */
-                    const walletOwnConsoleLog = (...args: unknown[]) => {
-                        if (which !== 'google') {
-                            console.log(...args);
-                        }
-                    };
-                    const walletOwnConsoleError = (...args: unknown[]) => {
-                        if (which !== 'google') {
-                            console.error(...args);
-                        }
-                    };
-                    try {
-                        onBound('ready', () => {
-                            walletOwnConsoleLog(`[shopping-${which}] ready`);
-                            walletOwnDebugAlert(`[shopping ${walletLabel}] element.on('ready')`);
-                        });
-                    } catch {
-                        /* 部分版本可能无 ready */
-                    }
-                    onBound('click', () => {
-                        emitProcessing('sdk-click');
-                        walletOwnDebugAlert(`[shopping ${walletLabel}] element.on('click')`);
-                    });
-                    onBound('success', (ev) => {
-                        walletOwnConsoleLog(`[shopping-${which}] success`, ev);
-                        walletOwnDebugAlert(
-                            `[shopping ${walletLabel}] element.on('success') — 见控制台 e.detail`,
-                        );
-                        onPayStateChange?.('success');
-                    });
-                    onBound('error', (ev) => {
-                        walletOwnConsoleError(`[shopping-${which}] error`, ev);
-                        walletOwnDebugAlert(
-                            `[shopping ${walletLabel}] element.on('error') — 见控制台 e.detail`,
-                        );
-                        onPayStateChange?.('failed');
-                    });
-                    /** Apple / Google 一致：取消钱包时清掉尚未执行的 processing 定时器，并回到 idle，避免卡在 checking/載入中 */
-                    onBound('cancel', () => {
-                        if (pendingProcessingTimerRef.current) {
-                            window.clearTimeout(pendingProcessingTimerRef.current);
-                            pendingProcessingTimerRef.current = null;
-                        }
-                        walletOwnDebugAlert(`[shopping ${walletLabel}] element.on('cancel')`);
-                        onPayStateChange?.('idle');
-                    });
-                    if (which === 'google') {
-                        try {
-                            onBound('authorized', (_ev: unknown) => {
-                                /* 与 SDK 约定一致保留回调；不自写 log/alert，免与三方支付 UI 混淆 */
-                            });
-                        } catch {
-                            /* noop */
-                        }
-                    }
-                    walletElementsRef.current.set(targetProductId, el as never);
-                    bindWalletFrameTrigger(targetProductId, host);
-                    if (isHostReady(host, targetProductId)) {
-                        scheduleReady(targetProductId);
-                    } else {
-                        markReady(targetProductId, host);
-                    }
-                } catch (e) {
-                    console.error('[shopping] create wallet element failed', e);
-                    setPlanWalletState((prev) => {
-                        const n = new Map(prev);
-                        n.set(targetProductId, 'failed');
-                        return n;
-                    });
-                    return;
-                }
+                    style: { width: '100%', height: '40px' },
+                } as Parameters<typeof createElement<'googlePayButton'>>[1]);
+                if (!google || cancelled) return;
+                google.mount(googleHost);
+                google.on('click', () => onPayStateChange?.('processing'));
+                bindCommon(google);
+                instancesRef.current.push(google);
+                setWalletState((prev) => ({ ...prev, google: 'ready' }));
+            } catch {
+                setWalletState((prev) => ({ ...prev, google: 'failed' }));
             }
 
-            const obs = new MutationObserver(() => {
-                if (!alive || walletRunIdRef.current !== runId) return;
-                bindWalletFrameTrigger(targetProductId, host);
-                markReady(targetProductId, host);
-            });
-            obs.observe(host, { childList: true, subtree: true });
-            walletObsRef.current = [obs];
-        }).catch((e) => {
-            console.error('[shopping] wallet overlay crashed', e);
-        });
+            try {
+                const recurringOptions = {
+                    next_triggered_by: 'merchant' as const,
+                    merchant_trigger_reason: 'scheduled' as const,
+                };
+                const appearance = {
+                    mode: 'dark' as const,
+                    variables: {
+                        colorBackground: '#222222',
+                    },
+                    rules: {
+                        '.Input': {
+                            backgroundColor: '#333333',
+                        },
+                        '.Button': {
+                            backgroundColor: '#FF3D5DFF',
+                            color: '#FFFFFF',
+                        },
+                        '.Button > div': {
+                            color: '#FFFFFF',
+                        },
+                    },
+                };
+                const dropIn = await createElement('dropIn', {
+                    mode: 'recurring',
+                    intent_id,
+                    client_secret,
+                    customer_id,
+                    currency,
+                    payment_consent: recurringOptions,
+                    recurringOptions,
+                    methods: ['card'],
+                    appearance,
+                    country_code: 'HK',
+                    submitType: 'subscribe',
+                } as Parameters<typeof createElement<'dropIn'>>[1]);
+                if (!dropIn || cancelled) return;
+                dropIn.mount(cardHost);
+                dropIn.on('clickConfirmButton', () => onPayStateChange?.('processing'));
+                bindCommon(dropIn);
+                instancesRef.current.push(dropIn);
+            } catch {
+                onPayStateChange?.('failed');
+            }
+        })();
 
         return () => {
-            alive = false;
-            emitWalletProcessingRef.current = () => {};
-            cleanupWalletOverlays();
+            cancelled = true;
+            cleanupElements();
         };
-    }, [
-        payment,
-        intl.locale,
-        cleanupWalletOverlays,
-        walletProductId,
-        walletEmbedSupported,
-        paySessionSeed,
-        onPayStateChange,
-    ]);
+    }, [sessionReady, canPickApple, onPayStateChange]);
 
     function handleWalletCheckoutClick() {}
 
@@ -751,22 +496,9 @@ export default function RadixRcShoppingPaySection({
         if (payMethod === 1 && !canPickApple) {
             return;
         }
-        if (payMethod === 3) {
-            setCardTabPrimed(true);
-        }
         setPayment(payMethod);
     }
 
-    const walletDirectCheckout = payment === 3 || !walletEmbedSupported;
-    const walletState = planWalletState.get(walletProductId ?? -1) ?? 'pending';
-    const walletMountPointerForProcessing =
-        !walletDirectCheckout && walletEmbedSupported && (payment === 1 || payment === 2)
-            ? () => {
-                  requestAnimationFrame(() => {
-                      emitWalletProcessingRef.current('wallet-mount-pointerdown');
-                  });
-              }
-            : undefined;
     useEffect(() => {
         if (!canPickApple && payment === 1) {
             setPayment(2);
@@ -783,22 +515,35 @@ export default function RadixRcShoppingPaySection({
             />
 
             <WalletPayAction
-                walletDirectCheckout={walletDirectCheckout}
-                walletState={walletState}
-                walletMethod={payment === 1 ? 'apple' : 'google'}
+                walletDirectCheckout={false}
+                walletState={walletState.apple}
+                walletMethod={'apple'}
                 onCheckout={handleWalletCheckoutClick}
-                onWalletPointerDown={walletMountPointerForProcessing}
-                mountRef={payWalletMountRef}
-                hidden={payment === 3}
+                mountRef={appleMountRef}
+                hidden={payment !== 1}
             />
 
-            <CardPayAction
-                checkoutTargetProductId={checkoutTargetProductId}
-                paySessionSeed={paySessionSeed}
-                onPayStateChange={onPayStateChange}
-                mountCards={Boolean(checkoutTargetProductId && (payment === 3 || cardTabPrimed))}
-                visuallyHidden={payment !== 3}
+            <WalletPayAction
+                walletDirectCheckout={false}
+                walletState={walletState.google}
+                walletMethod={'google'}
+                onCheckout={handleWalletCheckoutClick}
+                mountRef={googleMountRef}
+                hidden={payment !== 2}
             />
+
+            <CardPayAction mountRef={cardMountRef} visuallyHidden={payment !== 3} />
+
+            {!checkoutTargetProductId ? (
+                <div className="text-xs text-white/60 mt-2">
+                    <FormattedMessage id="loading" defaultMessage="Loading" />
+                </div>
+            ) : null}
+            {!sessionReady ? (
+                <div className="text-xs text-white/60 mt-2">
+                    <FormattedMessage id="loading" defaultMessage="Loading" />
+                </div>
+            ) : null}
         </div>
     );
 }

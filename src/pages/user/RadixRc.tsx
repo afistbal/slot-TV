@@ -191,7 +191,6 @@ export default function RadixRc({
         if (payModalStatus !== 'success' || !showPayModal) return;
         const timer = window.setTimeout(() => {
             void (async () => {
-                await refreshSessionFromStoredToken();
                 setShowPaidServiceAgreement(false);
                 setPayModalStatus('idle');
                 setShowPayModal(false);
@@ -199,6 +198,7 @@ export default function RadixRc({
                 if (layout === 'embed') {
                     onEmbedClose?.();
                 }
+                await refreshSessionFromStoredToken();
             })();
         }, 2500);
         return () => window.clearTimeout(timer);
