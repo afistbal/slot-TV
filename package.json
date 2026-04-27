@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prod": "vite --mode prod",
     "prebuild": "node ./scripts/bump-version.mjs",
     "build": "tsc -b && vite build",
     "build:dev": "tsc -b && vite build --mode dev",

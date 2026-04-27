@@ -65,6 +65,7 @@ import AdminAnalysis from './pages/admin/Analysis';
 import AdminOrders from './pages/admin/Order';
 import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminActivityLog from './pages/admin/ActivityLog';
+import AdminWeeklyUpdateTable from './pages/admin/WeeklyUpdateTable';
 import Loader from "./components/Loader";
 import NotFound from './pages/NotFound';
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
@@ -260,6 +261,10 @@ const router = createBrowserRouter([
             {
                 path: 'demo/airwallex-triple',
                 element: <UserDemoAirwallexTriple />,
+            },
+            {
+                path: 'week-data',
+                element: <AdminWeeklyUpdateTable />,
             },
         ],
     },

@@ -45,12 +45,64 @@ export default function Component() {
     const requesting = useRef(false);
     const searching = useRef(false);
     const timer = useRef(0);
+    const longPressTimer = useRef(0);
+    const longPressTriggered = useRef(false);
+    const touchStartPosition = useRef({ x: 0, y: 0 });
     const [actionOpen, setActionOpen] = useState(-1);
 
     function handleActionSheet(e: React.MouseEvent<HTMLAnchorElement>) {
         e.preventDefault();
         const index = parseInt((e.currentTarget as HTMLElement).dataset['index'] ?? '-1', 10);
         setActionOpen(index);
+    }
+
+    function openActionSheetByElement(element: HTMLElement) {
+        const index = parseInt(element.dataset['index'] ?? '-1', 10);
+        if (!Number.isNaN(index) && index > -1) {
+            setActionOpen(index);
+        }
+    }
+
+    function clearLongPressTimer() {
+        window.clearTimeout(longPressTimer.current);
+    }
+
+    function handleCardTouchStart(e: React.TouchEvent<HTMLAnchorElement>) {
+        const touch = e.touches[0];
+        if (!touch) {
+            return;
+        }
+        longPressTriggered.current = false;
+        touchStartPosition.current = { x: touch.clientX, y: touch.clientY };
+        clearLongPressTimer();
+        longPressTimer.current = window.setTimeout(() => {
+            longPressTriggered.current = true;
+            openActionSheetByElement(e.currentTarget);
+        }, 450);
+    }
+
+    function handleCardTouchMove(e: React.TouchEvent<HTMLAnchorElement>) {
+        const touch = e.touches[0];
+        if (!touch) {
+            return;
+        }
+        const deltaX = Math.abs(touch.clientX - touchStartPosition.current.x);
+        const deltaY = Math.abs(touch.clientY - touchStartPosition.current.y);
+        if (deltaX > 8 || deltaY > 8) {
+            clearLongPressTimer();
+        }
+    }
+
+    function handleCardTouchEnd() {
+        clearLongPressTimer();
+    }
+
+    function handleCardClick(e: React.MouseEvent<HTMLAnchorElement>) {
+        if (longPressTriggered.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            longPressTriggered.current = false;
+        }
     }
 
     function handleMoreChange(visible: boolean) {
@@ -224,7 +276,7 @@ export default function Component() {
                 ) : (
                     <div
                         className={cn(
-                            'grid grid-cols-3 gap-4 p-4',
+                            'grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-3 p-4',
                             movieListStore.loading || movieListStore.list.length === 0
                                 ? 'overflow-hidden'
                                 : '',
@@ -240,6 +292,11 @@ export default function Component() {
                                     key={v['id'] as string}
                                     data-index={k}
                                     onContextMenu={handleActionSheet}
+                                    onTouchStart={handleCardTouchStart}
+                                    onTouchMove={handleCardTouchMove}
+                                    onTouchEnd={handleCardTouchEnd}
+                                    onTouchCancel={handleCardTouchEnd}
+                                    onClick={handleCardClick}
                                 >
                                     <Image
                                         height={1.3325}

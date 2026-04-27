@@ -45,6 +45,10 @@ export default function Component() {
                 <div><CircleDollarSign className="w-8 h-8" /></div>
                 <div><FormattedMessage id="order" /></div>
             </Link>
+            <Link to="/page/week-data" className="border border-slate-700 bg-slate-800 text-sm text-cyan-200 flex justify-center flex-col gap-1 items-center py-4 rounded-lg shadow-[0_0_0_1px_rgba(15,23,42,0.3)] transition-colors hover:bg-slate-700">
+                <div><Videotape className="w-8 h-8" /></div>
+                <div><FormattedMessage id="weekly_update_table" /></div>
+            </Link>
             {/* <div className="bg-purple-400 text-sm text-white flex justify-center flex-col gap-1 items-center py-4 rounded-lg" onClick={handleWatchAd}>
                 <div><TvMinimalPlay className="w-8 h-8" /></div>
                 <div><FormattedMessage id="watch_ad" /></div>
