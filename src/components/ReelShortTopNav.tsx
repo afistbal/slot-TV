@@ -25,6 +25,7 @@ import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useConfigStore } from '@/stores/config';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
+import usePixel from '@/hooks/usePixel';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -451,6 +452,7 @@ function TopNavLanguageSwitcher() {
 
 function TopNavInstallEntry() {
   const navigate = useNavigate();
+  const pixel = usePixel();
   const rootStore = useRootStore();
   const [isDesktop, setIsDesktop] = useState(false);
   const [open, setOpen] = useState(false);
@@ -535,6 +537,7 @@ function TopNavInstallEntry() {
               type="button"
               className="reelshort-topnav__download-open-btn"
               onClick={() => {
+                pixel.track('Download');
                 const installBtn = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
                 if (installBtn) {
                   installBtn.click();

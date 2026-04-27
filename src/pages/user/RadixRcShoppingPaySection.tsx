@@ -15,6 +15,7 @@ import payMastercard from '@/assets/icons/shopping-pay/mastercard.svg';
 import payAmex from '@/assets/icons/shopping-pay/amex.svg';
 import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
+import usePixel from '@/hooks/usePixel';
 
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
@@ -43,6 +44,15 @@ function majorAmount(apiHint: unknown): number {
     return 0;
 }
 
+function toNumericValue(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+        const n = parseFloat(value);
+        if (Number.isFinite(n)) return n;
+    }
+    return 0;
+}
+
 export type RadixRcShoppingPaySectionProps = {
     /** 当前选中套餐；用于钱包 pay/create 与挂载 */
     walletProductId: number | null;
@@ -50,6 +60,12 @@ export type RadixRcShoppingPaySectionProps = {
     checkoutTargetProductId: number | null;
     /** 跳转 `/page/pay/...` 的 `from=` */
     checkoutFrom: 'shopping' | 'video';
+    /** 结账商品信息，用于像素埋点参数 */
+    checkoutProductMeta?: {
+        id: number;
+        name: string;
+        price: string;
+    } | null;
     /** 与 `RadixRc` 重试按钮联动：递增后强制重建钱包会话，避免复用失效 intent */
     paySessionSeed?: number;
     /** 支付状态回调（用于外层弹窗展示处理中/成功/失败） */
@@ -245,10 +261,12 @@ export default function RadixRcShoppingPaySection({
     walletProductId,
     checkoutTargetProductId,
     checkoutFrom: _checkoutFrom,
+    checkoutProductMeta,
     paySessionSeed = 0,
     onPayStateChange,
 }: RadixRcShoppingPaySectionProps) {
     const intl = useIntl();
+    const pixel = usePixel();
     const canPickApple = isApplePlatform();
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
@@ -274,6 +292,17 @@ export default function RadixRcShoppingPaySection({
         currency: string;
         amountValue: number;
     } | null>(null);
+
+    function buildCheckoutPayload(targetProductId: number, fallbackCurrency = 'USD', fallbackAmount = 0) {
+        return {
+            content_type: 'product',
+            quantity: 1,
+            description: checkoutProductMeta?.name ?? 'shopping_plan',
+            content_ids: [(checkoutProductMeta?.id ?? targetProductId).toString()],
+            currency: sessionRef.current?.currency || fallbackCurrency,
+            value: toNumericValue(checkoutProductMeta?.price ?? sessionRef.current?.amountValue ?? fallbackAmount),
+        };
+    }
 
     function cleanupElements() {
         for (const inst of instancesRef.current) {
@@ -351,6 +380,25 @@ export default function RadixRcShoppingPaySection({
                         payCreate.d.price,
                 ),
             };
+            const addToCartData = {
+                content_type: 'product',
+                quantity: 1,
+                description: checkoutProductMeta?.name ?? 'shopping_plan',
+                content_ids: [(checkoutProductMeta?.id ?? targetProductId).toString()],
+                currency: payCreate.d.currency || 'USD',
+                value: toNumericValue(
+                    checkoutProductMeta?.price ??
+                    majorAmount(
+                        payCreate.d.amount ??
+                            payCreate.d.amount_major ??
+                            payCreate.d.pay_amount ??
+                            payCreate.d.price,
+                    ),
+                ),
+            };
+            console.info('[pixel] AddToCart fired', addToCartData);
+            pixel.track('AddToCart', addToCartData);
+            
             setSessionReady(true);
         })();
 
@@ -375,8 +423,13 @@ export default function RadixRcShoppingPaySection({
 
         void (async () => {
             const { intent_id, client_secret, customer_id, currency, amountValue } = sessionRef.current!;
+            const targetProductId = walletProductId ?? checkoutTargetProductId ?? 0;
+            const subscribePayload = buildCheckoutPayload(targetProductId, currency, amountValue);
             const bindCommon = (element: any) => {
-                element.on('success', () => onPayStateChange?.('success'));
+                element.on('success', () => {
+                    pixel.track('Subscribe', subscribePayload);
+                    onPayStateChange?.('success');
+                });
                 element.on('error', () => onPayStateChange?.('failed'));
                 element.on('cancel', () => onPayStateChange?.('idle'));
             };
@@ -396,7 +449,10 @@ export default function RadixRcShoppingPaySection({
                     } as Parameters<typeof createElement<'applePayButton'>>[1]);
                     if (!apple || cancelled) return;
                     apple.mount(appleHost);
-                    apple.on('click', () => onPayStateChange?.('processing'));
+                    apple.on('click', () => {
+                        pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
+                        onPayStateChange?.('processing');
+                    });
                     bindCommon(apple);
                     instancesRef.current.push(apple);
                     setWalletState((prev) => ({ ...prev, apple: 'ready' }));
@@ -430,7 +486,10 @@ export default function RadixRcShoppingPaySection({
                 } as Parameters<typeof createElement<'googlePayButton'>>[1]);
                 if (!google || cancelled) return;
                 google.mount(googleHost);
-                google.on('click', () => onPayStateChange?.('processing'));
+                google.on('click', () => {
+                    pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
+                    onPayStateChange?.('processing');
+                });
                 bindCommon(google);
                 instancesRef.current.push(google);
                 setWalletState((prev) => ({ ...prev, google: 'ready' }));
@@ -476,7 +535,10 @@ export default function RadixRcShoppingPaySection({
                 } as Parameters<typeof createElement<'dropIn'>>[1]);
                 if (!dropIn || cancelled) return;
                 dropIn.mount(cardHost);
-                dropIn.on('clickConfirmButton', () => onPayStateChange?.('processing'));
+                dropIn.on('clickConfirmButton', () => {
+                    pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
+                    onPayStateChange?.('processing');
+                });
                 bindCommon(dropIn);
                 instancesRef.current.push(dropIn);
             } catch {

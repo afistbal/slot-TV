@@ -3,12 +3,14 @@ import { FormattedMessage } from 'react-intl';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import { BRAND_LOGO_SRC } from '@/constants/brand';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import usePixel from '@/hooks/usePixel';
 
 /**
  * iOS / iPad：未以主屏幕 standalone 打开时显示，点击进 `/page/ios-add-home`。
  */
 export function IosAddHomeFloatingBtn() {
     const isDesktop = useMinWidth768();
+    const pixel = usePixel();
     if (isDesktop || !shouldShowIosAddHomeFab()) {
         return null;
     }
@@ -19,6 +21,7 @@ export function IosAddHomeFloatingBtn() {
             className="ios-pwa-add-btn"
             role="button"
             aria-label="Add to Home Screen"
+            onClick={() => pixel.track('Download')}
         >
             <img className="ios-pwa-add-btn__icon" src={BRAND_LOGO_SRC} alt="" loading="lazy" />
             <span className="ios-pwa-add-btn__text">

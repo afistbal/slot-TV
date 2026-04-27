@@ -453,6 +453,15 @@ export default function RadixRc({
                                     walletProductId={walletProductId}
                                     checkoutTargetProductId={checkoutTargetProductId}
                                     checkoutFrom={checkoutFrom}
+                                    checkoutProductMeta={
+                                        currentCheckoutProduct
+                                            ? {
+                                                  id: currentCheckoutProduct.id,
+                                                  name: currentCheckoutProduct.name,
+                                                  price: currentCheckoutProduct.price,
+                                              }
+                                            : null
+                                    }
                                     paySessionSeed={paySessionSeed}
                                     onPayStateChange={setPayModalStatus}
                                 />

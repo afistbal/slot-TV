@@ -22,6 +22,7 @@ import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
 import {init as initPixel} from './hooks/usePixel';
+import usePixel from './hooks/usePixel';
 import enMessages from './locales/en.json';
 import zhMessages from './locales/zh.json';
 
@@ -367,6 +368,7 @@ function getInitialIntlMessages(): TIntlMessages {
 }
 
 function App() {
+    const pixel = usePixel();
     const mdUp = useMinWidth768();
     const rootStore = useRootStore();
     const rootShowInstallPrompt = useRootStore((state) => state.showInstallPrompt);
@@ -380,6 +382,15 @@ function App() {
     const [install, setInstall] = useState(0);
     const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
     const adjustInitedRef = useRef(false);
+    const downloadTrackedRef = useRef(false);
+
+    function trackDownloadOnce() {
+        if (downloadTrackedRef.current) {
+            return;
+        }
+        downloadTrackedRef.current = true;
+        pixel.track('Download');
+    }
 
     async function handleExecuteInstall() {
         if (!installPrompt.current) {
@@ -389,6 +400,7 @@ function App() {
         const { outcome } = await installPrompt.current.userChoice;
         if (outcome === 'accepted') {
             setInstall(2);
+            trackDownloadOnce();
         }
     }
 
@@ -510,6 +522,7 @@ function App() {
 
         const installedListener = () => {
             setInstall(0);
+            trackDownloadOnce();
         };
 
         window.addEventListener('appinstalled', installedListener);
