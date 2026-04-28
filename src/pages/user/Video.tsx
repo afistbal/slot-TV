@@ -758,7 +758,10 @@ function Player({
             showController();
             return;
         }
-        await toggleVideoFullscreen(videoRef, fullscreenTargetRef, { preferContainer: true });
+        await toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
+            preferContainer: true,
+            disableNativeVideoFullscreen: true,
+        });
         const nowFullscreen = Boolean(getFullscreenElement());
         // iOS video fullscreen 不一定挂到 document.fullscreenElement，先按用户操作意图兜底
         onFullscreenPrefChange(true);
@@ -985,7 +988,10 @@ function Player({
             return;
         }
         fullscreenRestoreInFlightRef.current = true;
-        void toggleVideoFullscreen(videoRef, fullscreenTargetRef, { preferContainer: true })
+        void toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
+            preferContainer: true,
+            disableNativeVideoFullscreen: true,
+        })
             .then(() => {
                 const inFullscreen = Boolean(getFullscreenElement());
                 setPcFullscreen(inFullscreen);

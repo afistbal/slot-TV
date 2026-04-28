@@ -26,12 +26,13 @@ type FullscreenContainerElement = HTMLElement & {
 export async function toggleVideoFullscreen(
   videoRef: RefObject<HTMLVideoElement | null>,
   containerRef?: RefObject<HTMLElement | null>,
-  options?: { preferContainer?: boolean },
+  options?: { preferContainer?: boolean; disableNativeVideoFullscreen?: boolean },
 ) {
   const wrap = containerRef?.current ?? null;
   const video = videoRef.current as FullscreenVideoElement | null;
   if (!video) return;
   const preferContainer = options?.preferContainer === true;
+  const disableNativeVideoFullscreen = options?.disableNativeVideoFullscreen === true;
 
   const doc = document as FullscreenDocument;
   const fsEl = document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
@@ -71,6 +72,10 @@ export async function toggleVideoFullscreen(
       if (ok) {
         return;
       }
+    }
+    if (disableNativeVideoFullscreen) {
+      // iOS 上避免回退到系统视频全屏，保持页面内“全屏样式”交互。
+      return;
     }
   }
 
