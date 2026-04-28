@@ -69,6 +69,14 @@ function getTagDisplayText(tag: { name: string; unique_id: string }) {
     return name || uid || '-';
 }
 
+function canNavigateBack() {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    const state = window.history.state as { idx?: unknown } | null;
+    return typeof state?.idx === 'number' && state.idx > 0;
+}
+
 export default function Component() {
     // const configStore = useConfigStore();
     const rootStore = useRootStore();
@@ -318,7 +326,7 @@ function Player({
     }
 
     function handleBack() {
-        if (window.history.length > 1) {
+        if (canNavigateBack()) {
             navigate(-1);
         } else {
             navigate('/');
@@ -1024,7 +1032,7 @@ function Player({
                                 onClick={handleBack}
                                 className="text-white w-10 h-16 flex justify-center items-center shrink-0"
                             >
-                                {history.length > 1 ? (
+                                {canNavigateBack() ? (
                                     <ChevronLeft className="w-5 h-5" />
                                 ) : (
                                     <Home className="w-5 h-5" />
@@ -1498,7 +1506,7 @@ function Player({
                             onClick={handleBack}
                             className="text-white w-10 h-16 flex justify-center items-center shrink-0"
                         >
-                            {history.length > 1 ? (
+                            {canNavigateBack() ? (
                                 <ChevronLeft className="w-5 h-5" />
                             ) : (
                                 <Home className="w-5 h-5" />
@@ -1562,7 +1570,7 @@ function Player({
                                 onClick={handleBack}
                                 className="text-white w-10 h-16 flex justify-center items-center shrink-0"
                             >
-                                {history.length > 1 ? (
+                                {canNavigateBack() ? (
                                     <ChevronLeft className="w-5 h-5" />
                                 ) : (
                                     <Home className="w-5 h-5" />
