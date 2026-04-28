@@ -4,6 +4,8 @@ type FullscreenVideoElement = HTMLVideoElement & {
   webkitEnterFullscreen?: () => void;
   webkitExitFullscreen?: () => void;
   webkitEnterFullScreen?: () => void;
+  webkitDisplayingFullscreen?: boolean;
+  webkitPresentationMode?: "inline" | "fullscreen" | "picture-in-picture";
 };
 
 type FullscreenDocument = Document & {
@@ -33,8 +35,10 @@ export async function toggleVideoFullscreen(
 
   const doc = document as FullscreenDocument;
   const fsEl = document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+  const iosVideoFullscreen =
+    video.webkitDisplayingFullscreen === true || video.webkitPresentationMode === "fullscreen";
 
-  if (fsEl) {
+  if (fsEl || iosVideoFullscreen) {
     await document.exitFullscreen().catch(() => {});
     if (video.webkitExitFullscreen) {
       try {

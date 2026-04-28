@@ -5,6 +5,7 @@ import {
     Home,
     LayoutGrid,
     LoaderCircle,
+    Minimize,
     Pause,
     PlayIcon,
     Star,
@@ -308,6 +309,9 @@ function Player({
     async function forceExitFullscreen() {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
         const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
+        // 先恢复页面 UI，避免 iOS 退出全屏回调不稳定导致界面一直停在全屏态
+        onFullscreenPrefChange(false);
+        setPcFullscreen(false);
         if (document.fullscreenElement) {
             await document.exitFullscreen().catch(() => {});
         }
@@ -321,8 +325,6 @@ function Player({
         if (doc.webkitExitFullscreen) {
             await Promise.resolve(doc.webkitExitFullscreen()).catch(() => {});
         }
-        onFullscreenPrefChange(false);
-        setPcFullscreen(false);
     }
 
     function handleBack() {
@@ -749,11 +751,17 @@ function Player({
 
     async function handleToggleFullscreen(e: React.MouseEvent<HTMLDivElement>) {
         e.stopPropagation();
-        const wasFullscreen = Boolean(getFullscreenElement());
+        if (isFullscreenUi) {
+            onFullscreenPrefChange(false);
+            setPcFullscreen(false);
+            await forceExitFullscreen();
+            showController();
+            return;
+        }
         await toggleVideoFullscreen(videoRef, fullscreenTargetRef, { preferContainer: true });
         const nowFullscreen = Boolean(getFullscreenElement());
         // iOS video fullscreen 不一定挂到 document.fullscreenElement，先按用户操作意图兜底
-        onFullscreenPrefChange(wasFullscreen ? false : true);
+        onFullscreenPrefChange(true);
         setPcFullscreen(nowFullscreen);
         showController();
     }
@@ -1202,7 +1210,11 @@ function Player({
                                             className="text-white text-xs flex items-center justify-center px-3 cursor-pointer"
                                             onClick={handleToggleFullscreen}
                                         >
-                                            <img src={fullscreenIcon} alt="" className="w-5 h-5" />
+                                            {isFullscreenUi ? (
+                                                <Minimize className="w-5 h-5" />
+                                            ) : (
+                                                <img src={fullscreenIcon} alt="" className="w-5 h-5" />
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -1748,7 +1760,11 @@ function Player({
                                 className="text-white text-xs flex items-center justify-center px-4 cursor-pointer"
                                 onClick={handleToggleFullscreen}
                             >
-                                <img src={fullscreenIcon} alt="" className="w-5 h-5" />
+                                {isFullscreenUi ? (
+                                    <Minimize className="w-5 h-5" />
+                                ) : (
+                                    <img src={fullscreenIcon} alt="" className="w-5 h-5" />
+                                )}
                             </div>
                         </div>
                     )}
