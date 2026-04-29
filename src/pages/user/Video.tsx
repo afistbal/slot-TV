@@ -309,9 +309,7 @@ function Player({
     async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
         const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
-        // 先恢复页面 UI，避免 iOS 退出全屏回调不稳定导致界面一直停在全屏态
-        onFullscreenPrefChange(false);
-        setPcFullscreen(false);
+        // 必须先退出浏览器全屏再改 React 布局；否则 PC 会在 fullscreen 内先插入侧栏，exitFullscreen 易失败或需点两次。
         if (document.fullscreenElement) {
             await document.exitFullscreen().catch(() => {});
         }
@@ -327,6 +325,8 @@ function Player({
         if (!options?.skipVideoWebKitExit && doc.webkitExitFullscreen) {
             await Promise.resolve(doc.webkitExitFullscreen()).catch(() => {});
         }
+        onFullscreenPrefChange(false);
+        setPcFullscreen(false);
     }
 
     function handleBack() {
@@ -754,8 +754,6 @@ function Player({
     async function handleToggleFullscreen(e: React.MouseEvent<HTMLDivElement>) {
         e.stopPropagation();
         if (isFullscreenUi) {
-            onFullscreenPrefChange(false);
-            setPcFullscreen(false);
             await forceExitFullscreen();
             showController();
             return;
