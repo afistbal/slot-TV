@@ -710,7 +710,6 @@ function NavProfileAvatar() {
 
   const userName = String(userStore.info?.['name'] ?? '');
   const userUid = String(userStore.info?.['unique_id'] ?? '');
-  const signOutIconUrl = 'https://v-mps.crazymaplestudios.com/images/3c2c9f20-2f21-11f1-9a5e-8b72f42f4895.png';
 
   return (
     <DropdownMenu
@@ -760,7 +759,35 @@ function NavProfileAvatar() {
                   void handleLogout();
                 }}
               >
-                <img src={signOutIconUrl} alt="" className="reelshort-topnav__profile-card-logout-icon" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="reelshort-topnav__profile-card-logout-icon"
+                  aria-hidden
+                >
+                  <path
+                    d="M6.66675 2.66663H4.66675C3.93037 2.66663 3.33341 3.26359 3.33341 3.99996V12C3.33341 12.7363 3.93037 13.3333 4.66675 13.3333H6.66675"
+                    stroke="currentColor"
+                    strokeWidth="1.33333"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9.33325 10.6666L12 7.99996L9.33325 5.33329"
+                    stroke="currentColor"
+                    strokeWidth="1.33333"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M12 8H6.66675"
+                    stroke="currentColor"
+                    strokeWidth="1.33333"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 <FormattedMessage id="logout" />
               </button>
             ) : (
