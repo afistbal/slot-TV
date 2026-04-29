@@ -306,7 +306,7 @@ function Player({
         return document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
     }
 
-    async function forceExitFullscreen() {
+    async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
         const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
         // 先恢复页面 UI，避免 iOS 退出全屏回调不稳定导致界面一直停在全屏态
@@ -315,14 +315,16 @@ function Player({
         if (document.fullscreenElement) {
             await document.exitFullscreen().catch(() => {});
         }
-        if (video?.webkitExitFullscreen) {
+        // webkitendfullscreen 时系统已退出，再调一次易导致播放被停掉。
+        if (!options?.skipVideoWebKitExit && video?.webkitExitFullscreen) {
             try {
                 video.webkitExitFullscreen();
             } catch {
                 // ignore
             }
         }
-        if (doc.webkitExitFullscreen) {
+        // 与 video 一致：从 iOS 系统视频全屏回调里进来时勿再调，避免干扰内联续播。
+        if (!options?.skipVideoWebKitExit && doc.webkitExitFullscreen) {
             await Promise.resolve(doc.webkitExitFullscreen()).catch(() => {});
         }
     }
@@ -760,7 +762,8 @@ function Player({
         }
         await toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
             preferContainer: true,
-            disableNativeVideoFullscreen: true,
+            // 桌面保留容器全屏 + 侧栏；移动端容器全屏在 iOS 常失败，需回退 webkitEnterFullscreen。
+            disableNativeVideoFullscreen: isDesktop,
         });
         const nowFullscreen = Boolean(getFullscreenElement());
         // iOS video fullscreen 不一定挂到 document.fullscreenElement，先按用户操作意图兜底
@@ -937,15 +940,48 @@ function Player({
             setPcFullscreen(true);
             onFullscreenPrefChange(true);
         };
+        /** iOS 退出系统全屏后常会处于 paused；单次 play 常失败，需同步先试一次再短时多次重试。 */
+        const resumeInlineAfterNativeFullscreenExit = () => {
+            const attempt = () => {
+                const v = videoRef.current;
+                if (!v || episode?.lock || location.search.indexOf('auto_play=0') !== -1 || v.ended) {
+                    if (v) {
+                        setPlaying(!v.paused);
+                    }
+                    return;
+                }
+                if (!v.paused) {
+                    setPlaying(true);
+                    return;
+                }
+                void v.play().then(() => setPlaying(true)).catch(() => {});
+            };
+            attempt();
+            for (const ms of [32, 100, 280, 600]) {
+                window.setTimeout(attempt, ms);
+            }
+        };
         const onWebkitEndFullscreen = () => {
             setPcFullscreen(false);
-            if (!isDesktop && shouldKeepFullscreen) {
-                return;
-            }
             if (shouldIgnoreFullscreenExit()) {
                 return;
             }
-            onFullscreenPrefChange(false);
+            // 在 webkit 回调栈内先试 play，再恢复 UI；部分 iOS 版本离开回调后 play 会被策略拦。
+            {
+                const v = videoRef.current;
+                if (
+                    v &&
+                    !episode?.lock &&
+                    location.search.indexOf('auto_play=0') === -1 &&
+                    !v.ended &&
+                    v.paused
+                ) {
+                    void v.play().then(() => setPlaying(true)).catch(() => {});
+                }
+            }
+            void forceExitFullscreen({ skipVideoWebKitExit: true }).finally(() => {
+                resumeInlineAfterNativeFullscreenExit();
+            });
         };
         document.addEventListener('fullscreenchange', onFullscreenChange);
         document.addEventListener('webkitfullscreenchange', onFullscreenChange as EventListener);
@@ -967,7 +1003,7 @@ function Player({
                 onWebkitEndFullscreen as EventListener,
             );
         };
-    }, [isDesktop, shouldKeepFullscreen, shouldIgnoreFullscreenExit, onFullscreenPrefChange]);
+    }, [isDesktop, shouldKeepFullscreen, shouldIgnoreFullscreenExit, onFullscreenPrefChange, episode?.lock]);
 
     useEffect(() => {
         fullscreenRestoreInFlightRef.current = false;
@@ -990,7 +1026,7 @@ function Player({
         fullscreenRestoreInFlightRef.current = true;
         void toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
             preferContainer: true,
-            disableNativeVideoFullscreen: true,
+            disableNativeVideoFullscreen: isDesktop,
         })
             .then(() => {
                 const inFullscreen = Boolean(getFullscreenElement());
