@@ -90,6 +90,409 @@
     object-fit: contain;
 }
 
+.video-share-dialog [data-slot='dialog-overlay'] {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.video-share-pc-modal {
+    background: #141414;
+    border-radius: 16px;
+    overflow: hidden;
+    color: #fff;
+    position: relative;
+}
+
+.video-share-pc-close {
+    display: flex;
+    width: 24px;
+    height: 24px;
+    justify-content: center;
+    align-items: center;
+    background: #2c2c2c;
+    border-radius: 50%;
+    position: absolute;
+    top: 27px;
+    right: 26px;
+    border: 0;
+    cursor: pointer;
+}
+
+.video-share-pc-close img {
+    width: 14px;
+    height: 14px;
+}
+
+.video-share-pc-content {
+    padding: 24px;
+}
+
+.video-share-pc-title {
+    color: hsla(0, 0%, 100%, 0.9);
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.video-share-pc-card {
+    border-radius: 8px;
+    background: #292929;
+    display: flex;
+    width: 512px;
+    height: 152px;
+    padding: 16px;
+    gap: 16px;
+}
+
+.video-share-pc-card-image {
+    width: 90px;
+    height: 120px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex: none;
+}
+
+.video-share-pc-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-share-pc-card-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.video-share-pc-card-title {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    margin-bottom: 12px;
+    line-height: 24px;
+}
+
+.video-share-pc-card-desc {
+    color: hsla(0, 0%, 100%, 0.5);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 120%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.video-share-pc-actions {
+    color: #fff;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.video-share-pc-action {
+    width: 128px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 24px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+}
+
+.video-share-pc-action img {
+    width: 64px;
+    height: 64px;
+}
+
+.video-share-pc-action span {
+    margin-top: 8px;
+    font-size: 16px;
+}
+
+.video-share-pc-action--placeholder {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.video-share-pc-embed {
+    display: flex;
+}
+
+.video-share-pc-embed-image {
+    width: 346px;
+    height: 460px;
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+    overflow: hidden;
+}
+
+.video-share-pc-embed-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-share-pc-embed-panel {
+    padding: 24px;
+}
+
+.video-share-pc-embed-box {
+    width: 486px;
+    border-radius: 8px;
+    background: #292929;
+    padding: 16px;
+}
+
+.video-share-pc-embed-code {
+    color: hsla(0, 0%, 100%, 0.5);
+    font-size: 14px;
+    line-height: 170%;
+    margin-bottom: 16px;
+    max-height: 144px;
+    overflow-y: scroll;
+    word-break: break-all;
+}
+
+.video-share-pc-embed-toggle {
+    border-top: 1px solid hsla(0, 0%, 100%, 0.1);
+    padding-top: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: hsla(0, 0%, 100%, 0.9);
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.video-share-pc-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid hsla(0, 0%, 100%, 0.9);
+}
+
+.video-share-pc-checkbox.is-checked {
+    border: none;
+    background: #ff3d5d;
+    position: relative;
+}
+
+.video-share-pc-checkbox.is-checked::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 4px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg);
+    top: 4px;
+    left: 3px;
+}
+
+.video-share-pc-copy-btn {
+    margin-top: 24px;
+    margin-left: auto;
+    display: flex;
+    padding: 10px 30px 10px 31px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    background: #ff3d5d;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+}
+
+.video-share-mobile-drawer {
+    z-index: 300 !important;
+    background: #222 !important;
+    border-radius: 4.8vw 4.8vw 0 0 !important;
+}
+
+.video-share-mobile-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 4.26667vw;
+    color: hsla(0, 0%, 100%, 0.9);
+    font-size: 4.26667vw;
+    font-weight: 700;
+    line-height: 120%;
+    background: #141414;
+}
+
+.video-share-mobile-close {
+    display: flex;
+    width: 6.4vw;
+    height: 6.4vw;
+    justify-content: center;
+    align-items: center;
+    background: #2c2c2c;
+    border-radius: 50%;
+    border: 0;
+    color: #fff;
+}
+
+.video-share-mobile-close img {
+    width: 3.2vw;
+    height: 3.2vw;
+}
+
+.video-share-mobile-body {
+    background: #141414;
+    padding: 0 4.26667vw 6.4vw;
+}
+
+.video-share-mobile-card {
+    border-radius: 2.13333vw;
+    background: #292929;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4.26667vw;
+}
+
+.video-share-mobile-card-image {
+    width: 24vw;
+    height: 32vw;
+    border-radius: 1.33333vw;
+    overflow: hidden;
+}
+
+.video-share-mobile-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.video-share-mobile-card-title {
+    margin-top: 4.26667vw;
+    color: #fff;
+    text-align: center;
+    font-size: 4.26667vw;
+    font-weight: 700;
+    line-height: 120%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.video-share-mobile-actions {
+    margin-top: 4.26667vw;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    color: #fff;
+}
+
+.video-share-mobile-action {
+    width: 22.66667vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent;
+    color: #fff;
+    border: 0;
+}
+
+.video-share-mobile-action img {
+    width: 12.8vw;
+    height: 12.8vw;
+}
+
+.video-share-mobile-action span {
+    margin-top: 2.13333vw;
+    color: hsla(0, 0%, 100%, 0.9);
+    font-size: 3.73333vw;
+    font-weight: 400;
+    line-height: 120%;
+}
+
+.video-share-mobile-action--placeholder {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.video-share-mobile-embed-body {
+    padding: 0 4.26667vw 4.26667vw;
+    background: #141414;
+}
+
+.video-share-mobile-embed-box {
+    border-radius: 2.13333vw;
+    background: #292929;
+    padding: 4.26667vw;
+}
+
+.video-share-mobile-embed-code {
+    color: hsla(0, 0%, 100%, 0.5);
+    font-size: 3.73333vw;
+    line-height: 140%;
+    border-bottom: 1px solid hsla(0, 0%, 100%, 0.1);
+    padding-bottom: 4.26667vw;
+    word-break: break-all;
+}
+
+.video-share-mobile-embed-toggle {
+    margin-top: 4.26667vw;
+    margin-bottom: 4.26667vw;
+    display: flex;
+    align-items: center;
+    gap: 2.13333vw;
+    color: hsla(0, 0%, 100%, 0.9);
+    font-size: 4.26667vw;
+}
+
+.video-share-mobile-checkbox {
+    width: 4.26667vw;
+    height: 4.26667vw;
+    border-radius: 1.06667vw;
+    border: 0.4vw solid hsla(0, 0%, 100%, 0.9);
+}
+
+.video-share-mobile-checkbox.is-checked {
+    border: none;
+    background: #ff3d5d;
+    position: relative;
+}
+
+.video-share-mobile-checkbox.is-checked::after {
+    content: '';
+    position: absolute;
+    width: 2vw;
+    height: 1vw;
+    border-left: 0.5vw solid #fff;
+    border-bottom: 0.5vw solid #fff;
+    transform: rotate(-45deg);
+    top: 1.3vw;
+    left: 1.1vw;
+}
+
+.video-share-mobile-copy-btn {
+    width: 100%;
+    margin-top: 4.26667vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 12.53333vw;
+    border-radius: 1.06667vw;
+    background: #ff3d5d;
+    color: #fff;
+    font-size: 4.26667vw;
+    font-weight: 700;
+    border: 0;
+}
+
 @media (min-width: 768px) {
     .video-player-next-episode-icon {
         width: 23px !important;

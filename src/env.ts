@@ -9,3 +9,9 @@ export const showPwaInstallPrompt = import.meta.env.VITE_PWA_INSTALL_PROMPT === 
  * 默认 `false` = 隐藏底栏，对齐 ReelShort。
  */
 export const showBottomTabBar = import.meta.env.VITE_BOTTOM_TAB_BAR === 'true';
+
+/**
+ * 可选：分享链接基础域名（用于开发环境替换 localhost）。
+ * 示例：VITE_SHARE_ORIGIN=https://testwww.yogoshort.com
+ */
+export const shareOrigin = String(import.meta.env.VITE_SHARE_ORIGIN ?? '').trim();

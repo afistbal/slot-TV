@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type RefObject } from 'react';
 import { WebVTT } from 'videojs-vtt.js';
 import { Swiper, SwiperSlide, type SwiperClass, type SwiperRef } from 'swiper/react';
+import { toast } from 'sonner';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import lockIcon from '@/assets/lock.svg';
@@ -25,13 +26,16 @@ import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602
 import pcBackIcon from '@/assets/icons/video-pc-back.svg';
 import pcFullscreenExitHandleBg from '@/assets/images/9061da60-c404-11ef-a2d6-41216ff1602c.png';
 import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
+import shareLinkIcon from '@/assets/icons/share/link.svg';
+import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
+import shareCloseIcon from '@/assets/icons/share/close.svg';
 import { cn } from '@/lib/utils';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
 import RadixRc from '@/pages/user/RadixRc';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '@/api';
-import { skipRemoteApi } from '@/env';
+import { shareOrigin, skipRemoteApi } from '@/env';
 import { offlinePlayerData, offlinePlayerEpisode } from '@/mocks/videoOffline';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import Loader from '@/components/Loader';
@@ -45,6 +49,8 @@ import Image from '@/components/Image';
 // import { useLoadingStore } from "@/stores/loading";
 
 const SPEED = [0.75, 1.0, 1.25, 1.5, 2.0];
+
+type ShareAction = 'facebook' | 'twitter' | 'link' | 'embed';
 
 function isOpaqueTagId(value: string) {
     return /^[a-f0-9]{10,}$/i.test(value);
@@ -284,6 +290,9 @@ function Player({
     const [speedOpen, setSpeedOpen] = useState(false);
     const [speed, setSpeed] = useState(parseInt(localStorage.getItem('playback_speed') || '1', 10));
     const [introduction, setIntroduction] = useState(false);
+    const [shareOpen, setShareOpen] = useState(false);
+    const [shareEmbedCode, setShareEmbedCode] = useState('');
+    const [shareShowControls, setShareShowControls] = useState(true);
     const isDesktop = useMinWidth768();
     const [desktopEpisodeTab, setDesktopEpisodeTab] = useState(0);
     const [pcFullscreen, setPcFullscreen] = useState(false);
@@ -749,6 +758,81 @@ function Player({
 
     function handleIntroduction() {
         setIntroduction(!introduction);
+    }
+
+    function getCurrentShareUrl() {
+        if (typeof window === 'undefined') {
+            return '';
+        }
+        const path = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        const isLocalhost =
+            window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const fallbackDevShareOrigin = 'https://testwww.yogoshort.com';
+        const baseOrigin = (shareOrigin || (isLocalhost ? fallbackDevShareOrigin : '')).replace(
+            /\/+$/,
+            '',
+        );
+        if (baseOrigin) return `${baseOrigin}${path}`;
+        return window.location.href;
+    }
+
+    function getCurrentPosterUrl() {
+        const imagePath = data.info.image ?? '';
+        if (!imagePath) return '';
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+            return imagePath;
+        }
+        return `${configStore.config['static']}/${imagePath}`;
+    }
+
+    const buildEmbedCode = useCallback(() => {
+        const currentUrl = getCurrentShareUrl();
+        const src = `${currentUrl}${currentUrl.includes('?') ? '&' : '?'}show_controls=${shareShowControls ? 'true' : 'false'}`;
+        return `<iframe id="reelshort_player" width="600" height="400" src="${src}" title="ReelShort video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>`;
+    }, [shareShowControls]);
+
+    useEffect(() => {
+        if (!shareOpen) {
+            setShareEmbedCode('');
+            setShareShowControls(true);
+        }
+    }, [shareOpen]);
+
+    useEffect(() => {
+        if (shareEmbedCode) {
+            setShareEmbedCode(buildEmbedCode());
+        }
+    }, [shareEmbedCode, buildEmbedCode]);
+
+    async function handleShareAction(action: ShareAction) {
+        const url = getCurrentShareUrl();
+        if (!url) return;
+        if (action === 'facebook') {
+            window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url));
+            return;
+        }
+        if (action === 'twitter') {
+            window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(url));
+            return;
+        }
+        if (action === 'link') {
+            await navigator.clipboard
+                .writeText(url)
+                .then(() => toast.success(intl.formatMessage({ id: 'copied' })))
+                .catch(() => toast.error(intl.formatMessage({ id: 'copy_failed' })));
+            return;
+        }
+        if (action === 'embed') {
+            setShareEmbedCode(buildEmbedCode());
+        }
+    }
+
+    async function handleCopyEmbedCode() {
+        if (!shareEmbedCode) return;
+        await navigator.clipboard
+            .writeText(shareEmbedCode)
+            .then(() => toast.success(intl.formatMessage({ id: 'copied' })))
+            .catch(() => toast.error(intl.formatMessage({ id: 'copy_failed' })));
     }
 
     async function handleToggleFullscreen(e: React.MouseEvent<HTMLDivElement>) {
@@ -1330,7 +1414,17 @@ function Player({
                                             </div>
                                             <span className="flex mt-[4px] text-[14px]">VIP</span>
                                         </div>
-                                        <div />
+                                        <div
+                                            className="flex flex-col cursor-pointer items-center text-white/90 md:text-white/70"
+                                            onClick={() => setShareOpen(true)}
+                                        >
+                                            <div className="flex text-[32px]">
+                                                <img src={shareEntryIcon} alt="" className="w-8 h-8" />
+                                            </div>
+                                            <span className="flex mt-[4px] text-[14px]">
+                                                {intl.formatMessage({ id: 'share' })}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="border-t border-white/20 pt-[24px]">
@@ -1540,6 +1634,74 @@ function Player({
                             </div>
                         </DialogContent>
                     </Dialog>
+                    <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+                        <DialogContent
+                            contentPreset="plain"
+                            hideCloseButton
+                            className="video-share-dialog w-[560px] max-w-[calc(100vw-24px)]"
+                        >
+                            <DialogTitle className="sr-only" unsetTypography>
+                                {intl.formatMessage({ id: 'share' })}
+                            </DialogTitle>
+                            <div className="video-share-pc-modal">
+                                <button
+                                    type="button"
+                                    className="video-share-pc-close"
+                                    onClick={() => setShareOpen(false)}
+                                >
+                                    <img src={shareCloseIcon} alt={intl.formatMessage({ id: 'close' })} />
+                                </button>
+                                {!shareEmbedCode ? (
+                                    <div className="video-share-pc-content">
+                                        <div className="video-share-pc-title">
+                                            {intl.formatMessage({ id: 'share' })}
+                                        </div>
+                                        <div className="video-share-pc-card">
+                                            <div className="video-share-pc-card-image">
+                                                <img src={getCurrentPosterUrl()} alt="" />
+                                            </div>
+                                            <div className="video-share-pc-card-text">
+                                                <div className="video-share-pc-card-title">{data.info.title}</div>
+                                                <div className="video-share-pc-card-desc">{data.info.introduction}</div>
+                                            </div>
+                                        </div>
+                                        <div className="video-share-pc-actions">
+                                            <button type="button" className="video-share-pc-action" onClick={() => void handleShareAction('link')}>
+                                                <img src={shareLinkIcon} alt="" />
+                                                <span>{intl.formatMessage({ id: 'share_link' })}</span>
+                                            </button>
+                                            <div className="video-share-pc-action video-share-pc-action--placeholder" aria-hidden="true" />
+                                            <div className="video-share-pc-action video-share-pc-action--placeholder" aria-hidden="true" />
+                                            <div className="video-share-pc-action video-share-pc-action--placeholder" aria-hidden="true" />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="video-share-pc-embed">
+                                        <div className="video-share-pc-embed-image">
+                                            <img src={getCurrentPosterUrl()} alt="" />
+                                        </div>
+                                        <div className="video-share-pc-embed-panel">
+                                            <div className="video-share-pc-title">
+                                                {intl.formatMessage({ id: 'share_embed_video' })}
+                                            </div>
+                                            <div className="video-share-pc-embed-box">
+                                                <div className="video-share-pc-embed-code">{shareEmbedCode}</div>
+                                                <div className="video-share-pc-embed-toggle" onClick={() => setShareShowControls((v) => !v)}>
+                                                    <div className={cn('video-share-pc-checkbox', shareShowControls && 'is-checked')} />
+                                                    <label>
+                                                        {intl.formatMessage({ id: 'share_show_player_controls' })}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <button type="button" className="video-share-pc-copy-btn" onClick={() => void handleCopyEmbedCode()}>
+                                                {intl.formatMessage({ id: 'copy' })}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
         );
@@ -1715,6 +1877,12 @@ function Player({
                                 <LayoutGrid className="w-8 h-8 text-white fill-white" />
                                 <div className="h-4 leading-4 text-white text-xs text-center">
                                     <FormattedMessage id="episode_list" />
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1 items-center" onClick={() => setShareOpen(true)}>
+                                <img src={shareEntryIcon} alt="" className="w-8 h-8" />
+                                <div className="h-4 leading-4 text-white text-xs text-center">
+                                    {intl.formatMessage({ id: 'share' })}
                                 </div>
                             </div>
                         </div>
@@ -1960,6 +2128,61 @@ function Player({
                                 />
                             ) : null}
                         </div>
+                    </DrawerContent>
+                </Drawer>
+                <Drawer open={shareOpen} onOpenChange={setShareOpen}>
+                    <DrawerContent className="video-share-mobile-drawer border-0 p-0 text-white">
+                        <DrawerTitle className="sr-only">
+                            {intl.formatMessage({ id: 'share' })}
+                        </DrawerTitle>
+                        {!shareEmbedCode ? (
+                            <>
+                                <div className="video-share-mobile-header">
+                                    <div>{intl.formatMessage({ id: 'share' })}</div>
+                                    <button type="button" className="video-share-mobile-close" onClick={() => setShareOpen(false)}>
+                                        <img src={shareCloseIcon} alt={intl.formatMessage({ id: 'close' })} />
+                                    </button>
+                                </div>
+                                <div className="video-share-mobile-body">
+                                    <div className="video-share-mobile-card">
+                                        <div className="video-share-mobile-card-image">
+                                            <img src={getCurrentPosterUrl()} alt="" />
+                                        </div>
+                                        <div className="video-share-mobile-card-title">{data.info.title}</div>
+                                    </div>
+                                    <div className="video-share-mobile-actions">
+                                        <button type="button" className="video-share-mobile-action" onClick={() => void handleShareAction('link')}>
+                                            <img src={shareLinkIcon} alt="" />
+                                            <span>{intl.formatMessage({ id: 'share_link' })}</span>
+                                        </button>
+                                        <div className="video-share-mobile-action video-share-mobile-action--placeholder" aria-hidden="true" />
+                                        <div className="video-share-mobile-action video-share-mobile-action--placeholder" aria-hidden="true" />
+                                        <div className="video-share-mobile-action video-share-mobile-action--placeholder" aria-hidden="true" />
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="video-share-mobile-header">
+                                    <div>{intl.formatMessage({ id: 'share_embed_video' })}</div>
+                                    <button type="button" className="video-share-mobile-close" onClick={() => setShareEmbedCode('')}>
+                                        <img src={shareCloseIcon} alt={intl.formatMessage({ id: 'close' })} />
+                                    </button>
+                                </div>
+                                <div className="video-share-mobile-embed-body">
+                                    <div className="video-share-mobile-embed-box">
+                                        <div className="video-share-mobile-embed-code">{shareEmbedCode}</div>
+                                        <div className="video-share-mobile-embed-toggle" onClick={() => setShareShowControls((v) => !v)}>
+                                            <div className={cn('video-share-mobile-checkbox', shareShowControls && 'is-checked')} />
+                                            <label>{intl.formatMessage({ id: 'share_show_player_controls' })}</label>
+                                        </div>
+                                    </div>
+                                    <button type="button" className="video-share-mobile-copy-btn" onClick={() => void handleCopyEmbedCode()}>
+                                        {intl.formatMessage({ id: 'copy' })}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </DrawerContent>
                 </Drawer>
                 {/* <UnlockEpisode

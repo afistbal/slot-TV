@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="none" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="32" fill="#2C64F5"/>
+  <mask id="facebook_mask" width="64" height="64" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha">
+    <circle cx="32" cy="32" r="32" fill="#292929"/>
+  </mask>
+  <g mask="url(#facebook_mask)">
+    <path fill="#fff" d="m42.778 41.444 1.422-8.888h-8.533v-6.223c0-2.489.889-4.444 4.8-4.444h4.089V13.71c-2.312-.355-4.8-.711-7.112-.711C30.156 13 25 17.444 25 25.444v7.112h-8v8.888h8v23.112h10.667V41.444z"/>
+  </g>
+</svg>
