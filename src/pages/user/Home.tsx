@@ -16,8 +16,12 @@ import { HomeBookShelf } from '@/components/home/HomeBookShelf';
 import { HomeRowPagerShelf } from '@/components/home/HomeRowPagerShelf';
 import type { HomeBookItemData } from '@/components/home/HomeBookItem';
 import { NetShortPcCoverflowHero } from '@/components/home/NetShortPcCoverflowHero';
+import { ChevronsUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const HERO_FADE_MS = 600;
+/** 首页内层滚动超过此值后显示「回顶」浮动按钮 */
+const SCROLL_TOP_FAB_THRESHOLD_PX = 360;
 const HERO_AUTOPLAY_MS = 5000;
 
 function heroImageUrl(staticBase: string, imagePath: string) {
@@ -344,7 +348,9 @@ export default function Component() {
             mdUp && 'bg-[#151314]',
         )}
     >
-        {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : <div
+        {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : (
+            <>
+            <div
             className={cn(
                 /* 不要加 overflow-x-hidden：与 overflow-y 同用会破坏子元素 position:sticky，顶栏无法钉在容器顶部 */
                 /* min-h-0：flex 子项默认可按内容撑满屏外高度，不压缩则 overflow-y 不生效、页脚可能滚不到或只在外层乱滚 */
@@ -586,6 +592,36 @@ export default function Component() {
                 ) : null}
             </div>
             <ReelShortFooter />
-        </div>}
+        </div>
+            {homeStore.scrollTop >= SCROLL_TOP_FAB_THRESHOLD_PX ? (
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className={cn(
+                        'pointer-events-auto fixed z-[90] h-12 w-12 shrink-0 rounded-full border-0 p-0 md:h-14 md:w-14',
+                        'bg-gradient-to-b from-white/[0.22] to-white/[0.08] text-white shadow-[0_6px_28px_rgba(0,0,0,0.42)]',
+                        'ring-1 ring-inset ring-white/25 backdrop-blur-xl',
+                        'hover:from-white/[0.3] hover:to-white/[0.12] hover:ring-white/35',
+                        'active:scale-[0.96]',
+                        'bottom-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))] right-4',
+                        'md:bottom-8 md:right-8',
+                    )}
+                    onClick={() => {
+                        scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                >
+                    <ChevronsUp
+                        className={cn(
+                            'shrink-0 text-white',
+                            mdUp ? 'size-7' : 'size-[1.375rem]',
+                        )}
+                        strokeWidth={mdUp ? 3 : 2.75}
+                        aria-hidden
+                    />
+                </Button>
+            ) : null}
+            </>
+        )}
     </div>
 }
