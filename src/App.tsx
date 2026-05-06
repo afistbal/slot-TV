@@ -28,6 +28,7 @@ import zhMessages from './locales/zh.json';
 
 import LayoutUser from './layouts/user';
 import UserHome from './pages/user/Home';
+import UserCategories from './pages/user/Categories';
 import UserMyList from './pages/user/MyList';
 import UserFavorite from './pages/user/Favorite';
 import UserHistory from './pages/user/History';
@@ -118,6 +119,10 @@ const router = createBrowserRouter([
             {
                 index: true,
                 element: <UserHome />,
+            },
+            {
+                path: 'categories',
+                element: <UserCategories />,
             },
             {
                 path: 'search',

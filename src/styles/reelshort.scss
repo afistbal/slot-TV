@@ -293,6 +293,15 @@ button.reelshort-topnav__menu-btn {
     white-space: nowrap;
 }
 
+/* 品牌区：移动端整段居中；PC 与 CommonNav 一致为「Logo/字标 + 右侧主导览」横排靠左 */
+.reelshort-topnav__brand-cluster {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+}
+
 a.reelshort-topnav__brand-link {
     display: inline-flex;
     min-width: 0;
@@ -321,6 +330,72 @@ a.reelshort-topnav__brand-link {
     .reelshort-topnav__brand-text {
         outline: none;
     }
+}
+
+/* PC 主导览：仅用 SCSS 控制显隐，避免与 Tailwind `hidden` 冲突导致桌面永远不显示 */
+.reelshort-topnav__pc-primary-nav {
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: flex-start;
+
+    @media (min-width: 768px) {
+        display: flex;
+    }
+}
+
+.reelshort-topnav__segment-link {
+    position: relative;
+    font-weight: 400;
+    color: hsla(0, 0%, 100%, 0.376);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: hsla(0, 0%, 100%, 0.72);
+    }
+}
+
+.reelshort-topnav__segment-link--active {
+    color: #fff;
+}
+
+.reelshort-topnav__h5-subnav {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    height: calc(47 / 375 * var(--app-vw));
+    padding-bottom: calc(12 / 375 * var(--app-vw));
+    background: #000;
+    transition: background-color 0.2s ease;
+
+    @media (min-width: 768px) {
+        display: none !important;
+    }
+}
+
+.reelshort-topnav--transparent .reelshort-topnav__h5-subnav {
+    background: transparent;
+}
+
+.reelshort-topnav__h5-subnav .reelshort-topnav__segment-link {
+    margin: 0 calc(16 / 375 * var(--app-vw));
+    font-size: calc(14 / 375 * var(--app-vw));
+}
+
+.reelshort-topnav__h5-subnav .reelshort-topnav__segment-link--active::after {
+    position: absolute;
+    bottom: calc(-10 / 375 * var(--app-vw));
+    left: 50%;
+    display: block;
+    width: 70%;
+    height: calc(2 / 375 * var(--app-vw));
+    border-radius: calc(2 / 375 * var(--app-vw));
+    background: #fff;
+    transform: translateX(-50%);
+    content: '';
 }
 
 @media (min-width: 640px) {
@@ -519,9 +594,69 @@ a.reelshort-topnav__profile-link {
         display: none !important;
     }
 
-    a.reelshort-topnav__brand-link {
+    /* PC：仅 showPrimaryNav 时 Yogoshort 右侧为主导航；其余页 Logo 仍居中 */
+
+    .reelshort-topnav__brand-cluster:not(.reelshort-topnav__brand-cluster--with-primary) {
+        justify-content: center;
+    }
+
+    .reelshort-topnav__brand-cluster--with-primary {
         justify-content: flex-start;
+        gap: clamp(24px, 4vw, 48px);
         margin-right: auto;
+    }
+
+    .reelshort-topnav__brand-cluster--with-primary a.reelshort-topnav__brand-link {
+        justify-content: flex-start;
+        margin-right: 0;
+    }
+
+    /* PC 主导览：与顶栏 --rs-nav-hit-size 同高，inline-flex 十字轴居中；行高用数值避免「像单独设了 line-height」的偏移 */
+    .reelshort-topnav__pc-primary-nav {
+        gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+        .reelshort-topnav__pc-primary-nav {
+            gap: 32px;
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .reelshort-topnav__pc-primary-nav {
+            gap: 48px;
+        }
+    }
+
+    .reelshort-topnav__pc-primary-nav .reelshort-topnav__segment-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        min-height: var(--rs-nav-hit-size);
+        padding: 0 2px;
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 1.2;
+        color: #fff;
+    }
+
+    @media (min-width: 1024px) {
+        .reelshort-topnav__pc-primary-nav .reelshort-topnav__segment-link {
+            font-size: 20px;
+        }
+    }
+
+    .reelshort-topnav__pc-nav-item {
+        margin-right: 0;
+    }
+
+    .reelshort-topnav__pc-primary-nav .reelshort-topnav__segment-link:hover {
+        color: var(--rs-nav-hover-color, #fe4167);
+    }
+
+    .reelshort-topnav__pc-primary-nav .reelshort-topnav__segment-link--active {
+        color: var(--rs-nav-hover-color, #fe4167);
     }
 
     .reelshort-topnav__right {

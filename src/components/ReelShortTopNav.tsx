@@ -1,12 +1,11 @@
 import type { RefObject } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { cn } from '@/lib/utils';
 import { api, type IPagination, type TData } from '@/api';
 import { auth } from '@/firebase';
 import { ReelShortNavDrawer } from '@/components/ReelShortNavDrawer';
-import { ReelShortDramaWorldDialog } from '@/components/ReelShortDramaWorldDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -855,7 +854,6 @@ export function ReelShortTopNav({
   const profilePcActions = rightActionsMode === 'profilePc' && isMd;
   const intl = useIntl();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [brandVideoOpen, setBrandVideoOpen] = useState(false);
   const [headerSolid, setHeaderSolid] = useState(false);
   const allowTransparent = showPrimaryNav;
 
@@ -944,10 +942,47 @@ export function ReelShortTopNav({
               ) : null}
             </div>
 
-            <Link to="/" className="reelshort-topnav__brand-link">
-              <img src={BRAND_LOGO_SRC} alt="" className="reelshort-topnav__brand-logo" />
-              <BrandWordmark />
-            </Link>
+            <div
+              className={cn(
+                'reelshort-topnav__brand-cluster',
+                showPrimaryNav && 'reelshort-topnav__brand-cluster--with-primary',
+              )}
+            >
+              <Link to="/" className="reelshort-topnav__brand-link">
+                <img src={BRAND_LOGO_SRC} alt="" className="reelshort-topnav__brand-logo" />
+                <BrandWordmark />
+              </Link>
+              {showPrimaryNav ? (
+                <nav
+                  className="reelshort-topnav__pc-primary-nav"
+                  aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
+                >
+                  <NavLink
+                    to="/"
+                    end
+                    className={({ isActive }) =>
+                      cn(
+                        'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
+                        isActive && 'reelshort-topnav__segment-link--active',
+                      )
+                    }
+                  >
+                    <FormattedMessage id="home" />
+                  </NavLink>
+                  <NavLink
+                    to="/categories"
+                    className={({ isActive }) =>
+                      cn(
+                        'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
+                        isActive && 'reelshort-topnav__segment-link--active',
+                      )
+                    }
+                  >
+                    <FormattedMessage id="nav_categories" />
+                  </NavLink>
+                </nav>
+              ) : null}
+            </div>
 
             <div className="reelshort-topnav__right">
               <div className="reelshort-topnav__actions">
@@ -969,33 +1004,35 @@ export function ReelShortTopNav({
               </div>
             </div>
           </div>
-        </div>
 
-        {/* {showPrimaryNav ? (
-          <nav
-            className="reelshort-topnav__primary-nav"
-            style={{ scrollbarWidth: 'none' }}
-            aria-label="Primary"
-          >
-            <NavLink to="/" end className={subNavLinkClass}>
-              <FormattedMessage id="home" />
-            </NavLink>
-            <NavLink to="/search" className={subNavLinkClass}>
-                            <FormattedMessage id="nav_categories" />
-                        </NavLink>
-            <button
-                            type="button"
-                            onClick={() => setBrandVideoOpen(true)}
-                            className="reelshort-topnav__primary-brand-btn"
-                        >
-                            <FormattedMessage id="nav_brand" />
-                        </button>
-          </nav>
-        ) : null} */}
+          {showPrimaryNav ? (
+            <nav
+              className="reelshort-topnav__h5-subnav"
+              aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
+            >
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) =>
+                  cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
+                }
+              >
+                <FormattedMessage id="home" />
+              </NavLink>
+              <NavLink
+                to="/categories"
+                className={({ isActive }) =>
+                  cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
+                }
+              >
+                <FormattedMessage id="nav_categories" />
+              </NavLink>
+            </nav>
+          ) : null}
+        </div>
       </header>
 
       <ReelShortNavDrawer open={menuOpen} onOpenChange={setMenuOpen} />
-      <ReelShortDramaWorldDialog open={brandVideoOpen} onOpenChange={setBrandVideoOpen} />
     </>
   );
 }
