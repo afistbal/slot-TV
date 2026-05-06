@@ -157,25 +157,29 @@ export default function RadixRc({
             }
         }
 
+        /** 进入页面时拉一次会话即可 */
         void syncSession();
 
-        function handleFocus() {
-            if (cancelled) return;
-            void syncSession();
-        }
-
+        /**
+         * 不在 `window` 上监听 `focus`：嵌入 Profile 时，点登录弹窗等操作会误触 focus，
+         * 导致频繁 `login/token`。切回标签页用 visibility 即可覆盖「后台回来」场景。
+         */
+        let tabWasHidden = document.visibilityState === 'hidden';
         function handleVisibilityChange() {
             if (cancelled) return;
-            if (document.visibilityState === 'visible') {
+            if (document.visibilityState === 'hidden') {
+                tabWasHidden = true;
+                return;
+            }
+            if (document.visibilityState === 'visible' && tabWasHidden) {
+                tabWasHidden = false;
                 void syncSession();
             }
         }
 
-        window.addEventListener('focus', handleFocus);
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
             cancelled = true;
-            window.removeEventListener('focus', handleFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
