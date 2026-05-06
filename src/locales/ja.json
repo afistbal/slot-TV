@@ -182,6 +182,7 @@
     "flix_status": "ステータス",
     "none": "N/A",
     "confirm": "操作確認",
+    "session_restore_retry_toast": "ログイン状態を同期できませんでした。ページを更新して再度お試しください。",
     "confirm_description": "このアクションを実行してもよろしいですか？",
     "recommend": "おすすめとして [ 設定 / 解除 ]",
     "success": "操作成功",

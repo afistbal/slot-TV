@@ -179,6 +179,7 @@
     "flix_status": "Trạng thái",
     "none": "Không có",
     "confirm": "Xác nhận thao tác",
+    "session_restore_retry_toast": "Chưa đồng bộ trạng thái đăng nhập. Vui lòng làm mới trang và thử lại.",
     "confirm_description": "Bạn có chắc chắn muốn thực hiện hành động này không?",
     "recommend": "[ Đặt / Bỏ đặt ] làm đề xuất",
     "success": "Thao tác thành công",

@@ -27,6 +27,8 @@ import pcBackIcon from '@/assets/icons/video-pc-back.svg';
 import pcFullscreenExitHandleBg from '@/assets/images/9061da60-c404-11ef-a2d6-41216ff1602c.png';
 import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
 import shareLinkIcon from '@/assets/icons/share/link.svg';
+import shareFacebookIcon from '@/assets/icons/share/facebook.svg';
+import shareTwitterIcon from '@/assets/icons/share/twitter.svg';
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import shareCloseIcon from '@/assets/icons/share/close.svg';
 import { cn } from '@/lib/utils';
@@ -808,11 +810,21 @@ function Player({
         const url = getCurrentShareUrl();
         if (!url) return;
         if (action === 'facebook') {
-            window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url));
+            window.open(
+                'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url),
+                '_blank',
+                'noopener,noreferrer',
+            );
             return;
         }
         if (action === 'twitter') {
-            window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(url));
+            const text = data?.info?.title != null ? String(data.info.title) : '';
+            const tw = new URL('https://twitter.com/intent/tweet');
+            tw.searchParams.set('url', url);
+            if (text) {
+                tw.searchParams.set('text', text);
+            }
+            window.open(tw.toString(), '_blank', 'noopener,noreferrer');
             return;
         }
         if (action === 'link') {
@@ -1670,8 +1682,14 @@ function Player({
                                                 <img src={shareLinkIcon} alt="" />
                                                 <span>{intl.formatMessage({ id: 'share_link' })}</span>
                                             </button>
-                                            <div className="video-share-pc-action video-share-pc-action--placeholder" aria-hidden="true" />
-                                            <div className="video-share-pc-action video-share-pc-action--placeholder" aria-hidden="true" />
+                                            <button type="button" className="video-share-pc-action" onClick={() => void handleShareAction('facebook')}>
+                                                <img src={shareFacebookIcon} alt="" />
+                                                <span>{intl.formatMessage({ id: 'share_facebook' })}</span>
+                                            </button>
+                                            <button type="button" className="video-share-pc-action" onClick={() => void handleShareAction('twitter')}>
+                                                <img src={shareTwitterIcon} alt="" />
+                                                <span>{intl.formatMessage({ id: 'share_twitter' })}</span>
+                                            </button>
                                             <div className="video-share-pc-action video-share-pc-action--placeholder" aria-hidden="true" />
                                         </div>
                                     </div>
@@ -2155,8 +2173,14 @@ function Player({
                                             <img src={shareLinkIcon} alt="" />
                                             <span>{intl.formatMessage({ id: 'share_link' })}</span>
                                         </button>
-                                        <div className="video-share-mobile-action video-share-mobile-action--placeholder" aria-hidden="true" />
-                                        <div className="video-share-mobile-action video-share-mobile-action--placeholder" aria-hidden="true" />
+                                        <button type="button" className="video-share-mobile-action" onClick={() => void handleShareAction('facebook')}>
+                                            <img src={shareFacebookIcon} alt="" />
+                                            <span>{intl.formatMessage({ id: 'share_facebook' })}</span>
+                                        </button>
+                                        <button type="button" className="video-share-mobile-action" onClick={() => void handleShareAction('twitter')}>
+                                            <img src={shareTwitterIcon} alt="" />
+                                            <span>{intl.formatMessage({ id: 'share_twitter' })}</span>
+                                        </button>
                                         <div className="video-share-mobile-action video-share-mobile-action--placeholder" aria-hidden="true" />
                                     </div>
                                 </div>

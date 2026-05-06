@@ -4,7 +4,7 @@ import {
     RouterProvider,
     useRouteError,
 } from "react-router";
-import { FormattedMessage, IntlProvider } from 'react-intl';
+import { createIntl, createIntlCache, FormattedMessage, IntlProvider } from 'react-intl';
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "./components/ui/sonner";
 import { useLoadingStore } from "./stores/loading";
@@ -372,6 +372,8 @@ function getInitialIntlMessages(): TIntlMessages {
     return syncMessagesForLocale(useRootStore.getState().locale);
 }
 
+const intlCache = createIntlCache();
+
 function App() {
     const pixel = usePixel();
     const mdUp = useMinWidth768();
@@ -411,7 +413,6 @@ function App() {
 
     async function loadData() {
         const query = new URLSearchParams(window.location.search);
-        const token = query.get('_token') || localStorage.getItem('token');
         const config = await api<TData>('config', {
             loading: false,
         });
@@ -435,10 +436,48 @@ function App() {
 
         await initPixel(config.d);
 
+        const tokenFromQuery = query.get('_token');
+        if (tokenFromQuery) {
+            localStorage.setItem('token', tokenFromQuery);
+        }
+        const token = tokenFromQuery || localStorage.getItem('token');
+
         if (token) {
             const ok = await refreshSessionFromStoredToken();
             if (ok) {
                 setChecked(true);
+            } else if (localStorage.getItem('token')) {
+                setChecked(true);
+                const intlBoot = createIntl(
+                    {
+                        locale: rootStore.locale,
+                        messages,
+                        defaultLocale: 'en',
+                    },
+                    intlCache,
+                );
+                void refreshSessionFromStoredToken().then((recovered) => {
+                    if (!recovered) {
+                        toast.error(
+                            intlBoot.formatMessage({
+                                id: 'session_restore_retry_toast',
+                                defaultMessage:
+                                    "Couldn't sync your session. Please refresh the page and try again.",
+                            }),
+                        );
+                    }
+                });
+            } else {
+                await api<TData>('login/anonymous', {
+                    loading: false,
+                }).then((result) => {
+                    if (result.c !== 0) {
+                        return;
+                    }
+                    localStorage.setItem('token', result.d['token'] as string);
+                    userStore.signin(result.d['info'] as TData);
+                    setChecked(true);
+                });
             }
         } else {
             // const credential = await signInAnonymously(auth);

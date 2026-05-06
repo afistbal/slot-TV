@@ -184,6 +184,7 @@
     "flix_status": "狀態",
     "none": "N/A",
     "confirm": "操作確認",
+    "session_restore_retry_toast": "登录状态暂时未同步，请刷新页面重试",
     "confirm_description": "確定要執行此操作嗎？",
     "recommend": "[ 推薦 / 不推薦 ] 該影片",
     "success": "操作成功",

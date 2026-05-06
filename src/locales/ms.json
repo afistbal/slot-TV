@@ -179,6 +179,7 @@
     "flix_status": "Status",
     "none": "T/A",
     "confirm": "Sahkan Operasi",
+    "session_restore_retry_toast": "Status log masuk belum disegerakkan. Sila muat semula halaman dan cuba lagi.",
     "confirm_description": "Adakah anda pasti mahu melakukan tindakan ini?",
     "recommend": "[ Tetapkan / Batalkan ] sebagai Disyorkan",
     "success": "Operasi Berjaya",

@@ -183,6 +183,7 @@
     "flix_status": "Status",
     "none": "N/A",
     "confirm": "Confirm Operation",
+    "session_restore_retry_toast": "Couldn't sync your session. Please refresh the page and try again.",
     "confirm_description": "Are you sure you want to do this action?",
     "recommend": "[ Set / Unset ] as Recommend",
     "success": "Operation Successful",

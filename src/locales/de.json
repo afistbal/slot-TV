@@ -179,6 +179,7 @@
     "flix_status": "Status",
     "none": "N/A",
     "confirm": "Aktion bestätigen",
+    "session_restore_retry_toast": "Anmeldung konnte nicht synchronisiert werden. Bitte die Seite aktualisieren und erneut versuchen.",
     "confirm_description": "Sind Sie sicher, dass Sie diese Aktion ausführen möchten?",
     "recommend": "[ Als Empfehlung festlegen / Entfernen ]",
     "success": "Aktion erfolgreich",

@@ -24,7 +24,14 @@ export type TData = { [key: string]: unknown };
 const ua = UAParser(window.navigator.userAgent);
 
 
-export async function api<T = TData>(path: string, options?: { loading?: boolean, method?: 'get' | 'post', data?: { [key: string]: unknown }, headers?: Record<string, string | undefined> }): Promise<IResult<T>> {
+export async function api<T = TData>(path: string, options?: {
+    loading?: boolean,
+    method?: 'get' | 'post',
+    data?: { [key: string]: unknown },
+    headers?: Record<string, string | undefined>,
+    toastOnError?: boolean,
+    persistSessionOn401?: boolean,
+}): Promise<IResult<T>> {
     const query = new URLSearchParams();
 
     if ((options?.method === undefined || options?.method === 'get') && options?.data !== undefined) {
@@ -70,8 +77,10 @@ export async function api<T = TData>(path: string, options?: { loading?: boolean
                 };
                 break;
             case 401:
-                localStorage.removeItem('token');
-                useUserStore.setState({ signed: false });
+                if (!options?.persistSessionOn401) {
+                    localStorage.removeItem('token');
+                    useUserStore.setState({ signed: false });
+                }
                 result = {
                     c: 1,
                     m: 'Authentication Failure.',
@@ -111,7 +120,7 @@ export async function api<T = TData>(path: string, options?: { loading?: boolean
                 }
                 break;
         }
-        if (result.c !== 0) {
+        if (result.c !== 0 && options?.toastOnError !== false) {
             toast.error(result.m);
         }
 
@@ -119,7 +128,9 @@ export async function api<T = TData>(path: string, options?: { loading?: boolean
     } catch (e) {
         console.error(e);
         const error = (e as Error);
-        toast.error(error.name);
+        if (options?.toastOnError !== false) {
+            toast.error(error.name);
+        }
 
         return {
             c: 1,

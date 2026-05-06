@@ -179,6 +179,7 @@
     "flix_status": "Status",
     "none": "N/A",
     "confirm": "Confirmar Operação",
+    "session_restore_retry_toast": "Não foi possível sincronizar o login. Atualize a página e tente novamente.",
     "confirm_description": "Tem certeza de que deseja realizar esta ação?",
     "recommend": "[ Definir / Remover ] como Recomendado",
     "success": "Operação Bem-sucedida",

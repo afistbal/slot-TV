@@ -179,6 +179,7 @@
     "flix_status": "Durum",
     "none": "Yok",
     "confirm": "İşlemi Onayla",
+    "session_restore_retry_toast": "Oturum senkronize edilemedi. Lütfen sayfayı yenileyip tekrar deneyin.",
     "confirm_description": "Bu eylemi yapmak istediğinizden emin misiniz?",
     "recommend": "Önerilen olarak [ Ayarla / Kaldır ]",
     "success": "İşlem Başarılı",

@@ -179,6 +179,7 @@
     "flix_status": "상태",
     "none": "해당 없음",
     "confirm": "작업 확인",
+    "session_restore_retry_toast": "로그인 상태를 동기화하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
     "confirm_description": "이 작업을 수행하시겠습니까?",
     "recommend": "[설정 / 해제] 추천으로",
     "success": "작업 성공",

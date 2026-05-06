@@ -179,6 +179,7 @@
     "flix_status": "Status",
     "none": "N/A",
     "confirm": "Konfirmasi Operasi",
+    "session_restore_retry_toast": "Status masuk belum tersinkron. Segarkan halaman dan coba lagi.",
     "confirm_description": "Apakah Anda yakin ingin melakukan tindakan ini?",
     "recommend": "[Atur / Hapus] sebagai Rekomendasi",
     "success": "Operasi Berhasil",
