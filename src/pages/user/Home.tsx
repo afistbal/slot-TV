@@ -1,10 +1,10 @@
 
 import { Link } from 'react-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { api, type IPagination } from '@/api';
 import { cn } from '@/lib/utils';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import NoContent from '@/components/NoContent';
 import { useHomeStore, type IData } from '@/stores/home';
 import { skipRemoteApi } from '@/env';
@@ -16,12 +16,16 @@ import { HomeBookShelf } from '@/components/home/HomeBookShelf';
 import { HomeRowPagerShelf } from '@/components/home/HomeRowPagerShelf';
 import type { HomeBookItemData } from '@/components/home/HomeBookItem';
 import { NetShortPcCoverflowHero } from '@/components/home/NetShortPcCoverflowHero';
-import { ChevronsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollTopArrowUp } from '@/components/icons/ScrollTopArrowUp';
+import { scrollElementToTop } from '@/lib/scrollToTop';
+import { useRootStore } from '@/stores/root';
 
 const HERO_FADE_MS = 600;
-/** 首页内层滚动超过此值后显示「回顶」浮动按钮 */
-const SCROLL_TOP_FAB_THRESHOLD_PX = 360;
+/** 首页内层滚动超过此值后显示「回顶」浮动按钮（与 antd BackTop 默认 visibilityHeight=400 对齐） */
+const SCROLL_TOP_FAB_THRESHOLD_PX = 400;
+/** 低于阈值后淡出再卸载，须与按钮 `transition-opacity duration-200` 一致并略留余量 */
+const SCROLL_TOP_FAB_FADE_OUT_MS = 220;
 const HERO_AUTOPLAY_MS = 5000;
 
 function heroImageUrl(staticBase: string, imagePath: string) {
@@ -157,7 +161,11 @@ function HeroPlayIcon({ className }: { className?: string }) {
 
 
 export default function Component() {
+    const intl = useIntl();
     const mdUp = useMinWidth768();
+    const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
+    /** 与 App `showPwaBottomBar` 一致：窄屏且展示 Chromium 底栏时，回顶钮需抬高避免被 z-[100] 条盖住 */
+    const liftScrollFabForPwaH5 = !mdUp && showInstallPrompt;
     const configStore = useConfigStore();
     const homeStore = useHomeStore();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -167,6 +175,48 @@ export default function Component() {
     const heroTouchStartX = useRef(0);
     const heroPointer = useRef<{ id: number; startX: number } | null>(null);
     const heroAutoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const [scrollTopFabMounted, setScrollTopFabMounted] = useState(false);
+    const [scrollTopFabOpaque, setScrollTopFabOpaque] = useState(true);
+    const scrollTopFabPrevScrollRef = useRef(0);
+    const scrollTopFabHideTimerRef = useRef(0);
+
+    const scrollTopForFab = useHomeStore((s) => s.scrollTop);
+    useEffect(() => {
+        return () => {
+            if (scrollTopFabHideTimerRef.current) {
+                window.clearTimeout(scrollTopFabHideTimerRef.current);
+                scrollTopFabHideTimerRef.current = 0;
+            }
+        };
+    }, []);
+    useEffect(() => {
+        const st = scrollTopForFab;
+        const prev = scrollTopFabPrevScrollRef.current;
+        scrollTopFabPrevScrollRef.current = st;
+        const wasOver = prev >= SCROLL_TOP_FAB_THRESHOLD_PX;
+        const nowOver = st >= SCROLL_TOP_FAB_THRESHOLD_PX;
+
+        if (nowOver) {
+            if (scrollTopFabHideTimerRef.current) {
+                window.clearTimeout(scrollTopFabHideTimerRef.current);
+                scrollTopFabHideTimerRef.current = 0;
+            }
+            setScrollTopFabMounted(true);
+            setScrollTopFabOpaque(true);
+            return;
+        }
+        if (wasOver && !nowOver) {
+            setScrollTopFabOpaque(false);
+            if (scrollTopFabHideTimerRef.current) {
+                window.clearTimeout(scrollTopFabHideTimerRef.current);
+            }
+            scrollTopFabHideTimerRef.current = window.setTimeout(() => {
+                scrollTopFabHideTimerRef.current = 0;
+                setScrollTopFabMounted(false);
+            }, SCROLL_TOP_FAB_FADE_OUT_MS);
+        }
+    }, [scrollTopForFab]);
 
     function handleManualLoadMore() {
         loadLatest(homeStore.page + 1);
@@ -593,31 +643,36 @@ export default function Component() {
             </div>
             <ReelShortFooter />
         </div>
-            {homeStore.scrollTop >= SCROLL_TOP_FAB_THRESHOLD_PX ? (
+            {scrollTopFabMounted ? (
                 <Button
                     type="button"
                     variant="outline"
                     size="icon"
+                    aria-label={intl.formatMessage({ id: 'scroll_to_top' })}
                     className={cn(
-                        'pointer-events-auto fixed z-[90] h-12 w-12 shrink-0 rounded-full border-0 p-0 md:h-14 md:w-14',
-                        'bg-gradient-to-b from-white/[0.22] to-white/[0.08] text-white shadow-[0_6px_28px_rgba(0,0,0,0.42)]',
-                        'ring-1 ring-inset ring-white/25 backdrop-blur-xl',
-                        'hover:from-white/[0.3] hover:to-white/[0.12] hover:ring-white/35',
-                        'active:scale-[0.96]',
-                        'bottom-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))] right-4',
-                        'md:bottom-8 md:right-8',
+                        /* 与 ReelShort `ant-float-btn-primary` 一致：#e73857、无投影 */
+                        'pointer-events-auto fixed z-[101] size-10 shrink-0 rounded-full border-0 p-0 leading-none',
+                        'md:h-12 md:w-12',
+                        'flex items-center justify-center gap-0 shadow-none',
+                        'bg-[#e73857] text-white',
+                        'transition-[background-color,transform,opacity] duration-200 ease-out',
+                        'hover:bg-[#d42d4c] active:scale-[0.96]',
+                        scrollTopFabOpaque ? 'opacity-100' : 'pointer-events-none opacity-0',
+                        'right-6',
+                        /* 60px：与 pwa-install 条高度一致，整体上移避免被 z-[100] 底栏压住 */
+                        liftScrollFabForPwaH5
+                            ? 'bottom-[calc(60px+max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1.5rem)))]'
+                            : 'bottom-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]',
+                        'md:bottom-12 md:right-6 md:z-[99]',
                     )}
                     onClick={() => {
-                        scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (scrollRef.current) {
+                            scrollElementToTop(scrollRef.current, 450);
+                        }
                     }}
                 >
-                    <ChevronsUp
-                        className={cn(
-                            'shrink-0 text-white',
-                            mdUp ? 'size-7' : 'size-[1.375rem]',
-                        )}
-                        strokeWidth={mdUp ? 3 : 2.75}
-                        aria-hidden
+                    <ScrollTopArrowUp
+                        className={cn('text-current', mdUp && 'md:h-6 md:w-6')}
                     />
                 </Button>
             ) : null}
