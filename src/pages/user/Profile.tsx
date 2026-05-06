@@ -21,6 +21,7 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api, type TData } from '@/api';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
+import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useLoadingStore } from '@/stores/loading';
 import { auth } from '@/firebase';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
@@ -178,7 +179,17 @@ export default function Component() {
         }
     }
 
-    const uniqueId = (userStore.info?.['unique_id'] as string | undefined) ?? '';
+    const uniqueId = getUserUidForDisplay(userStore.info ?? undefined);
+    const profileUidRow = (
+        <div className="rs-profile__vip">
+            {uniqueId ? (
+                <>
+                    <span className="rs-profile__uidLabel">UID:</span>
+                    <span className="rs-profile__uidValue">{uniqueId}</span>
+                </>
+            ) : null}
+        </div>
+    );
     const avatarUrl =
         userStore.signed && !userStore.isAnonymous()
             ? getUserAvatarDisplayUrl(userStore.info as TData | undefined)
@@ -207,14 +218,7 @@ export default function Component() {
                     <div className="rs-profile__name">
                         <div>{userStore.info!['name'] as string}</div>
                     </div>
-                    <div className="rs-profile__vip">
-                        {uniqueId ? (
-                            <>
-                                <span className="rs-profile__uidLabel">UID:</span>
-                                <span className="rs-profile__uidValue">{uniqueId}</span>
-                            </>
-                        ) : null}
-                    </div>
+                    {profileUidRow}
                 </div>
                 <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
             </div>
@@ -231,9 +235,7 @@ export default function Component() {
                     <div className="rs-profile__name">
                         <FormattedMessage id="guest" />
                     </div>
-                    <div className="rs-profile__vip">
-                        <FormattedMessage id="vip_0" />
-                    </div>
+                    {profileUidRow}
                 </div>
             </div>
         </div>

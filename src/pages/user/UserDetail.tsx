@@ -7,6 +7,7 @@ import { api } from '@/api';
 import { useNavigate } from 'react-router';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { Page } from '@/layouts/user';
+import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 
 export default function Component({ embedded = false }: { embedded?: boolean } = {}) {
   const intl = useIntl();
@@ -19,7 +20,7 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
 
   function handleCopyId() {
     if (!userStore.info) return;
-    navigator.clipboard.writeText(userStore.info['unique_id'] as string);
+    navigator.clipboard.writeText(getUserUidForDisplay(userStore.info));
     toast.success(intl.formatMessage({ id: 'copied' }));
   }
 
@@ -72,7 +73,9 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
             <div className="rs-user-detail__label">
               <FormattedMessage id="user_id" />
             </div>
-            <div className="rs-user-detail__value">{userStore.info!['unique_id'] as string}</div>
+            <div className="rs-user-detail__value">
+              {getUserUidForDisplay(userStore.info)}
+            </div>
           </button>
           <div className="rs-user-detail__row">
             <div className="rs-user-detail__label">

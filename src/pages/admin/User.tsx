@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import { InView } from "react-intersection-observer";
 import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
 import { Link } from "react-router";
+import { formatUserUniqueIdForDisplay } from "@/lib/formatUserUniqueIdForDisplay";
 
 export default function Component() {
     const userListStore = useUserListStore();
@@ -119,7 +120,7 @@ export default function Component() {
                         </div>
                         <div className="flex flex-col justify-center">
                             <div className="text-lg leading-[18px] text-slate-100">{v['id'] as number}</div>
-                            <div className="text-sm text-slate-400 leading-4 py-1.5">{v['unique_id'] as string}</div>
+                            <div className="text-sm text-slate-400 leading-4 py-1.5">{formatUserUniqueIdForDisplay(v['unique_id'])}</div>
                             <div className="text-xs text-slate-400 leading-3" title={v['created_at'] as string}><FormattedMessage id="created_at" /> <FormattedDate value={v['created_at'] as string} /> <FormattedMessage id="login_at" /> <FormattedDate value={v['created_at'] as string} /></div>
                         </div>
                         <div className="absolute top-0 right-0 flex text-xs text-white rounded-bl-md overflow-hidden">

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { FormattedDate, FormattedMessage, FormattedTime, useIntl } from "react-intl";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
+import { formatUserUniqueIdForDisplay } from "@/lib/formatUserUniqueIdForDisplay";
 
 
 export default function Component() {
@@ -76,7 +77,7 @@ export default function Component() {
                     <div className="text-muted-foreground shrink-0">
                         <FormattedMessage id="unique_id" />
                     </div>
-                    <div className="wrap-anywhere text-wrap text-right">{info!['unique_id'] as string}</div>
+                    <div className="wrap-anywhere text-wrap text-right">{formatUserUniqueIdForDisplay(info!['unique_id'])}</div>
                 </div>
                 <div className="flex gap-2 justify-between p-4 bg-slate-900 border-b border-slate-800 overflow-hidden">
                     <div className="text-muted-foreground shrink-0">

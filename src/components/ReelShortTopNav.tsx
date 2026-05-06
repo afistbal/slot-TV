@@ -22,6 +22,7 @@ import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
 import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
 import iconTopnavDownload from '@/assets/icons/topnav-download.svg';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
+import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useConfigStore } from '@/stores/config';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
@@ -709,7 +710,7 @@ function NavProfileAvatar() {
   }
 
   const userName = String(userStore.info?.['name'] ?? '');
-  const userUid = String(userStore.info?.['unique_id'] ?? '');
+  const userUid = getUserUidForDisplay(userStore.info ?? undefined);
 
   return (
     <DropdownMenu

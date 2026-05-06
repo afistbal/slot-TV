@@ -4,7 +4,7 @@ import {
     RouterProvider,
     useRouteError,
 } from "react-router";
-import { createIntl, createIntlCache, FormattedMessage, IntlProvider } from 'react-intl';
+import { FormattedMessage, IntlProvider } from 'react-intl';
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "./components/ui/sonner";
 import { useLoadingStore } from "./stores/loading";
@@ -372,8 +372,6 @@ function getInitialIntlMessages(): TIntlMessages {
     return syncMessagesForLocale(useRootStore.getState().locale);
 }
 
-const intlCache = createIntlCache();
-
 function App() {
     const pixel = usePixel();
     const mdUp = useMinWidth768();
@@ -446,27 +444,6 @@ function App() {
             const ok = await refreshSessionFromStoredToken();
             if (ok) {
                 setChecked(true);
-            } else if (localStorage.getItem('token')) {
-                setChecked(true);
-                const intlBoot = createIntl(
-                    {
-                        locale: rootStore.locale,
-                        messages,
-                        defaultLocale: 'en',
-                    },
-                    intlCache,
-                );
-                void refreshSessionFromStoredToken().then((recovered) => {
-                    if (!recovered) {
-                        toast.error(
-                            intlBoot.formatMessage({
-                                id: 'session_restore_retry_toast',
-                                defaultMessage:
-                                    "Couldn't sync your session. Please refresh the page and try again.",
-                            }),
-                        );
-                    }
-                });
             } else {
                 await api<TData>('login/anonymous', {
                     loading: false,
