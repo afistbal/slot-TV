@@ -944,46 +944,39 @@ export function ReelShortTopNav({
               ) : null}
             </div>
 
-            <div
-              className={cn(
-                'reelshort-topnav__brand-cluster',
-                showPrimaryNav && 'reelshort-topnav__brand-cluster--with-primary',
-              )}
-            >
+            <div className="reelshort-topnav__brand-cluster reelshort-topnav__brand-cluster--with-primary">
               <Link to="/" className="reelshort-topnav__brand-link">
                 <img src={BRAND_LOGO_SRC} alt="" className="reelshort-topnav__brand-logo" />
                 <BrandWordmark />
               </Link>
-              {showPrimaryNav ? (
-                <nav
-                  className="reelshort-topnav__pc-primary-nav"
-                  aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
+              <nav
+                className="reelshort-topnav__pc-primary-nav"
+                aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
+              >
+                <NavLink
+                  to="/"
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
+                      isActive && 'reelshort-topnav__segment-link--active',
+                    )
+                  }
                 >
-                  <NavLink
-                    to="/"
-                    end
-                    className={({ isActive }) =>
-                      cn(
-                        'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
-                        isActive && 'reelshort-topnav__segment-link--active',
-                      )
-                    }
-                  >
-                    <FormattedMessage id="home" />
-                  </NavLink>
-                  <NavLink
-                    to="/categories"
-                    className={({ isActive }) =>
-                      cn(
-                        'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
-                        isActive && 'reelshort-topnav__segment-link--active',
-                      )
-                    }
-                  >
-                    <FormattedMessage id="nav_categories" />
-                  </NavLink>
-                </nav>
-              ) : null}
+                  <FormattedMessage id="home" />
+                </NavLink>
+                <NavLink
+                  to="/search"
+                  className={({ isActive }) =>
+                    cn(
+                      'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
+                      isActive && 'reelshort-topnav__segment-link--active',
+                    )
+                  }
+                >
+                  <FormattedMessage id="nav_categories" />
+                </NavLink>
+              </nav>
             </div>
 
             <div className="reelshort-topnav__right">
@@ -1022,7 +1015,7 @@ export function ReelShortTopNav({
                 <FormattedMessage id="home" />
               </NavLink>
               <NavLink
-                to="/categories"
+                to="/search"
                 className={({ isActive }) =>
                   cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
                 }

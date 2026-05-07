@@ -15,6 +15,7 @@ interface IResult<T> {
 export interface IPagination {
     current_page: number,
     per_page: number,
+    /** 總條數（分頁總頁數 = ceil(count / per_page)） */
     count?: number,
     data: { [key: string]: unknown }[],
 }

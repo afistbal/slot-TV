@@ -453,6 +453,8 @@ function Player({
                     subtitlesRef.current = [];
                     console.warn('[Video] subtitle load skipped (CORS/network/parse)', subUrl, e);
                 }
+            } else {
+                subtitlesRef.current = [];
             }
 
             if (!videoRef.current) {
@@ -896,22 +898,16 @@ function Player({
             setProgress(
                 Math.ceil((videoRef.current.currentTime / videoRef.current.duration) * 100),
             );
+            let nextCue = -1;
+            const t = videoRef.current.currentTime;
             for (let i = 0; i < subtitlesRef.current.length; i++) {
-                if (
-                    videoRef.current.currentTime >= subtitlesRef.current[i].startTime &&
-                    videoRef.current.currentTime <= subtitlesRef.current[i].endTime
-                ) {
-                    if (subtitlesRef.current[i].text.trim() !== '') {
-                        setSubtitle(i);
-                    } else {
-                        setSubtitle(-1);
-                    }
-
+                const c = subtitlesRef.current[i];
+                if (t >= c.startTime && t <= c.endTime && c.text.trim() !== '') {
+                    nextCue = i;
                     break;
-                } else {
-                    setSubtitle(-1);
                 }
             }
+            setSubtitle(nextCue);
         };
 
         videoRef.current.addEventListener('timeupdate', videoTimeUpdate);
@@ -1224,7 +1220,10 @@ function Player({
                                 onContextMenu={(e) => e.preventDefault()}
                             />
                             <div
-                                className="absolute w-10/12 h-4/12 m-auto left-0 right-0 bottom-10 flex justify-center items-start text-center"
+                                className={cn(
+                                    'absolute bottom-0 left-0 right-0 z-[5] mx-auto flex w-10/12 flex-col items-center justify-end gap-1 text-center pointer-events-none',
+                                    isFullscreenUi ? 'pb-12' : 'pb-[124px]',
+                                )}
                                 ref={subtitleRef}
                             >
                                 {subtitle > -1 && subtitlesRef.current.length > 0 && (
@@ -1778,7 +1777,10 @@ function Player({
                     onContextMenu={(e) => e.preventDefault()}
                 />
                 <div
-                    className="absolute w-10/12 h-4/12 m-auto left-0 right-0 bottom-10 flex justify-center items-start text-center"
+                    className={cn(
+                        'absolute bottom-0 left-0 right-0 z-[5] mx-auto flex w-10/12 flex-col items-center justify-end gap-1 text-center pointer-events-none',
+                        isFullscreenUi ? 'pb-12' : 'pb-[124px]',
+                    )}
                     ref={subtitleRef}
                 >
                     {subtitle > -1 && subtitlesRef.current.length > 0 && (

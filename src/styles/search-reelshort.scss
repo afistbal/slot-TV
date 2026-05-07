@@ -177,6 +177,15 @@
         min-height: 0;
         flex: 1 1 auto;
         flex-direction: column;
+
+        @media (min-width: 768px) {
+            .rs-shelf__container {
+                display: flex;
+                min-height: 0;
+                flex: 1 1 auto;
+                flex-direction: column;
+            }
+        }
     }
 
     &__grid {
@@ -346,6 +355,241 @@
 
     &__drawerSpacer {
         height: 1rem;
+    }
+
+    /** PC：對標 ReelShort tags（如 movie-actors）— 標籤膠囊條，無 Actors/Actresses 二級 Tab */
+    &__pcTagPanel {
+        margin-top: 24px;
+        margin-bottom: 12px;
+    }
+
+    /** 標籤 + 展開鈕同一 flex-wrap；折疊態由 JS 只渲染兩行內 tag + 鈕，不再 max-height 裁切 */
+    &__pcTags {
+        /** 兩行高度上限：與 measurePcTagsTwoRowSplit 離屏測量一致 */
+        --rs-search-pc-tags-collapsed-max: calc(2 * (1.25rem + 14px) + 18px);
+
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        align-content: flex-start;
+        gap: 18px 16px;
+    }
+
+    &__pcTag {
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 14px;
+        line-height: 1.25rem;
+        color: #fff;
+        background-color: hsla(0, 0%, 100%, 0.12);
+        transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease,
+            color 0.15s ease;
+
+        &:hover {
+            background-color: hsla(0, 0%, 100%, 0.18);
+        }
+
+        &--active {
+            font-weight: 700;
+            color: #e52e2e;
+        }
+    }
+
+    /** 對標 ReelShort：`bg-white/10` 方塊 + chevron；展開後 SVG `rotate(180deg)` */
+    &__pcTagsToggle {
+        box-sizing: border-box;
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 4px;
+        cursor: pointer;
+        border: 0;
+        color: rgba(255, 255, 255, 0.9);
+        background-color: hsla(0, 0%, 100%, 0.1);
+        transition: background-color 0.15s ease;
+
+        &:hover {
+            background-color: hsla(0, 0%, 100%, 0.14);
+        }
+
+        /** 展開後「收起」：與最後一個 tag 同一行/換行流，chevron 朝上 */
+        &--expanded {
+            .rs-search-page__pcTagsToggleSvg {
+                transform: rotate(180deg);
+            }
+        }
+    }
+
+    /** viewBox 18×18，勿強拉滿 32×32 方塊以免線條變成「尖角 V」 */
+    &__pcTagsToggleSvg {
+        display: block;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+    }
+
+    /**
+     * 首屏与再次搜索时：Loader / 空态 只占据「结果区」，不替换面包屑/标签/标题，避免 loading 顶到最上沿
+     */
+    &__results {
+        display: flex;
+        width: 100%;
+        min-height: 0;
+        flex: 1 1 auto;
+        flex-direction: column;
+
+        &--pc {
+            @media (min-width: 768px) {
+                min-height: min(52vh, 560px);
+            }
+        }
+
+        &--h5 {
+            @media (max-width: 767.98px) {
+                min-height: min(48vh, 400px);
+            }
+        }
+    }
+
+    &__pcContent {
+        @media (min-width: 768px) {
+            display: flex;
+            min-height: 0;
+            flex: 1 1 auto;
+            flex-direction: column;
+
+            .rs-shelf__heading {
+                padding-top: 16px;
+            }
+        }
+    }
+
+    /** PC：對標 ReelShort tags 頁底部數字分頁（movie 接口 count / per_page） */
+    &__pagination {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 28px 16px 40px;
+        flex-wrap: wrap;
+    }
+
+    &__paginationBtn {
+        cursor: pointer;
+        border: 0;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.85);
+        transition: color 0.15s ease, opacity 0.15s ease;
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.35;
+        }
+
+        &:not(:disabled):hover {
+            color: #fe4167;
+        }
+
+        &--nav {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            min-height: 40px;
+            padding: 8px;
+            border-radius: 8px;
+
+            &:not(:disabled):hover {
+                background: rgba(255, 255, 255, 0.06);
+            }
+        }
+    }
+
+    &__paginationChevron {
+        flex-shrink: 0;
+    }
+
+    &__paginationPages {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 4px 8px;
+    }
+
+    &__paginationNum {
+        cursor: pointer;
+        min-width: 36px;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.2;
+        transition:
+            background-color 0.15s ease,
+            color 0.15s ease;
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        &:not(:disabled):hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #fe4167;
+        }
+
+        &--active {
+            background: rgba(254, 65, 103, 0.25);
+            color: #fe4167;
+            font-weight: 600;
+        }
+    }
+
+    &__paginationEllipsis {
+        padding: 0 4px;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 15px;
+        user-select: none;
+    }
+
+    &__paginationMeta {
+        padding: 8px 12px;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 14px;
+    }
+}
+
+/**
+ * PC /search：与顶栏 `reelshort-topnav__inner` 同宽 1636 + 左右 16px；
+ * 影片列表 DOM 与 Profile `rs-dc-mylist` + `rs-dc-bookItem` 一致（flex 列宽见 reelshort-dashboard-cabinet-mylist.scss）。
+ */
+@media (min-width: 768px) {
+    .rs-search-page {
+        .rs-shelf__container {
+            width: 100%;
+            max-width: min(1636px, 100%);
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+
+        .rs-shelf__content {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
     }
 }
 

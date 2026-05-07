@@ -6,6 +6,9 @@ interface ISearch {
     list: TData[];
     page: number;
     more: boolean;
+    /** movie 接口返回的总条数（分页用） */
+    totalCount: number;
+    perPage: number;
     scrollTop: number;
     keyword: string;
     tag: string;
@@ -14,6 +17,7 @@ interface ISearch {
     setList: (list: TData[]) => void;
     setPage: (page: number) => void;
     setMore: (more: boolean) => void;
+    setPaginationMeta: (totalCount: number, perPage: number) => void;
     setScrollTop: (scrollTop: number) => void;
     setKeyword: (keyword: string) => void;
     setTag: (tag: string) => void;
@@ -26,6 +30,8 @@ export const useSearchStore = create<ISearch>((set) => ({
     /** 须从 1 开始：触底时 setPage(page+1) 若为 0→1 会走「重置」分支清空列表并 scrollTop=0，导致滚到底突然跳回顶并重复请求 page=1 */
     page: 1,
     more: true,
+    totalCount: 0,
+    perPage: 24,
     scrollTop: 0,
     keyword: '',
     tag: '',
@@ -40,6 +46,8 @@ export const useSearchStore = create<ISearch>((set) => ({
         }
     },
     setMore: (more: boolean) => set({ more }),
+    setPaginationMeta: (totalCount: number, perPage: number) =>
+        set({ totalCount, perPage: perPage > 0 ? perPage : 24 }),
     setScrollTop: (scrollTop: number) => set({ scrollTop }),
     setKeyword: (keyword: string) => set({ keyword }),
     setTag: (tag: string) => set({ tag }),

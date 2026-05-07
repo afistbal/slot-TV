@@ -28,7 +28,8 @@
     }
 }
 
-.rs-profile__pc-cabinet .rs-dc-mylist {
+.rs-profile__pc-cabinet .rs-dc-mylist,
+.rs-search-page .rs-dc-mylist {
     display: flex;
     flex-wrap: wrap;
     row-gap: 48px;
@@ -38,8 +39,13 @@
     list-style: none;
 }
 
+.rs-search-page .rs-dc-mylist {
+    row-gap: 22px;
+}
+
 /* 与 DashboardCabinet_bookItem 一致；每行 5 张（20%），勿对同节点内层再写 width:100% 盖掉列宽 */
-.rs-profile__pc-cabinet .rs-dc-bookItem {
+.rs-profile__pc-cabinet .rs-dc-bookItem,
+.rs-search-page .rs-dc-bookItem {
     flex: 0 0 20%;
     width: 20%;
     max-width: 20%;
@@ -50,7 +56,8 @@
 }
 
 @media (max-width: 1200px) {
-    .rs-profile__pc-cabinet .rs-dc-bookItem {
+    .rs-profile__pc-cabinet .rs-dc-bookItem,
+    .rs-search-page .rs-dc-bookItem {
         flex-basis: 25%;
         width: 25%;
         max-width: 25%;
@@ -58,7 +65,8 @@
 }
 
 @media (max-width: 900px) {
-    .rs-profile__pc-cabinet .rs-dc-bookItem {
+    .rs-profile__pc-cabinet .rs-dc-bookItem,
+    .rs-search-page .rs-dc-bookItem {
         flex-basis: 33.3333333333%;
         width: 33.3333333333%;
         max-width: 33.3333333333%;
@@ -66,15 +74,46 @@
 }
 
 @media (max-width: 640px) {
-    .rs-profile__pc-cabinet .rs-dc-bookItem {
+    .rs-profile__pc-cabinet .rs-dc-bookItem,
+    .rs-search-page .rs-dc-bookItem {
         flex-basis: 50%;
         width: 50%;
         max-width: 50%;
     }
 }
 
-/* BookItem：与 .rs-dc-bookItem 同节点时禁止在此设 width，否则会覆盖 20% 列宽 */
-.rs-profile__pc-cabinet .rs-bi-bookItem {
+/* /search PC：同寬度下比 Profile 多兩欄級別，單卡再縮一檔（H5 不渲染 rs-dc-bookItem） */
+@media (min-width: 1201px) {
+    .rs-search-page .rs-dc-bookItem {
+        flex: 0 0 14.2857142857%;
+        width: 14.2857142857%;
+        max-width: 14.2857142857%;
+    }
+}
+
+@media (max-width: 1200px) and (min-width: 901px) {
+    .rs-search-page .rs-dc-bookItem {
+        flex: 0 0 16.6666666667%;
+        width: 16.6666666667%;
+        max-width: 16.6666666667%;
+    }
+}
+
+@media (max-width: 900px) and (min-width: 768px) {
+    .rs-search-page .rs-dc-bookItem {
+        flex: 0 0 20%;
+        width: 20%;
+        max-width: 20%;
+    }
+}
+
+.rs-search-page .rs-dc-bookItem {
+    padding: 0 0.32%;
+}
+
+/* BookItem：与 .rs-dc-bookItem 同节点时禁止在此设 width，否则会覆盖 20% 列宽；/search PC 网格同结构复用 */
+.rs-profile__pc-cabinet .rs-bi-bookItem,
+.rs-search-page .rs-bi-bookItem {
     position: relative;
     white-space: normal;
     touch-action: none;
@@ -82,7 +121,8 @@
 }
 
 /* 与 BookItem_expoItem__MBqy6 一致：占位，利于曝光埋点结构对齐 */
-.rs-profile__pc-cabinet .rs-bi-expoItem {
+.rs-profile__pc-cabinet .rs-bi-expoItem,
+.rs-search-page .rs-bi-expoItem {
     position: absolute;
     z-index: -1;
     width: 100%;
@@ -92,7 +132,8 @@
     pointer-events: none;
 }
 
-.rs-profile__pc-cabinet .rs-bi-poster {
+.rs-profile__pc-cabinet .rs-bi-poster,
+.rs-search-page .rs-bi-poster {
     position: relative;
     cursor: pointer;
     border-radius: 8px;
@@ -103,19 +144,23 @@
 }
 
 /* 整卡 hover：等同 BookItem_hover__lqwJY / BookItem_historyHover__QuZIY */
-.rs-profile__pc-cabinet .rs-bi-bookItem:hover .rs-bi-playMask {
+.rs-profile__pc-cabinet .rs-bi-bookItem:hover .rs-bi-playMask,
+.rs-search-page .rs-bi-bookItem:hover .rs-bi-playMask {
     opacity: 1;
 }
 
-.rs-profile__pc-cabinet .rs-bi-bookItem.rs-bi-bookItem--history:hover .rs-bi-cover {
+.rs-profile__pc-cabinet .rs-bi-bookItem.rs-bi-bookItem--history:hover .rs-bi-cover,
+.rs-search-page .rs-bi-bookItem.rs-bi-bookItem--history:hover .rs-bi-cover {
     transform: scale(1.1);
 }
 
-.rs-profile__pc-cabinet .rs-bi-bookItem:not(.rs-bi-bookItem--history):hover .rs-bi-cover {
+.rs-profile__pc-cabinet .rs-bi-bookItem:not(.rs-bi-bookItem--history):hover .rs-bi-cover,
+.rs-search-page .rs-bi-bookItem:not(.rs-bi-bookItem--history):hover .rs-bi-cover {
     transform: scale(1.2);
 }
 
-.rs-profile__pc-cabinet .rs-bi-cover {
+.rs-profile__pc-cabinet .rs-bi-cover,
+.rs-search-page .rs-bi-cover {
     position: relative;
     display: block;
     width: 100%;
@@ -128,7 +173,8 @@
     border-radius: 8px;
 }
 
-.rs-profile__pc-cabinet .rs-bi-cover .lazy-load-image-wrapper {
+.rs-profile__pc-cabinet .rs-bi-cover .lazy-load-image-wrapper,
+.rs-search-page .rs-bi-cover .lazy-load-image-wrapper {
     position: absolute;
     inset: 0;
     z-index: 1;
@@ -140,21 +186,26 @@
 }
 
 .rs-profile__pc-cabinet .rs-bi-cover .lazy-load-image-wrapper img,
-.rs-profile__pc-cabinet .rs-bi-cover > img {
+.rs-profile__pc-cabinet .rs-bi-cover > img,
+.rs-search-page .rs-bi-cover .lazy-load-image-wrapper img,
+.rs-search-page .rs-bi-cover > img {
     border-radius: inherit;
 }
 
-.rs-profile__pc-cabinet .rs-bi-coverSkeleton {
+.rs-profile__pc-cabinet .rs-bi-coverSkeleton,
+.rs-search-page .rs-bi-coverSkeleton {
     position: absolute;
     inset: 0;
     border-radius: inherit;
 }
 
-.rs-profile__pc-cabinet .rs-bi-coverSkeletonInner {
+.rs-profile__pc-cabinet .rs-bi-coverSkeletonInner,
+.rs-search-page .rs-bi-coverSkeletonInner {
     color: hsla(0, 0%, 91%, 0.62);
 }
 
-.rs-profile__pc-cabinet .rs-bi-playMask {
+.rs-profile__pc-cabinet .rs-bi-playMask,
+.rs-search-page .rs-bi-playMask {
     position: absolute;
     inset: 0;
     opacity: 0;
@@ -164,7 +215,8 @@
     border-radius: 8px;
 }
 
-.rs-profile__pc-cabinet .rs-bi-item-mask {
+.rs-profile__pc-cabinet .rs-bi-item-mask,
+.rs-search-page .rs-bi-item-mask {
     position: absolute;
     inset: 0;
     isolation: isolate;
@@ -188,7 +240,23 @@
         rgba(0, 0, 0, 0.6);
 }
 
-.rs-profile__pc-cabinet .rs-bi-iconRemove {
+.rs-search-page .rs-bi-coverIconPlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    padding-left: 7px;
+    box-sizing: border-box;
+    pointer-events: none;
+    background: url('../assets/reelshort-dashboard/icon_play.png') no-repeat 16px 50% / 50% 50%
+        rgba(0, 0, 0, 0.6);
+}
+
+.rs-profile__pc-cabinet .rs-bi-iconRemove,
+.rs-search-page .rs-bi-iconRemove {
     position: absolute;
     top: 6px;
     right: 6px;
@@ -209,7 +277,8 @@
 }
 
 /* 与 BookItem_imgIcon___fGXl 一致：本地 `icon_remove.png` */
-.rs-profile__pc-cabinet .rs-bi-imgIconRemove {
+.rs-profile__pc-cabinet .rs-bi-imgIconRemove,
+.rs-search-page .rs-bi-imgIconRemove {
     width: 8px;
     height: 8px;
     display: block;
@@ -217,7 +286,8 @@
     background: url('../assets/reelshort-dashboard/icon_remove.png') no-repeat 50% / contain;
 }
 
-.rs-profile__pc-cabinet .rs-bi-readProgressBar {
+.rs-profile__pc-cabinet .rs-bi-readProgressBar,
+.rs-search-page .rs-bi-readProgressBar {
     background-color: hsla(0, 0%, 100%, 0.16);
     height: 4px;
     margin-top: -4px;
@@ -230,7 +300,8 @@
     border-radius: 0 0 8px 8px;
 }
 
-.rs-profile__pc-cabinet .rs-bi-readProgress {
+.rs-profile__pc-cabinet .rs-bi-readProgress,
+.rs-search-page .rs-bi-readProgress {
     background-color: #fe4167;
     height: 4px;
     border-top-right-radius: 30px;
@@ -253,12 +324,29 @@
     word-wrap: break-word;
 }
 
-.rs-profile__pc-cabinet .rs-bi-title a {
+.rs-search-page .rs-bi-title {
+    font-size: clamp(11px, 1.55vw, 14px);
+    width: 100%;
+    font-weight: 500;
+    color: #fff;
+    line-height: 1.4;
+    margin: 2.2% 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-wrap: break-word;
+}
+
+.rs-profile__pc-cabinet .rs-bi-title a,
+.rs-search-page .rs-bi-title a {
     color: inherit;
     text-decoration: none;
 }
 
-.rs-profile__pc-cabinet .rs-bi-title a:hover {
+.rs-profile__pc-cabinet .rs-bi-title a:hover,
+.rs-search-page .rs-bi-title a:hover {
     color: #e52e2e;
 }
 
@@ -270,7 +358,16 @@
     width: 100%;
 }
 
-.rs-profile__pc-cabinet .rs-bi-chapterProgress {
+.rs-search-page .rs-bi-chapter {
+    font-size: clamp(10px, 0.82vw, 12px);
+    font-weight: 500;
+    color: #999;
+    margin-top: 0.16rem;
+    width: 100%;
+}
+
+.rs-profile__pc-cabinet .rs-bi-chapterProgress,
+.rs-search-page .rs-bi-chapterProgress {
     color: #d5495b;
 }
 
