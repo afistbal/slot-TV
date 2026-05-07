@@ -280,6 +280,12 @@
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
+
+        .rs-login__drawerSend--loading {
+            cursor: wait;
+            pointer-events: none;
+            opacity: 0.85;
+        }
     }
 
     /**

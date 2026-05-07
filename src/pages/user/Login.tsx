@@ -4,7 +4,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
@@ -41,6 +41,7 @@ function useLoginBase(
     const [emailOpen, setEmailOpen] = useState(false);
     const [pcStep, setPcStep] = useState<PcLoginStep>('providers');
     const [time, setTime] = useState(0);
+    const [sendCodeLoading, setSendCodeLoading] = useState(false);
     const [email, setEmail] = useState(localStorage.getItem('email') ?? '');
     const [code, setCode] = useState('');
 
@@ -161,7 +162,7 @@ function useLoginBase(
     }
 
     async function handleSendCode() {
-        if (time > 0) {
+        if (time > 0 || sendCodeLoading) {
             return;
         }
 
@@ -173,34 +174,40 @@ function useLoginBase(
             );
         }
 
-        const result = await api('login/email/code', {
-            method: 'post',
-            data: {
-                email: email.trim(),
-            },
-        });
+        setSendCodeLoading(true);
+        try {
+            const result = await api('login/email/code', {
+                method: 'post',
+                data: {
+                    email: email.trim(),
+                },
+                loading: false,
+            });
 
-        if (result.c !== 0) {
-            localStorage.removeItem('token');
-            return;
-        }
-
-        toast.success(
-            intl.formatMessage({
-                id: 'email_code_sended',
-            }),
-        );
-
-        let currentTime = 60;
-        setTime(currentTime);
-        localStorage.setItem('mail-code-expire', (new Date().getTime() + 60000).toString());
-        const timer = window.setInterval(() => {
-            if (currentTime === 0) {
-                window.clearInterval(timer);
+            if (result.c !== 0) {
+                localStorage.removeItem('token');
+                return;
             }
-            currentTime -= 1;
+
+            toast.success(
+                intl.formatMessage({
+                    id: 'email_code_sended',
+                }),
+            );
+
+            let currentTime = 60;
             setTime(currentTime);
-        }, 1000);
+            localStorage.setItem('mail-code-expire', (new Date().getTime() + 60000).toString());
+            const timer = window.setInterval(() => {
+                if (currentTime === 0) {
+                    window.clearInterval(timer);
+                }
+                currentTime -= 1;
+                setTime(currentTime);
+            }, 1000);
+        } finally {
+            setSendCodeLoading(false);
+        }
     }
 
     function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -390,6 +397,7 @@ function useLoginBase(
         handlePcDialogOutside,
         handleSubmit,
         handleSendCode,
+        sendCodeLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -418,6 +426,7 @@ export function PcLoginDialog({
         handlePcDialogOutside,
         handleSubmit,
         handleSendCode,
+        sendCodeLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -568,19 +577,30 @@ export function PcLoginDialog({
                                     />
                                     <span
                                         role="button"
-                                        tabIndex={0}
-                                        className="rs-login-modal__email-send"
-                                        onClick={handleSendCode}
+                                        tabIndex={sendCodeLoading ? -1 : 0}
+                                        className={cn(
+                                            'rs-login-modal__email-send',
+                                            sendCodeLoading && 'rs-login-modal__email-send--loading',
+                                        )}
+                                        aria-busy={sendCodeLoading}
+                                        onClick={() => void handleSendCode()}
                                         onKeyDown={(e) => {
+                                            if (sendCodeLoading) {
+                                                return;
+                                            }
                                             if (e.key === 'Enter' || e.key === ' ') {
                                                 e.preventDefault();
                                                 void handleSendCode();
                                             }
                                         }}
                                     >
-                                        {time > 0
-                                            ? `${time.toString().padStart(2, '0')}s`
-                                            : intl.formatMessage({ id: 'send_code' })}
+                                        {sendCodeLoading ? (
+                                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                                        ) : time > 0 ? (
+                                            `${time.toString().padStart(2, '0')}s`
+                                        ) : (
+                                            intl.formatMessage({ id: 'send_code' })
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -613,6 +633,7 @@ export default function Component() {
         handleToggleEmailLogin,
         handleSubmit,
         handleSendCode,
+        sendCodeLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -728,11 +749,23 @@ export default function Component() {
                                     placeholder={intl.formatMessage({ id: 'code_placeholder' })}
                                 />
                                 <div
-                                    className="rs-login__drawerSend"
-                                    onClick={handleSendCode}
-                                    onMouseDown={(e) => e.preventDefault()}
+                                    className={cn(
+                                        'rs-login__drawerSend',
+                                        sendCodeLoading && 'rs-login__drawerSend--loading',
+                                    )}
+                                    role="button"
+                                    tabIndex={sendCodeLoading ? -1 : 0}
+                                    aria-busy={sendCodeLoading}
+                                    onClick={() => void handleSendCode()}
+                                    onMouseDown={(e) => !sendCodeLoading && e.preventDefault()}
                                 >
-                                    {time > 0 ? `${time.toString().padStart(2, '0')}s` : <FormattedMessage id="send_code" />}
+                                    {sendCodeLoading ? (
+                                        <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                                    ) : time > 0 ? (
+                                        `${time.toString().padStart(2, '0')}s`
+                                    ) : (
+                                        <FormattedMessage id="send_code" />
+                                    )}
                                 </div>
                             </div>
                         </div>

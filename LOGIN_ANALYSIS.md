@@ -1,6 +1,6 @@
 # 登录逻辑梳理（前端）
 
-> 目标：定位本项目所有登录方式、`client_id` 参数来源/传递位置、游客登录与其他登录差异、以及登录后信息存储位置，便于后续安全与业务分析。
+> 目标：定位本项目所有登录方式、`client_id` 参数来源/传递位置、遊客登录与其他登录差异、以及登录后信息存储位置，便于后续安全与业务分析。
 
 ## 1. API 请求封装与鉴权头
 
@@ -28,7 +28,7 @@
    - **接口**：`POST login/token`
    - **用途**：当 URL query 有 `_token` 或本地 `localStorage` 有 `token` 时，走 token 校验并恢复登录态
 
-2. **游客/匿名登录（自动或手动触发）**
+2. **遊客/匿名登录（自动或手动触发）**
    - **触发点 A**：`src/App.tsx` 初始化时没有 token
    - **触发点 B**：`src/pages/user/Login.tsx` 的 “logout/切换账号”逻辑里，非 Flutter 环境会调用
    - **接口**：`GET login/anonymous`（代码未显式写 method，默认 get）
@@ -56,10 +56,10 @@
      - 拿到 `result.user.uid` 等信息
      - **接口**：`POST login/uid`（参数包含：`uid`、`anonymous`、`name`、`email`、`provider: 'google'`）
 
-## 3. 游客登录 vs 其他登录（核心差异）
+## 3. 遊客登录 vs 其他登录（核心差异）
 
 ### 3.1 接口差异
-- **游客**：`login/anonymous`
+- **遊客**：`login/anonymous`
 - **邮箱**：`login/email/code` + `login/email`
 - **Google**：Firebase/Flutter 侧完成第三方认证后，再由后端 `login/uid` 换取业务 token
 - **Token 恢复**：`login/token`（本地已持有 token 的情况下）
@@ -97,7 +97,7 @@
 ### 5.1 配置加载
 - `App.tsx` 启动会先请求 `GET config` 并写入 `configStore.setConfig(config.d)`
 
-### 5.2 登录态恢复 / 自动游客
+### 5.2 登录态恢复 / 自动遊客
 在 `App.tsx` 的 `loadData()`：
 - 优先取 `URLSearchParams` 的 `_token`，否则取 `localStorage.token`
 - 若存在 token：

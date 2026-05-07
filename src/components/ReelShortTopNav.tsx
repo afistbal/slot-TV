@@ -747,7 +747,9 @@ function NavProfileAvatar() {
               {avatarNode}
             </Link>
             <div className="reelshort-topnav__profile-card-user">
-              <p className="reelshort-topnav__profile-card-name">{userName || '遊客'}</p>
+              <p className="reelshort-topnav__profile-card-name">
+                {isSignedUser ? userName : <FormattedMessage id="guest" />}
+              </p>
               <p className="reelshort-topnav__profile-card-uid">
                 <span>UID {userUid || '--'}</span>
               </p>
