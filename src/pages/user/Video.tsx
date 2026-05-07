@@ -303,6 +303,8 @@ function Player({
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const fullscreenRestoreInFlightRef = useRef(false);
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
+    /** 因页签/窗口不可见而自动暂停时置 true，回到前台仅在此情况下自动续播 */
+    const pausedByDocumentVisibilityRef = useRef(false);
     const {
         fullscreenTargetRef,
         shouldKeepFullscreen,
@@ -979,6 +981,33 @@ function Player({
             window.removeEventListener('touchcancel', touchEnd);
         };
     }, [loading]);
+
+    useEffect(() => {
+        const onVisibilityChange = () => {
+            const v = videoRef.current;
+            if (!v || episode?.lock || loading) {
+                return;
+            }
+            if (document.visibilityState === 'hidden') {
+                if (!v.paused) {
+                    pausedByDocumentVisibilityRef.current = true;
+                    v.pause();
+                    setPlaying(false);
+                }
+            } else if (pausedByDocumentVisibilityRef.current) {
+                pausedByDocumentVisibilityRef.current = false;
+                if (v.ended) {
+                    return;
+                }
+                void v.play().then(() => setPlaying(true)).catch(() => {});
+            }
+        };
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+        };
+    }, [episode?.lock, loading]);
 
     useEffect(() => {
         if (wrapRef.current === null) {
