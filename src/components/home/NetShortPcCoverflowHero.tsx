@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
 import { useHomeStore, type IItem, filterRenderableTopBannerItems } from '@/stores/home';
 import { cn } from '@/lib/utils';
@@ -327,7 +328,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                 }
                                 e.stopPropagation();
                                 if (isCenter) {
-                                    void navigate(href);
+                                    void navigate(href, { state: VIDEO_FROM_HOME_STATE });
                                 } else {
                                     goHeroIndex(t);
                                 }

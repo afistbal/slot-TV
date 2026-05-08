@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
 import { useHomeType1H5Scroll } from './useHomeType1H5Scroll';
@@ -84,6 +85,7 @@ export function HomeBookShelf({
                                     staticBase={staticBase}
                                     item={{ ...item, showExpo: true, showPlayMask: false }}
                                     variant="style5"
+                                    linkState={VIDEO_FROM_HOME_STATE}
                                 />
                             ))}
                         </div>
@@ -97,6 +99,7 @@ export function HomeBookShelf({
                                         staticBase={staticBase}
                                         item={{ ...item, showExpo: true, showPlayMask: false }}
                                         variant="style5"
+                                        linkState={VIDEO_FROM_HOME_STATE}
                                     />
                                 ))}
                             </div>
@@ -108,6 +111,7 @@ export function HomeBookShelf({
                                         staticBase={staticBase}
                                         item={{ ...item, showExpo: true, showPlayMask: false }}
                                         variant="style5"
+                                        linkState={VIDEO_FROM_HOME_STATE}
                                     />
                                 ))}
                             </div>
@@ -139,6 +143,7 @@ export function HomeBookShelf({
                             to={toEpisodeOrVideoHref(item)}
                             staticBase={staticBase}
                             item={item}
+                            linkState={VIDEO_FROM_HOME_STATE}
                         />
                     ))}
                 </div>

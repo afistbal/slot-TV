@@ -550,3 +550,36 @@
         0 1px 2px rgba(0, 0, 0, 0.95),
         0 -1px 1px rgba(0, 0, 0, 0.35);
 }
+
+/** PC 静音自动播后的「取消静音」（对齐 NetShort xgplayer-unmute DOM） */
+.video-player-root .xgplayer-unmute {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+.video-player-root .xgplayer-unmute-bt {
+    width: 180px;
+    height: 60px;
+    color: #fff;
+    border-radius: 5px;
+    border: 0.5px solid white;
+    font-size: 16px;
+    background-color: rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.video-player-root .xgplayer-unmute-bt:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-color: #3370ff;
+    color: #3370ff;
+}
+
+.video-player-root .xgplayer-unmute-bt:active {
+    background-color: rgba(0, 0, 0, 0.3);
+}

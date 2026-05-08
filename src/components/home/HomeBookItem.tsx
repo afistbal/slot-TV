@@ -30,11 +30,14 @@ export function HomeBookItem({
     staticBase,
     item,
     variant,
+    linkState,
 }: {
     to: string;
     staticBase: string;
     item: HomeBookItemData;
     variant?: 'default' | 'style5';
+    /** 首页进入播放页时传入，用于 PC 直链/刷新 vs 站内点击 的自动播放策略 */
+    linkState?: Record<string, unknown>;
 }) {
     const src =
         item.image.startsWith('http://') || item.image.startsWith('https://')
@@ -51,7 +54,12 @@ export function HomeBookItem({
                 .filter(Boolean)
                 .join(' ')}
         >
-            <Link to={to} className="absolute left-0 top-0 z-10 h-full w-full" aria-label={item.title} />
+            <Link
+                to={to}
+                state={linkState}
+                className="absolute left-0 top-0 z-10 h-full w-full"
+                aria-label={item.title}
+            />
             {item.showExpo ? <div data-report="expo" className="BookItem_expoItem__EbMPA" /> : null}
             <div className="BookItem_cover__W2qbR">
                 <img src={src} alt={item.title} loading="lazy" decoding="async" />

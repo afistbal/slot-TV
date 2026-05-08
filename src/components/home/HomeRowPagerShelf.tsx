@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
@@ -168,6 +169,7 @@ export function HomeRowPagerShelf({
                             to={toEpisodeOrVideoHref(item)}
                             staticBase={staticBase}
                             item={item}
+                            linkState={VIDEO_FROM_HOME_STATE}
                         />
                     ))}
                 </div>
@@ -207,6 +209,7 @@ export function HomeRowPagerShelf({
                                                     to={toEpisodeOrVideoHref(item)}
                                                     staticBase={staticBase}
                                                     item={item}
+                                                    linkState={VIDEO_FROM_HOME_STATE}
                                                 />
                                             </div>
                                         ))}

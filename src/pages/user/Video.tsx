@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
 import RadixRc from '@/pages/user/RadixRc';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { api } from '@/api';
 import { shareOrigin, skipRemoteApi } from '@/env';
 import { offlinePlayerData, offlinePlayerEpisode } from '@/mocks/videoOffline';
@@ -86,11 +86,26 @@ function canNavigateBack() {
     return typeof state?.idx === 'number' && state.idx > 0;
 }
 
+/** 整页刷新（F5）无用户手势：与直链冷启动一样走静音自动播 */
+function isPerformanceNavigationReload() {
+    if (typeof performance === 'undefined') {
+        return false;
+    }
+    const entry = performance.getEntriesByType('navigation')[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+    return entry?.type === 'reload';
+}
+
 export default function Component() {
     // const configStore = useConfigStore();
     const rootStore = useRootStore();
     const params = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const fromHomeVideoPlayback = Boolean(
+        (location.state as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
+    );
     const swiperRef = useRef<SwiperRef>(null);
     const [data, setData] = useState<IPlayerData>();
     const [current, setCurrent] = useState(0);
@@ -135,6 +150,7 @@ export default function Component() {
         setCurrent(index);
         navigate(`/video/${params['id']}/${index + 1}${location.search}`, {
             replace: true,
+            state: location.state,
         });
     }
 
@@ -143,6 +159,7 @@ export default function Component() {
         setCurrent(swiper.activeIndex);
         navigate(`/video/${params['id']}/${swiper.activeIndex + 1}${location.search}`, {
             replace: true,
+            state: location.state,
         });
     }
 
@@ -226,6 +243,7 @@ export default function Component() {
                                 onFullscreenPrefChange={setKeepFullscreen}
                                 onEpisodeFullscreenReady={handleEpisodeFullscreenReady}
                                 shouldIgnoreFullscreenExit={shouldIgnoreFullscreenExit}
+                                fromHomeVideoPlayback={fromHomeVideoPlayback}
                             />
                         )}
                         {(current - 1 === k || current + 1 === k) && (
@@ -247,6 +265,7 @@ function Player({
     id,
     data,
     onSetEpisode,
+    fromHomeVideoPlayback,
     ...props
 }: {
     id: number;
@@ -258,6 +277,8 @@ function Player({
     onFullscreenPrefChange: (value: boolean) => void;
     onEpisodeFullscreenReady: () => void;
     shouldIgnoreFullscreenExit: () => boolean;
+    /** 从站内带 state 进入（书架/Banner 等）：PC 可走有声；无此项时 PC 静音、H5 仍常先试有声 */
+    fromHomeVideoPlayback: boolean;
 }) {
     // const loadingStore = useLoadingStore();
     const configStore = useConfigStore();
@@ -300,11 +321,15 @@ function Player({
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const [progressHover, setProgressHover] = useState(false);
     const [progressDragging, setProgressDragging] = useState(false);
+    /** 冷启动/刷新：静音自动播时展示（PC 用 `.xgplayer-unmute-bt`，H5 用底部按钮层） */
+    const [showTapToUnmute, setShowTapToUnmute] = useState(false);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const fullscreenRestoreInFlightRef = useRef(false);
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
     /** 因页签/窗口不可见而自动暂停时置 true，回到前台仅在此情况下自动续播 */
     const pausedByDocumentVisibilityRef = useRef(false);
+    /** 对标 NetShort `playWithDelay(300)`：直链/刷新 PC 静音自动播前稍迟再 play，且切换 md 断点前需清掉 */
+    const autoplayKickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const {
         fullscreenTargetRef,
         shouldKeepFullscreen,
@@ -424,6 +449,7 @@ function Player({
         const applyEpisode = async (d: IPlayerEpisode) => {
             setLoading(false);
             setEpisode(d);
+            setShowTapToUnmute(false);
 
             if (!d.video) {
                 setWaiting(false);
@@ -467,21 +493,72 @@ function Player({
                 d.video.startsWith('http://') || d.video.startsWith('https://')
                     ? d.video
                     : `${configStore.config['static']}/${d.video}`;
+            if (autoplayKickTimerRef.current) {
+                clearTimeout(autoplayKickTimerRef.current);
+                autoplayKickTimerRef.current = null;
+            }
             videoRef.current.src = src;
             videoRef.current.currentTime = 0;
             videoRef.current.playbackRate = SPEED[speed];
+            /** 与 Tailwind `md` 一致；不依赖 `useMinWidth768` 首帧，避免误判有声自动播 */
+            const isPcViewport =
+                typeof window !== 'undefined' &&
+                window.matchMedia('(min-width: 768px)').matches;
+            const isReload = isPerformanceNavigationReload();
+            /**
+             * 有声自动播：首页带 state 的 PC/H5 + 小屏直链（浏览器常允许有声）。
+             * 不再用 `fromHome && !isReload` 一刀切：部分环境下 Navigation Timing 会误判为 reload，导致全站静音。
+             * 仅对「刷新 + 无首页 state + 小屏」强制静音（刷新后 location.state 本就会丢）。
+             */
+            let allowSoundAutoplay = fromHomeVideoPlayback || !isPcViewport;
+            if (isReload && !fromHomeVideoPlayback && !isPcViewport) {
+                allowSoundAutoplay = false;
+            }
+            const isColdVideoAutoplay = !allowSoundAutoplay;
             if (location.search.indexOf('auto_play=0') === -1) {
-                videoRef.current
-                    .play()
-                    .then(() => {
-                        setPlaying(true);
-                    })
-                    .catch(() => {
+                if (allowSoundAutoplay) {
+                    videoRef.current.muted = false;
+                } else {
+                    videoRef.current.muted = true;
+                    setShowTapToUnmute(true);
+                }
+                const runPlay = () => {
+                    const el = videoRef.current;
+                    if (!el) {
+                        return;
+                    }
+                    const onPlayFail = () => {
                         console.log('自动播放失败');
                         showController(false);
                         setWaiting(false);
                         setCanPlay(true);
-                    });
+                        setShowTapToUnmute(false);
+                    };
+                    el.play()
+                        .then(() => {
+                            setPlaying(true);
+                        })
+                        .catch(() => {
+                            if (allowSoundAutoplay && !el.muted) {
+                                el.muted = true;
+                                setShowTapToUnmute(true);
+                                el.play()
+                                    .then(() => setPlaying(true))
+                                    .catch(onPlayFail);
+                                return;
+                            }
+                            onPlayFail();
+                        });
+                };
+                /** NetShort：license/init 后 `setTimeout` 再 `play`；此处对应 PC 冷启动静音策略 */
+                const delayMs = isPcViewport && isColdVideoAutoplay ? 300 : 0;
+                if (delayMs > 0) {
+                    autoplayKickTimerRef.current = setTimeout(runPlay, delayMs);
+                } else {
+                    runPlay();
+                }
+            } else {
+                videoRef.current.muted = false;
             }
 
             controllerTimerRef.current = window.setTimeout(() => {
@@ -766,6 +843,17 @@ function Player({
         setIntroduction(!introduction);
     }
 
+    function handleTapToUnmute() {
+        const v = videoRef.current;
+        if (!v) {
+            return;
+        }
+        v.muted = false;
+        setShowTapToUnmute(false);
+        void v.play().then(() => setPlaying(true)).catch(() => {});
+        showController();
+    }
+
     function getCurrentShareUrl() {
         if (typeof window === 'undefined') {
             return '';
@@ -877,8 +965,17 @@ function Player({
     }
 
     useEffect(() => {
-        loadData(id);
-    }, [id]);
+        void loadData(id);
+    }, [id, isDesktop]);
+
+    useEffect(() => {
+        return () => {
+            if (autoplayKickTimerRef.current) {
+                clearTimeout(autoplayKickTimerRef.current);
+                autoplayKickTimerRef.current = null;
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (loading) {
@@ -1248,6 +1345,24 @@ function Player({
                                 disableRemotePlayback
                                 onContextMenu={(e) => e.preventDefault()}
                             />
+                            {isDesktop &&
+                                showTapToUnmute &&
+                                playing &&
+                                episode?.lock === false &&
+                                location.search.indexOf('auto_play=0') === -1 && (
+                                    <div className="xgplayer-unmute">
+                                        <button
+                                            type="button"
+                                            className="xgplayer-unmute-bt"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleTapToUnmute();
+                                            }}
+                                        >
+                                            <FormattedMessage id="video_tap_to_unmute" />
+                                        </button>
+                                    </div>
+                                )}
                             <div
                                 className={cn(
                                     'absolute bottom-0 left-0 right-0 z-[5] mx-auto flex w-10/12 flex-col items-center justify-end gap-1 text-center pointer-events-none',
@@ -1267,7 +1382,9 @@ function Player({
                                 onMouseEnter={handleDesktopControllerMouseEnter}
                                 onMouseLeave={handleDesktopControllerMouseLeave}
                             >
-                                {canPlay && episode?.lock === false && (
+                                {canPlay &&
+                                    episode?.lock === false &&
+                                    !showTapToUnmute && (
                                     <div
                                         className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto"
                                         onClick={handleTogglePlay}
@@ -1805,6 +1922,24 @@ function Player({
                     disableRemotePlayback
                     onContextMenu={(e) => e.preventDefault()}
                 />
+                {!isDesktop &&
+                    showTapToUnmute &&
+                    playing &&
+                    episode?.lock === false &&
+                    location.search.indexOf('auto_play=0') === -1 && (
+                        <div className="absolute inset-0 z-[25] flex items-center justify-center bg-black/35 px-6">
+                            <button
+                                type="button"
+                                className="rounded-full bg-black/80 px-5 py-2.5 text-sm font-medium text-white shadow-lg border border-white/15"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTapToUnmute();
+                                }}
+                            >
+                                <FormattedMessage id="video_tap_to_unmute" />
+                            </button>
+                        </div>
+                    )}
                 <div
                     className={cn(
                         'absolute bottom-0 left-0 right-0 z-[5] mx-auto flex w-10/12 flex-col items-center justify-end gap-1 text-center pointer-events-none',
@@ -1853,7 +1988,9 @@ function Player({
                             </Link>
                         </div>
                     )}
-                    {canPlay && episode?.lock === false && (
+                    {canPlay &&
+                        episode?.lock === false &&
+                        !showTapToUnmute && (
                         <div
                             className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto"
                             onClick={handleTogglePlay}

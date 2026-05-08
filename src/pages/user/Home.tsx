@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { api, type IPagination } from '@/api';
 import { cn } from '@/lib/utils';
@@ -497,6 +498,7 @@ export default function Component() {
                                 >
                                     <Link
                                         to={toEpisodeOrVideoHref(v)}
+                                        state={VIDEO_FROM_HOME_STATE}
                                         className="relative block h-full min-h-0 w-full overflow-hidden"
                                     >
                                         {coverSrc ? (
@@ -550,6 +552,7 @@ export default function Component() {
                                                 </h2>
                                                 <Link
                                                     to={toEpisodeOrVideoHref(currentHero)}
+                                                    state={VIDEO_FROM_HOME_STATE}
                                                     className={cn(
                                                         'flex cursor-pointer items-center justify-center bg-white font-bold text-black',
                                                         'h-[calc(40/375*var(--app-vw))] w-[calc(168/375*var(--app-vw))] rounded-[calc(4/375*var(--app-vw))] py-[calc(11/375*var(--app-vw))] text-[calc(16/375*var(--app-vw))]',
