@@ -350,6 +350,7 @@
     "subscription_renewal": "Abonelik Yenileme",
     "introduction": "Giriş",
     "no_introduction_available": "Tanıtım mevcut değil",
+    "video_tap_to_unmute": "Sesi açmak için tıklayın",
     "checkout_googlepay_total_label": "Bugün ödenecek abonelik",
     "checkout_googlepay_line_recurring": "Yinelenen abonelik",
     "shopping_pay_status_success": "Ödeme başarılı",

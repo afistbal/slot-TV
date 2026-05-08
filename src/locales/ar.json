@@ -350,6 +350,7 @@
     "subscription_renewal": "تجديد الاشتراك",
     "introduction": "مقدمة",
     "no_introduction_available": "لا يوجد مقدمة متاحة",
+    "video_tap_to_unmute": "اضغط لإلغاء كتم الصوت",
     "checkout_googlepay_total_label": "الاشتراك المستحق اليوم",
     "checkout_googlepay_line_recurring": "اشتراك متكرر",
     "shopping_pay_status_success": "تم الدفع بنجاح",

@@ -350,6 +350,7 @@
     "subscription_renewal": "Abonnementverlängerung",
     "introduction": "Einführung",
     "no_introduction_available": "Keine Einleitung verfügbar",
+    "video_tap_to_unmute": "Tippen zum Stummschaltung aufheben",
     "checkout_googlepay_total_label": "Heute fälliges Abonnement",
     "checkout_googlepay_line_recurring": "Wiederkehrendes Abonnement",
     "shopping_pay_status_success": "Zahlung erfolgreich",

@@ -356,7 +356,10 @@ export default function Component() {
             state.setLoading(false);
             return;
         }
-        api<IData>('home', { loading: false })
+        api<IData>('home', {
+            loading: false,
+            data: { topSize: '50' },
+        })
             .then((res) => {
                 if (res.c === 0) {
                     state.setData(res.d);

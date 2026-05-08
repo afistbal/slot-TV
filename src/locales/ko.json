@@ -350,6 +350,7 @@
     "subscription_renewal": "구독 갱신",
     "introduction": "소개",
     "no_introduction_available": "소개 없음",
+    "video_tap_to_unmute": "탭하여 음소거 해제",
     "checkout_googlepay_total_label": "오늘 결제 예정 구독",
     "checkout_googlepay_line_recurring": "정기 구독",
     "shopping_pay_status_success": "결제가 완료되었습니다",

@@ -350,6 +350,7 @@
     "subscription_renewal": "การต่ออายุการสมัครสมาชิก",
     "introduction": "บทนำ",
     "no_introduction_available": "ไม่มีข้อมูลแนะนำ",
+    "video_tap_to_unmute": "แตะเพื่อเปิดเสียง",
     "checkout_googlepay_total_label": "ค่าสมาชิกที่ต้องชำระวันนี้",
     "checkout_googlepay_line_recurring": "การสมัครสมาชิกแบบต่อเนื่อง",
     "shopping_pay_status_success": "ชำระเงินสำเร็จ",
