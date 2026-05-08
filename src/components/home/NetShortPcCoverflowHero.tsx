@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useConfigStore } from '@/stores/config';
-import { useHomeStore, type IItem } from '@/stores/home';
+import { useHomeStore, type IItem, filterRenderableTopBannerItems } from '@/stores/home';
 import { cn } from '@/lib/utils';
 
 const TRANSITION_MS = 500;
@@ -46,11 +46,15 @@ function coverflowTrackMaxWidthPx(n: number): number {
     return Math.max(2 * ARROW_CIRCLE_PX, raw - 2 * ARROW_TUCK_PER_SIDE_PX);
 }
 
-const heroImageUrl = (staticBase: string, imagePath: string) => {
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
+const heroImageUrl = (staticBase: string, imagePath: string | null | undefined) => {
+    if (imagePath == null || imagePath === '') {
+        return '';
     }
-    return `${staticBase}/${imagePath}`;
+    const p = String(imagePath);
+    if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) {
+        return p;
+    }
+    return `${staticBase}/${p}`;
 };
 
 function normalizeEpisodeSlug(raw?: string) {
@@ -161,7 +165,10 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
     const configStore = useConfigStore();
     const homeStore = useHomeStore();
     const staticBase = configStore.config['static'] as string;
-    const topList = homeStore.data?.top ?? [];
+    const topList = useMemo(
+        () => filterRenderableTopBannerItems(homeStore.data?.top ?? []),
+        [homeStore.data?.top],
+    );
     const n = topList.length;
     const k = n > 0 ? Math.min(Math.max(homeStore.current, 0), n - 1) : 0;
 
@@ -240,6 +247,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
         const urls = topList.map((it) => heroImageUrl(staticBase, it.image));
         const keep: HTMLImageElement[] = [];
         for (const u of urls) {
+            if (!u) continue;
             const im = new Image();
             im.decoding = 'async';
             im.src = u;
@@ -364,25 +372,27 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                         <div className="relative h-full w-full overflow-hidden rounded-[20px]">
                                             <div className="pointer-events-none absolute inset-0 z-0 bg-black" />
                                             <div className="absolute inset-0 z-[1]">
-                                                <img
-                                                    src={src}
-                                                    alt={item.title}
-                                                    draggable={false}
-                                                    width={cardW}
-                                                    height={cardH}
-                                                    loading="eager"
-                                                    decoding="async"
-                                                    fetchPriority={t === 0 ? 'high' : 'auto'}
-                                                    className="absolute inset-0 h-full w-full select-none object-cover [user-drag:none]"
-                                                    style={{ opacity: coverOp, transition: imgTrans }}
-                                                />
+                                                {src ? (
+                                                    <img
+                                                        src={src}
+                                                        alt={item.title ?? ''}
+                                                        draggable={false}
+                                                        width={cardW}
+                                                        height={cardH}
+                                                        loading="eager"
+                                                        decoding="async"
+                                                        fetchPriority={t === 0 ? 'high' : 'auto'}
+                                                        className="absolute inset-0 h-full w-full select-none object-cover [user-drag:none]"
+                                                        style={{ opacity: coverOp, transition: imgTrans }}
+                                                    />
+                                                ) : null}
                                             </div>
                                         </div>
                                     </div>
                                     {isCenter && (
                                         <div className="absolute left-0 right-0 top-full mt-[12px] flex flex-col justify-center px-2 text-left">
                                             <span className="truncate font-[Inter] text-[22px] font-medium leading-snug text-white">
-                                                {item.title}
+                                                {item.title ?? ''}
                                             </span>
                                         </div>
                                     )}
@@ -399,7 +409,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                                     rel === 1 ? 'w-full' : 'w-[70%]',
                                                 )}
                                             >
-                                                {item.title}
+                                                {item.title ?? ''}
                                             </span>
                                         </div>
                                     )}

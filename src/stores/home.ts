@@ -38,6 +38,14 @@ export interface IData {
     shelves?: IShelf[],
 }
 
+/** 首页 Banner：无有效封面（null/空串）的条目不渲染、不占位 */
+export function filterRenderableTopBannerItems<T extends { image?: string | null }>(items: T[]): T[] {
+    return items.filter((v) => {
+        if (v.image == null) return false;
+        return String(v.image).trim() !== '';
+    });
+}
+
 interface IHome {
     loading: boolean,
     list: TData[],

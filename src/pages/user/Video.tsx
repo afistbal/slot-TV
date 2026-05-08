@@ -10,7 +10,6 @@ import {
     PlayIcon,
     Star,
     Unlock,
-    Volume2,
     X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type RefObject } from 'react';
@@ -301,8 +300,6 @@ function Player({
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const [progressHover, setProgressHover] = useState(false);
     const [progressDragging, setProgressDragging] = useState(false);
-    /** 浏览器拒绝有声自动播放时，改为静音播放并显示「点击取消静音」 */
-    const [showTapToUnmute, setShowTapToUnmute] = useState(false);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const fullscreenRestoreInFlightRef = useRef(false);
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
@@ -395,54 +392,6 @@ function Player({
         hideController();
     }
 
-    async function tryAutoplayWithMuteFallback() {
-        const video = videoRef.current;
-        if (!video) {
-            return;
-        }
-        if (location.search.indexOf('auto_play=0') !== -1) {
-            return;
-        }
-        setShowTapToUnmute(false);
-        video.muted = false;
-        try {
-            await video.play();
-            setPlaying(true);
-        } catch {
-            try {
-                video.muted = true;
-                await video.play();
-                setPlaying(true);
-                setShowTapToUnmute(true);
-                showController(false);
-                setWaiting(false);
-                setCanPlay(true);
-            } catch {
-                console.log('自动播放失败');
-                showController(false);
-                setWaiting(false);
-                setCanPlay(true);
-                video.muted = false;
-            }
-        }
-    }
-
-    function handleTapToUnmute(e: React.MouseEvent<HTMLElement>) {
-        e.preventDefault();
-        e.stopPropagation();
-        const video = videoRef.current;
-        if (!video) {
-            return;
-        }
-        video.muted = false;
-        setShowTapToUnmute(false);
-        void video
-            .play()
-            .then(() => setPlaying(true))
-            .catch(() => {});
-        showController();
-    }
-
     function setProgress(value: number) {
         if (progressCurrentRef.current === null) {
             return;
@@ -475,7 +424,6 @@ function Player({
         const applyEpisode = async (d: IPlayerEpisode) => {
             setLoading(false);
             setEpisode(d);
-            setShowTapToUnmute(false);
 
             if (!d.video) {
                 setWaiting(false);
@@ -523,7 +471,17 @@ function Player({
             videoRef.current.currentTime = 0;
             videoRef.current.playbackRate = SPEED[speed];
             if (location.search.indexOf('auto_play=0') === -1) {
-                void tryAutoplayWithMuteFallback();
+                videoRef.current
+                    .play()
+                    .then(() => {
+                        setPlaying(true);
+                    })
+                    .catch(() => {
+                        console.log('自动播放失败');
+                        showController(false);
+                        setWaiting(false);
+                        setCanPlay(true);
+                    });
             }
 
             controllerTimerRef.current = window.setTimeout(() => {
@@ -1430,18 +1388,6 @@ function Player({
                                     <LoaderCircle className="w-8 h-8 text-slate-100" />
                                 </div>
                             )}
-                            {showTapToUnmute && episode?.lock === false && (
-                                <div className="absolute inset-0 z-[25] flex flex-col items-center justify-center bg-black/40 pointer-events-auto">
-                                    <button
-                                        type="button"
-                                        className="flex items-center gap-2 rounded-full bg-black/75 px-5 py-2.5 text-white text-sm font-medium shadow-lg border border-white/15"
-                                        onClick={handleTapToUnmute}
-                                    >
-                                        <Volume2 className="h-5 w-5 shrink-0" aria-hidden />
-                                        <FormattedMessage id="video_tap_to_unmute" />
-                                    </button>
-                                </div>
-                            )}
                             </div>
                         </div>
                         <aside
@@ -2083,18 +2029,6 @@ function Player({
                 {waiting && (
                     <div className="w-10 h-10 pointer-events-none rounded-full flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto animate-[spin_1.5s_ease_infinite]">
                         <LoaderCircle className="w-8 h-8 text-slate-100" />
-                    </div>
-                )}
-                {showTapToUnmute && episode?.lock === false && (
-                    <div className="absolute inset-0 z-[25] flex flex-col items-center justify-center bg-black/40 pointer-events-auto">
-                        <button
-                            type="button"
-                            className="flex items-center gap-2 rounded-full bg-black/75 px-5 py-2.5 text-white text-sm font-medium shadow-lg border border-white/15"
-                            onClick={handleTapToUnmute}
-                        >
-                            <Volume2 className="h-5 w-5 shrink-0" aria-hidden />
-                            <FormattedMessage id="video_tap_to_unmute" />
-                        </button>
                     </div>
                 )}
                 <Drawer open={episodeStatus} onOpenChange={() => handleToggleEpisode()}>

@@ -1,12 +1,12 @@
 
 import { Link } from 'react-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { api, type IPagination } from '@/api';
 import { cn } from '@/lib/utils';
 import { FormattedMessage, useIntl } from 'react-intl';
 import NoContent from '@/components/NoContent';
-import { useHomeStore, type IData } from '@/stores/home';
+import { useHomeStore, type IData, filterRenderableTopBannerItems } from '@/stores/home';
 import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
 import Loader from '@/components/Loader';
@@ -28,11 +28,15 @@ const SCROLL_TOP_FAB_THRESHOLD_PX = 400;
 const SCROLL_TOP_FAB_FADE_OUT_MS = 220;
 const HERO_AUTOPLAY_MS = 5000;
 
-function heroImageUrl(staticBase: string, imagePath: string) {
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
+function heroImageUrl(staticBase: string, imagePath: string | null | undefined) {
+    if (imagePath == null || imagePath === '') {
+        return '';
     }
-    return `${staticBase}/${imagePath}`;
+    const p = String(imagePath);
+    if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) {
+        return p;
+    }
+    return `${staticBase}/${p}`;
 }
 
 function itemsFromHomeRail(
@@ -260,7 +264,10 @@ export default function Component() {
         loadLatest();
     }, [homeStore.list.length]);
 
-    const topList = homeStore.data?.top ?? [];
+    const topList = useMemo(
+        () => filterRenderableTopBannerItems(homeStore.data?.top ?? []),
+        [homeStore.data?.top],
+    );
     const topLen = topList.length;
     const currentHero =
         topLen > 0 ? topList[Math.min(Math.max(homeStore.current, 0), topLen - 1)] : undefined;
@@ -358,7 +365,7 @@ export default function Component() {
         }
         api<IData>('home', {
             loading: false,
-            data: { topSize: '50' },
+            data: { topSize: '20' },
         })
             .then((res) => {
                 if (res.c === 0) {
@@ -371,8 +378,8 @@ export default function Component() {
             });
     }, []);
 
-    const firstHeroSrc = homeStore.data?.top[0]
-        ? heroImageUrl(configStore.config['static'] as string, homeStore.data.top[0].image as string)
+    const firstHeroSrc = topList[0]
+        ? heroImageUrl(configStore.config['static'] as string, topList[0].image as string)
         : undefined;
 
     useEffect(() => {
@@ -471,6 +478,10 @@ export default function Component() {
                         <div className="absolute inset-0 z-0 bg-black" aria-hidden />
                         {topList.map((v, i) => {
                             const active = i === homeStore.current;
+                            const coverSrc = heroImageUrl(
+                                configStore.config['static'] as string,
+                                v.image as string | null | undefined,
+                            );
                             return (
                                 <div
                                     key={v.id}
@@ -488,14 +499,16 @@ export default function Component() {
                                         to={toEpisodeOrVideoHref(v)}
                                         className="relative block h-full min-h-0 w-full overflow-hidden"
                                     >
-                                        <img
-                                            src={heroImageUrl(configStore.config['static'] as string, v.image)}
-                                            alt=""
-                                            decoding="async"
-                                            loading={i === 0 ? 'eager' : 'lazy'}
-                                            {...(i === 0 ? { fetchPriority: 'high' as const } : {})}
-                                            className="home-hero-cover-img absolute inset-0 h-full w-full"
-                                        />
+                                        {coverSrc ? (
+                                            <img
+                                                src={coverSrc}
+                                                alt=""
+                                                decoding="async"
+                                                loading={i === 0 ? 'eager' : 'lazy'}
+                                                {...(i === 0 ? { fetchPriority: 'high' as const } : {})}
+                                                className="home-hero-cover-img absolute inset-0 h-full w-full"
+                                            />
+                                        ) : null}
                                     </Link>
                                 </div>
                             );
