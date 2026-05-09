@@ -15,6 +15,7 @@ import FlixActionSheet from "@/widgets/FlixActionSheet";
 import { MyListCabinetConfirmPopover } from '@/components/MyListCabinetConfirmPopover';
 import { useConfigStore } from "@/stores/config";
 import { skipRemoteApi } from '@/env';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 
 type FavoriteProps = {
     /** PC /profile：ReelShort Library 式海报网格；默认 H5/全页为横划列表 */
@@ -169,7 +170,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                         >
                             <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
                             <div className="rs-bi-poster">
-                                <Link to={`/video/${v['movie_id']}`} className="rs-bi-cover">
+                                <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
                                     <Skeleton className="rs-bi-coverSkeleton rounded-[inherit] bg-white/10">
                                         <div className="rs-bi-coverSkeletonInner flex h-full w-full items-center justify-center p-1 text-center text-base font-bold">
                                             <FormattedMessage id="site_name" />
@@ -205,7 +206,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                                 </div>
                             </div>
                             <h3 className="rs-bi-title">
-                                <Link to={`/video/${v['movie_id']}`}>{v['title'] as string}</Link>
+                                <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE}>{v['title'] as string}</Link>
                             </h3>
                             <div className="rs-bi-chapter">
                                 Episodes {v['episodes'] as number}
@@ -240,7 +241,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
         <div className="rs-my-list__grid">
             {list.map((v) => (
                 <div key={v['id'] as number} className="rs-my-list__row" data-id={v['id']} {...gesture()}>
-                    <Link to={`/video/${v['movie_id']}`} className="rs-my-list__cover block">
+                    <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-my-list__cover block">
                         <Skeleton className="rs-my-list__coverSkeleton rounded-[inherit] bg-white/10">
                             <div className="rs-my-list__coverSkeletonInner flex h-full w-full items-center justify-center p-1 text-center text-xl font-bold">
                                 <FormattedMessage id="site_name" />
@@ -260,6 +261,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                             <div className="flex items-start gap-2">
                                 <Link
                                     to={`/video/${v['movie_id']}`}
+                                    state={VIDEO_FROM_HOME_STATE}
                                     className="line-clamp-2 min-w-0 flex-1 overflow-hidden text-ellipsis leading-[18px] text-white"
                                 >
                                     {v['title'] as string}

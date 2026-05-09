@@ -1,2 +1,5 @@
-/** React Router `location.state`：从首页书架 / Banner 进入播放页（后续可扩展到全站站内跳转） */
+/**
+ * React Router `location.state.fromHomeVideoPlayback`：
+ * 任意站内「用户点击进入」播放页（首页 / 书单 / 历史 / 搜索 / Shelf / 顶栏等），与直链冷启动区分以利有声自动播策略。
+ */
 export const VIDEO_FROM_HOME_STATE = { fromHomeVideoPlayback: true } as const;

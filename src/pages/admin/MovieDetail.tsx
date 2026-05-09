@@ -15,6 +15,7 @@ import { CaptionsOff, ChevronsDown, ChevronsUp, Lock, Plus, Subtitles, Unlock, V
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
 import { Link, useParams } from "react-router";
+import { VIDEO_FROM_HOME_STATE } from "@/constants/videoRoute";
 import { toast } from "sonner";
 
 interface IMovie {
@@ -453,7 +454,7 @@ export default function Component() {
                     <FormattedMessage id="flix_operation" />
                 </div>
                 <div className="flex flex-col border rounded-sm bg-slate-50 text-slate-500">
-                    <Link to={`/video/${data.info['id']}`} className="flex h-14 px-4 justify-between items-center border-b">
+                    <Link to={`/video/${data.info['id']}`} state={VIDEO_FROM_HOME_STATE} className="flex h-14 px-4 justify-between items-center border-b">
                         <div>
                             <FormattedMessage id="play" />
                         </div>

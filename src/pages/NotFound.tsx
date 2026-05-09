@@ -10,6 +10,7 @@ import { HomeBookItem, type HomeBookItemData } from '@/components/home/HomeBookI
 import type { IData } from '@/stores/home';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { cn } from '@/lib/utils';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 
 function normalizeEpisodeSlug(raw?: string) {
   if (!raw) return undefined;
@@ -115,6 +116,7 @@ export default function Component() {
                         staticBase={(configStore.config['static'] as string) ?? ''}
                         item={{ ...item, showExpo: true, showPlayMask: false }}
                         variant="style5"
+                        linkState={VIDEO_FROM_HOME_STATE}
                       />
                     ))}
                   </div>

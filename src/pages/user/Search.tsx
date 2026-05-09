@@ -19,6 +19,7 @@ import { scrollElementToTop } from '@/lib/scrollToTop';
 import { ChevronLeft, ChevronRight, LoaderCircle, MoreHorizontal, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 
 /** 搜索分页合并时接口可能返回重复 id，去重避免 React key 冲突与重复卡片 */
 function dedupeSearchRowsById(rows: TData[]): TData[] {
@@ -263,7 +264,7 @@ function SearchPcBookItem({ item }: { item: SearchRowItem }) {
         <div className="rs-bi-bookItem rs-dc-bookItem" data-id={item.id}>
             <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
             <div className="rs-bi-poster">
-                <Link to={`/video/${item.id}`} className="rs-bi-cover">
+                <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
                     <Skeleton className="rs-bi-coverSkeleton rounded-[inherit] bg-white/10">
                         <div className="rs-bi-coverSkeletonInner flex h-full w-full items-center justify-center p-1 text-center text-sm font-bold">
                             <FormattedMessage id="site_name" />
@@ -284,7 +285,7 @@ function SearchPcBookItem({ item }: { item: SearchRowItem }) {
                 </div>
             </div>
             <h3 className="rs-bi-title">
-                <Link to={`/video/${item.id}`}>{item.title}</Link>
+                <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE}>{item.title}</Link>
             </h3>
             {item.episodes > 0 ? (
                 <div className="rs-bi-chapter flex flex-wrap items-center gap-x-1">
@@ -960,6 +961,7 @@ export default function Component() {
                                         {searchStore.list.map((v) => (
                                             <Link
                                                 to={`/video/${v['id']}`}
+                                                state={VIDEO_FROM_HOME_STATE}
                                                 key={String(v['id'])}
                                                 className="rs-search-page__card"
                                             >

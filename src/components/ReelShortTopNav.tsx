@@ -23,6 +23,7 @@ import iconTopnavDownload from '@/assets/icons/topnav-download.svg';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
@@ -359,6 +360,7 @@ function TopNavSearchEntry() {
                       <Link
                         key={id}
                         to={`/video/${id}`}
+                        state={VIDEO_FROM_HOME_STATE}
                         className="reelshort-topnav__pc-search-row"
                         onClick={() => {
                           setOpen(false);

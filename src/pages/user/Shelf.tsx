@@ -5,6 +5,7 @@ import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 
 function parseShelfSlug(rawSlug: string) {
     const decoded = decodeURIComponent(rawSlug);
@@ -231,7 +232,7 @@ export default function Component() {
                                         <div key={item.id} className="rs-shelf__card">
                                             <div className="rs-shelf__cover">
                                                 <div data-report="expo" className="absolute bottom-0 left-0 right-0" />
-                                                <Link to={`/video/${item.id}`} className="cursor-pointer">
+                                                <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE} className="cursor-pointer">
                                                     <img
                                                         alt={item.title}
                                                         src={imgSrc}
@@ -243,7 +244,7 @@ export default function Component() {
                                             <div className="rs-shelf__cardBody">
                                                 <div>
                                                     <h2 className="rs-shelf__cardTitle">
-                                                        <Link to={`/video/${item.id}`}>{item.title}</Link>
+                                                        <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE}>{item.title}</Link>
                                                     </h2>
 
                                                     <div className="rs-shelf__meta rs-shelf__meta--mobile">
@@ -288,6 +289,7 @@ export default function Component() {
                                                     <Link
                                                         role="play_btn"
                                                         to={`/video/${item.id}`}
+                                                        state={VIDEO_FROM_HOME_STATE}
                                                         className="rs-shelf__playBtn"
                                                     >
                                                         <span className="rs-shelf__playBtnIcon">
