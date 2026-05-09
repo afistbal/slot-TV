@@ -43,6 +43,7 @@ function useLoginBase(
     const [pcStep, setPcStep] = useState<PcLoginStep>('providers');
     const [time, setTime] = useState(0);
     const [sendCodeLoading, setSendCodeLoading] = useState(false);
+    const [emailSubmitLoading, setEmailSubmitLoading] = useState(false);
     const [email, setEmail] = useState(localStorage.getItem('email') ?? '');
     const [code, setCode] = useState('');
 
@@ -108,67 +109,73 @@ function useLoginBase(
             );
         }
 
-        loadingStore.show();
-
-        const result = await api<{ [key: string]: unknown }>('login/email', {
-            method: 'post',
-            data: {
-                email: email.trim(),
-                code: code.trim(),
-                ...getAnonymousUniIdPayload(),
-            },
-            loading: false,
-        });
-
-        if (result.c !== 0) {
-            loadingStore.hide();
+        if (emailSubmitLoading) {
             return;
         }
 
-        /* @ts-ignore */
-        if (window.flutter_inappwebview) {
-            /* @ts-ignore */
-            const signin = await window.flutter_inappwebview.callHandler(
-                'emailSignIn',
-                email.trim(),
-                (result.d['info'] as TData)['password'],
-                result.d['is_new'],
-            );
-            if (signin !== 'success') {
-                toast.error(
-                    intl.formatMessage(
-                        {
-                            id: 'login_failed',
-                        },
-                        {
-                            eason: signin,
-                        },
-                    ),
-                );
-                localStorage.removeItem('token');
-                loadingStore.hide();
+        loadingStore.show();
+        setEmailSubmitLoading(true);
+        try {
+            const result = await api<{ [key: string]: unknown }>('login/email', {
+                method: 'post',
+                data: {
+                    email: email.trim(),
+                    code: code.trim(),
+                    ...getAnonymousUniIdPayload(),
+                },
+                loading: false,
+            });
+
+            if (result.c !== 0) {
                 return;
             }
+
+            /* @ts-ignore */
+            if (window.flutter_inappwebview) {
+                /* @ts-ignore */
+                const signin = await window.flutter_inappwebview.callHandler(
+                    'emailSignIn',
+                    email.trim(),
+                    (result.d['info'] as TData)['password'],
+                    result.d['is_new'],
+                );
+                if (signin !== 'success') {
+                    toast.error(
+                        intl.formatMessage(
+                            {
+                                id: 'login_failed',
+                            },
+                            {
+                                eason: signin,
+                            },
+                        ),
+                    );
+                    localStorage.removeItem('token');
+                    return;
+                }
+            }
+
+            toast.success(
+                intl.formatMessage({
+                    id: 'login_success',
+                }),
+            );
+
+            setEmailOpen(false);
+            setPcStep('providers');
+            localStorage.setItem('token', result.d['token'] as string);
+            localStorage.setItem('email', email.trim());
+            localStorage.setItem('login-method', 'email');
+            localStorage.removeItem('user-avatar');
+            userStore.signin(result.d['info'] as { [key: string]: unknown });
+            pixel.track('Register');
+
+            closePcLoginModal();
+            navigate(profilePathAfterLogin, { replace: true, state: {} });
+        } finally {
+            setEmailSubmitLoading(false);
+            loadingStore.hide();
         }
-
-        toast.success(
-            intl.formatMessage({
-                id: 'login_success',
-            }),
-        );
-
-        setEmailOpen(false);
-        setPcStep('providers');
-        localStorage.setItem('token', result.d['token'] as string);
-        localStorage.setItem('email', email.trim());
-        localStorage.setItem('login-method', 'email');
-        localStorage.removeItem('user-avatar');
-        userStore.signin(result.d['info'] as { [key: string]: unknown });
-        pixel.track('Register');
-
-        closePcLoginModal();
-        navigate(profilePathAfterLogin, { replace: true });
-        loadingStore.hide();
     }
 
     async function handleSendCode() {
@@ -281,7 +288,7 @@ function useLoginBase(
             loadingStore.hide();
             pixel.track('Register');
             closePcLoginModal();
-            navigate(profilePathAfterLogin, { replace: true });
+            navigate(profilePathAfterLogin, { replace: true, state: {} });
         } catch {
             loadingStore.hide();
         }
@@ -326,7 +333,7 @@ function useLoginBase(
                 return;
             }
 
-            api('login/uid', {
+            const result2 = await api('login/uid', {
                 method: 'post',
                 data: {
                     uid: result.user.uid,
@@ -337,23 +344,31 @@ function useLoginBase(
                     ...getAnonymousUniIdPayload(),
                 },
                 loading: false,
-            }).then((result2) => {
-                localStorage.setItem('token', result2.d['token'] as string);
-                const photo = result.user.photoURL || '';
-                if (photo) {
-                    localStorage.setItem('user-avatar', photo);
-                } else {
-                    localStorage.removeItem('user-avatar');
-                }
-                const info = result2.d['info'] as TData;
-                info['name'] = result.user.displayName || 'No Name';
-                info['avatar'] = result.user.photoURL || '';
-                info['email'] = result.user.email || '';
-                info['anonymous'] = result.user.isAnonymous ? 1 : 0;
-                userStore.signin(info);
-                closePcLoginModal();
-                navigate(profilePathAfterLogin, { replace: true });
             });
+            if (result2.c !== 0) {
+                localStorage.removeItem('token');
+                return;
+            }
+            if (result2.d == null || typeof result2.d !== 'object') {
+                localStorage.removeItem('token');
+                return;
+            }
+            const d = result2.d as { [key: string]: unknown };
+            localStorage.setItem('token', d['token'] as string);
+            const photo = result.user.photoURL || '';
+            if (photo) {
+                localStorage.setItem('user-avatar', photo);
+            } else {
+                localStorage.removeItem('user-avatar');
+            }
+            const info = d['info'] as TData;
+            info['name'] = result.user.displayName || 'No Name';
+            info['avatar'] = result.user.photoURL || '';
+            info['email'] = result.user.email || '';
+            info['anonymous'] = result.user.isAnonymous ? 1 : 0;
+            userStore.signin(info);
+            closePcLoginModal();
+            navigate(profilePathAfterLogin, { replace: true, state: {} });
         } catch (error) {
             const e = error as Error;
             report(JSON.stringify(e));
@@ -412,6 +427,7 @@ function useLoginBase(
         handleSubmit,
         handleSendCode,
         sendCodeLoading,
+        emailSubmitLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -441,6 +457,7 @@ export function PcLoginDialog({
         handleSubmit,
         handleSendCode,
         sendCodeLoading,
+        emailSubmitLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -620,9 +637,14 @@ export function PcLoginDialog({
                             </div>
                             <button
                                 type="button"
-                                className="rs-login-modal__email-submit"
+                                className="rs-login-modal__email-submit inline-flex items-center justify-center gap-2"
+                                disabled={emailSubmitLoading}
+                                aria-busy={emailSubmitLoading}
                                 onClick={() => void handleSubmit()}
                             >
+                                {emailSubmitLoading ? (
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                                ) : null}
                                 <FormattedMessage id="login" />
                             </button>
                             {protocolBlock}
@@ -648,6 +670,7 @@ export default function Component() {
         handleSubmit,
         handleSendCode,
         sendCodeLoading,
+        emailSubmitLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -784,7 +807,14 @@ export default function Component() {
                             </div>
                         </div>
                         <div className="p-8 pt-0">
-                            <Button onClick={() => void handleSubmit()}>
+                            <Button
+                                onClick={() => void handleSubmit()}
+                                disabled={emailSubmitLoading}
+                                aria-busy={emailSubmitLoading}
+                            >
+                                {emailSubmitLoading ? (
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                                ) : null}
                                 <FormattedMessage id="login" />
                             </Button>
                         </div>

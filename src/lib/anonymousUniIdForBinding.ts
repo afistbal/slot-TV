@@ -1,23 +1,26 @@
 import { useUserStore } from '@/stores/user';
+import { parseCompositeUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 
 /**
- * 游客 `login/anonymous` 返回的 `info.unique_id`。
- * 升级为邮箱/Google 账号时带给 `login/email`、`login/uid`，便于后端合并匿名资产。
+ * 游客升级为邮箱/Google 时带给 `login/email`、`login/uid`：传当前匿名会话的 **uid**（`info.uid`，与展示用 composite 解析一致），不再使用 `unique_id`。
  */
-export function getAnonymousUniIdPayload(): { anonymous_uni_id?: string } {
+export function getAnonymousUniIdPayload(): { anonymous_id?: string } {
     const { signed, info } = useUserStore.getState();
     if (!signed || !info || info['anonymous'] !== 1) {
         return {};
     }
-    const raw = info['unique_id'];
+    const uidField = info['uid'];
     let s = '';
-    if (typeof raw === 'string') {
-        s = raw.trim();
-    } else if (typeof raw === 'number' && Number.isFinite(raw)) {
-        s = String(raw);
+    if (typeof uidField === 'number' && Number.isFinite(uidField)) {
+        s = String(uidField);
+    } else if (typeof uidField === 'string') {
+        const t = uidField.trim();
+        if (t) {
+            s = t.includes('|') ? parseCompositeUidForDisplay(t) : t;
+        }
     }
     if (!s) {
         return {};
     }
-    return { anonymous_uni_id: s };
+    return { anonymous_id: s };
 }
