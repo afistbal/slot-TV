@@ -24,10 +24,8 @@ const STAGE_PX = Math.round(480 * NS_HERO_BANNER_SCALE);
 /** 单卡尺寸（与 getSlideLayout 位移一致；原 310×410） */
 const COVER_CARD_W = Math.round(310 * NS_HERO_BANNER_SCALE);
 const COVER_CARD_H = Math.round(410 * NS_HERO_BANNER_SCALE);
-const COVER_HALF_W = COVER_CARD_W / 2;
-/** 对站 h-[68px] 原钮，随 Banner 略放大；圆心对齐时两侧内收用 tuck */
+/** 对站 h-[68px] 原钮，随 Banner 略放大 */
 const ARROW_CIRCLE_PX = Math.round(68 * NS_HERO_BANNER_SCALE);
-const ARROW_TUCK_PER_SIDE_PX = Math.round(ARROW_CIRCLE_PX / 2) + 8;
 const HERO_CIRCLE_OFFSET_PX = Math.round(60 * NS_HERO_BANNER_SCALE);
 const HERO_CIRCLE_PX: [number, number] = [Math.round(1390 * NS_HERO_BANNER_SCALE), Math.round(116 * NS_HERO_BANNER_SCALE)];
 
