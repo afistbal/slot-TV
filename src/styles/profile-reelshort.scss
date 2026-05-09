@@ -316,11 +316,12 @@
 
 /* flex-shrink:0 + min-width：主栏有宽/长内容时勿把侧栏压扁；宽度仍随视口 clamp 缩放 */
 .rs-profile__pc-aside {
-    /* 与 flex 列宽同一套 clamp，供侧栏整列 zoom（用户卡 + 菜单同比） */
-    --rs-pc-aside-bw: clamp(272px, 30vw, 420px);
+    /* 与 flex 列宽同一套 clamp，供侧栏整列 zoom（用户卡 + 菜单同比）；大屏上限收紧，避免侧栏过宽 */
+    --rs-pc-aside-max: 360px;
+    --rs-pc-aside-bw: clamp(272px, 26vw, var(--rs-pc-aside-max));
     flex: 0 0 var(--rs-pc-aside-bw);
     min-width: 272px;
-    max-width: min(420px, 100%);
+    max-width: min(var(--rs-pc-aside-max), 100%);
     padding-top: 24px;
     padding-right: 0;
     padding-bottom: 12px;
@@ -332,9 +333,9 @@
     overflow-x: hidden;
     overflow-y: visible;
 
-    /* 窄列时整列同比缩到「设计最大 420」比例下，一条 zoom 即可（Chromium / 新版 Firefox） */
+    /* 窄列时整列同比缩到「设计最大 --rs-pc-aside-max」比例下，一条 zoom 即可（Chromium / 新版 Firefox） */
     @supports (zoom: 0.5) {
-        zoom: min(1, calc(var(--rs-pc-aside-bw) / 420px));
+        zoom: min(1, calc(var(--rs-pc-aside-bw) / var(--rs-pc-aside-max)));
     }
 }
 

@@ -24,6 +24,7 @@ import usePixel from '@/hooks/usePixel';
 import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
+import { getAnonymousUniIdPayload } from '@/lib/anonymousUniIdForBinding';
 
 type PcLoginStep = 'providers' | 'email';
 
@@ -47,6 +48,13 @@ function useLoginBase(
 
     const isPcVariant = variant === 'pc';
     const profilePathAfterLogin = isPcVariant ? '/profile?tab=topup' : '/profile';
+
+    /** PC：`PcLoginDialog` 由父级 state 控制；登录成功若已在 `/profile?tab=topup`，仅 navigate 不会关弹窗 */
+    function closePcLoginModal() {
+        if (isPcVariant && pcOpts) {
+            pcOpts.onRequestClose();
+        }
+    }
 
     function handleToggleEmailLogin() {
         if (isPcVariant) {
@@ -107,6 +115,7 @@ function useLoginBase(
             data: {
                 email: email.trim(),
                 code: code.trim(),
+                ...getAnonymousUniIdPayload(),
             },
             loading: false,
         });
@@ -157,6 +166,7 @@ function useLoginBase(
         userStore.signin(result.d['info'] as { [key: string]: unknown });
         pixel.track('Register');
 
+        closePcLoginModal();
         navigate(profilePathAfterLogin, { replace: true });
         loadingStore.hide();
     }
@@ -244,6 +254,7 @@ function useLoginBase(
                 method: 'post',
                 data: {
                     uid: detail.uid,
+                    ...getAnonymousUniIdPayload(),
                 },
                 loading: false,
             });
@@ -269,6 +280,7 @@ function useLoginBase(
             userStore.signin(info);
             loadingStore.hide();
             pixel.track('Register');
+            closePcLoginModal();
             navigate(profilePathAfterLogin, { replace: true });
         } catch {
             loadingStore.hide();
@@ -322,6 +334,7 @@ function useLoginBase(
                     name: result.user.displayName || '',
                     email: result.user.email,
                     provider: 'google',
+                    ...getAnonymousUniIdPayload(),
                 },
                 loading: false,
             }).then((result2) => {
@@ -338,6 +351,7 @@ function useLoginBase(
                 info['email'] = result.user.email || '';
                 info['anonymous'] = result.user.isAnonymous ? 1 : 0;
                 userStore.signin(info);
+                closePcLoginModal();
                 navigate(profilePathAfterLogin, { replace: true });
             });
         } catch (error) {
