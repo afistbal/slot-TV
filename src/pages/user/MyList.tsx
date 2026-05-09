@@ -15,7 +15,9 @@ export default function Component() {
     const navigate = useNavigate();
     const locationState = (location.state ?? {}) as MyListLocationState;
     const sourceformFromSearch = new URLSearchParams(location.search).get('sourceform') ?? undefined;
-    const sourceform = sourceformFromSearch ?? locationState.sourceform;
+    const rawSourceform = sourceformFromSearch ?? locationState.sourceform;
+    const sourceform =
+        typeof rawSourceform === 'string' && rawSourceform.length > 0 ? rawSourceform : undefined;
     const tab = useMemo(() => {
         const p = location.pathname.replace(/\/$/, '');
         return p.endsWith('/history') ? 'history' : 'favorite';

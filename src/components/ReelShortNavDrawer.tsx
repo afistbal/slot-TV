@@ -6,7 +6,10 @@ import { cn } from '@/lib/utils';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 
-function isLocaleActive(current: string, code: string): boolean {
+function isLocaleActive(current: string | null | undefined, code: string | null | undefined): boolean {
+    if (current == null || code == null) {
+        return false;
+    }
     const c = current.toLowerCase();
     const p = code.toLowerCase();
     if (c === p) {

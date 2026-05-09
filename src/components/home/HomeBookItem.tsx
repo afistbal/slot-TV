@@ -39,10 +39,11 @@ export function HomeBookItem({
     /** 首页进入播放页时传入，用于 PC 直链/刷新 vs 站内点击 的自动播放策略 */
     linkState?: Record<string, unknown>;
 }) {
+    const raw = item.image ?? '';
     const src =
-        item.image.startsWith('http://') || item.image.startsWith('https://')
-            ? item.image
-            : `${staticBase}/${item.image}`;
+        raw.startsWith('http://') || raw.startsWith('https://')
+            ? raw
+            : `${staticBase}/${raw}`;
 
     return (
         <div
