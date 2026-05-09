@@ -34,6 +34,35 @@ function dedupeSearchRowsById(rows: TData[]): TData[] {
     });
 }
 
+/** 会话内 tags 只拉一次；并发挂载共用同一 Promise，减轻 Strict Mode / 快速重挂载下的双请求 */
+let movieTagsInflight: Promise<void> | null = null;
+
+async function ensureMovieTags(): Promise<void> {
+    const s = useSearchStore.getState();
+    if (s.tags.length > 0) return;
+    if (!movieTagsInflight) {
+        movieTagsInflight = api<TData[]>('movie/tags', { loading: false })
+            .then((res) => {
+                useSearchStore.getState().setTags(res.d);
+            })
+            .finally(() => {
+                movieTagsInflight = null;
+            });
+    }
+    await movieTagsInflight;
+}
+
+/** 最新一次 `movie` 请求生效；较早返回的结果丢弃（导航/Strict Mode 叠请求） */
+let searchMovieLoadId = 0;
+
+/** 首屏 URL ?q= 与 store 关键字是否一致（无 q 则表示不应强行要求关键字） */
+function keywordMatchesSearchUrl(): boolean {
+    const urlQ = new URLSearchParams(window.location.search).get('q');
+    const decoded = urlQ ? decodeURIComponent(urlQ.replace(/\+/g, ' ')).trim() : '';
+    const kw = useSearchStore.getState().keyword.trim();
+    return urlQ ? kw === decoded : kw === '';
+}
+
 /** 與離屏測量 `measurePcTagsTwoRowSplit` 內 DOM 一致 */
 const PC_TAG_TOGGLE_INNER_HTML =
     '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18" class="rs-search-page__pcTagsToggleSvg" aria-hidden="true">' +
@@ -384,53 +413,61 @@ export default function Component() {
     }, [scrollTopForFab]);
 
     async function loadData() {
-        if (requesting.current) {
-            return;
-        }
+        const loadId = ++searchMovieLoadId;
         requesting.current = true;
         const state = useSearchStore.getState();
         /** PC 換頁或首屏：整頁 loading；H5 僅首屏 loading，追加頁保留列表 */
         if (isPc || state.page === 1) {
             searchStore.setLoading(true);
         }
-        const result = await api<IPagination>('movie', {
-            loading: false,
-            data: {
-                page: state.page,
-                keyword: state.keyword.trim(),
-                tag: state.tag,
-            },
-        }).finally(() => {
-            requesting.current = false;
-        });
-        const d = result.d;
-        const rowsRaw = (d.data ?? []) as TData[];
-        const rows = dedupeSearchRowsById(rowsRaw);
-        const perPage = d.per_page > 0 ? d.per_page : 24;
-        const cur = typeof d.current_page === 'number' ? d.current_page : state.page;
-        const total = typeof d.count === 'number' ? d.count : 0;
-        searchStore.setPaginationMeta(total, perPage);
+        try {
+            const result = await api<IPagination>('movie', {
+                loading: false,
+                data: {
+                    page: state.page,
+                    keyword: state.keyword.trim(),
+                    tag: state.tag,
+                },
+            });
+            if (loadId !== searchMovieLoadId) return;
 
-        if (isPc) {
-            searchStore.setList(rows);
-        } else if (state.page === 1) {
-            searchStore.setList(rows);
-        } else {
-            searchStore.setList(dedupeSearchRowsById([...state.list, ...rows]));
-        }
+            const d = result.d;
+            const rowsRaw = (d.data ?? []) as TData[];
+            const rows = dedupeSearchRowsById(rowsRaw);
+            const perPage = d.per_page > 0 ? d.per_page : 24;
+            const cur = typeof d.current_page === 'number' ? d.current_page : state.page;
+            const total = typeof d.count === 'number' ? d.count : 0;
+            searchStore.setPaginationMeta(total, perPage);
 
-        searchStore.setLoading(false);
+            if (isPc) {
+                searchStore.setList(rows);
+            } else if (state.page === 1) {
+                searchStore.setList(rows);
+            } else {
+                searchStore.setList(dedupeSearchRowsById([...state.list, ...rows]));
+            }
 
-        let hasMore = false;
-        if (total > 0) {
-            hasMore = cur * perPage < total;
-        } else {
-            hasMore = rows.length === perPage;
-        }
-        searchStore.setMore(hasMore);
+            searchStore.setLoading(false);
 
-        if (isPc && scrollRef.current) {
-            scrollRef.current.scrollTop = 0;
+            let hasMore = false;
+            if (total > 0) {
+                hasMore = cur * perPage < total;
+            } else {
+                hasMore = rows.length === perPage;
+            }
+            searchStore.setMore(hasMore);
+
+            if (isPc && scrollRef.current) {
+                scrollRef.current.scrollTop = 0;
+            }
+        } catch {
+            if (loadId === searchMovieLoadId) {
+                searchStore.setLoading(false);
+            }
+        } finally {
+            if (loadId === searchMovieLoadId) {
+                requesting.current = false;
+            }
         }
     }
 
@@ -557,17 +594,39 @@ export default function Component() {
         }
         const decoded = decodeURIComponent(q.replace(/\+/g, ' '));
         const s = useSearchStore.getState();
+        if (s.keyword.trim() === decoded.trim()) {
+            return;
+        }
         s.setKeyword(decoded);
         s.setPage(1);
     }, []);
 
     useEffect(() => {
-        api<TData[]>('movie/tags', {
-            loading: false,
-        }).then((res) => {
-            searchStore.setTags(res.d);
-            loadData();
-        });
+        let cancelled = false;
+        void (async () => {
+            await ensureMovieTags();
+            if (cancelled) return;
+
+            const state = useSearchStore.getState();
+            const canReuseList =
+                state.list.length > 0 && keywordMatchesSearchUrl();
+
+            if (canReuseList) {
+                searchStore.setLoading(false);
+                requestAnimationFrame(() => {
+                    if (cancelled) return;
+                    const el = scrollRef.current;
+                    if (el) {
+                        el.scrollTop = useSearchStore.getState().scrollTop;
+                    }
+                });
+                return;
+            }
+            void loadData();
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     /** PC：兩行高度上限 + 離屏二分測量，决定折疊時展示多少個 tag（展開鈕跟在末尾 tag 後） */

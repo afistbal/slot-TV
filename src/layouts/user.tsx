@@ -1,12 +1,24 @@
 import { FormattedMessage, useIntl } from "react-intl";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { matchPath, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, Home as IconHome, User as IconProfile, ListVideo } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
+import UserHome from "@/pages/user/Home";
+import UserSearch from "@/pages/user/Search";
 import usePixel from "@/hooks/usePixel";
 import { showBottomTabBar } from "@/env";
 import { IosAddHomeFloatingBtn } from "@/components/IosAddHomeFloatingBtn";
+
+/** 与 App 中 `/`、`/search`、`/:locale/search` 占位路由一致；仅这两页做 DOM 级 keep-alive，避免反复卸载导致图片/LazyLoad 重跑 */
+function usePrimaryTabKeepAlive() {
+    const { pathname } = useLocation();
+    const isHome = matchPath({ path: "/", end: true }, pathname) != null;
+    const isSearch =
+        matchPath({ path: "/search", end: true }, pathname) != null ||
+        matchPath({ path: "/:locale/search", end: true }, pathname) != null;
+    return { isHome, isSearch };
+}
 
 function RouteSuspenseFallback() {
     const intl = useIntl();
@@ -26,6 +38,16 @@ export default function Component() {
     const pixel = usePixel();
     const location = useLocation();
     const sourceform = `${location.pathname}${location.search}`;
+    const outletKey = useMemo(
+        () => `${location.pathname}${location.search}`,
+        [location.pathname, location.search],
+    );
+    const { isHome, isSearch } = usePrimaryTabKeepAlive();
+    const visitedHomeRef = useRef(false);
+    const visitedSearchRef = useRef(false);
+    if (isHome) visitedHomeRef.current = true;
+    if (isSearch) visitedSearchRef.current = true;
+    const showPrimaryKeepAlive = isHome || isSearch;
     const pathSegments = location.pathname.toLowerCase().split('/').filter(Boolean);
     const isShoppingRoute = pathSegments[pathSegments.length - 1] === 'shopping';
 
@@ -36,9 +58,44 @@ export default function Component() {
     return <div className="flex h-full min-h-0 flex-col">
         {/* min-h-0 + overflow-hidden：纵滑只发生在各页内部 scroll 容器，避免与首页 home-page__scroll 双轨滚动导致页脚滚不到、顶栏 ref 的 scrollTop 恒为 0 */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <Suspense key={location.key} fallback={<RouteSuspenseFallback />}>
-                <Outlet key={location.key} />
-            </Suspense>
+            {/*
+              flex-1+min-h-0：保证首页 home-page 的 h-full / 内层 overflow-y-auto 高度链不断。
+            */}
+            <div className="relative flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+                {visitedHomeRef.current ? (
+                    <div
+                        className={cn(
+                            "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden",
+                            !isHome && "hidden",
+                        )}
+                        aria-hidden={!isHome}
+                    >
+                        <Suspense fallback={<RouteSuspenseFallback />}>
+                            <UserHome />
+                        </Suspense>
+                    </div>
+                ) : null}
+                {visitedSearchRef.current ? (
+                    <div
+                        className={cn(
+                            "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden",
+                            !isSearch && "hidden",
+                        )}
+                        aria-hidden={!isSearch}
+                    >
+                        <Suspense fallback={<RouteSuspenseFallback />}>
+                            <UserSearch />
+                        </Suspense>
+                    </div>
+                ) : null}
+                {!showPrimaryKeepAlive ? (
+                    <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
+                        <Suspense key={outletKey} fallback={<RouteSuspenseFallback />}>
+                            <Outlet key={outletKey} />
+                        </Suspense>
+                    </div>
+                ) : null}
+            </div>
         </div>
         {/* ReelShort 无底部三栏 Tab；需要旧版时设 `VITE_BOTTOM_TAB_BAR=true`（见 `src/env.ts`） */}
         {showBottomTabBar ? (

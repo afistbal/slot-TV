@@ -1,6 +1,7 @@
 import {
     createBrowserRouter,
     Navigate,
+    Outlet,
     RouterProvider,
     useRouteError,
 } from "react-router";
@@ -27,7 +28,6 @@ import enMessages from './locales/en.json';
 import zhMessages from './locales/zh.json';
 
 import LayoutUser from './layouts/user';
-import UserHome from './pages/user/Home';
 import UserMyList from './pages/user/MyList';
 import UserFavorite from './pages/user/Favorite';
 import UserHistory from './pages/user/History';
@@ -76,10 +76,15 @@ function LegacyCheckoutToShoppingRedirect() {
     return <Navigate to="/shopping" replace />;
 }
 
+/** `/`、`/search` 实际内容由 `layouts/user` 内 keep-alive 层渲染；此处仅占位以维持路由匹配 */
+function LayoutUserPrimaryTabPlaceholder() {
+    return null;
+}
+
 /** config/登录完成前全屏占位 */
 function InitialBootLoading() {
     return (
-        <div className="fixed inset-0 z-10 flex bg-app-canvas">
+        <div className="fixed inset-0 z-10 flex min-h-0 items-center justify-center bg-app-canvas">
             <Loader color="light" />
         </div>
     );
@@ -117,7 +122,7 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <UserHome />,
+                element: <LayoutUserPrimaryTabPlaceholder />,
             },
             {
                 path: 'categories',
@@ -125,11 +130,11 @@ const router = createBrowserRouter([
             },
             {
                 path: 'search',
-                element: <UserSearch />,
+                element: <LayoutUserPrimaryTabPlaceholder />,
             },
             {
                 path: ':locale/search',
-                element: <UserSearch />,
+                element: <LayoutUserPrimaryTabPlaceholder />,
             },
             {
                 path: 'shelf/:slug',
@@ -212,8 +217,14 @@ const router = createBrowserRouter([
     },
     {
         path: '/page',
+        element: <Outlet />,
         errorElement: <ErrorBoundary />,
         children: [
+            /** 仅访问 `/page` 无子路径时 Outlet 为空会黑屏；落到首页 */
+            {
+                index: true,
+                element: <Navigate to="/" replace />,
+            },
             {
                 path: 'feedback',
                 element: <UserFeedback />,

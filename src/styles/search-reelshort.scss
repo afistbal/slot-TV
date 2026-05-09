@@ -10,9 +10,12 @@
     flex-direction: column;
     background-color: var(--app-canvas);
 
+    /** 垂直 flex 链：否则 __main / __results 的 flex:1 不生效，视口下半截只剩纯黑底 */
     &__scroll {
+        display: flex;
         min-height: 0;
         flex: 1 1 auto;
+        flex-direction: column;
         overflow-y: auto;
     }
 
@@ -110,6 +113,8 @@
 
     &__body {
         display: flex;
+        min-height: 0;
+        flex: 1 1 auto;
         flex-direction: column;
     }
 
@@ -448,13 +453,14 @@
 
         &--pc {
             @media (min-width: 768px) {
-                min-height: min(52vh, 560px);
+                /** 顶栏+面包屑约 200～260px；结果区至少铺满剩余视高，避免大块纯黑 */
+                min-height: max(min(52vh, 560px), calc(100svh - 280px));
             }
         }
 
         &--h5 {
             @media (max-width: 767.98px) {
-                min-height: min(48vh, 400px);
+                min-height: max(min(48vh, 400px), calc(100svh - 240px));
             }
         }
     }
