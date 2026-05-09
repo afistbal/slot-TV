@@ -729,7 +729,14 @@ function App() {
             ) : null}
             {checked ? <RouterProvider router={router} /> : <InitialBootLoading />}
         </div>
-        <Dialog open={loadingStore.status}>
+        <Dialog
+            open={loadingStore.status}
+            onOpenChange={(next) => {
+                if (!next) {
+                    loadingStore.hide();
+                }
+            }}
+        >
             <DialogContent className="bg-transparent [&>button]:hidden flex flex-col justify-center items-center shadow-none outline-none" aria-describedby={undefined}>
                 <DialogTitle className="hidden">loading</DialogTitle>
                 <div className="w-16 h-16 flex items-center justify-center animate-[spin_1.5s_ease_infinite]">

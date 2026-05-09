@@ -44,6 +44,8 @@ function useLoginBase(
     const [time, setTime] = useState(0);
     const [sendCodeLoading, setSendCodeLoading] = useState(false);
     const [emailSubmitLoading, setEmailSubmitLoading] = useState(false);
+    /** Google 弹窗 OAuth：勿用全局 loadingStore，否则与 PC 登录弹窗双开 Radix Dialog，取消弹窗后易拦截点击/无法关登录层 */
+    const [oauthPopupLoading, setOauthPopupLoading] = useState(false);
     const [email, setEmail] = useState(localStorage.getItem('email') ?? '');
     const [code, setCode] = useState('');
 
@@ -285,6 +287,11 @@ function useLoginBase(
             info['email'] = detail.email;
             info['anonymous'] = detail.anonymous ? 1 : 0;
             userStore.signin(info);
+            toast.success(
+                intl.formatMessage({
+                    id: 'login_success',
+                }),
+            );
             loadingStore.hide();
             pixel.track('Register');
             closePcLoginModal();
@@ -295,28 +302,15 @@ function useLoginBase(
     }
 
     async function handleGoogleSigninPopup() {
+        if (oauthPopupLoading) {
+            return;
+        }
+        setOauthPopupLoading(true);
         try {
-            loadingStore.show();
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
 
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            if (!credential) {
-                report('google login failed A');
-                toast.error(
-                    intl.formatMessage(
-                        {
-                            id: 'login_failed',
-                        },
-                        {
-                            eason: 'A',
-                        },
-                    ),
-                );
-                localStorage.removeItem('token');
-                return;
-            }
-
+            /** 仅以 `result.user` 为准：`credentialFromResult` 在部分环境下可为 null，但仍已登录 Firebase，不应拦截 `login/uid`。 */
             if (!result.user) {
                 report('google login failed B');
                 toast.error(
@@ -367,6 +361,12 @@ function useLoginBase(
             info['email'] = result.user.email || '';
             info['anonymous'] = result.user.isAnonymous ? 1 : 0;
             userStore.signin(info);
+            toast.success(
+                intl.formatMessage({
+                    id: 'login_success',
+                }),
+            );
+            pixel.track('Register');
             closePcLoginModal();
             navigate(profilePathAfterLogin, { replace: true, state: {} });
         } catch (error) {
@@ -384,7 +384,7 @@ function useLoginBase(
             );
             localStorage.removeItem('token');
         } finally {
-            loadingStore.hide();
+            setOauthPopupLoading(false);
         }
     }
 
@@ -428,6 +428,7 @@ function useLoginBase(
         handleSendCode,
         sendCodeLoading,
         emailSubmitLoading,
+        oauthPopupLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -458,6 +459,7 @@ export function PcLoginDialog({
         handleSendCode,
         sendCodeLoading,
         emailSubmitLoading,
+        oauthPopupLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -548,12 +550,17 @@ export function PcLoginDialog({
                                 <button
                                     type="button"
                                     id="google"
-                                    className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google"
+                                    className={cn(
+                                        'LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google',
+                                        oauthPopupLoading && 'pointer-events-none opacity-60',
+                                    )}
+                                    disabled={oauthPopupLoading}
+                                    aria-busy={oauthPopupLoading}
                                     onClick={
                                         (window as unknown as { flutter_inappwebview?: unknown })
                                             .flutter_inappwebview !== undefined
                                             ? handleGoogleSignin
-                                            : handleGoogleSigninPopup
+                                            : () => void handleGoogleSigninPopup()
                                     }
                                 >
                                     <div className="LoginModal_login_icon__Huj9u">
@@ -671,6 +678,7 @@ export default function Component() {
         handleSendCode,
         sendCodeLoading,
         emailSubmitLoading,
+        oauthPopupLoading,
         handleEmailChange,
         handleCodeChange,
         handleGoogleSignin,
@@ -707,13 +715,41 @@ export default function Component() {
                     <div className="LoginPage_login_btn_box__mdGH7 rs-login__btns">
                         <div
                             id="google"
-                            className="LoginPage_login_btn_item__OkeV1 rs-login__btn"
-                            onClick={
-                                (window as unknown as { flutter_inappwebview?: unknown }).flutter_inappwebview !==
-                                undefined
-                                    ? handleGoogleSignin
-                                    : handleGoogleSigninPopup
-                            }
+                            className={cn(
+                                'LoginPage_login_btn_item__OkeV1 rs-login__btn',
+                                oauthPopupLoading && 'pointer-events-none opacity-60',
+                            )}
+                            role="button"
+                            tabIndex={oauthPopupLoading ? -1 : 0}
+                            onClick={() => {
+                                if (oauthPopupLoading) {
+                                    return;
+                                }
+                                if (
+                                    (window as unknown as { flutter_inappwebview?: unknown })
+                                        .flutter_inappwebview !== undefined
+                                ) {
+                                    void handleGoogleSignin();
+                                } else {
+                                    void handleGoogleSigninPopup();
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (oauthPopupLoading) {
+                                    return;
+                                }
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    if (
+                                        (window as unknown as { flutter_inappwebview?: unknown })
+                                            .flutter_inappwebview !== undefined
+                                    ) {
+                                        void handleGoogleSignin();
+                                    } else {
+                                        void handleGoogleSigninPopup();
+                                    }
+                                }
+                            }}
                         >
                             <div className="LoginPage_login_icon__XK3jz">
                                 <img src={google} alt="" />
