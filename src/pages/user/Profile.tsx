@@ -370,16 +370,13 @@ export default function Component() {
             <div className="dashboard_pc_dashboard_pc__EjjRI">
                 <div className="dashboard_pc_dashboard_control__6d3Zj">
                     <div className="dashboard_pc_user_info__NRQYu">
-                        <div
-                            className="relative flex h-full w-full flex-shrink-0 items-center justify-center"
-                            style={{ width: 62, height: 62 }}
-                        >
-                            <div className="relative" style={{ width: 50, height: 50 }}>
+                        <div className="rs-profile__pc-userAvatar relative flex h-full w-full flex-shrink-0 items-center justify-center">
+                            <div className="relative h-10 w-10">
                                 {isSignedProfile && avatarUrl ? (
                                     <img
                                         alt=""
                                         aria-hidden
-                                        className="block h-[50px] w-[50px] max-w-full rounded-[50%] object-cover"
+                                        className="block h-10 w-10 max-w-full rounded-[50%] object-cover"
                                         src={avatarUrl}
                                         referrerPolicy="no-referrer"
                                         onError={() => {
@@ -390,7 +387,7 @@ export default function Component() {
                                 ) : (
                                     <img
                                         alt="Guest"
-                                        className="block h-[50px] w-[50px] max-w-full rounded-[50%] object-cover"
+                                        className="block h-10 w-10 max-w-full rounded-[50%] object-cover"
                                         src={iconHead}
                                     />
                                 )}

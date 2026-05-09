@@ -314,13 +314,12 @@
     pointer-events: none;
 }
 
-/* flex-shrink:0 + min-width：主栏有宽/长内容时勿把侧栏压扁；宽度仍随视口 clamp 缩放 */
+/* flex-shrink:0 + min-width：主栏有宽/长内容时勿把侧栏压扁；宽度随视口 clamp（最大 260px 见 --rs-pc-aside-max） */
 .rs-profile__pc-aside {
-    /* 与 flex 列宽同一套 clamp，供侧栏整列 zoom（用户卡 + 菜单同比）；大屏上限收紧，避免侧栏过宽 */
-    --rs-pc-aside-max: 360px;
-    --rs-pc-aside-bw: clamp(272px, 26vw, var(--rs-pc-aside-max));
+    --rs-pc-aside-max: 260px;
+    --rs-pc-aside-bw: clamp(200px, 22vw, var(--rs-pc-aside-max));
     flex: 0 0 var(--rs-pc-aside-bw);
-    min-width: 272px;
+    min-width: 200px;
     max-width: min(var(--rs-pc-aside-max), 100%);
     padding-top: 24px;
     padding-right: 0;
@@ -332,11 +331,7 @@
     min-height: 0;
     overflow-x: hidden;
     overflow-y: visible;
-
-    /* 窄列时整列同比缩到「设计最大 --rs-pc-aside-max」比例下，一条 zoom 即可（Chromium / 新版 Firefox） */
-    @supports (zoom: 0.5) {
-        zoom: min(1, calc(var(--rs-pc-aside-bw) / var(--rs-pc-aside-max)));
-    }
+    /* 不再对整列 zoom：窄侧栏下会糊字/比例怪；改由 dashboard 内边距与换行适配（见 reelshort-dashboard-pc-mirror.scss） */
 }
 
 /* PC 侧栏个人信息：已迁至 `reelshort-dashboard-pc-mirror.scss`（ReelShort dashboard_pc_* 同源类名） */
