@@ -30,7 +30,6 @@ import FeedbackPanel from '@/pages/user/Feedback';
 import UserDetailPanel from '@/pages/user/UserDetail';
 import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
 import { PcLoginDialog } from '@/pages/user/Login';
-
 type ProfilePcTab = 'topup' | 'profile' | 'mylist' | 'feedback';
 
 export default function Component() {
@@ -70,6 +69,20 @@ export default function Component() {
             navigate('/shopping');
         }
     }
+
+    /** H5：观看记录在 `/my-list/history`，`/profile?tab=history` 仅 PC 解析；否则外链/旧链会停在 Profile 首页 */
+    useEffect(() => {
+        if (isPc) {
+            return;
+        }
+        if (searchParams.get('tab')?.toLowerCase() !== 'history') {
+            return;
+        }
+        const next = new URLSearchParams(searchParams);
+        next.delete('tab');
+        const q = next.toString();
+        navigate(`/my-list/history${q ? `?${q}` : ''}`, { replace: true, state: location.state });
+    }, [isPc, searchParams, navigate, location.state]);
 
     /** PC：URL → 侧栏与主栏状态 */
     useEffect(() => {
@@ -433,7 +446,8 @@ export default function Component() {
             >
                 <ReelShortTopNav
                     scrollParentRef={scrollRef}
-                    showPrimaryNav={false}
+                    /* 与首页同结构，避免 PC 下 `brand-cluster` 居中 ↔ 左对齐 + 主导览 切换导致顶栏「宽度/重心」晃动感 */
+                    showPrimaryNav
                     showSearch={true}
                     showProfile={false}
                     showLeftAction

@@ -269,12 +269,17 @@
 }
 
 .rs-profile__pc-dashboard {
-    width: 100%;
-    max-width: 1636px;
+    /* 与首页顶栏 / Banner / 主区同版心 */
+    box-sizing: border-box;
+    width: min(88%, 1600px);
+    max-width: min(1636px, 100%);
     min-width: 0;
-    margin: 0 auto;
-    /* 与顶栏 `.reelshort-topnav__inner` 同宽盒内：左右 gutter 与顶栏图标竖线对齐 */
-    padding: 0 var(--rs-pc-page-gutter-x, 16px);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 0;
+    padding-bottom: 0;
     display: flex;
     align-items: stretch;
     column-gap: clamp(12px, 2.4vw, 32px);

@@ -32,7 +32,7 @@
 
 .rs-shelf__container {
     width: 100%;
-    max-width: 1636px;
+    max-width: min(1636px, 100%);
     margin-left: auto;
     margin-right: auto;
     padding-top: 0;
@@ -391,6 +391,7 @@
 
 @media (min-width: 768px) {
     .rs-shelf__container {
+        width: min(88%, 1600px);
         padding-top: 24px;
     }
 
@@ -572,9 +573,15 @@
 
 .rs-container {
     width: 100%;
-    max-width: 1636px;
+    max-width: min(1636px, 100%);
     margin-left: auto;
     margin-right: auto;
+}
+
+@media (min-width: 768px) {
+    .rs-container {
+        width: min(88%, 1600px);
+    }
 }
 
 .cover-bg {

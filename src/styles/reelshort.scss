@@ -169,7 +169,7 @@ button.reelshort-nav-drawer__close {
     }
 }
 
-/* 与 HomePage_main 一致：仅 ≥768px（PC 顶栏与主区同宽断点）限制 1636 + 居中；≤767/小程序不换行布局不受影响 */
+/* 与首页 NetShortPcCoverflowHero 外层一致：max ~1636px + md:w-[min(88%,1600px)]；≤767 全宽 */
 .reelshort-topnav__inner {
     width: 100%;
     max-width: 100%;
@@ -179,8 +179,13 @@ button.reelshort-nav-drawer__close {
 }
 
 @media (min-width: 768px) {
+    /* PC 整页版心与 Banner 外层（px-2）一致：顶栏 + Banner + 主区 + 页脚共用同一列宽 */
     .reelshort-topnav__inner {
+        width: min(88%, 1600px);
         max-width: min(1636px, 100%);
+        padding-left: 8px;
+        padding-right: 8px;
+        box-sizing: border-box;
     }
 }
 
@@ -521,9 +526,9 @@ a.reelshort-topnav__profile-link {
 }
 
 @media (min-width: 768px) {
-    /* PC 主区与顶栏左缘对齐（与 `.reelshort-topnav__row` 水平 padding、`.reelshort-topnav__left` 同源） */
+    /* PC 主区与顶栏左缘对齐（与 Banner `px-2`、`.reelshort-topnav__row` 水平 padding 同源） */
     :root {
-        --rs-pc-page-gutter-x: 16px;
+        --rs-pc-page-gutter-x: 8px;
     }
 
     .reelshort-topnav__brand-logo {
@@ -579,11 +584,12 @@ a.reelshort-topnav__profile-link {
 
     .reelshort-topnav__row {
         min-height: 52px;
-        padding: 8px var(--rs-pc-page-gutter-x);
+        /* inner 已含 px-2，避免与 --rs-pc-page-gutter-x 重复叠横向留白 */
+        padding: 8px 0;
     }
 
     .reelshort-topnav__left {
-        left: var(--rs-pc-page-gutter-x);
+        left: 0;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -661,7 +667,7 @@ a.reelshort-topnav__profile-link {
 
     .reelshort-topnav__right {
         position: relative;
-        right: var(--rs-pc-page-gutter-x);
+        right: 0;
         top: auto;
         transform: none;
         margin-left: auto;

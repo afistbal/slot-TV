@@ -579,22 +579,24 @@
 }
 
 /**
- * PC /search：与顶栏 `reelshort-topnav__inner` 同宽 1636 + 左右 16px；
+ * PC /search：与首页顶栏 / Banner / 主区同版心（min(88%,1600) + max 1636 + 左右 8px）。
  * 影片列表 DOM 与 Profile `rs-dc-mylist` + `rs-dc-bookItem` 一致（flex 列宽见 reelshort-dashboard-cabinet-mylist.scss）。
  */
 @media (min-width: 768px) {
     .rs-search-page {
         .rs-shelf__container {
-            width: 100%;
+            box-sizing: border-box;
+            width: min(88%, 1600px);
             max-width: min(1636px, 100%);
             margin-left: auto;
             margin-right: auto;
-            box-sizing: border-box;
+            padding-left: 8px;
+            padding-right: 8px;
         }
 
         .rs-shelf__content {
-            padding-left: 16px;
-            padding-right: 16px;
+            padding-left: 0;
+            padding-right: 0;
         }
     }
 }

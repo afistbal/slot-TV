@@ -154,8 +154,12 @@ export function ReelShortNavDrawer({
                         </div>
 
                         <div>
+                            {/*
+                             * H5 观看记录在 `/my-list/history`（与 Profile 内菜单一致）；
+                             * `/profile?tab=history` 仅在 PC 侧栏解析，移动端会落在 Profile 首页导致「没跳进对应页」。
+                             */}
                             <Link
-                                to={`/profile?tab=history&sourceform=${encodeURIComponent(sourceform)}`}
+                                to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
                                 state={{ sourceform }}
                                 className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
                                 onClick={() => onOpenChange(false)}

@@ -590,25 +590,18 @@
         overscroll-behavior-y: contain;
     }
 
+    /* 与 `.reelshort-topnav__inner`、NetShortPcCoverflowHero 外层同列（min(88%,1600) + max 1636 + px-2） */
     .HomePage_main__BzEnK {
-        --home-shelf-pad-x: 24px;
         box-sizing: border-box;
-        width: 100%;
-        /* 对站 .home_list / Slider max 1636px */
+        width: min(88%, 1600px);
         max-width: min(1636px, 100%);
         margin-left: auto;
         margin-right: auto;
-        padding-left: var(--home-shelf-pad-x);
-        padding-right: var(--home-shelf-pad-x);
+        padding-left: 8px;
+        padding-right: 8px;
         /* 对站 .home_main_content__GxekS padding-top:36px；叠 hero 时略收紧 */
         padding-top: 20px;
         padding-bottom: 68px;
-    }
-
-    @media (min-width: 1280px) {
-        .HomePage_main__BzEnK {
-            --home-shelf-pad-x: 32px;
-        }
     }
 
     /* 对站 .home_floor__yv9HP margin-bottom:2.2% — 主区 .HomePage_bookShelf 已统一见上 */

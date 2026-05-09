@@ -252,12 +252,12 @@ a.reelshort-footer__collapse-item {
         -webkit-align-items: flex-start;
         align-items: flex-start;
         box-sizing: border-box;
-        /* 与 home-reelshort `.HomePage_main__BzEnK`（≥768）同列：min(1636px) + 左右 24/32 */
+        /* 与 home-reelshort `.HomePage_main__BzEnK`（≥768）同列：版心约 1636 + 左右 8px */
+        width: min(88%, 1600px);
         max-width: min(1636px, 100%);
-        width: 100%;
         margin-left: auto;
         margin-right: auto;
-        padding: 37px 24px 24px;
+        padding: 37px 8px 24px;
         color: #fff;
         background-color: transparent;
     }

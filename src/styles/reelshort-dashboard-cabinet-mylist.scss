@@ -40,7 +40,7 @@
 }
 
 .rs-search-page .rs-dc-mylist {
-    row-gap: 22px;
+    row-gap: 40px;
 }
 
 /* 与 DashboardCabinet_bookItem 一致；每行 5 张（20%），勿对同节点内层再写 width:100% 盖掉列宽 */
@@ -108,7 +108,7 @@
 }
 
 .rs-search-page .rs-dc-bookItem {
-    padding: 0 0.32%;
+    padding: 0 0.5%;
 }
 
 /* BookItem：与 .rs-dc-bookItem 同节点时禁止在此设 width，否则会覆盖 20% 列宽；/search PC 网格同结构复用 */

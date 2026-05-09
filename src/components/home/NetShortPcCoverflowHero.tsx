@@ -4,6 +4,7 @@ import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
 import { useHomeStore, type IItem, filterRenderableTopBannerItems } from '@/stores/home';
 import { cn } from '@/lib/utils';
+import { coverflowTrackMaxWidthPx, RESPONSIVE_SAFE_GUTTER_PX } from '@/lib/pcHeroArrowInsets';
 
 const TRANSITION_MS = 500;
 /** 对方：Math.max(500-80, 260) */
@@ -29,23 +30,6 @@ const ARROW_CIRCLE_PX = Math.round(68 * NS_HERO_BANNER_SCALE);
 const ARROW_TUCK_PER_SIDE_PX = Math.round(ARROW_CIRCLE_PX / 2) + 8;
 const HERO_CIRCLE_OFFSET_PX = Math.round(60 * NS_HERO_BANNER_SCALE);
 const HERO_CIRCLE_PX: [number, number] = [Math.round(1390 * NS_HERO_BANNER_SCALE), Math.round(116 * NS_HERO_BANNER_SCALE)];
-const RESPONSIVE_SAFE_GUTTER_PX = 100;
-
-/**
- * 五张时卡区几何外接宽（与 translateX(±BASE_X_OUTER) 一致），再每侧内收「约半圆+8」
- * 使 flex 行不会比 5 张图视觉还宽一截；列上 px-2 与 3D 进深不必再进这道公式，走 tuck 手调。
- */
-function coverflowGeometricSpanPx(n: number): number {
-    if (n < 2) return COVER_CARD_W;
-    if (n >= 4) return 2 * (BASE_X_OUTER + COVER_HALF_W);
-    return 2 * (BASE_X_INNER + COVER_HALF_W);
-}
-
-function coverflowTrackMaxWidthPx(n: number): number {
-    const raw = coverflowGeometricSpanPx(n);
-    if (n < 2) return raw;
-    return Math.max(2 * ARROW_CIRCLE_PX, raw - 2 * ARROW_TUCK_PER_SIDE_PX);
-}
 
 const heroImageUrl = (staticBase: string, imagePath: string | null | undefined) => {
     if (imagePath == null || imagePath === '') {
@@ -294,7 +278,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                 style={{ overflow: 'visible' }}
             >
                 <div className="alert-container pointer-events-none text-white" aria-hidden style={{ display: 'none' }} />
-                <div className="relative z-[1] mx-auto w-full min-w-0 max-w-screen-2xl px-2 md:w-[min(88%,1600px)]">
+                <div className="relative z-[1] mx-auto w-full min-w-0 max-w-[min(1636px,100%)] px-2 md:w-[min(88%,1600px)]">
                     <div
                         ref={stageRef}
                         className="relative w-full touch-none overflow-visible pb-6"
