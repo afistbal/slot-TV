@@ -323,7 +323,6 @@ function useLoginBase(
                         },
                     ),
                 );
-                localStorage.removeItem('token');
                 return;
             }
 
@@ -340,11 +339,9 @@ function useLoginBase(
                 loading: false,
             });
             if (result2.c !== 0) {
-                localStorage.removeItem('token');
                 return;
             }
             if (result2.d == null || typeof result2.d !== 'object') {
-                localStorage.removeItem('token');
                 return;
             }
             const d = result2.d as { [key: string]: unknown };
@@ -369,20 +366,33 @@ function useLoginBase(
             pixel.track('Register');
             closePcLoginModal();
             navigate(profilePathAfterLogin, { replace: true, state: {} });
-        } catch (error) {
-            const e = error as Error;
-            report(JSON.stringify(e));
-            toast.error(
-                intl.formatMessage(
-                    {
-                        id: 'login_failed',
-                    },
-                    {
-                        eason: e.message,
-                    },
-                ),
-            );
-            localStorage.removeItem('token');
+        } catch (error: unknown) {
+            const code =
+                typeof error === 'object' &&
+                error !== null &&
+                'code' in error &&
+                typeof (error as { code: unknown }).code === 'string'
+                    ? (error as { code: string }).code
+                    : '';
+            const userDismissedPopup =
+                code === 'auth/popup-closed-by-user' ||
+                code === 'auth/cancelled-popup-request';
+
+            if (!userDismissedPopup) {
+                const e = error as Error;
+                report(JSON.stringify(e));
+                toast.error(
+                    intl.formatMessage(
+                        {
+                            id: 'login_failed',
+                        },
+                        {
+                            eason: e.message,
+                        },
+                    ),
+                );
+            }
+            /** 弹窗取消/关闭或 OAuth 失败：不清理已有业务 token，避免误登出当前游客/已登录会话 */
         } finally {
             setOauthPopupLoading(false);
         }
