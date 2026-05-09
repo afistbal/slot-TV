@@ -71,6 +71,7 @@ export default function Component() {
     const [tagSelected, setTagSelected] = useState<number[]>([]);
     const [hideTag, setHideTag] = useState(true);
     const [tagSearch, setTagSearch] = useState('');
+    const imagePreviewKey = String(image ?? '');
 
     function handleTitleChange(e: React.ChangeEvent<HTMLInputElement>) {
         setTitle(e.currentTarget.value);
@@ -424,7 +425,7 @@ export default function Component() {
             };
         }));
         episodePrimitive.current = result.d.episodes.map(v => ({ id: v.id as number, vip: v.vip as number }));
-        setImage(result.d.info['image'] as string);
+        setImage(String(result.d.info['image'] ?? ''));
 
         setLoading(false);
     }
@@ -583,7 +584,18 @@ export default function Component() {
                 </div>
                 <div className="flex flex-wrap gap-4">
                     <div className="border border-slate-300 rounded-sm flex justify-center items-center bg-slate-50 overflow-hidden p-1" onClick={handleUploadImage}>
-                        {data ? <img src={image.startsWith('blob:') ? image : `${configStore.config['static']}/${image}`} className="h-16" /> : <Plus className="text-slate-500 w-8 h-8 m-4 stroke-1" />}
+                        {data ? (
+                            <img
+                                src={
+                                    imagePreviewKey.startsWith('blob:')
+                                        ? imagePreviewKey
+                                        : `${configStore.config['static']}/${imagePreviewKey}`
+                                }
+                                className="h-16"
+                            />
+                        ) : (
+                            <Plus className="text-slate-500 w-8 h-8 m-4 stroke-1" />
+                        )}
                     </div>
                 </div>
                 <input type="file" className="hidden" onChange={handleImageChange} ref={imageRef} />

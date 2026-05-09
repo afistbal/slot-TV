@@ -471,11 +471,12 @@ function Player({
                 return;
             }
 
-            if (d.subtitle) {
+            const subtitleStr = d.subtitle != null ? String(d.subtitle) : '';
+            if (subtitleStr) {
                 const subUrl =
-                    d.subtitle.startsWith('http://') || d.subtitle.startsWith('https://')
-                        ? d.subtitle
-                        : `${configStore.config['static']}/${d.subtitle}`;
+                    subtitleStr.startsWith('http://') || subtitleStr.startsWith('https://')
+                        ? subtitleStr
+                        : `${configStore.config['static']}/${subtitleStr}`;
                 try {
                     const res = await fetch(subUrl);
                     if (!res.ok) {
@@ -504,10 +505,11 @@ function Player({
                 return;
             }
 
+            const videoStr = String(d.video);
             const src =
-                d.video.startsWith('http://') || d.video.startsWith('https://')
-                    ? d.video
-                    : `${configStore.config['static']}/${d.video}`;
+                videoStr.startsWith('http://') || videoStr.startsWith('https://')
+                    ? videoStr
+                    : `${configStore.config['static']}/${videoStr}`;
             if (autoplayKickTimerRef.current) {
                 clearTimeout(autoplayKickTimerRef.current);
                 autoplayKickTimerRef.current = null;

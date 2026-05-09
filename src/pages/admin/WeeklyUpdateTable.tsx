@@ -213,7 +213,8 @@ export default function Component() {
                             </thead>
                             <tbody>
                                 {pagedRows.map((row, idx) => {
-                                    const isLink = /^https?:\/\//.test(row.address) || row.address.startsWith('/');
+                                    const addr = String(row.address ?? '');
+                                    const isLink = /^https?:\/\//.test(addr) || addr.startsWith('/');
                                     const groupClass =
                                         row.groupIndex % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fa]';
                                     return (
@@ -226,15 +227,15 @@ export default function Component() {
                                             <td className="px-3 py-2 border-b border-slate-200 break-all align-top">
                                                 {isLink ? (
                                                     <a
-                                                        href={row.address}
-                                                        target={row.address.startsWith('http') ? '_blank' : undefined}
-                                                        rel={row.address.startsWith('http') ? 'noreferrer' : undefined}
+                                                        href={addr}
+                                                        target={addr.startsWith('http') ? '_blank' : undefined}
+                                                        rel={addr.startsWith('http') ? 'noreferrer' : undefined}
                                                         className="text-blue-700 hover:text-blue-800 underline decoration-blue-400 break-all"
                                                     >
-                                                        {row.address}
+                                                        {addr}
                                                     </a>
                                                 ) : (
-                                                    <span className="text-slate-700">{row.address}</span>
+                                                    <span className="text-slate-700">{addr}</span>
                                                 )}
                                             </td>
                                         </tr>

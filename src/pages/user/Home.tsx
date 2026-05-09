@@ -64,7 +64,7 @@ function itemsFromHomeRail(
     return items.map((v) => ({
         id: v.id,
         title: v.title,
-        image: v.image,
+        image: String(v.image ?? ''),
         episodeSlug: normalizeEpisodeSlug(
             v.episodeSlug ??
                 v.episode_slug ??

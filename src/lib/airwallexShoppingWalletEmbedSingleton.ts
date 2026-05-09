@@ -5,9 +5,9 @@ type AirwallexInitLocale = NonNullable<AirwallexInit["locale"]>;
 
 /** 与 `Cards` / 购物钱包的 `normalizeAirwallexLocale` 行为一致 */
 export function normalizeAirwallexLocale(
-  reactLocale: string,
+  reactLocale: string | null | undefined,
 ): AirwallexInitLocale {
-  const lower = reactLocale.replace(/_/g, "-").toLowerCase();
+  const lower = String(reactLocale ?? "en").replace(/_/g, "-").toLowerCase();
   if (lower === "zh-hk" || lower === "zh-tw" || lower.startsWith("zh-hant")) {
     return "zh-HK";
   }

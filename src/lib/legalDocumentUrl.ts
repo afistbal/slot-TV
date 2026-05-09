@@ -10,7 +10,8 @@ function appBasePrefix(): string {
 }
 
 function withAppBase(path: string): string {
-    const p = path.startsWith("/") ? path : `/${path}`;
+    const safe = path ?? "";
+    const p = safe.startsWith("/") ? safe : `/${safe}`;
     const prefix = appBasePrefix();
     return prefix ? `${prefix}${p}` : p;
 }

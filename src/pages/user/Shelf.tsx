@@ -16,7 +16,7 @@ function parseShelfSlug(rawSlug: string) {
     return { decoded, shelfId, shelfName: shelfName || decoded };
 }
 
-function resolveImageSrc(staticBase: string, image: string) {
+function resolveImageSrc(staticBase: string, image: string | null | undefined) {
     if (!image) return '';
     if (image.startsWith('http://') || image.startsWith('https://')) return image;
     return `${staticBase}/${image}`;

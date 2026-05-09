@@ -42,7 +42,7 @@ function itemsFromHomeRail(items: IData['recommend']): HomeBookItemData[] {
   return (items ?? []).map((v) => ({
     id: v.id,
     title: v.title,
-    image: v.image,
+    image: String(v.image ?? ''),
     episodeSlug: normalizeEpisodeSlug(
       // @ts-expect-error - keep compatibility with snake_case payloads
       v.episodeSlug ?? v.episode_slug ?? v.episodeHref ?? v.episode_href ?? v.episodeUrl ?? v.episode_url,
