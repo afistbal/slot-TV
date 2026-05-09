@@ -1350,17 +1350,22 @@ function Player({
                                 playing &&
                                 episode?.lock === false &&
                                 location.search.indexOf('auto_play=0') === -1 && (
-                                    <div className="xgplayer-unmute">
-                                        <button
-                                            type="button"
-                                            className="xgplayer-unmute-bt"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
+                                    <div
+                                        className="xgplayer-unmute"
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={intl.formatMessage({ id: 'video_tap_to_unmute' })}
+                                        onClick={handleTapToUnmute}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
                                                 handleTapToUnmute();
-                                            }}
-                                        >
+                                            }
+                                        }}
+                                    >
+                                        <span className="xgplayer-unmute-bt" aria-hidden="true">
                                             <FormattedMessage id="video_tap_to_unmute" />
-                                        </button>
+                                        </span>
                                     </div>
                                 )}
                             <div
@@ -1927,18 +1932,22 @@ function Player({
                     playing &&
                     episode?.lock === false &&
                     location.search.indexOf('auto_play=0') === -1 && (
-                        <div className="absolute inset-0 z-[25] flex items-center justify-center bg-black/35 px-6">
-                            <button
-                                type="button"
-                                className="rounded-full bg-black/80 px-5 py-2.5 text-sm font-medium text-white shadow-lg border border-white/15"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleTapToUnmute();
-                                }}
+                        <button
+                            type="button"
+                            className="absolute inset-0 z-[25] flex cursor-pointer items-center justify-center border-0 bg-black/35 px-6 p-0"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleTapToUnmute();
+                            }}
+                            aria-label={intl.formatMessage({ id: 'video_tap_to_unmute' })}
+                        >
+                            <span
+                                className="pointer-events-none rounded-full border border-white/15 bg-black/80 px-5 py-2.5 text-sm font-medium text-white shadow-lg"
+                                aria-hidden="true"
                             >
                                 <FormattedMessage id="video_tap_to_unmute" />
-                            </button>
-                        </div>
+                            </span>
+                        </button>
                     )}
                 <div
                     className={cn(

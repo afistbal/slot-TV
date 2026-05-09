@@ -559,7 +559,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .video-player-root .xgplayer-unmute-bt {
