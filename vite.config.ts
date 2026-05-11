@@ -20,6 +20,41 @@ function patchHtmlAssetRefs(html: string, version: string): string {
   )
 }
 
+/** 从环境变量推断 API 源站 origin，供 `<link rel=preconnect>` 提前建连（弱网略减首包后首请求的 RTT） */
+function inferApiOriginForPreconnect(env: Record<string, string>): string {
+  const base = env.VITE_API_BASE_URL?.trim() ?? ''
+  if (base.startsWith('http://') || base.startsWith('https://')) {
+    try {
+      return new URL(base).origin
+    } catch {
+      /* fall through */
+    }
+  }
+  const proxy = (env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com').trim()
+  try {
+    const p = proxy.startsWith('http://') || proxy.startsWith('https://') ? proxy : `https://${proxy}`
+    return new URL(p).origin
+  } catch {
+    return 'https://test.yogoshort.com'
+  }
+}
+
+function injectApiOriginPreconnect(apiOrigin: string): Plugin {
+  return {
+    name: 'inject-api-origin-preconnect',
+    enforce: 'pre',
+    transformIndexHtml(html) {
+      if (html.includes('id="slot-api-origin-preconnect"')) {
+        return html
+      }
+      const hints =
+        `    <link id="slot-api-origin-preconnect" rel="dns-prefetch" href="${apiOrigin}" />\n` +
+        `    <link rel="preconnect" href="${apiOrigin}" crossorigin />\n`
+      return html.replace('<head>', `<head>\n${hints}`)
+    },
+  }
+}
+
 function htmlAssetCacheBust(version: string): Plugin {
   const publicHtmlNames = new Set(['reelshort-privacy-policy.html', 'airwallex.html'])
   return {
@@ -55,6 +90,7 @@ export default ({ mode }: { mode: string }) => {
   const isProdBuild = mode === 'prod' || mode === 'production'
   const outDir = isProdBuild ? 'D:/JJ-TV/movie-www-prod' : 'D:/JJ-TV/movie-www'
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com'
+  const apiOriginForHints = inferApiOriginForPreconnect(env)
 
   return defineConfig({
     define: {
@@ -62,6 +98,7 @@ export default ({ mode }: { mode: string }) => {
     },
     plugins: [
       htmlAssetCacheBust(appVersion),
+      injectApiOriginPreconnect(apiOriginForHints),
       react(),
       tailwindcss(),
       // legacy({

@@ -66,7 +66,6 @@ import AdminOrders from './pages/admin/Order';
 import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminActivityLog from './pages/admin/ActivityLog';
 import AdminWeeklyUpdateTable from './pages/admin/WeeklyUpdateTable';
-import Loader from "./components/Loader";
 import NotFound from './pages/NotFound';
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { useMinWidth768 } from "@/hooks/useMinWidth768";
@@ -81,13 +80,9 @@ function LayoutUserPrimaryTabPlaceholder() {
     return null;
 }
 
-/** config/登录完成前全屏占位 */
-function InitialBootLoading() {
-    return (
-        <div className="fixed inset-0 z-10 flex min-h-0 items-center justify-center bg-app-canvas">
-            <Loader color="light" />
-        </div>
-    );
+/** `config` 未完成前：与首页壳同色、无转圈，避免与首页内二次 loading 叠体感 */
+function InitialBootPlaceholder() {
+    return <div className="fixed inset-0 z-10 min-h-0 bg-app-canvas" aria-hidden />;
 }
 
 /** Chromium `beforeinstallprompt`（部分 TS lib 未声明） */
@@ -393,9 +388,9 @@ function App() {
     const rootStore = useRootStore();
     const rootShowInstallPrompt = useRootStore((state) => state.showInstallPrompt);
     const setRootShowInstallPrompt = useRootStore((state) => state.setShowInstallPrompt);
+    const sessionBootstrapReady = useRootStore((state) => state.sessionBootstrapReady);
     const configStore = useConfigStore();
     const loadingStore = useLoadingStore();
-    const userStore = useUserStore();
     const confirmStore = useConfirmStore();
     const installPrompt = useRef<BeforeInstallPromptEvent | null>(null);
     const [checked, setChecked] = useState(false);
@@ -403,6 +398,8 @@ function App() {
     const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
     const adjustInitedRef = useRef(false);
     const downloadTrackedRef = useRef(false);
+    /** 避免 StrictMode 双调用时旧 `loadData` 回写 config / 抢跑会话 */
+    const loadDataGenerationRef = useRef(0);
 
     function trackDownloadOnce() {
         if (downloadTrackedRef.current) {
@@ -425,13 +422,70 @@ function App() {
     }
 
     async function loadData() {
+        const loadGen = ++loadDataGenerationRef.current;
         const query = new URLSearchParams(window.location.search);
+        useRootStore.getState().setSessionBootstrapReady(false);
+
+        const tokenFromQuery = query.get('_token');
+        if (tokenFromQuery) {
+            localStorage.setItem('token', tokenFromQuery);
+        }
+        const token = tokenFromQuery || localStorage.getItem('token');
+
+        /** 与会话接口不依赖 `config` 响应体，与 `config` 并行可显著缩短首屏可交互前总等待 */
+        void (async () => {
+            try {
+                if (token) {
+                    const ok = await refreshSessionFromStoredToken();
+                    if (loadGen !== loadDataGenerationRef.current) {
+                        return;
+                    }
+                    if (ok) {
+                        useRootStore.getState().setSessionBootstrapReady(true);
+                        return;
+                    }
+                    const anon = await api<TData>('login/anonymous', {
+                        loading: false,
+                    });
+                    if (loadGen !== loadDataGenerationRef.current) {
+                        return;
+                    }
+                    if (anon.c !== 0) {
+                        return;
+                    }
+                    localStorage.setItem('token', anon.d['token'] as string);
+                    useUserStore.getState().signin(anon.d['info'] as TData);
+                    useRootStore.getState().setSessionBootstrapReady(true);
+                    return;
+                }
+                const anon = await api<TData>('login/anonymous', {
+                    loading: false,
+                });
+                if (loadGen !== loadDataGenerationRef.current) {
+                    return;
+                }
+                if (anon.c !== 0) {
+                    return;
+                }
+                localStorage.setItem('token', anon.d['token'] as string);
+                useUserStore.getState().signin(anon.d['info'] as TData);
+                useRootStore.getState().setSessionBootstrapReady(true);
+            } catch {
+                /* 会话失败时保持 sessionBootstrapReady=false */
+            }
+        })();
+
         const config = await api<TData>('config', {
             loading: false,
         });
 
+        if (loadGen !== loadDataGenerationRef.current) {
+            return;
+        }
+
         if (config.c !== 0) {
             toast.error('Initialization failed 1');
+            useRootStore.getState().setSessionBootstrapReady(false);
             return;
         }
 
@@ -447,58 +501,8 @@ function App() {
             adjustInitedRef.current = true;
         }
 
-        await initPixel(config.d);
-
-        const tokenFromQuery = query.get('_token');
-        if (tokenFromQuery) {
-            localStorage.setItem('token', tokenFromQuery);
-        }
-        const token = tokenFromQuery || localStorage.getItem('token');
-
-        if (token) {
-            const ok = await refreshSessionFromStoredToken();
-            if (ok) {
-                setChecked(true);
-            } else {
-                await api<TData>('login/anonymous', {
-                    loading: false,
-                }).then((result) => {
-                    if (result.c !== 0) {
-                        return;
-                    }
-                    localStorage.setItem('token', result.d['token'] as string);
-                    userStore.signin(result.d['info'] as TData);
-                    setChecked(true);
-                });
-            }
-        } else {
-            // const credential = await signInAnonymously(auth);
-            // await api('login/uid', {
-            //     method: 'post',
-            //     data: {
-            //         uid: credential.user.uid,
-            //     },
-            //     loading: false,
-            // }).then(result => {
-            //     localStorage.setItem('token', result.d['token'] as string);
-            //     const info = result.d['info'] as TData;
-            //     info['name'] = credential.user.displayName;
-            //     info['avatar'] = credential.user.photoURL;
-            //     info['email'] = credential.user.email;
-            //     info['anonymous'] = credential.user.isAnonymous ? 1 : 0;
-            //     userStore.signin(info);
-            // });
-            await api<TData>('login/anonymous', {
-                loading: false,
-            }).then(result => {
-                if (result.c !== 0) {
-                    return;
-                }
-                localStorage.setItem('token', result.d['token'] as string);
-                userStore.signin(result.d['info'] as TData);
-                setChecked(true);
-            });
-        }
+        setChecked(true);
+        void initPixel(config.d);
 
         // auth.authStateReady().then(() => {
         //     userStore.update({
@@ -628,7 +632,8 @@ function App() {
     }, [rootStore.locale]);
 
     useEffect(() => {
-        if (!checked) {
+        /** `checked` 仅表示 config 已就绪；`stat`/`alive` 需带有效 token，须等会话 bootstrap */
+        if (!checked || !sessionBootstrapReady) {
             return;
         }
         api('stat', {
@@ -650,10 +655,10 @@ function App() {
         return () => {
             window.clearInterval(timer);
         }
-    }, [checked]);
+    }, [checked, sessionBootstrapReady]);
 
     useEffect(() => {
-        if (!checked) {
+        if (!checked || !sessionBootstrapReady) {
             return;
         }
         const query = new URLSearchParams(window.location.search);
@@ -669,7 +674,7 @@ function App() {
             loading: false,
         });
 
-    }, [checked]);
+    }, [checked, sessionBootstrapReady]);
 
     const appPathSegments = window.location.pathname.toLowerCase().split('/').filter(Boolean);
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
@@ -727,7 +732,7 @@ function App() {
                     onClick={handleExecuteInstall}
                 />
             ) : null}
-            {checked ? <RouterProvider router={router} /> : <InitialBootLoading />}
+            {checked ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
         </div>
         <Dialog
             open={loadingStore.status}

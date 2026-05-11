@@ -100,6 +100,7 @@ function isPerformanceNavigationReload() {
 export default function Component() {
     // const configStore = useConfigStore();
     const rootStore = useRootStore();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const params = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -204,8 +205,11 @@ export default function Component() {
     }
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (!sessionBootstrapReady) {
+            return;
+        }
+        void loadData();
+    }, [sessionBootstrapReady, params['id']]);
 
     useEffect(() => {
         rootStore.setTheme('dark');
@@ -296,6 +300,7 @@ function Player({
     legacyEpisodeAutoplayRef: RefObject<boolean>;
 }) {
     // const loadingStore = useLoadingStore();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const configStore = useConfigStore();
     const wrapRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -1003,8 +1008,11 @@ function Player({
     }
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
         void loadData(id);
-    }, [id, isDesktop]);
+    }, [id, isDesktop, sessionBootstrapReady]);
 
     useEffect(() => {
         return () => {

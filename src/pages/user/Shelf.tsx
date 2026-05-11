@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router';
 import { api, type IPagination, type TData } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
+import { useRootStore } from '@/stores/root';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
@@ -122,6 +123,7 @@ export default function Component() {
     const params = useParams();
     const location = useLocation();
     const configStore = useConfigStore();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const slug = params['slug'] ?? '';
@@ -145,6 +147,9 @@ export default function Component() {
     const [totalPage, setTotalPage] = useState<number | null>(null);
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
         let alive = true;
         async function load() {
             setLoading(true);
@@ -183,7 +188,7 @@ export default function Component() {
         return () => {
             alive = false;
         };
-    }, [page, shelfId, slug]);
+    }, [page, shelfId, slug, sessionBootstrapReady]);
 
     const basePath = useMemo(() => `${localePrefix}/shelf/${encodeURIComponent(slug)}`, [localePrefix, slug]);
     const prevHref = page > 1 ? `${basePath}/${page - 1}` : null;

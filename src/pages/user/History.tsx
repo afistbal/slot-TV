@@ -14,6 +14,7 @@ import { useGesture } from '@use-gesture/react';
 import FlixActionSheet from "@/widgets/FlixActionSheet";
 import { MyListCabinetConfirmPopover } from '@/components/MyListCabinetConfirmPopover';
 import { useConfigStore } from "@/stores/config";
+import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 
@@ -23,6 +24,7 @@ type HistoryProps = {
 
 export default function Component({ variant = 'row' }: HistoryProps) {
     const configStore = useConfigStore();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const requesting = useRef(false);
     const gesture = useGesture({
         onDrag: (event) => {
@@ -130,10 +132,13 @@ export default function Component({ variant = 'row' }: HistoryProps) {
     }
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
         loadData().then(() => {
             setLoading(false);
         });
-    }, []);
+    }, [sessionBootstrapReady]);
 
     if (loading) {
         return (

@@ -36,18 +36,14 @@
     #root {
       height: 100%;
       margin: 0;
+      /* 与 `index.css` 中 `--app-canvas`（默认 #000）一致 */
       background-color: #000000;
     }
   </style>
 </head>
 
 <body>
-  <div id="root">
-    <div
-      style="display: flex;flex-direction: column; justify-content: center; align-items: center;gap: 8px;height: 100%;">
-      <img src="/logo.png" style="width: 64px;height: 64px; border-radius: 8px;" />
-    </div>
-  </div>
+  <div id="root"></div>
   <div id="top-layer"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { WebVTT } from 'videojs-vtt.js';
 import Hls from 'hls.js';
 import { api } from '@/api';
+import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
 import { offlineEpisodePage } from '@/mocks/episodesOffline';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
@@ -42,6 +43,7 @@ function parseEpisodeSlug(slugRaw: string) {
 export default function Component() {
     const params = useParams();
     const navigate = useNavigate();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const scrollRef = useRef<HTMLDivElement>(null);
     /** 下半区可滚动容器：`rs-episodes__scroll` 为 overflow:hidden，scrollTop 恒为 0，顶栏透明态无法切换；须监听此处 */
     const topNavScrollParentRef = useRef<HTMLDivElement>(null);
@@ -110,6 +112,9 @@ export default function Component() {
     }, [rangeList.end, rangeList.start]);
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
         let alive = true;
 
         async function load() {
@@ -184,7 +189,7 @@ export default function Component() {
         return () => {
             alive = false;
         };
-    }, [bookId, chapterId, navigate, serial, slug]);
+    }, [bookId, chapterId, navigate, serial, slug, sessionBootstrapReady]);
 
     useEffect(() => {
         if (!videoRef.current) return;

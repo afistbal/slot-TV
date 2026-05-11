@@ -355,6 +355,7 @@ export default function Component() {
     const intl = useIntl();
     const configStore = useConfigStore();
     const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const timer = useRef(0);
     const requesting = useRef(false);
     const searchStore = useSearchStore();
@@ -602,6 +603,9 @@ export default function Component() {
     }, []);
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
         let cancelled = false;
         void (async () => {
             await ensureMovieTags();
@@ -627,7 +631,7 @@ export default function Component() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [sessionBootstrapReady]);
 
     /** PC：兩行高度上限 + 離屏二分測量，决定折疊時展示多少個 tag（展開鈕跟在末尾 tag 後） */
     useLayoutEffect(() => {

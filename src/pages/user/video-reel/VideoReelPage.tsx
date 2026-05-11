@@ -19,6 +19,7 @@ import { VideoReelSlideBackdrop } from './VideoReelSlideBackdrop';
 export default function VideoReelPage() {
     // const configStore = useConfigStore();
     const rootStore = useRootStore();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const params = useParams();
     const navigate = useNavigate();
     const location = useLocation();
@@ -161,8 +162,11 @@ export default function VideoReelPage() {
     }
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (!sessionBootstrapReady) {
+            return;
+        }
+        void loadData();
+    }, [sessionBootstrapReady, params['id']]);
 
     useEffect(() => {
         rootStore.setTheme('dark');

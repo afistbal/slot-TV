@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import Vip from '@/widgets/Vip';
 import { FormattedMessage } from 'react-intl';
 import { useUserStore } from '@/stores/user';
+import { useRootStore } from '@/stores/root';
 import { cn } from '@/lib/utils';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
@@ -34,6 +35,7 @@ type ProfilePcTab = 'topup' | 'profile' | 'mylist' | 'feedback';
 
 export default function Component() {
     const userStore = useUserStore();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const location = useLocation();
@@ -152,12 +154,15 @@ export default function Component() {
     }, [isPc, searchParams, setSearchParams]);
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
         api<number>('user/balance', {
             loading: false,
         }).then((res) => {
-            userStore.setBalance(res.d);
+            useUserStore.getState().setBalance(res.d);
         });
-    }, []);
+    }, [sessionBootstrapReady]);
 
     async function handleLogout() {
         try {

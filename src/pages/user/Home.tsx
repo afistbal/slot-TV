@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router';
+import { Link, matchPath, useLocation } from 'react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
@@ -10,7 +10,6 @@ import NoContent from '@/components/NoContent';
 import { useHomeStore, type IData, filterRenderableTopBannerItems } from '@/stores/home';
 import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
-import Loader from '@/components/Loader';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { HomeBookShelf } from '@/components/home/HomeBookShelf';
@@ -21,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollTopArrowUp } from '@/components/icons/ScrollTopArrowUp';
 import { scrollElementToTop } from '@/lib/scrollToTop';
 import { useRootStore } from '@/stores/root';
+import { applyHomeHeroPreloadLinks } from '@/lib/homeHeroPreloads';
 
 const HERO_FADE_MS = 600;
 /** 首页内层滚动超过此值后显示「回顶」浮动按钮（与 antd BackTop 默认 visibilityHeight=400 对齐） */
@@ -167,8 +167,12 @@ function HeroPlayIcon({ className }: { className?: string }) {
 
 export default function Component() {
     const intl = useIntl();
+    const location = useLocation();
+    /** 与 `layouts/user` keep-alive 一致：非 `/` 时 DOM 仍挂载，须停 Banner 自动轮播避免离屏耗电 */
+    const isHomeRouteActive = matchPath({ path: '/', end: true }, location.pathname) != null;
     const mdUp = useMinWidth768();
     const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     /** 与 App `showPwaBottomBar` 一致：窄屏且展示 Chromium 底栏时，回顶钮需抬高避免被 z-[100] 条盖住 */
     const liftScrollFabForPwaH5 = !mdUp && showInstallPrompt;
     const configStore = useConfigStore();
@@ -180,6 +184,9 @@ export default function Component() {
     const heroTouchStartX = useRef(0);
     const heroPointer = useRef<{ id: number; startX: number } | null>(null);
     const heroAutoplayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    /** 供 `scheduleHeroAutoplay` 闭包读最新路由，避免离屏后仍误开定时器 */
+    const isHomeRouteActiveRef = useRef(isHomeRouteActive);
+    isHomeRouteActiveRef.current = isHomeRouteActive;
 
     const [scrollTopFabMounted, setScrollTopFabMounted] = useState(false);
     const [scrollTopFabOpaque, setScrollTopFabOpaque] = useState(true);
@@ -254,6 +261,9 @@ export default function Component() {
     }
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
         // 仅在“返回首页且已有缓存列表”时恢复滚动；分页追加时不要反复重置 scrollTop（会跳回某个标题位置）
         if (homeStore.list.length > 0) {
             if (didRestoreScrollRef.current) return;
@@ -263,7 +273,7 @@ export default function Component() {
             return;
         }
         loadLatest();
-    }, [homeStore.list.length]);
+    }, [homeStore.list.length, sessionBootstrapReady]);
 
     const topList = useMemo(
         () => filterRenderableTopBannerItems(homeStore.data?.top ?? []),
@@ -278,10 +288,13 @@ export default function Component() {
             clearInterval(heroAutoplayRef.current);
             heroAutoplayRef.current = null;
         }
-        if (topLen <= 1) {
+        if (!isHomeRouteActiveRef.current || topLen <= 1) {
             return;
         }
         heroAutoplayRef.current = setInterval(() => {
+            if (!isHomeRouteActiveRef.current) {
+                return;
+            }
             const { current, setCurrent } = useHomeStore.getState();
             setCurrent((current + 1) % topLen);
         }, HERO_AUTOPLAY_MS);
@@ -297,13 +310,21 @@ export default function Component() {
     }, [topLen]);
 
     useEffect(() => {
+        if (!isHomeRouteActive) {
+            if (heroAutoplayRef.current) {
+                clearInterval(heroAutoplayRef.current);
+                heroAutoplayRef.current = null;
+            }
+            return;
+        }
         scheduleHeroAutoplay();
         return () => {
             if (heroAutoplayRef.current) {
                 clearInterval(heroAutoplayRef.current);
+                heroAutoplayRef.current = null;
             }
         };
-    }, [scheduleHeroAutoplay]);
+    }, [scheduleHeroAutoplay, isHomeRouteActive]);
 
     function goHeroIndex(next: number) {
         if (topLen <= 0) {
@@ -311,7 +332,9 @@ export default function Component() {
         }
         const i = ((next % topLen) + topLen) % topLen;
         homeStore.setCurrent(i);
-        scheduleHeroAutoplay();
+        if (isHomeRouteActiveRef.current) {
+            scheduleHeroAutoplay();
+        }
     }
 
     function handleHeroTouchStart(e: React.TouchEvent) {
@@ -364,6 +387,10 @@ export default function Component() {
             state.setLoading(false);
             return;
         }
+        if (!sessionBootstrapReady) {
+            return;
+        }
+        state.setLoading(true);
         api<IData>('home', {
             loading: false,
             data: { topSize: '20' },
@@ -371,37 +398,53 @@ export default function Component() {
             .then((res) => {
                 if (res.c === 0) {
                     state.setData(res.d);
+                    const staticBase = String(
+                        useConfigStore.getState().config['static'] ?? '',
+                    );
+                    applyHomeHeroPreloadLinks(
+                        staticBase,
+                        filterRenderableTopBannerItems(res.d?.top ?? []),
+                    );
                 }
                 state.setLoading(false);
             })
             .catch(() => {
                 state.setLoading(false);
             });
-    }, []);
+    }, [sessionBootstrapReady]);
 
-    const firstHeroSrc = topList[0]
-        ? heroImageUrl(configStore.config['static'] as string, topList[0].image as string)
-        : undefined;
+    const homeData = homeStore.data;
+    const showAwaitShell =
+        !sessionBootstrapReady ||
+        (sessionBootstrapReady && homeStore.loading && homeData == null);
 
-    useEffect(() => {
-        if (!firstHeroSrc) {
-            return;
-        }
-        const id = 'home-hero-lcp-preload';
-        if (document.getElementById(id)) {
-            return;
-        }
-        const link = document.createElement('link');
-        link.id = id;
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = firstHeroSrc;
-        link.setAttribute('fetchpriority', 'high');
-        document.head.appendChild(link);
-        return () => {
-            link.remove();
-        };
-    }, [firstHeroSrc]);
+    if (showAwaitShell) {
+        return (
+            <div
+                className={cn(
+                    'home-page relative flex h-full min-h-0 flex-col bg-app-canvas',
+                    mdUp && 'bg-[#151314]',
+                )}
+            >
+                <div
+                    className="home-page__scroll relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
+                    ref={scrollRef}
+                >
+                    <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
+                    <div
+                        className={cn('min-h-0 flex-1', mdUp ? 'bg-[#151314]' : 'bg-black')}
+                        aria-hidden
+                    />
+                </div>
+            </div>
+        );
+    }
+
+    const noRenderableHome =
+        !homeStore.loading &&
+        (homeData == null ||
+            (homeData.top?.length ?? 0) === 0 ||
+            (homeData.recommend?.length ?? 0) === 0);
 
     return <div
         className={cn(
@@ -409,7 +452,7 @@ export default function Component() {
             mdUp && 'bg-[#151314]',
         )}
     >
-        {homeStore.loading ? <Loader /> : (homeStore.data?.top.length === 0 || homeStore.data?.recommend.length === 0) ? <NoContent /> : (
+        {noRenderableHome ? <NoContent /> : (
             <>
             <div
             className={cn(

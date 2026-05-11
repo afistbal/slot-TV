@@ -64,7 +64,8 @@ interface IHome {
 }
 
 export const useHomeStore = create<IHome>((set) => ({
-    loading: true,
+    /** 首屏与 `sessionBootstrapReady` 衔接：默认 false，发起 `home` 请求前再 true，避免出现第二层全屏转圈 */
+    loading: false,
     list: [],
     page: 0,
     more: true,
