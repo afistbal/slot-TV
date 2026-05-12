@@ -27,6 +27,7 @@ import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
+import { prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -969,6 +970,8 @@ export function ReelShortTopNav({
                 </NavLink>
                 <NavLink
                   to="/search"
+                  onPointerEnter={prefetchSearchRouteChunk}
+                  onPointerDown={prefetchSearchRouteChunk}
                   className={({ isActive }) =>
                     cn(
                       'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
@@ -1018,6 +1021,8 @@ export function ReelShortTopNav({
               </NavLink>
               <NavLink
                 to="/search"
+                onPointerEnter={prefetchSearchRouteChunk}
+                onPointerDown={prefetchSearchRouteChunk}
                 className={({ isActive }) =>
                   cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
                 }

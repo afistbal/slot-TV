@@ -68,6 +68,7 @@ import AdminActivityLog from './pages/admin/ActivityLog';
 import AdminWeeklyUpdateTable from './pages/admin/WeeklyUpdateTable';
 import NotFound from './pages/NotFound';
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
+import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
 import { useMinWidth768 } from "@/hooks/useMinWidth768";
 
 /** 旧书签 `/page/checkout/:id`、已废弃的整页收银 → 购物页 */
@@ -400,6 +401,7 @@ function App() {
     const downloadTrackedRef = useRef(false);
     /** 避免 StrictMode 双调用时旧 `loadData` 回写 config / 抢跑会话 */
     const loadDataGenerationRef = useRef(0);
+    const secondaryPrefetchScheduledRef = useRef(false);
 
     function trackDownloadOnce() {
         if (downloadTrackedRef.current) {
@@ -655,6 +657,17 @@ function App() {
         return () => {
             window.clearInterval(timer);
         }
+    }, [checked, sessionBootstrapReady]);
+
+    useEffect(() => {
+        if (!checked || !sessionBootstrapReady) {
+            return;
+        }
+        if (secondaryPrefetchScheduledRef.current) {
+            return;
+        }
+        secondaryPrefetchScheduledRef.current = true;
+        scheduleSecondaryUserRoutesPrefetch();
     }, [checked, sessionBootstrapReady]);
 
     useEffect(() => {

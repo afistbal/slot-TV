@@ -9,6 +9,10 @@ import UserSearch from "@/pages/user/Search";
 import usePixel from "@/hooks/usePixel";
 import { showBottomTabBar } from "@/env";
 import { IosAddHomeFloatingBtn } from "@/components/IosAddHomeFloatingBtn";
+import {
+    prefetchMyListRouteChunk,
+    prefetchProfileRouteChunk,
+} from "@/lib/prefetchSecondaryUserRoutes";
 
 /** 与 App 中 `/`、`/search`、`/:locale/search` 占位路由一致；仅这两页做 DOM 级 keep-alive，避免反复卸载导致图片/LazyLoad 重跑 */
 function usePrimaryTabKeepAlive() {
@@ -117,6 +121,8 @@ export default function Component() {
                 <NavLink
                     to={`/my-list?sourceform=${encodeURIComponent(sourceform)}`}
                     state={{ sourceform }}
+                    onPointerEnter={prefetchMyListRouteChunk}
+                    onPointerDown={prefetchMyListRouteChunk}
                     className={({ isActive }) =>
                         cn(
                             'flex flex-col items-center gap-0.5 rounded-md py-1',
@@ -131,6 +137,8 @@ export default function Component() {
                 </NavLink>
                 <NavLink
                     to="/profile?tab=topup"
+                    onPointerEnter={prefetchProfileRouteChunk}
+                    onPointerDown={prefetchProfileRouteChunk}
                     className={({ isActive }) =>
                         cn(
                             'flex flex-col items-center gap-0.5 rounded-md py-1',
