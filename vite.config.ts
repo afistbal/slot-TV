@@ -112,6 +112,8 @@ export default ({ mode }: { mode: string }) => {
         manifest: false,
         injectRegister: false,
         workbox: {
+          /** 默认 2 MiB；主 chunk 超限时 build 会失败，见 vite-plugin-pwa / workbox FAQ */
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           // injectRegister 为 false 时插件不会自动合并这两项；autoUpdate 依赖 SW 内 skipWaiting，否则新版本会一直 waiting
           skipWaiting: true,
           clientsClaim: true,
