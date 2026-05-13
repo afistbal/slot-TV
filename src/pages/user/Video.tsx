@@ -32,6 +32,7 @@ import shareTwitterIcon from '@/assets/icons/share/twitter.svg';
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import shareCloseIcon from '@/assets/icons/share/close.svg';
 import { cn } from '@/lib/utils';
+import { formatVideoIntroTagLabel, videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
 import RadixRc from '@/pages/user/RadixRc';
@@ -1595,12 +1596,13 @@ function Player({
                                 </div>
                                 <div className="flex flex-wrap overflow-hidden max-h-none mt-[16px]">
                                     {data.tags.map((v) => (
-                                        <div
+                                        <Link
                                             key={v.name}
-                                            className="mr-[10px] mb-[10px] text-[12px] line-clamp-1 break-all max-w-[152px] px-[8px] h-[27px] leading-[27px] rounded-[3px] text-white/90 bg-white/10"
+                                            to={videoIntroTagSearchPath(v)}
+                                            className="mr-[10px] mb-[10px] inline-flex max-h-[27px] max-w-[152px] cursor-pointer items-center break-all rounded-[3px] bg-white/10 px-[8px] text-[12px] leading-[27px] text-white/90 line-clamp-1 hover:bg-white/15"
                                         >
                                             {getTagDisplayText(v)}
-                                        </div>
+                                        </Link>
                                     ))}
                                 </div>
                                 <div className="mt-[14px] h-[90px] border-t border-white/20">
@@ -1797,20 +1799,14 @@ function Player({
                                         </div>
                                         <div className="flex gap-1 flex-wrap text-sm ">
                                             {data.tags.map((v) => (
-                                                <div
+                                                <Link
                                                     key={v.name}
-                                                    className="bg-slate-600 px-2 py-1 rounded-sm text-slate-300"
+                                                    to={videoIntroTagSearchPath(v)}
+                                                    onClick={() => setIntroduction(false)}
+                                                    className="bg-slate-600 px-2 py-1 rounded-sm text-slate-300 active:opacity-80"
                                                 >
-                                                    {v.unique_id.split('').map((v, k) => {
-                                                        if (k === 0) {
-                                                            v = v.toUpperCase();
-                                                        }
-                                                        if (v === '_') {
-                                                            v = ' ';
-                                                        }
-                                                        return v;
-                                                    })}
-                                                </div>
+                                                    {formatVideoIntroTagLabel(v.unique_id)}
+                                                </Link>
                                             ))}
                                         </div>
                                     </div>
@@ -2329,20 +2325,14 @@ function Player({
                                     </div>
                                     <div className="flex gap-1 flex-wrap text-sm ">
                                         {data.tags.map((v) => (
-                                            <div
+                                            <Link
                                                 key={v.name}
-                                                className="bg-slate-600 px-2 py-1 rounded-sm text-slate-300"
+                                                to={videoIntroTagSearchPath(v)}
+                                                onClick={() => setIntroduction(false)}
+                                                className="bg-slate-600 px-2 py-1 rounded-sm text-slate-300 active:opacity-80"
                                             >
-                                                {v.unique_id.split('').map((v, k) => {
-                                                    if (k === 0) {
-                                                        v = v.toUpperCase();
-                                                    }
-                                                    if (v === '_') {
-                                                        v = ' ';
-                                                    }
-                                                    return v;
-                                                })}
-                                            </div>
+                                                {formatVideoIntroTagLabel(v.unique_id)}
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>

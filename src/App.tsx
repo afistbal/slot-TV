@@ -51,6 +51,7 @@ import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
 import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
+import ShortsFeedDemoPage from './pages/demo/ShortsFeedDemoPage';
 
 import LayoutAdmin from './layouts/admin';
 import AdminHome from './pages/admin/Home';
@@ -190,13 +191,7 @@ const router = createBrowserRouter([
                 path: 'radix-rc',
                 element: <Navigate to="/shopping" replace />,
             },
-
-        ],
-    },
-    {
-        path: '/',
-        errorElement: <ErrorBoundary />,
-        children: [
+            /** 须挂在 LayoutUser 下：否则整页离开用户壳子，首页/搜索的 keep-alive 会随 Layout 卸载 */
             {
                 path: 'video/:id/:index?',
                 element: <UserVideo />,
@@ -210,6 +205,11 @@ const router = createBrowserRouter([
                 element: <UserTest />,
             },
         ],
+    },
+    {
+        path: '/zgjdemo',
+        errorElement: <ErrorBoundary />,
+        element: <ShortsFeedDemoPage />,
     },
     {
         path: '/page',
@@ -690,6 +690,7 @@ function App() {
     }, [checked, sessionBootstrapReady]);
 
     const appPathSegments = window.location.pathname.toLowerCase().split('/').filter(Boolean);
+    const isShortsDemoPath = appPathSegments.length === 1 && appPathSegments[0] === 'zgjdemo';
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt = install > 0 && !isIosLikeDevice() && !isShoppingRoute;
@@ -745,7 +746,7 @@ function App() {
                     onClick={handleExecuteInstall}
                 />
             ) : null}
-            {checked ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
+            {checked || isShortsDemoPath ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
         </div>
         <Dialog
             open={loadingStore.status}

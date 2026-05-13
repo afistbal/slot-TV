@@ -481,22 +481,23 @@
     .HomePage_reelSlider__root .Slider_nextButton__a5KCv {
         right: 0;
         top: 50%;
-        transform: translateY(-50%) translateX(50%);
+        /* 整颗移到轨道右侧外，避免压住末列卡片（原先 translateX(50%) 使半颗叠在内容上） */
+        transform: translateY(-50%) translateX(calc(100% + min(0.75vw, 14px)));
     }
 
     .HomePage_reelSlider__root .Slider_prevButton__5XAPR {
         left: 0;
         top: 50%;
-        transform: translateY(-50%) translateX(-50%) scaleX(-1);
+        transform: translateY(-50%) translateX(calc(-100% - min(0.75vw, 14px))) scaleX(-1);
     }
 
     @media screen and (max-width: 1766.88px) {
         .HomePage_reelSlider__root .Slider_nextButton__a5KCv {
-            right: 4vw;
+            right: min(4vw, 56px);
         }
 
         .HomePage_reelSlider__root .Slider_prevButton__5XAPR {
-            left: 4vw;
+            left: min(4vw, 56px);
         }
     }
 
@@ -588,6 +589,11 @@
     .home-page__scroll {
         min-width: 0;
         overscroll-behavior-y: contain;
+    }
+
+    /* 分页箭头移出轨道后，避免被主区 overflow 裁切 */
+    .home-page .Slider_sliderWrapper__66_q7 {
+        overflow-x: visible;
     }
 
     /* 与 `.reelshort-topnav__inner`、NetShortPcCoverflowHero 外层同列（min(88%,1600) + max 1636 + px-2） */

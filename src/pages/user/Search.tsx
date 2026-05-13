@@ -7,7 +7,7 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { Link } from 'react-router';
+import { Link, matchPath, useLocation } from 'react-router';
 import Image from '@/components/Image';
 import { useConfigStore } from '@/stores/config';
 import Loader from '@/components/Loader';
@@ -20,6 +20,7 @@ import { ChevronLeft, ChevronRight, LoaderCircle, MoreHorizontal, X } from 'luci
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { isOpaqueTagId } from '@/pages/user/video-reel/videoReelUtils';
 
 /** 搜索分页合并时接口可能返回重复 id，去重避免 React key 冲突与重复卡片 */
 function dedupeSearchRowsById(rows: TData[]): TData[] {
@@ -55,12 +56,17 @@ async function ensureMovieTags(): Promise<void> {
 /** 最新一次 `movie` 请求生效；较早返回的结果丢弃（导航/Strict Mode 叠请求） */
 let searchMovieLoadId = 0;
 
-/** 首屏 URL ?q= 与 store 关键字是否一致（无 q 则表示不应强行要求关键字） */
-function keywordMatchesSearchUrl(): boolean {
-    const urlQ = new URLSearchParams(window.location.search).get('q');
-    const decoded = urlQ ? decodeURIComponent(urlQ.replace(/\+/g, ' ')).trim() : '';
-    const kw = useSearchStore.getState().keyword.trim();
-    return urlQ ? kw === decoded : kw === '';
+/** 当前 URL 的 ?q= / ?movie_tag= 是否与 store 一致（用于 keep-alive 下复用列表） */
+function searchUrlMatchesStore(search: string): boolean {
+    const params = new URLSearchParams(search);
+    const urlQ = params.get('q');
+    const urlTag = params.get('movie_tag');
+    const decodedQ = urlQ ? decodeURIComponent(urlQ.replace(/\+/g, ' ')).trim() : '';
+    const decodedTag = urlTag ? decodeURIComponent(urlTag.replace(/\+/g, ' ')).trim() : '';
+    const s = useSearchStore.getState();
+    const kwOk = urlQ ? s.keyword.trim() === decodedQ : s.keyword.trim() === '';
+    const tagOk = urlTag ? s.tag === decodedTag : true;
+    return kwOk && tagOk;
 }
 
 /** 與離屏測量 `measurePcTagsTwoRowSplit` 內 DOM 一致 */
@@ -353,6 +359,7 @@ function SearchIcon16({ className }: { className?: string }) {
 
 export default function Component() {
     const intl = useIntl();
+    const location = useLocation();
     const configStore = useConfigStore();
     const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
@@ -426,7 +433,8 @@ export default function Component() {
                 loading: false,
                 data: {
                     page: state.page,
-                    keyword: state.keyword.trim(),
+                    /** 按标签筛选时只传 tag，避免 keyword 与 tag 语义叠加导致结果不符合预期 */
+                    keyword: state.tag ? '' : state.keyword.trim(),
                     tag: state.tag,
                 },
             });
@@ -526,6 +534,7 @@ export default function Component() {
             searchStore.setTag('');
         } else {
             searchStore.setTag(name);
+            searchStore.setKeyword('');
         }
 
         setTagOpen(false);
@@ -555,6 +564,9 @@ export default function Component() {
             if (row) {
                 return formatTagLabel(String(row['unique_id'] ?? ''));
             }
+            if (isOpaqueTagId(searchStore.tag)) {
+                return intl.formatMessage({ id: 'nav_categories' });
+            }
             return searchStore.tag;
         }
         if (searchStore.keyword.trim()) {
@@ -567,8 +579,17 @@ export default function Component() {
     function pageHeading(): string {
         if (searchStore.tag) {
             const row = searchStore.tags.find((t) => (t['name'] as string) === searchStore.tag);
-            const tagLabel = row ? formatTagLabel(String(row['unique_id'] ?? '')) : searchStore.tag;
-            return intl.formatMessage({ id: 'search_movies_with_tag' }, { tag: tagLabel });
+            if (row) {
+                const tagLabel = formatTagLabel(String(row['unique_id'] ?? ''));
+                return intl.formatMessage({ id: 'search_movies_with_tag' }, { tag: tagLabel });
+            }
+            if (isOpaqueTagId(searchStore.tag)) {
+                return intl.formatMessage({ id: 'search_movies_all' });
+            }
+            return intl.formatMessage(
+                { id: 'search_movies_with_tag' },
+                { tag: searchStore.tag },
+            );
         }
         if (searchStore.keyword.trim()) {
             return intl.formatMessage(
@@ -589,23 +610,62 @@ export default function Component() {
     }, []);
 
     useLayoutEffect(() => {
-        const q = new URLSearchParams(window.location.search).get('q');
-        if (!q) {
+        const path = location.pathname;
+        const onSearch =
+            matchPath({ path: '/search', end: true }, path) != null ||
+            matchPath({ path: '/:locale/search', end: true }, path) != null;
+        if (!onSearch) {
             return;
         }
-        const decoded = decodeURIComponent(q.replace(/\+/g, ' '));
+
+        const params = new URLSearchParams(location.search);
+        const q = params.get('q');
+        const movieTag = params.get('movie_tag');
+        if (!q && !movieTag) {
+            return;
+        }
+
         const s = useSearchStore.getState();
-        if (s.keyword.trim() === decoded.trim()) {
-            return;
+        let changed = false;
+
+        if (q) {
+            const decoded = decodeURIComponent(q.replace(/\+/g, ' ')).trim();
+            if (s.keyword.trim() !== decoded) {
+                s.setKeyword(decoded);
+                changed = true;
+            }
+        } else if (movieTag) {
+            if (s.keyword.trim() !== '') {
+                s.setKeyword('');
+                changed = true;
+            }
         }
-        s.setKeyword(decoded);
-        s.setPage(1);
-    }, []);
+
+        if (movieTag) {
+            const decodedTag = decodeURIComponent(movieTag.replace(/\+/g, ' ')).trim();
+            if (s.tag !== decodedTag) {
+                s.setTag(decodedTag);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            s.setPage(1);
+        }
+    }, [location.pathname, location.search]);
 
     useEffect(() => {
         if (!sessionBootstrapReady) {
             return;
         }
+        const path = location.pathname;
+        const onSearch =
+            matchPath({ path: '/search', end: true }, path) != null ||
+            matchPath({ path: '/:locale/search', end: true }, path) != null;
+        if (!onSearch) {
+            return;
+        }
+
         let cancelled = false;
         void (async () => {
             await ensureMovieTags();
@@ -613,7 +673,7 @@ export default function Component() {
 
             const state = useSearchStore.getState();
             const canReuseList =
-                state.list.length > 0 && keywordMatchesSearchUrl();
+                state.list.length > 0 && searchUrlMatchesStore(location.search);
 
             if (canReuseList) {
                 searchStore.setLoading(false);
@@ -631,7 +691,7 @@ export default function Component() {
         return () => {
             cancelled = true;
         };
-    }, [sessionBootstrapReady]);
+    }, [sessionBootstrapReady, location.pathname, location.search]);
 
     /** PC：兩行高度上限 + 離屏二分測量，决定折疊時展示多少個 tag（展開鈕跟在末尾 tag 後） */
     useLayoutEffect(() => {
@@ -1085,9 +1145,15 @@ export default function Component() {
                     <div className="rs-search-page__drawerBody">
                         <div className="rs-search-page__drawerTags">
                             {searchStore.tags
-                                .filter(
-                                    (w) => (w['unique_id'] as string).indexOf(tagKeyword) !== -1,
-                                )
+                                .filter((w) => {
+                                    const kw = tagKeyword.trim().toLowerCase();
+                                    if (!kw) {
+                                        return true;
+                                    }
+                                    const uid = String(w['unique_id'] ?? '').toLowerCase();
+                                    const name = String(w['name'] ?? '').toLowerCase();
+                                    return uid.includes(kw) || name.includes(kw);
+                                })
                                 .map((w) => (
                                     <div
                                         onClick={() => handleTagClick(w['name'] as string)}

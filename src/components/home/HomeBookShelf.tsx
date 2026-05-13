@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
@@ -31,6 +32,39 @@ function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
     return slug ? `/episodes/${slug}` : `/video/${item.id}`;
 }
 
+/** 与 `home-reelshort.scss` 中 PC `.HomePage_type_5--pc` / type_1 宫格列断点一致 */
+function pcHomeShelfGridColumns(width: number): number {
+    if (width >= 1700) {
+        return 7;
+    }
+    if (width >= 1400) {
+        return 6;
+    }
+    if (width >= 1200) {
+        return 5;
+    }
+    if (width >= 1000) {
+        return 4;
+    }
+    return 3;
+}
+
+function usePcType5GridColumns(track: boolean) {
+    const [cols, setCols] = useState(() =>
+        track && typeof window !== 'undefined' ? pcHomeShelfGridColumns(window.innerWidth) : 5,
+    );
+    useEffect(() => {
+        if (!track) {
+            return;
+        }
+        const onResize = () => setCols(pcHomeShelfGridColumns(window.innerWidth));
+        onResize();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [track]);
+    return cols;
+}
+
 export function HomeBookShelf({
     titleMessageId,
     titleHref,
@@ -54,6 +88,23 @@ export function HomeBookShelf({
     const notH5 = useMinWidth768();
     const type1Enabled = type === 'type_1' && !notH5;
     const type1Scroll = useHomeType1H5Scroll(type1Enabled, items.length);
+    const pcType5Cols = usePcType5GridColumns(type === 'type_5' && notH5);
+
+    const type5PcVisibleItems = useMemo(() => {
+        if (type !== 'type_5' || !notH5 || !showMoreMoviesButton) {
+            return items;
+        }
+        const c = pcType5Cols;
+        if (items.length === 0 || c <= 0) {
+            return items;
+        }
+        const remainder = items.length % c;
+        if (remainder === 0) {
+            return items;
+        }
+        const kept = items.length - remainder;
+        return kept <= 0 ? items : items.slice(0, kept);
+    }, [type, notH5, showMoreMoviesButton, items, pcType5Cols]);
 
     if (items.length === 0) {
         return null;
@@ -78,7 +129,7 @@ export function HomeBookShelf({
                 <div>
                     {notH5 ? (
                         <div className="HomePage_content__DZ4dU HomePage_type_5__SK5Rv HomePage_type_5--pc">
-                            {items.map((item) => (
+                            {type5PcVisibleItems.map((item) => (
                                 <HomeBookItem
                                     key={item.id}
                                     to={toEpisodeOrVideoHref(item)}
@@ -118,14 +169,16 @@ export function HomeBookShelf({
                         </div>
                     )}
                     {showMoreMoviesButton ? (
-                        <button
-                            type="button"
-                            className="HomePage_more_movies_btn__z0biE"
-                            onClick={onMoreMoviesClick}
-                            disabled={!onMoreMoviesClick}
-                        >
-                            <FormattedMessage id="home_more_movies" />
-                        </button>
+                        <div className="flex w-full min-w-0 justify-center px-1">
+                            <button
+                                type="button"
+                                className="HomePage_more_movies_btn__z0biE shrink-0"
+                                onClick={onMoreMoviesClick}
+                                disabled={!onMoreMoviesClick}
+                            >
+                                <FormattedMessage id="home_more_movies" />
+                            </button>
+                        </div>
                     ) : null}
                 </div>
             ) : (

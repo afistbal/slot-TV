@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare module 'swiper/css';
+
 interface ImportMetaEnv {
   readonly VITE_SKIP_API?: string;
   readonly VITE_PWA_INSTALL_PROMPT?: string;
