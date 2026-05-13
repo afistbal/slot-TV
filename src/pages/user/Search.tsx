@@ -20,7 +20,7 @@ import { ChevronLeft, ChevronRight, LoaderCircle, MoreHorizontal, X } from 'luci
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
-import { isOpaqueTagId } from '@/pages/user/video-reel/videoReelUtils';
+import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 
 /** 搜索分页合并时接口可能返回重复 id，去重避免 React key 冲突与重复卡片 */
 function dedupeSearchRowsById(rows: TData[]): TData[] {

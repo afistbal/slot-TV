@@ -1,4 +1,100 @@
-function Player({
+import {
+    Check,
+    ChevronLeft,
+    Crown,
+    Home,
+    LayoutGrid,
+    LoaderCircle,
+    Minimize,
+    Pause,
+    PlayIcon,
+    Star,
+    Unlock,
+    X,
+} from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type RefObject } from 'react';
+import { WebVTT } from 'videojs-vtt.js';
+import { toast } from 'sonner';
+import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import lockIcon from '@/assets/lock.svg';
+import episodeLockBadgeIcon from '@/assets/icons/episode-lock-badge.svg';
+import activeEpisodeBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
+import fullscreenIcon from '@/assets/images/is_full_screen_icon.88dfd7dd.png';
+import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
+import pcBackIcon from '@/assets/icons/video-pc-back.svg';
+import pcFullscreenExitHandleBg from '@/assets/images/9061da60-c404-11ef-a2d6-41216ff1602c.png';
+import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
+import shareLinkIcon from '@/assets/icons/share/link.svg';
+import shareFacebookIcon from '@/assets/icons/share/facebook.svg';
+import shareTwitterIcon from '@/assets/icons/share/twitter.svg';
+import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
+import shareCloseIcon from '@/assets/icons/share/close.svg';
+import { cn } from '@/lib/utils';
+import { formatVideoIntroTagLabel, videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
+import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
+import { FormattedMessage, useIntl } from 'react-intl';
+import RadixRc from '@/pages/user/RadixRc';
+import { Link, useNavigate } from 'react-router';
+import { api } from '@/api';
+import { shareOrigin, skipRemoteApi } from '@/env';
+import { offlinePlayerEpisode } from '@/mocks/videoOffline';
+import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
+import Loader from '@/components/Loader';
+import { useUserStore } from '@/stores/user';
+import { useConfigStore } from '@/stores/config';
+import { useRootStore } from '@/stores/root';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import Forward from '@/components/Forward';
+import Image from '@/components/Image';
+
+const SPEED = [0.75, 1.0, 1.25, 1.5, 2.0];
+
+type ShareAction = 'facebook' | 'twitter' | 'link' | 'embed';
+
+function isOpaqueTagId(value: string) {
+    return /^[a-f0-9]{10,}$/i.test(value);
+}
+
+function formatTagText(value: string) {
+    return value
+        .replace(/[_-]+/g, ' ')
+        .trim()
+        .replace(/\b\w/g, (s) => s.toUpperCase());
+}
+
+function getTagDisplayText(tag: { name: string; unique_id: string }) {
+    const name = String(tag.name ?? '').trim();
+    const uid = String(tag.unique_id ?? '').trim();
+    if (name && !isOpaqueTagId(name)) {
+        return name;
+    }
+    if (uid && !isOpaqueTagId(uid)) {
+        return formatTagText(uid);
+    }
+    return name || uid || '-';
+}
+
+function canNavigateBack() {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    const state = window.history.state as { idx?: unknown } | null;
+    return typeof state?.idx === 'number' && state.idx > 0;
+}
+
+/** 整页刷新（F5）无用户手势：与直链冷启动一样走静音自动播 */
+function isPerformanceNavigationReload() {
+    if (typeof performance === 'undefined') {
+        return false;
+    }
+    const entry = performance.getEntriesByType('navigation')[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+    return entry?.type === 'reload';
+}
+
+export function Player({
     id,
     data,
     onSetEpisode,
