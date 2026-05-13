@@ -42,10 +42,18 @@ export default function Component() {
     const pixel = usePixel();
     const location = useLocation();
     const sourceform = `${location.pathname}${location.search}`;
-    const outletKey = useMemo(
-        () => `${location.pathname}${location.search}`,
-        [location.pathname, location.search],
-    );
+    /**
+     * 默认用 pathname+search 作 key，换 URL 即 remount，避免脏状态。
+     * 播放页例外：换集只改 `/:index`，若整页 remount 会丢掉全屏/播放器状态；同一剧 id 下保持稳定 key。
+     */
+    const outletKey = useMemo(() => {
+        const { pathname, search } = location;
+        const videoMatch = matchPath({ path: '/video/:id/:index?', end: true }, pathname);
+        if (videoMatch?.params?.id != null) {
+            return `video:${String(videoMatch.params.id)}${search}`;
+        }
+        return `${pathname}${search}`;
+    }, [location]);
     const { isHome, isSearch } = usePrimaryTabKeepAlive();
     const visitedHomeRef = useRef(false);
     const visitedSearchRef = useRef(false);
