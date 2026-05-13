@@ -18,7 +18,12 @@ import { toast } from 'sonner';
 const tileIcon = 'w-8 h-8 shrink-0 md:w-10 md:h-10';
 
 export default function Component() {
-    const isAdmin = useUserStore((s) => s.signed && Number(s.info?.['admin'] ?? 0) > 0);
+    const showCancelSubscription = useUserStore(
+        (s) =>
+            s.signed &&
+            Number(s.info?.['vip'] ?? 0) === 1 &&
+            Number(s.info?.['admin'] ?? 0) === 1,
+    );
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
     const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
@@ -57,10 +62,10 @@ export default function Component() {
                     <h2 className="mb-2 text-base font-semibold text-slate-50">管理入口（电脑端）</h2>
                     <p className="text-sm leading-relaxed text-slate-400">
                         与手机端相同：影片列表、用户、数据分析、订单、一周更新表。宽屏下卡片会放大便于点击。
-                        {isAdmin ? (
+                        {showCancelSubscription ? (
                             <>
                                 {' '}
-                                您为管理员，第三行最右侧为「取消订阅」，将请求接口 <code className="rounded bg-slate-800 px-1 text-slate-300">subscription/cancel</code>
+                                您为 VIP 且管理员时，第三行最右侧为「取消订阅」，将请求接口 <code className="rounded bg-slate-800 px-1 text-slate-300">subscription/cancel</code>
                                 ，成功后返回首页并刷新。
                             </>
                         ) : null}
@@ -127,7 +132,7 @@ export default function Component() {
                             <FormattedMessage id="weekly_update_table" />
                         </div>
                     </Link>
-                    {isAdmin ? (
+                    {showCancelSubscription ? (
                         <button
                             type="button"
                             className={cn(
