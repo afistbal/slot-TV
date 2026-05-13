@@ -52,6 +52,7 @@ import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo'
 import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 import ShortsFeedDemoPage from './pages/demo/ShortsFeedDemoPage';
+import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
 
 import LayoutAdmin from './layouts/admin';
 import AdminHome from './pages/admin/Home';
@@ -210,6 +211,11 @@ const router = createBrowserRouter([
         path: '/zgjdemo',
         errorElement: <ErrorBoundary />,
         element: <ShortsFeedDemoPage />,
+    },
+    {
+        path: '/zgjdownload',
+        errorElement: <ErrorBoundary />,
+        element: <ZgjDownloadPage />,
     },
     {
         path: '/page',
@@ -690,7 +696,10 @@ function App() {
     }, [checked, sessionBootstrapReady]);
 
     const appPathSegments = window.location.pathname.toLowerCase().split('/').filter(Boolean);
-    const isShortsDemoPath = appPathSegments.length === 1 && appPathSegments[0] === 'zgjdemo';
+    /** 与 `/zgjdemo` 等工具页：不等全站 config 即可挂载路由（页内自举 config/token） */
+    const isStandaloneToolPath =
+        appPathSegments.length === 1 &&
+        (appPathSegments[0] === 'zgjdemo' || appPathSegments[0] === 'zgjdownload');
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt = install > 0 && !isIosLikeDevice() && !isShoppingRoute;
@@ -746,7 +755,7 @@ function App() {
                     onClick={handleExecuteInstall}
                 />
             ) : null}
-            {checked || isShortsDemoPath ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
+            {checked || isStandaloneToolPath ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
         </div>
         <Dialog
             open={loadingStore.status}
