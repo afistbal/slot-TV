@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useUserStore } from "@/stores/user";
 // import paypal from "@/assets/paypal.svg";
@@ -140,6 +140,7 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
         api<Product[]>('product', {
             data: {
                 from,
+                ...(from === 'video' ? { type: 10 } : {}),
             },
             loading: false,
         }).then(res => {
@@ -147,9 +148,18 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
                 return;
             }
             setProduct(res.d);
+            const subs = res.d.filter((v) => v.type === 1);
+            const pick = subs.length > 0 ? subs : res.d;
+            setCurrent(pick[0]?.id ?? 1);
             setLoading(false);
         });
-    }, [open]);
+    }, [open, from]);
+
+    /** `type=10` 可能带回金币包；本弹窗仅展示订阅套餐行 */
+    const vipPlanRows = useMemo(() => {
+        const subs = product.filter((v) => v.type === 1);
+        return subs.length > 0 ? subs : product;
+    }, [product]);
 
     return <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="bg-linear-to-b from-amber-100 to-transparent p-6">
@@ -159,7 +169,7 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
             <DialogDescription className="text-md text-center text-amber-950/80"><FormattedMessage id="enjoy" /></DialogDescription>
             {loading ? <div className="h-16"><Loader /></div> : <div className="flex flex-col gap-4">
                 <Countdown />
-                {product.map(v => <div key={v.id} onClick={() => setCurrent(v.id)} className={cn("relative overflow-hidden border rounded-md p-4 flex justify-between gap-2 items-center", current === v.id ? 'border-amber-400 bg-amber-200/60' : 'border-amber-400/40 bg-amber-50/20')}>
+                {vipPlanRows.map(v => <div key={v.id} onClick={() => setCurrent(v.id)} className={cn("relative overflow-hidden border rounded-md p-4 flex justify-between gap-2 items-center", current === v.id ? 'border-amber-400 bg-amber-200/60' : 'border-amber-400/40 bg-amber-50/20')}>
                     <div>
                         <div className={cn(current === v.id ? "text-amber-800" : 'text-muted-foreground', 'text-sm')}><FormattedMessage id={`${v.name}_subscription`} /></div>
                         <div className="text-xl font-bold text-amber-950"><FormattedMessage id={`${v.name}`} /></div>

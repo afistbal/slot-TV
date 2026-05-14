@@ -24,12 +24,8 @@ function readCssNumber(el: HTMLElement, key: 'width' | 'height'): number {
 
 function setTransform(el: HTMLElement, dx1: number, dy2: number) {
     const v = `translate3d(${dx1}px, ${dy2}px, 0)`;
-    el.style.webkitTransform =
-        el.style.msTransform =
-        el.style.MozTransform =
-        el.style.OTransform =
-        el.style.transform =
-            v;
+    const st = el.style as CSSStyleDeclaration & Record<string, string>;
+    st.webkitTransform = st.msTransform = st.MozTransform = st.OTransform = st.transform = v;
 }
 
 function setTransitionDuration(el: HTMLElement, ms: number) {
@@ -181,7 +177,7 @@ export function slideTouchMove(
 }
 
 export function slideTouchEnd(
-    e: PointerEvent,
+    _e: PointerEvent,
     state: VerticalFiniteSlideState,
     canNextCb: ((s: VerticalFiniteSlideState, isNext: boolean) => boolean) | null = null,
     nextCb: ((isNext: boolean) => void) | null = null,

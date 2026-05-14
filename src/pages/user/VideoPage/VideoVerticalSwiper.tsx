@@ -28,6 +28,7 @@ import { EpisodeFrameQueueOverlay } from './EpisodeFrameQueueOverlay';
 import { getEpisodeIdsToPrewarm } from './episodePrewarm';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
 import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
+import { canNavigateBack, isPerformanceNavigationReload } from './videoPlayerUtils';
 
 /** 非会员：邻格不挂播放器，避免对 VIP 集打 `movie/episode` 预拉；滑到该集后由主格再请求一次即可 */
 function shouldMountNeighborPeekPlayer(
@@ -50,9 +51,14 @@ export default function VideoVerticalSwiper() {
     const params = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const fromHomeVideoPlayback = Boolean(
-        (location.state as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
-    );
+    /** 显式 `VIDEO_FROM_HOME_STATE`，或站内路由栈已有上一页（非整页刷新）：PC 可与 H5 一样先试有声自动播 */
+    const fromHomeVideoPlayback =
+        Boolean(
+            (location.state as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
+        ) ||
+        (typeof window !== 'undefined' &&
+            canNavigateBack() &&
+            !isPerformanceNavigationReload());
     const outerRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const slideStateRef = useRef<VerticalFiniteSlideState>(createVerticalFiniteSlideState(0));

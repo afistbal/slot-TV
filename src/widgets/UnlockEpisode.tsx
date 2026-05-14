@@ -55,7 +55,7 @@ export default function UnlockEpisode({
         const p = await api<IProduct[]>('product', {
             data: {
                 from: 'unlock',
-                type: '10',
+                type: 10,
             },
             loading: false,
         });

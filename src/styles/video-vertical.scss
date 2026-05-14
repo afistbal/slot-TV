@@ -519,9 +519,37 @@
     }
 }
 
-/* 视频页 VIP 弹窗：套餐区在 PC 也保持单列（不影响我的页） */
+/* 视频页 VIP 弹窗：套餐两列（与整页 shopping 一致） */
 .video-vip-dialog .rs-shopping__plans {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+@media (min-width: 768px) {
+    /* PC 视频 VIP 弹窗：intro 区倒计时靠右上（与账户侧栏 shopping 一致） */
+    .video-vip-dialog .rs-shopping__intro {
+        position: relative;
+        padding-right: 200px;
+    }
+
+    .video-vip-dialog .rs-shopping__introEmbedExtras {
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin-top: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .video-vip-dialog .rs-shopping__countdown {
+        justify-content: flex-end;
+        margin-bottom: 0;
+    }
+
+    .video-vip-dialog .rs-shopping__countdown > div {
+        justify-content: flex-end;
+    }
 }
 
 /* 简介弹窗：彻底移除金色焦点边框/阴影 */

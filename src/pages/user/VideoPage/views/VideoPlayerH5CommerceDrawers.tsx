@@ -12,6 +12,8 @@ export type VideoPlayerH5CommerceDrawersProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
+    /** 嵌入 VIP 购物：「目前劇集」解锁金币；不传则不展示该行 */
+    vipHeaderEpisodeUnlockCoins?: number;
     shareOpen: boolean;
     onShareOpenChange: (open: boolean) => void;
     shareEmbedCode: string;
@@ -28,6 +30,7 @@ export function VideoPlayerH5CommerceDrawers({
     vip,
     onVipOpenChange,
     onVipEmbedClose,
+    vipHeaderEpisodeUnlockCoins,
     shareOpen,
     onShareOpenChange,
     shareEmbedCode,
@@ -58,6 +61,7 @@ export function VideoPlayerH5CommerceDrawers({
                                 productFrom="video"
                                 checkoutFrom="video"
                                 onEmbedClose={onVipEmbedClose}
+                                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
                             />
                         ) : null}
                     </div>

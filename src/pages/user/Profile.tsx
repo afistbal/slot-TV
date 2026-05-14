@@ -3,7 +3,6 @@ import {
     RsPcHelpMenuIcon,
     RsPcHistoryMenuIcon,
     RsPcMyListMenuIcon,
-    RsPcWalletMenuIcon,
 } from '@/components/icons/reelshortDashboardPcMenuIcons';
 import gift from '@/assets/gift.svg';
 import gem from '@/assets/gem.svg';
@@ -11,10 +10,11 @@ import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconFeedback from '@/assets/images/59f06ad0-876c-11ee-aed2-cfe3d80f70eb.png';
 import iconHistory from '@/assets/images/history.png';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
+import coinIcon from '@/assets/coin.svg';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Vip from '@/widgets/Vip';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,7 @@ import { PcLoginDialog } from '@/pages/user/Login';
 type ProfilePcTab = 'topup' | 'profile' | 'mylist' | 'feedback';
 
 export default function Component() {
+    const intl = useIntl();
     const userStore = useUserStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const navigate = useNavigate();
@@ -369,6 +370,18 @@ export default function Component() {
     const isSignedProfile = Boolean(userStore.signed && !userStore.isAnonymous());
     const pcDisplayName = isSignedProfile ? String(userStore.info?.['name'] ?? '') : null;
 
+    const pcWalletDisplay = useMemo(() => {
+        if (!userStore.signed || userStore.balance < 0) {
+            return { total: 0, pending: userStore.signed && userStore.balance === -1 };
+        }
+        return { total: userStore.balance, pending: false };
+    }, [userStore.signed, userStore.balance]);
+
+    function formatPcWalletStat(n: number, pending: boolean) {
+        if (pending) return '···';
+        return intl.formatNumber(n);
+    }
+
     /** 与 ReelShort `dashboard_pc_*` DOM + `9cb3e9a284588d0e.css` 一致（见 `reelshort-dashboard-pc-mirror.scss`） */
     const pcUserInfo = (
         <div className="rs-profile__pc-reelshortMirror">
@@ -440,6 +453,33 @@ export default function Component() {
         </div>
     );
 
+    /** PC 侧栏：头像区下方、菜单上方 — 深色卡内含餘額、金幣與儲值（跳转 tab=topup） */
+    const pcAccountBalance = (
+        <div className="rs-profile__pc-accountBalance">
+            <div className="rs-profile__pc-accountBalance__panel">
+                <div className="rs-profile__pc-accountBalance__title">
+                    <FormattedMessage id="shopping_bar_account_balance" />
+                </div>
+                <div className="rs-profile__pc-accountBalance__row">
+                    <div className="rs-profile__pc-accountBalance__col">
+                        <div className="rs-profile__pc-accountBalance__valueRow">
+                            <img src={coinIcon} alt="" aria-hidden />
+                            <span className="tabular-nums">
+                                {formatPcWalletStat(pcWalletDisplay.total, pcWalletDisplay.pending)}
+                            </span>
+                        </div>
+                        <div className="rs-profile__pc-accountBalance__label">
+                            <FormattedMessage id="shopping_bar_coins" />
+                        </div>
+                    </div>
+                </div>
+                <Link to="/profile?tab=topup" className="rs-profile__pc-accountBalance__topUp">
+                    <FormattedMessage id="top_up" />
+                </Link>
+            </div>
+        </div>
+    );
+
     return (
         <div className={cn('rs-profile', isPc && 'rs-profile--pc')}>
             <div
@@ -460,6 +500,7 @@ export default function Component() {
                         <div className="rs-profile__pc-dashboard">
                             <aside className="rs-profile__pc-aside">
                                 {pcUserInfo}
+                                {pcAccountBalance}
                                 <ul className={cn('dashboard_pc_menu__5uzfK', 'rs-profile__menu')}>
                                     {userStore.isAdmin() ? (
                                         <>
@@ -489,20 +530,6 @@ export default function Component() {
                                             </li>
                                         </>
                                     ) : null}
-                                    <li className={pcDashboardMenuLiClass('topup')}>
-                                        <button
-                                            type="button"
-                                            className="rs-profile__pc-menuHit"
-                                            onClick={() => setProfileTabQuery('topup')}
-                                        >
-                                            <i>
-                                                <RsPcWalletMenuIcon />
-                                            </i>
-                                            <span>
-                                                <FormattedMessage id="top_up" />
-                                            </span>
-                                        </button>
-                                    </li>
                                     {!userStore.isAnonymous() ? (
                                         <li className={pcDashboardMenuLiClass('profile')}>
                                             <button

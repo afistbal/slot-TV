@@ -111,17 +111,20 @@ export default function Coin({
         api<Product[]>('product', {
             data: {
                 from,
-                type: 2,
+                /** 与 `tv-web` 解锁流一致：`product?type=10` 再取金币包（`type===2`） */
+                type: 10,
             },
             loading: false,
         }).then((res) => {
             if (res.c != 0) {
                 return;
             }
-            setProduct(res.d.sort((a, b) => (a.name.indexOf('off') !== -1 ? -1 : a.id - b.id)));
+            const packs = res.d.filter((v) => v.type === 2);
+            const list = packs.length > 0 ? packs : res.d;
+            setProduct(list.sort((a, b) => (a.name.indexOf('off') !== -1 ? -1 : a.id - b.id)));
             setLoading(false);
         });
-    }, [open]);
+    }, [open, from]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

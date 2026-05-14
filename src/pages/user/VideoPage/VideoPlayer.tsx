@@ -83,7 +83,7 @@ export function VideoPlayer({
     onFullscreenPrefChange: (value: boolean) => void;
     onEpisodeFullscreenReady: () => void;
     shouldIgnoreFullscreenExit: () => boolean;
-    /** 从站内带 state 进入（书架/Banner 等）：PC 可走有声；无此项时 PC 静音、H5 仍常先试有声 */
+    /** 站内带 `VIDEO_FROM_HOME_STATE` 或路由栈上一页（非整页刷新）：PC 可走有声；直链/刷新仍走静音冷启动 */
     fromHomeVideoPlayback: boolean;
     /** 换集走 video-old 式播放（无声优静音策略） */
     legacyEpisodeAutoplayRef: RefObject<boolean>;
@@ -579,7 +579,7 @@ export function VideoPlayer({
             return;
         }
         void loadData(id);
-    }, [id, isDesktop, sessionBootstrapReady, playbackPolicy]);
+    }, [id, isDesktop, sessionBootstrapReady, playbackPolicy, fromHomeVideoPlayback]);
 
     useEffect(() => {
         if (playbackPolicy !== 'paused' || controllerRef.current === null) {
@@ -988,7 +988,9 @@ export function VideoPlayer({
                                 playsInline
                                 poster={videoPosterAttr}
                                 preload={videoPreload}
-                                fetchPriority={playbackPolicy === 'paused' ? 'low' : 'high'}
+                                {...({
+                                    fetchPriority: playbackPolicy === 'paused' ? 'low' : 'high',
+                                } as React.HTMLAttributes<HTMLVideoElement>)}
                                 controlsList="nodownload noplaybackrate noremoteplayback"
                                 disablePictureInPicture
                                 disableRemotePlayback
@@ -1223,6 +1225,7 @@ export function VideoPlayer({
                         vip={vip}
                         onVipOpenChange={setVip}
                         onVipEmbedClose={handleVipEmbedClose}
+                        vipHeaderEpisodeUnlockCoins={episode != null ? episode.unlock_coins : undefined}
                         shareOpen={shareOpen}
                         onShareOpenChange={setShareOpen}
                         shareEmbedCode={shareEmbedCode}
@@ -1248,7 +1251,9 @@ export function VideoPlayer({
                     playsInline
                     poster={videoPosterAttr}
                     preload={videoPreload}
-                    fetchPriority={playbackPolicy === 'paused' ? 'low' : 'high'}
+                    {...({
+                        fetchPriority: playbackPolicy === 'paused' ? 'low' : 'high',
+                    } as React.HTMLAttributes<HTMLVideoElement>)}
                     controlsList="nodownload noplaybackrate noremoteplayback"
                     disablePictureInPicture
                     disableRemotePlayback
@@ -1541,6 +1546,7 @@ export function VideoPlayer({
                     vip={vip}
                     onVipOpenChange={setVip}
                     onVipEmbedClose={handleVipEmbedClose}
+                    vipHeaderEpisodeUnlockCoins={episode != null ? episode.unlock_coins : undefined}
                     shareOpen={shareOpen}
                     onShareOpenChange={setShareOpen}
                     shareEmbedCode={shareEmbedCode}

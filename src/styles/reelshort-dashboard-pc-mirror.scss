@@ -372,3 +372,102 @@
     box-sizing: border-box;
     white-space: nowrap;
 }
+
+/** PC 侧栏：用户信息块下方、主导航菜单上方 — 深色卡内含餘額、金幣與儲值 */
+.rs-profile__pc-aside .rs-profile__pc-accountBalance {
+    box-sizing: border-box;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__panel {
+    box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    background-color: #141414;
+    padding: 12px 12px 12px;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__row {
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin-top: 12px;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__col {
+    display: flex;
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__valueRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    margin-bottom: 1px;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__valueRow img {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__valueRow span {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__label {
+    font-size: 12px;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__topUp {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 12px;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #fff;
+    text-decoration: none;
+    background-color: #e52e2e;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__topUp:hover {
+    background-color: #c92828;
+    color: #fff;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__topUp:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.35);
+    outline-offset: 2px;
+}

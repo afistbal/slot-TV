@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api } from '@/api';
@@ -17,6 +17,7 @@ import checkboxChecked from '@/assets/icons/shopping-pay/checkbox_checked.png';
 import iconSuccessful from '@/assets/icons/shopping-pay/icon_successful.png';
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import Countdown from '@/widgets/Countdown';
+import coinIcon from '@/assets/coin.svg';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
 import { MembershipInlinePanel } from '@/pages/user/Membership';
@@ -80,7 +81,15 @@ type Product = {
     name: string;
     price: string;
     renewal_price: string;
+    coin?: number;
+    bouns?: string;
 };
+
+function pickDefaultSubscriptionPlanId(list: Product[]): number | null {
+    const subs = list.filter((p) => p.type === 1);
+    const planPick = subs.length > 0 ? subs : list;
+    return planPick[0]?.id ?? null;
+}
 
 export type RadixRcLayout = 'page' | 'embed';
 
@@ -98,6 +107,10 @@ export type RadixRcProps = {
     productFrom?: 'shopping' | 'video';
     /** 跳转收银台 URL 的 `from=` */
     checkoutFrom?: 'shopping' | 'video';
+    /**
+     * 嵌入购物（剧集抽屉 / PC 弹窗）：在 VIP 说明下展示「目前劇集」解锁金币；不传则不展示该行（如 `/profile?tab=topup`）。
+     */
+    headerEpisodeUnlockCoins?: number;
 };
 
 type ProductFromKey = NonNullable<RadixRcProps['productFrom']>;
@@ -112,6 +125,7 @@ export default function RadixRc({
     embedPresentation = 'drawer',
     productFrom = 'shopping',
     checkoutFrom = 'shopping',
+    headerEpisodeUnlockCoins,
 }: RadixRcProps = {}) {
     const intl = useIntl();
     const userStore = useUserStore();
@@ -137,7 +151,7 @@ export default function RadixRc({
     );
     const [currentId, setCurrentId] = useState<number | null>(() => {
         const cached = shoppingProductCache.get(productFrom);
-        return cached?.[0]?.id ?? null;
+        return cached?.length ? pickDefaultSubscriptionPlanId(cached) : null;
     });
     const [showPayModal, setShowPayModal] = useState(false);
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
@@ -184,6 +198,16 @@ export default function RadixRc({
         };
     }, []);
 
+    useEffect(() => {
+        if (!localStorage.getItem('token')) return;
+        const needBalance =
+            layout === 'embed' || (layout === 'page' && productFrom === 'shopping');
+        if (!needBalance) return;
+        void api<number>('user/balance', { loading: false }).then((res) => {
+            if (res.c === 0) useUserStore.getState().setBalance(res.d);
+        });
+    }, [layout, productFrom]);
+
     function closePayModal() {
         setShowPaidServiceAgreement(false);
         setPayModalStatus('idle');
@@ -228,7 +252,7 @@ export default function RadixRc({
         const cached = shoppingProductCache.get(productFrom);
         if (cached?.length) {
             setProducts(cached);
-            setCurrentId(cached[0]?.id ?? null);
+            setCurrentId(pickDefaultSubscriptionPlanId(cached));
             setLoadingProducts(false);
             return;
         }
@@ -238,7 +262,7 @@ export default function RadixRc({
         setProducts([]);
         setCurrentId(null);
         api<Product[]>('product', {
-            data: { from: productFrom },
+            data: { from: productFrom, type: 10 },
             loading: false,
         })
             .then((res) => {
@@ -246,7 +270,7 @@ export default function RadixRc({
                 if (res.c !== 0) return;
                 shoppingProductCache.set(productFrom, res.d);
                 setProducts(res.d);
-                setCurrentId(res.d?.[0]?.id ?? null);
+                setCurrentId(pickDefaultSubscriptionPlanId(res.d));
             })
             .finally(() => {
                 if (!alive) return;
@@ -257,7 +281,19 @@ export default function RadixRc({
         };
     }, [productFrom]);
 
-    const planProducts = useMemo(() => products, [products]);
+    const planProducts = useMemo(() => {
+        const subs = products.filter((p) => p.type === 1);
+        return subs.length > 0 ? subs : products;
+    }, [products]);
+    const coinProducts = useMemo(() => {
+        const rows = products.filter((p) => p.type === 2);
+        return [...rows].sort((a, b) => {
+            const ao = a.name.includes('off') ? 1 : 0;
+            const bo = b.name.includes('off') ? 1 : 0;
+            if (ao !== bo) return bo - ao;
+            return a.id - b.id;
+        });
+    }, [products]);
     const defaultWalletProductId = useMemo(() => {
         const p999 = planProducts.find((p) => Math.abs(parseFloat(p.price) - 9.99) < 0.001);
         return p999?.id ?? planProducts[0]?.id ?? null;
@@ -265,8 +301,8 @@ export default function RadixRc({
     const walletProductId = currentId ?? defaultWalletProductId;
     const checkoutTargetProductId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
     const currentCheckoutProduct = useMemo(
-        () => planProducts.find((p) => p.id === checkoutTargetProductId) ?? null,
-        [planProducts, checkoutTargetProductId],
+        () => products.find((p) => p.id === checkoutTargetProductId) ?? null,
+        [products, checkoutTargetProductId],
     );
     const retryAmount = currentCheckoutProduct?.price ? `$${currentCheckoutProduct.price}` : '';
 
@@ -279,29 +315,102 @@ export default function RadixRc({
     }
 
     const showCountdown = !loadingProducts && products.length > 0;
-    const countdownEl = showCountdown ? (
-        <div
-            className={cn(
-                'rs-shopping__countdown',
-                layout === 'embed' && 'rs-shopping__countdown--inDrawerHead',
-            )}
-        >
+    const countdownMainEl = showCountdown ? (
+        <div className="rs-shopping__countdown">
             <Countdown />
         </div>
     ) : null;
 
+    const showIntroWalletAndCountdown =
+        layout === 'embed' || (layout === 'page' && productFrom === 'shopping');
+    const isEmbedDrawer = layout === 'embed' && embedPresentation === 'drawer';
+    /** 整页 `/shopping`：顶栏式账户条（与参考 H5 布局一致），餘額不再叠在副标题下 */
+    const showShoppingPageWalletBar = layout === 'page' && productFrom === 'shopping';
+
+    /** 整页 `/shopping` 顶栏钱包条：仅展示金幣总额（与 PC 侧栏一致），不重复帳戶餘額/贈送 */
+    const shoppingPageWalletDisplay = useMemo(() => {
+        if (!userStore.signed || userStore.balance < 0) {
+            return { total: 0, pending: userStore.signed && userStore.balance === -1 };
+        }
+        return { total: userStore.balance, pending: false };
+    }, [userStore.signed, userStore.balance]);
+
+    function formatWalletAmount(n: number, pending: boolean) {
+        if (pending) return '···';
+        return intl.formatNumber(n);
+    }
+
+    const embedWalletRowsEl = (
+        <>
+            {headerEpisodeUnlockCoins !== undefined ? (
+                <div className="flex items-center text-sm text-white/75">
+                    <FormattedMessage id="current_episode" />
+                    <img src={coinIcon} width={18} height={18} className="ml-1 shrink-0" alt="" />
+                    <div className="text-orange-400 font-bold tabular-nums">
+                        {intl.formatNumber(headerEpisodeUnlockCoins)}
+                    </div>
+                </div>
+            ) : null}
+            <div
+                className={cn(
+                    'flex items-center text-sm text-white/75',
+                    headerEpisodeUnlockCoins !== undefined && 'mt-1',
+                )}
+            >
+                <FormattedMessage id="balance" />
+                <img src={coinIcon} width={18} height={18} className="ml-1 shrink-0" alt="" />
+                <div className="text-orange-400 font-bold tabular-nums">
+                    {!userStore.signed ? 0 : userStore.balance === -1 ? '···' : intl.formatNumber(userStore.balance)}
+                </div>
+            </div>
+        </>
+    );
+
     const main = (
         <div className="rs-shopping__main">
             <div className="rs-shopping__intro">
+                {showShoppingPageWalletBar ? (
+                    <div className="rs-shopping__pageWalletBar">
+                        <div className="rs-shopping__pageWalletBar__row rs-shopping__pageWalletBar__row--singleCoins">
+                            <div className="rs-shopping__pageWalletBar__stat">
+                                <span className="rs-shopping__pageWalletBar__statInner">
+                                    <span className="rs-shopping__pageWalletBar__muted">
+                                        <FormattedMessage id="shopping_bar_coins" />
+                                    </span>
+                                    <span className="rs-shopping__pageWalletBar__colon">:</span>
+                                    <span className="rs-shopping__pageWalletBar__statValue tabular-nums">
+                                        <img src={coinIcon} alt="" aria-hidden />
+                                        {formatWalletAmount(
+                                            shoppingPageWalletDisplay.total,
+                                            shoppingPageWalletDisplay.pending,
+                                        )}
+                                    </span>
+                                </span>
+                            </div>
+                            <Link to="/user/my-balance" className="rs-shopping__pageWalletBar__history">
+                                <span className="rs-shopping__pageWalletBar__historyLabel">
+                                    <FormattedMessage id="shopping_bar_history" />
+                                </span>
+                                <ChevronRight className="rs-shopping__pageWalletBar__historyChev" aria-hidden />
+                            </Link>
+                        </div>
+                    </div>
+                ) : null}
                 <div className="rs-shopping__introTitle">
                     <FormattedMessage id="shopping_vip_unlock_all" />
                 </div>
                 <div className="rs-shopping__introSub">
                     <FormattedMessage id="shopping_auto_renew_cancel_anytime" />
                 </div>
+                {showIntroWalletAndCountdown && (!isEmbedDrawer || countdownMainEl) ? (
+                    <div className="rs-shopping__introEmbedExtras">
+                        {isEmbedDrawer || showShoppingPageWalletBar ? null : (
+                            <div className="rs-shopping__embedWallet">{embedWalletRowsEl}</div>
+                        )}
+                        {countdownMainEl}
+                    </div>
+                ) : null}
             </div>
-
-            {layout !== 'embed' ? countdownEl : null}
 
             <div className="rs-shopping__plans">
                 {(loadingProducts ? [] : planProducts).map((p) => {
@@ -373,7 +482,12 @@ export default function RadixRc({
                                         />
                                         <FormattedMessage id="shopping_benefit_unlimited_viewing" />
                                     </div>
-                                    <div className="rs-shopping__planBenefit">
+                                    <div
+                                        className={cn(
+                                            'rs-shopping__planBenefit',
+                                            'rs-shopping__planBenefit--1080pDesktop',
+                                        )}
+                                    >
                                         <img
                                             className="rs-shopping__planBenefitIcon"
                                             src={icon1080p}
@@ -400,6 +514,89 @@ export default function RadixRc({
                     </div>
                 ) : null}
             </div>
+
+            {!loadingProducts && coinProducts.length > 0 ? (
+                <div className="mt-3 rounded-[4px] bg-[#0d0d0d] px-4 pb-4 pt-4 shadow-none">
+                    <div className="mb-3 text-[calc(16/375*var(--app-vw,100vw))] font-bold leading-tight text-white/90 md:text-[16px]">
+                        <FormattedMessage id="shopping_top_up_coins" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 shadow-none md:grid-cols-4">
+                        {coinProducts.map((p) => {
+                            const baseCoin = p.coin ?? 0;
+                            const bonus = Number.parseFloat(p.bouns ?? '0');
+                            const bonusCoins =
+                                baseCoin > 0 && Number.isFinite(bonus)
+                                    ? Math.round(baseCoin * bonus)
+                                    : 0;
+                            const totalCoins = baseCoin + bonusCoins;
+                            const bonusPct = bonus > 0 ? Math.round(bonus * 100) : 0;
+                            return (
+                                <div
+                                    key={p.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => handleSelectPlan(p.id)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleSelectPlan(p.id);
+                                        }
+                                    }}
+                                    className={cn(
+                                        'relative flex w-full cursor-pointer flex-col rounded-[4px] p-4 shadow-none',
+                                        'bg-[#141414] md:bg-[#292929]',
+                                        'outline-none focus-visible:outline-none',
+                                    )}
+                                >
+                                    {bonusPct > 0 ? (
+                                        <div
+                                            className={cn(
+                                                'absolute right-0 top-0 flex h-4 min-w-[2.25rem] items-center justify-center rounded-tr-[4px] rounded-bl-[4px] px-2',
+                                                'bg-gradient-to-r from-[#E52E2E] to-[#EB4C46]',
+                                                'text-[10px] font-medium leading-none text-white md:text-xs',
+                                            )}
+                                        >
+                                            +{bonusPct}%
+                                        </div>
+                                    ) : null}
+                                    <div className="mb-1 flex items-center text-base font-bold text-white md:text-lg">
+                                        <img src={coinIcon} alt="" className="mr-1 h-5 w-5 shrink-0 md:h-6 md:w-6" />
+                                        <span className="tabular-nums">
+                                            {intl.formatNumber(totalCoins)}
+                                        </span>
+                                    </div>
+                                    {bonusCoins > 0 ? (
+                                        <div className="min-h-[2rem] text-[10px] font-normal leading-snug text-white/50 md:text-xs md:leading-[17px]">
+                                            <div>
+                                                <FormattedMessage
+                                                    id="shopping_coin_immediate"
+                                                    values={{ n: intl.formatNumber(baseCoin) }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <FormattedMessage
+                                                    id="shopping_coin_free"
+                                                    values={{ n: intl.formatNumber(bonusCoins) }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="min-h-[2rem] text-[10px] text-white/50 md:text-xs">
+                                            <FormattedMessage
+                                                id="shopping_coin_total_only"
+                                                values={{ n: intl.formatNumber(baseCoin) }}
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="mt-2 text-left text-base font-medium text-white/90 md:mt-3">
+                                        ${p.price}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            ) : null}
 
         </div>
     );
@@ -434,6 +631,16 @@ export default function RadixRc({
                                 </div>
                             </div>
                             <div className="rs-shopping__payModalCopy">
+                                {currentCheckoutProduct?.type === 2 &&
+                                currentCheckoutProduct.coin != null &&
+                                currentCheckoutProduct.coin > 0 ? (
+                                    <p className="mb-2 flex items-center justify-center gap-1.5 text-sm font-semibold text-white">
+                                        <img src={coinIcon} alt="" width={16} height={16} />
+                                        <span>{currentCheckoutProduct.coin}</span>
+                                        <span className="text-white/70">·</span>
+                                        <span>${currentCheckoutProduct.price}</span>
+                                    </p>
+                                ) : null}
                                 <p>
                                     <FormattedMessage id="payment_processing_line_1" />
                                 </p>
@@ -694,13 +901,16 @@ export default function RadixRc({
                         <>
                             <div className="rs-shopping-drawer-head rs-shopping-drawer-head--reelshort">
                                 <div className="rs-shopping-drawer-head__kvGroup">
-                                    {showCountdown ? (
-                                        countdownEl
-                                    ) : (
-                                        <span className="rs-shopping-drawer-head__vipUnlock">
-                                            <FormattedMessage id="shopping_vip_drawer_title" />
-                                        </span>
-                                    )}
+                                    <div className="rs-shopping-drawer-head__kvStack">
+                                        <div
+                                            className={cn(
+                                                'rs-shopping__embedWallet',
+                                                'rs-shopping-drawer-head__embedWallet',
+                                            )}
+                                        >
+                                            {embedWalletRowsEl}
+                                        </div>
+                                    </div>
                                 </div>
                                 <button
                                     type="button"
@@ -717,11 +927,7 @@ export default function RadixRc({
                             </div>
                             <div className="rs-shopping-drawer-head__divider" />
                         </>
-                    ) : (
-                        showCountdown ? (
-                            <div className="rs-shopping-profile-embed-countdown">{countdownEl}</div>
-                        ) : null
-                    )}
+                    ) : null}
                     {main}
                     {showPayModal && typeof document !== 'undefined'
                         ? createPortal(

@@ -12,6 +12,7 @@ export type VideoPlayerPcCommerceDialogsProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
+    vipHeaderEpisodeUnlockCoins?: number;
     shareOpen: boolean;
     onShareOpenChange: (open: boolean) => void;
     shareEmbedCode: string;
@@ -28,6 +29,7 @@ export function VideoPlayerPcCommerceDialogs({
     vip,
     onVipOpenChange,
     onVipEmbedClose,
+    vipHeaderEpisodeUnlockCoins,
     shareOpen,
     onShareOpenChange,
     shareEmbedCode,
@@ -60,6 +62,7 @@ export function VideoPlayerPcCommerceDialogs({
                                     productFrom="video"
                                     checkoutFrom="video"
                                     onEmbedClose={onVipEmbedClose}
+                                    headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
                                 />
                             ) : null}
                         </div>

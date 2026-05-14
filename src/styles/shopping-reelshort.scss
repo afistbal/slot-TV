@@ -134,6 +134,195 @@
         margin-bottom: calc(10 / 375 * var(--app-vw));
     }
 
+    /** 整页 `/shopping`：VIP 主标题上方的钱包条（仅金幣总额，与 PC 侧栏一致） */
+    .rs-shopping__pageWalletBar {
+        box-sizing: border-box;
+        margin-bottom: calc(12 / 375 * var(--app-vw));
+        width: 100%;
+        border-radius: calc(4 / 375 * var(--app-vw));
+        background: #141414;
+        padding: calc(12 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw));
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        font-size: calc(12 / 375 * var(--app-vw));
+        line-height: 1.35;
+
+        @media (min-width: 768px) {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+    }
+
+    .rs-shopping__pageWalletBar__account {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .rs-shopping__pageWalletBar__muted {
+        color: rgba(255, 255, 255, 0.5);
+
+        @media (min-width: 768px) {
+            color: rgba(255, 255, 255, 0.9);
+        }
+    }
+
+    .rs-shopping__pageWalletBar__accountValue {
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: calc(20 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            font-size: 16px;
+        }
+    }
+
+    .rs-shopping__pageWalletBar__row {
+        position: relative;
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-around;
+        gap: calc(8 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            width: 100%;
+            flex: 1 1 auto;
+            min-width: 0;
+            justify-content: flex-start;
+            gap: 0;
+        }
+    }
+
+    .rs-shopping__pageWalletBar__stat {
+        flex: 1 1 0;
+        min-width: 0;
+
+        @media (min-width: 768px) {
+            flex: 0 0 auto;
+        }
+    }
+
+    .rs-shopping__pageWalletBar__statInner {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+        justify-content: center;
+        gap: calc(4 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            flex-direction: row;
+            gap: 0;
+        }
+    }
+
+    .rs-shopping__pageWalletBar__colon {
+        display: none;
+        margin: 0 5px;
+        color: rgba(255, 255, 255, 0.5);
+
+        @media (min-width: 768px) {
+            display: inline;
+        }
+    }
+
+    .rs-shopping__pageWalletBar__statValue {
+        display: inline-flex;
+        align-items: center;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: calc(20 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-left: 8px;
+            font-size: 16px;
+        }
+
+        img {
+            width: calc(16 / 375 * var(--app-vw));
+            height: calc(16 / 375 * var(--app-vw));
+            margin-right: calc(2 / 375 * var(--app-vw));
+
+            @media (min-width: 768px) {
+                width: 16px;
+                height: 16px;
+                margin-right: 2px;
+            }
+        }
+    }
+
+    .rs-shopping__pageWalletBar__vdiv {
+        width: 1px;
+        height: calc(32 / 375 * var(--app-vw));
+        flex-shrink: 0;
+        background: rgba(255, 255, 255, 0.2);
+
+        @media (min-width: 768px) {
+            height: 12px;
+            margin: 0 16px;
+        }
+    }
+
+    .rs-shopping__pageWalletBar__history {
+        display: none;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+        color: rgba(255, 255, 255, 0.5);
+        text-decoration: none;
+        cursor: pointer;
+        flex-shrink: 0;
+
+        @media (min-width: 768px) {
+            display: flex;
+        }
+
+        &:hover {
+            color: rgba(255, 255, 255, 0.75);
+        }
+    }
+
+    .rs-shopping__pageWalletBar__historyLabel {
+        margin-right: 5px;
+        font-size: 16px;
+    }
+
+    .rs-shopping__pageWalletBar__historyChev {
+        width: 12px;
+        height: 12px;
+        opacity: 0.7;
+    }
+
+    /** 单列「金幣」：H5 与桌面均横向排列，避免重复帳戶/贈送行 */
+    .rs-shopping__pageWalletBar__row--singleCoins {
+        justify-content: flex-start;
+
+        .rs-shopping__pageWalletBar__stat {
+            flex: 0 1 auto;
+        }
+
+        .rs-shopping__pageWalletBar__statInner {
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .rs-shopping__pageWalletBar__colon {
+            display: inline;
+            margin: 0 calc(4 / 375 * var(--app-vw));
+
+            @media (min-width: 768px) {
+                margin: 0 5px;
+            }
+        }
+    }
+
     .rs-shopping__introTitle {
         margin-bottom: calc(2 / 375 * var(--app-vw));
         font-size: calc(16 / 375 * var(--app-vw));
@@ -160,6 +349,44 @@
         }
     }
 
+    .rs-shopping__introEmbedExtras {
+        margin-top: calc(10 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 10px;
+        }
+    }
+
+    /** 整页 `/shopping` H5：intro 下倒计时靠左（不影响剧集抽屉内嵌） */
+    &:not(.rs-shopping--drawerEmbed) {
+        .rs-shopping__introEmbedExtras {
+            @media (max-width: 767px) {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        .rs-shopping__introEmbedExtras .rs-shopping__countdown {
+            @media (max-width: 767px) {
+                justify-content: flex-start;
+                width: 100%;
+
+                > div {
+                    justify-content: flex-start;
+                }
+            }
+        }
+    }
+
+    .rs-shopping__embedWallet {
+        margin-bottom: calc(8 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-bottom: 8px;
+        }
+    }
+
     /* 与 VIP 弹窗 `widgets/Countdown` 同款粉块倒计时，外层仅负责间距与居中 */
     .rs-shopping__countdown {
         margin-bottom: calc(12 / 375 * var(--app-vw));
@@ -181,14 +408,11 @@
         transform-origin: left center;
     }
 
+    /** H5 与金币区一致：套餐卡两列；`--singleColAlways` / profilePlain 等可覆盖 */
     .rs-shopping__plans {
         display: grid;
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
-
-        @media (min-width: 768px) {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
     }
 
     /** 强制单列：PC 也保持一行一个套餐 */
@@ -268,24 +492,28 @@
         }
     }
 
-    /* 与 `widgets/Vip.tsx` 角标一致：Limited-Time Offer xx% */
+    /* 与 `widgets/Vip.tsx` 角标一致：文案宽度随内容，不再用 58% 占位以免 H5 双列窄卡压扁日文等长串 */
     .rs-shopping__planOfferBadge {
         position: absolute;
         top: 0;
         right: 0;
         z-index: 2;
-        max-width: 58%;
+        box-sizing: border-box;
+        width: max-content;
+        max-width: calc(100% - 2px);
         padding: calc(2 / 375 * var(--app-vw)) calc(8 / 375 * var(--app-vw));
         border-bottom-left-radius: calc(6 / 375 * var(--app-vw));
         border-top-right-radius: calc(4 / 375 * var(--app-vw));
         background: #f87171;
         font-size: calc(10 / 375 * var(--app-vw));
         font-weight: 600;
+        line-height: 1.25;
         color: #fff;
         text-align: right;
+        white-space: normal;
+        overflow-wrap: break-word;
 
         @media (min-width: 768px) {
-            max-width: 100%;
             padding: 2px 8px;
             border-bottom-left-radius: 6px;
             border-top-right-radius: 4px;
@@ -416,7 +644,7 @@
         box-sizing: content-box;
         display: grid;
         margin-top: auto;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
         align-items: center;
         justify-content: center;
         background: rgba(255, 255, 255, 0.2);
@@ -427,6 +655,7 @@
         color: #401a06;
 
         @media (min-width: 768px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             padding: 6px 12px;
             font-size: 12px;
         }
@@ -436,6 +665,15 @@
         display: flex;
         width: 100%;
         align-items: center;
+    }
+
+    /** H5 不展示；viewport ≥768px 與「無限觀看」並排 */
+    .rs-shopping__planBenefit--1080pDesktop {
+        display: none;
+
+        @media (min-width: 768px) {
+            display: flex;
+        }
     }
 
     .rs-shopping__planBenefitIcon {
@@ -1703,8 +1941,31 @@
             gap: 10px;
         }
 
+        /** PC：侧栏已有餘額卡，正文内不再重复 `embedWallet`；倒计时改到 intro 右上角 */
+        .rs-shopping__embedWallet {
+            display: none !important;
+        }
+
         .rs-shopping__intro {
+            position: relative;
+            padding-right: 200px;
             margin-bottom: 16px;
+        }
+
+        .rs-shopping__introEmbedExtras {
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+        }
+
+        .rs-shopping__countdown {
+            justify-content: flex-end;
+            margin-bottom: 0;
         }
 
         .rs-shopping__plan {
@@ -1739,7 +2000,7 @@
     }
 }
 
-/** 顶栏：左侧 kv 区（有倒计时时只显示倒计时，否则 VIP 解锁）+ 右侧关闭图 */
+/** 顶栏：左侧 kv 区（餘額 / 目前劇集）+ 右侧关闭图；正文区保留倒计时 */
 .rs-shopping-drawer-head--reelshort {
     position: sticky;
     top: 0;
@@ -1770,16 +2031,38 @@
     }
 }
 
-.rs-shopping-drawer-head__vipUnlock {
-    flex-shrink: 0;
+/** 顶栏左侧：餘額 / 目前劇集（与 `RadixRc` 抽屉 `kvGroup` 一致） */
+.rs-shopping-drawer-head__kvStack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(6 / 375 * var(--app-vw));
     min-width: 0;
-    font-size: calc(17 / 375 * var(--app-vw));
-    font-weight: 500;
-    line-height: 1.35;
-    color: rgba(255, 255, 255, 0.92);
+    flex: 1 1 auto;
 
     @media (min-width: 768px) {
-        font-size: 17px;
+        gap: 6px;
+    }
+}
+
+.rs-shopping-drawer-head__embedWallet.rs-shopping__embedWallet {
+    margin-bottom: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: calc(12 / 375 * var(--app-vw));
+    row-gap: calc(4 / 375 * var(--app-vw));
+
+    @media (min-width: 768px) {
+        column-gap: 20px;
+        row-gap: 4px;
+        flex-wrap: nowrap;
+    }
+
+    > div {
+        margin-top: 0 !important;
     }
 }
 
