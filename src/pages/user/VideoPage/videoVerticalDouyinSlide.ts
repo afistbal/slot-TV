@@ -1,6 +1,5 @@
 /**
- * 竖向有限列表滑动：对齐 douyin `src/utils/slide.ts` 中 VERTICAL 非 infinite 分支。
- * 仅用于剧集竖滑，不含 bus / Vue nextTick。
+ * 竖向有限列表滑动：手势对齐 douyin；列表为「一集一格」全量 DOM，`translate` 按当前下标与等高视口计算。
  */
 
 export type VerticalFiniteSlideState = {
@@ -10,6 +9,8 @@ export type VerticalFiniteSlideState = {
     next: boolean;
     isDown: boolean;
     localIndex: number;
+    /** 全剧列表长度；用于 canNext，与一次手势中子节点数一致 */
+    totalEpisodeCount: number;
     start: { x: number; y: number; time: number };
     move: { x: number; y: number };
     wrapper: { width: number; height: number; childrenLength: number };
@@ -65,6 +66,7 @@ export function createVerticalFiniteSlideState(localIndex: number): VerticalFini
         next: false,
         isDown: false,
         localIndex,
+        totalEpisodeCount: 0,
         start: { x: 0, y: 0, time: 0 },
         move: { x: 0, y: 0 },
         wrapper: { width: 0, height: 0, childrenLength: 0 },
@@ -84,21 +86,37 @@ export function canSlide(state: VerticalFiniteSlideState): boolean {
     return state.next;
 }
 
+function listLengthForBounds(state: VerticalFiniteSlideState): number {
+    return state.totalEpisodeCount > 0 ? state.totalEpisodeCount : state.wrapper.childrenLength;
+}
+
 function canNext(state: VerticalFiniteSlideState, isNext: boolean): boolean {
-    return !(
-        (state.localIndex === 0 && !isNext) ||
-        (state.localIndex === state.wrapper.childrenLength - 1 && isNext)
-    );
+    const maxIdx = listLengthForBounds(state) - 1;
+    return !((state.localIndex === 0 && !isNext) || (state.localIndex === maxIdx && isNext));
 }
 
 export function getSlideOffset(state: VerticalFiniteSlideState, el: HTMLElement): number {
+    const idx = state.localIndex;
+    if (idx <= 0) {
+        return 0;
+    }
+    const viewportH = state.wrapper.height;
+    if (viewportH > 0 && el.children.length > 0) {
+        const h0 = (el.children[0] as HTMLElement).offsetHeight;
+        if (h0 > 0 && Math.abs(h0 - viewportH) <= 1) {
+            return -idx * viewportH;
+        }
+    }
     const heights: number[] = [];
     for (const v of Array.from(el.children)) {
-        heights.push((v as HTMLElement).getBoundingClientRect().height);
+        heights.push((v as HTMLElement).offsetHeight);
     }
-    const slice = heights.slice(0, state.localIndex);
+    const slice = heights.slice(0, idx);
     if (slice.length) {
         return -slice.reduce((a, b) => a + b);
+    }
+    if (viewportH > 0) {
+        return -idx * viewportH;
     }
     return 0;
 }
@@ -107,9 +125,15 @@ export function slideInit(
     el: HTMLElement,
     state: VerticalFiniteSlideState,
     explicitWrapperHeight?: number,
+    totalEpisodeCount?: number,
 ) {
     state.wrapper.width = readCssNumber(el, 'width');
     state.wrapper.height = explicitWrapperHeight ?? readCssNumber(el, 'height');
+    if (totalEpisodeCount !== undefined) {
+        state.totalEpisodeCount = totalEpisodeCount;
+    } else if (state.totalEpisodeCount <= 0) {
+        state.totalEpisodeCount = el.children.length;
+    }
     state.wrapper.childrenLength = el.children.length;
     const t = getSlideOffset(state, el);
     setTransitionDuration(el, 0);

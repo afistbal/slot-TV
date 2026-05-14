@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { FormattedMessage } from 'react-intl';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { api } from '@/api';
@@ -147,21 +148,29 @@ export default function VideoVerticalSwiper() {
         if (outerH <= 0) {
             return;
         }
-        slideStateRef.current.wrapper.childrenLength = data.episodes.length;
-
         if (skipLayoutUrlSyncRef.current) {
-            skipLayoutUrlSyncRef.current = false;
             slideStateRef.current.wrapper.height = outerH;
             if (didInitialLayoutRef.current) {
+                /**
+                 * 勿在此处同步把 skip 清 false：`flushSync` 触发的本 effect 会先于 `pointerup` 里的 `slideReset` 跑完，
+                 * 紧接着若 `viewportH` 或路由 params 晚一拍更新，会走下方 `slideInit` 用旧 URL 覆盖 `localIndex`，
+                 * 出现「数据已是上/下一集，列表 translate 仍像当前集」的假回弹。延到帧末再清 skip，与 douyin 先改 index 再 reset 列表的节奏对齐。
+                 */
+                requestAnimationFrame(() => {
+                    skipLayoutUrlSyncRef.current = false;
+                });
                 return;
             }
+            skipLayoutUrlSyncRef.current = false;
         }
 
         const index = resolveVideoListIndexFromUrlSegment(data.episodes, params['episode']);
         slideStateRef.current.localIndex = index;
-        slideInit(el, slideStateRef.current, outerH);
         setViewportH(outerH);
-        setCurrent(index);
+        flushSync(() => {
+            setCurrent(index);
+        });
+        slideInit(el, slideStateRef.current, outerH, data.episodes.length);
         setInitialized(true);
         didInitialLayoutRef.current = true;
     }, [data, loading, params['episode'], viewportH]);
@@ -187,12 +196,27 @@ export default function VideoVerticalSwiper() {
         };
         const onPointerUp = (e: PointerEvent) => {
             slideTouchEnd(e, slideStateRef.current, null, null, null);
-            slideReset(el, slideStateRef.current, (idx) => {
-                markFullscreenTransition();
-                skipLayoutUrlSyncRef.current = true;
+            const idx = slideStateRef.current.localIndex;
+            markFullscreenTransition();
+            skipLayoutUrlSyncRef.current = true;
+            flushSync(() => {
                 setCurrent(idx);
                 syncNavigateForIndex(idx);
             });
+            const list = listRef.current;
+            const outer = outerRef.current;
+            if (list !== null && outer !== null) {
+                const outerH = outer.clientHeight;
+                if (outerH > 0) {
+                    slideStateRef.current.wrapper.height = outerH;
+                    /** 与 `handleSetEpisode` / douyin `touchEnd` 一致：index 与 DOM 切片已更新后再 `slideInit`，避免仅靠 `slideReset` 时序与 URL 竞态 */
+                    slideInit(list, slideStateRef.current, outerH, data.episodes.length);
+                }
+            }
+            const listForReset = listRef.current;
+            if (listForReset !== null) {
+                slideReset(listForReset, slideStateRef.current);
+            }
         };
         const opts: AddEventListenerOptions = { passive: false };
         el.addEventListener('pointerdown', onPointerDown, opts);
@@ -222,12 +246,13 @@ export default function VideoVerticalSwiper() {
             if (next < 0) {
                 next = 0;
             }
-            slideStateRef.current.wrapper.childrenLength = data.episodes.length;
             slideStateRef.current.localIndex = next;
-            slideInit(el, slideStateRef.current, outer.clientHeight);
+            flushSync(() => {
+                setCurrent(next);
+                syncNavigateForIndex(next);
+            });
+            slideInit(el, slideStateRef.current, outer.clientHeight, data.episodes.length);
             skipLayoutUrlSyncRef.current = true;
-            setCurrent(next);
-            syncNavigateForIndex(next);
         },
         [data, markFullscreenTransition, syncNavigateForIndex],
     );
@@ -364,6 +389,42 @@ export default function VideoVerticalSwiper() {
         };
     }, []);
 
+    /** 进入/退出容器全屏后：高度链变化须重算 translate；须与 URL 集对齐 localIndex，并在 flushSync 后再 slideInit，避免仍用旧 slide 高度累加 */
+    useEffect(() => {
+        if (!data || loading) {
+            return;
+        }
+        const bump = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const outer = outerRef.current;
+                    const list = listRef.current;
+                    if (!outer || !list) {
+                        return;
+                    }
+                    const outerH = outer.clientHeight;
+                    if (outerH <= 0) {
+                        return;
+                    }
+                    const listIndex = resolveVideoListIndexFromUrlSegment(data.episodes, params['episode']);
+                    slideStateRef.current.localIndex = listIndex;
+                    slideStateRef.current.wrapper.height = outerH;
+                    flushSync(() => {
+                        setViewportH(outerH);
+                        setCurrent(listIndex);
+                    });
+                    slideInit(list, slideStateRef.current, outerH, data.episodes.length);
+                });
+            });
+        };
+        document.addEventListener('fullscreenchange', bump);
+        document.addEventListener('webkitfullscreenchange', bump as EventListener);
+        return () => {
+            document.removeEventListener('fullscreenchange', bump);
+            document.removeEventListener('webkitfullscreenchange', bump as EventListener);
+        };
+    }, [data, loading, params['episode']]);
+
     const slideH = viewportH > 0 ? viewportH : undefined;
 
     return loading ? (
@@ -371,7 +432,7 @@ export default function VideoVerticalSwiper() {
             <Loader color="light" />
         </div>
     ) : (
-        <div ref={fullscreenTargetRef} className="w-full h-full">
+        <div ref={fullscreenTargetRef} className="video-fullscreen-target h-full w-full">
             <div
                 ref={outerRef}
                 className="video-vertical-swiper relative h-full w-full touch-none overflow-hidden bg-black select-none"
@@ -381,7 +442,8 @@ export default function VideoVerticalSwiper() {
                     className="flex w-full flex-col"
                     style={{ touchAction: 'none' }}
                 >
-                    {data?.episodes.map((v, k) => {
+                    {data
+                        ? data.episodes.map((v, k) => {
                         const isActive = initialized && current === k;
                         const isNeighbor =
                             initialized && !isDesktop && (k === current - 1 || k === current + 1);
@@ -450,7 +512,8 @@ export default function VideoVerticalSwiper() {
                                 )}
                             </div>
                         );
-                    })}
+                        })
+                        : null}
                 </div>
                 {data && showEpisodeFrameQueue && (
                     <EpisodeFrameQueueOverlay episodes={data.episodes} activeListIndex={current} />

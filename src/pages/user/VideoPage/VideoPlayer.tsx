@@ -3,7 +3,6 @@ import {
     Crown,
     Home,
     LayoutGrid,
-    LoaderCircle,
     Minimize,
     Pause,
     PlayIcon,
@@ -33,8 +32,9 @@ import Forward from '@/components/Forward';
 import { SPEED } from './videoPlayerConstants';
 import { canNavigateBack } from './videoPlayerUtils';
 import { getFullscreenElement } from './videoPlayerFullscreen';
+import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
-import { setEpisodePeekFrame } from './episodeFrameQueueStore';
+import { getEpisodePeekFrame, setEpisodePeekFrame } from './episodeFrameQueueStore';
 import { runLoadEpisodeForPlayer } from './videoPlayerLoadEpisode';
 import { formatVideoClock } from './videoPlayerTimeFormat';
 import {
@@ -44,6 +44,26 @@ import {
     VideoPlayerPcEpisodeAside,
     useVideoPlayerShare,
 } from './videoPlayerOverlays';
+
+/** PC 侧栏分集：每页最多 50 集（与下述 tab 文案一致） */
+function buildPcEpisodeTabRanges(maxEpisode: number): { start: number; end: number }[] {
+    if (maxEpisode < 1) {
+        return [{ start: 1, end: 1 }];
+    }
+    return Array.from({ length: Math.ceil(maxEpisode / 50) }, (_, i) => {
+        const start = i * 50 + 1;
+        const end = Math.min(start + 49, maxEpisode);
+        return { start, end };
+    });
+}
+
+function pcEpisodeTabIndexForEpisodeNo(
+    episodeNo: number,
+    ranges: { start: number; end: number }[],
+): number {
+    const i = ranges.findIndex((r) => episodeNo >= r.start && episodeNo <= r.end);
+    return i >= 0 ? i : 0;
+}
 
 export function VideoPlayer({
     id,
@@ -90,7 +110,8 @@ export function VideoPlayer({
     const subtitlesRef = useRef<VTTCue[]>([]);
     const [playing, setPlaying] = useState(false);
     const [canPlay, setCanPlay] = useState(false);
-    const [waiting, setWaiting] = useState(false);
+    const setWaiting = useCallback((..._args: unknown[]) => {}, []);
+    const [framePosterDataUrl, setFramePosterDataUrl] = useState(() => getEpisodePeekFrame(id) ?? '');
     const [current, setCurrent] = useState('00:00');
     const [duration, setDuration] = useState('00:00');
     const [subtitle, setSubtitle] = useState(-1);
@@ -114,14 +135,18 @@ export function VideoPlayer({
         setShareEmbedCode,
         shareShowControls,
         setShareShowControls,
-        getCurrentPosterUrl,
         handleShareAction,
         handleCopyEmbedCode,
     } = useVideoPlayerShare(data, staticBase);
-    /** VIP 未解锁：播放区与分享预览不用剧封面，黑底 + 解锁层 */
+    /** 未解锁：无 poster；已解锁：仅用截帧 data URL，失败则黑底（不用 `info.image`） */
     const unlockVisualOnly = episode?.lock === true;
-    const videoPosterAttr = unlockVisualOnly ? undefined : getCurrentPosterUrl() || undefined;
-    const shareCardPosterUrl = unlockVisualOnly ? '' : getCurrentPosterUrl();
+    const frameTrim = framePosterDataUrl.trim();
+    const videoPosterAttr = unlockVisualOnly ? undefined : frameTrim.length > 0 ? frameTrim : undefined;
+    /** 仅分享弹窗预览卡：用剧封 `info.image`（与播放器 poster 截帧分离） */
+    const shareCardPosterUrl = useMemo(
+        () => resolveVideoPosterUrl(staticBase, data.info.image),
+        [staticBase, data.info.image],
+    );
     const [desktopEpisodeTab, setDesktopEpisodeTab] = useState(0);
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const [progressHover, setProgressHover] = useState(false);
@@ -382,7 +407,7 @@ export function VideoPlayer({
     //     onReload();
     // }
 
-    function handleTogglePlay(e: React.MouseEvent<HTMLDivElement>) {
+    function handleTogglePlay(e: React.MouseEvent<HTMLElement>) {
         if (videoRef.current === null) {
             return;
         }
@@ -535,8 +560,10 @@ export function VideoPlayer({
             disableNativeVideoFullscreen: isDesktop,
         });
         const nowFullscreen = Boolean(getFullscreenElement());
-        // iOS video fullscreen 不一定挂到 document.fullscreenElement，先按用户操作意图兜底
-        onFullscreenPrefChange(true);
+        // 桌面仅在实际进入 document 全屏时记偏好；iOS 原生 video 全屏常无 fullscreenElement，仍走意图兜底。
+        if (nowFullscreen || !isDesktop) {
+            onFullscreenPrefChange(true);
+        }
         setPcFullscreen(nowFullscreen);
         showController();
     }
@@ -576,6 +603,25 @@ export function VideoPlayer({
     }, []);
 
     useEffect(() => {
+        setFramePosterDataUrl(getEpisodePeekFrame(id) ?? '');
+    }, [id]);
+
+    /** 换集后组件会 remount 或 episode 更新；tab 须落在「当前集」所在区间，否则会停在默认 1-50 */
+    useEffect(() => {
+        if (!isDesktop || !data) {
+            return;
+        }
+        const epNo = episode?.episode;
+        if (epNo == null || !Number.isFinite(epNo)) {
+            return;
+        }
+        const maxEpisode = data.episodes.reduce((m, v) => Math.max(m, v.episode), 0);
+        const ranges = buildPcEpisodeTabRanges(maxEpisode);
+        const nextTab = pcEpisodeTabIndexForEpisodeNo(epNo, ranges);
+        setDesktopEpisodeTab((prev) => (prev === nextTab ? prev : nextTab));
+    }, [isDesktop, data, id, episode?.episode]);
+
+    useEffect(() => {
         if (loading || !episode || episode.lock || playbackSources.length === 0) {
             return;
         }
@@ -586,7 +632,8 @@ export function VideoPlayer({
         const onLoadedData = () => {
             void (async () => {
                 const url = await captureVideoFrameDataUrlWithSeekRetry(v);
-                if (url && useUserStore.getState().isAdmin()) {
+                if (url) {
+                    setFramePosterDataUrl(url);
                     setEpisodePeekFrame(id, url);
                 }
             })();
@@ -671,14 +718,6 @@ export function VideoPlayer({
         };
         v.addEventListener('playing', videoPlaying);
 
-        const videoWaiting = () => {
-            const el = videoRef.current;
-            // 对齐 douyin BaseVideo：暂停态不展示缓冲圈，避免自动播失败/未起播时一直转圈
-            if (el && !el.paused) {
-                setWaiting(true);
-            }
-        };
-
         const videoError = () => {
             setWaiting(false);
             setPlaying(false);
@@ -687,7 +726,6 @@ export function VideoPlayer({
             }
         };
 
-        v.addEventListener('waiting', videoWaiting);
         v.addEventListener('error', videoError);
 
         const mouseUp = () => {
@@ -723,7 +761,6 @@ export function VideoPlayer({
             v.removeEventListener('ended', videoEnded);
             v.removeEventListener('canplay', videoCanPlay);
             v.removeEventListener('playing', videoPlaying);
-            v.removeEventListener('waiting', videoWaiting);
             v.removeEventListener('error', videoError);
             progressEl?.removeEventListener('touchmove', progressTouchMove);
             window.removeEventListener('mouseup', mouseUp);
@@ -932,14 +969,7 @@ export function VideoPlayer({
     if (isDesktop) {
         const currentEpisodeNo = episode?.episode ?? props.index + 1;
         const maxEpisode = data.episodes.reduce((m, v) => Math.max(m, v.episode), 0);
-        const tabRanges =
-            maxEpisode < 1
-                ? [{ start: 1, end: 1 }]
-                : Array.from({ length: Math.ceil(maxEpisode / 50) }, (_, i) => {
-                      const start = i * 50 + 1;
-                      const end = Math.min(start + 49, maxEpisode);
-                      return { start, end };
-                  });
+        const tabRanges = buildPcEpisodeTabRanges(maxEpisode);
         const activeTab = Math.min(desktopEpisodeTab, Math.max(0, tabRanges.length - 1));
         const selectedRange = tabRanges[activeTab] ?? { start: 1, end: maxEpisode };
         const filteredEpisodes = data.episodes.filter(
@@ -1019,18 +1049,15 @@ export function VideoPlayer({
                             >
                                 {canPlay &&
                                     episode?.lock === false &&
-                                    !showTapToUnmute && (
-                                    <div
-                                        className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto"
-                                        onClick={handleTogglePlay}
-                                    >
-                                        {playing ? (
-                                            <Pause className="text-white w-10 h-10" />
-                                        ) : (
+                                    !showTapToUnmute &&
+                                    !playing && (
+                                        <div
+                                            className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto cursor-pointer"
+                                            onClick={handleTogglePlay}
+                                        >
                                             <PlayIcon className="text-white w-10 h-10" />
-                                        )}
-                                    </div>
-                                )}
+                                        </div>
+                                    )}
                                 {episode?.lock === true && (
                                     <div className="absolute inset-0 flex-center flex-col leading-normal mb-6 text-sm px-8 md:px-[70px]">
                                         <img src={paidEpisodeLockIcon} alt="" className="h-16 w-16" />
@@ -1078,6 +1105,22 @@ export function VideoPlayer({
                                         ref={progressWrapRef}
                                         onClick={(e) => e.stopPropagation()}
                                     >
+                                        {canPlay && (
+                                            <button
+                                                type="button"
+                                                className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pr-2 text-white cursor-pointer touch-manipulation"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleTogglePlay(e);
+                                                }}
+                                            >
+                                                {playing ? (
+                                                    <Pause className="w-5 h-5" aria-hidden />
+                                                ) : (
+                                                    <PlayIcon className="w-5 h-5" aria-hidden />
+                                                )}
+                                            </button>
+                                        )}
                                         <div
                                             className="flex-1 flex items-center justify-center"
                                             ref={progressRef}
@@ -1134,11 +1177,6 @@ export function VideoPlayer({
                                     </div>
                                 )}
                             </div>
-                            {waiting && (
-                                <div className="w-10 h-10 pointer-events-none rounded-full flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto animate-[spin_1.5s_ease_infinite]">
-                                    <LoaderCircle className="w-8 h-8 text-slate-100" />
-                                </div>
-                            )}
                             </div>
                             {!pcFullscreen && (
                                 <div className="video-player-pc-close-btn" onClick={handleBack}>
@@ -1296,18 +1334,15 @@ export function VideoPlayer({
                     )}
                     {canPlay &&
                         episode?.lock === false &&
-                        !showTapToUnmute && (
-                        <div
-                            className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto"
-                            onClick={handleTogglePlay}
-                        >
-                            {playing ? (
-                                <Pause className="text-white w-10 h-10" />
-                            ) : (
+                        !showTapToUnmute &&
+                        !playing && (
+                            <div
+                                className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto cursor-pointer"
+                                onClick={handleTogglePlay}
+                            >
                                 <PlayIcon className="text-white w-10 h-10" />
-                            )}
-                        </div>
-                    )}
+                            </div>
+                        )}
                     {episode?.lock === true && (
                         <div>
                             <div
@@ -1406,12 +1441,28 @@ export function VideoPlayer({
                     {episode?.lock === false && (
                         <div
                             className={cn(
-                                'absolute bg-black/30 w-full mx-auto pl-4 pr-2 left-0 right-0 h-10 flex bottom-0',
+                                'absolute bg-black/30 w-full mx-auto pl-4 pr-2 left-0 right-0 h-10 flex items-center bottom-0',
                                 isFullscreenUi ? 'mb-0' : 'mb-[76px]',
                             )}
                             ref={progressWrapRef}
                             onClick={(e) => e.stopPropagation()}
                         >
+                            {canPlay && (
+                                <button
+                                    type="button"
+                                    className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pr-2 text-white cursor-pointer touch-manipulation"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleTogglePlay(e);
+                                    }}
+                                >
+                                    {playing ? (
+                                        <Pause className="w-5 h-5" aria-hidden />
+                                    ) : (
+                                        <PlayIcon className="w-5 h-5" aria-hidden />
+                                    )}
+                                </button>
+                            )}
                             <div
                                 className="flex-1 flex items-center justify-center"
                                 ref={progressRef}
@@ -1468,11 +1519,6 @@ export function VideoPlayer({
                         </div>
                     )}
                 </div>
-                {waiting && (
-                    <div className="w-10 h-10 pointer-events-none rounded-full flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto animate-[spin_1.5s_ease_infinite]">
-                        <LoaderCircle className="w-8 h-8 text-slate-100" />
-                    </div>
-                )}
                 <VideoPlayerEpisodeSpeedIntroDrawers
                     data={data}
                     episodeIndex={props.index}

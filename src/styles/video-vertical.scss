@@ -14,6 +14,24 @@
     text-rendering: optimizeLegibility;
 }
 
+/**
+ * PC 对 `fullscreenTargetRef` 做容器全屏时：若仅依赖外层 `h-full`，在部分浏览器里百分比高度不解析，竖滑区高度为 0 → 黑屏。
+ * 对全屏元素本身用视口高度兜底，子层 `h-full` 才能吃到高度链。
+ */
+.video-fullscreen-target:fullscreen,
+.video-fullscreen-target:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    min-height: 100dvh;
+    background: #000;
+}
+
+.video-fullscreen-target:fullscreen > .video-vertical-swiper,
+.video-fullscreen-target:-webkit-full-screen > .video-vertical-swiper {
+    height: 100%;
+    min-height: 0;
+}
+
 /** 控制栏/按钮叠在视频上：单独一层，减轻与父层 transform 叠加时的栅格化发糊 */
 .video-player-root .video-player-ui {
     transform: translateZ(0);

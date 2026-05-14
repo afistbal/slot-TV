@@ -1,5 +1,5 @@
 /**
- * 从 `<video>` 截取当前帧为 JPEG data URL（管理员首帧队列等；分享与 `<video poster>` 用剧 `info.image`）。
+ * 从 `<video>` 截取当前帧为 JPEG data URL（poster、邻格、首帧队列缓存共用）。
  * **跨域 mp4 且未设 `video.crossOrigin='anonymous'`、CDN 未返回 CORS 时**，`drawImage`/`toDataURL` 会失败，返回 null（浏览器安全策略，不是逻辑 bug）。
  */
 export function captureVideoFrameDataUrl(video: HTMLVideoElement, quality = 0.82): string | null {

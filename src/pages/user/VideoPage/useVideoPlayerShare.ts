@@ -2,22 +2,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useIntl } from 'react-intl';
 import type { IPlayerData } from '@/types/videoPlayer';
-import { buildVideoShareEmbedCode, resolveVideoPosterUrl, resolveVideoSharePageUrl } from './videoPlayerShareUrl';
+import { buildVideoShareEmbedCode, resolveVideoSharePageUrl } from './videoPlayerShareUrl';
 import type { ShareAction } from './videoPlayerConstants';
 
-/** 分享卡片与 `<video poster>` 使用剧封面 `info.image`，不用视频时帧截图 */
-export function useVideoPlayerShare(data: IPlayerData, staticBase: string) {
+/** 分享链接/嵌入码；弹窗预览图由 `VideoPlayer` 传入剧封 `info.image`（拼接 static） */
+export function useVideoPlayerShare(data: IPlayerData, _staticBase: string) {
     const intl = useIntl();
     const [shareOpen, setShareOpen] = useState(false);
     const [shareEmbedCode, setShareEmbedCode] = useState('');
     const [shareShowControls, setShareShowControls] = useState(true);
 
     const getCurrentShareUrl = useCallback(() => resolveVideoSharePageUrl(), []);
-
-    const getCurrentPosterUrl = useCallback(
-        () => resolveVideoPosterUrl(staticBase, data?.info?.image).trim(),
-        [staticBase, data?.info?.image],
-    );
 
     const buildEmbedCode = useCallback(() => {
         return buildVideoShareEmbedCode(getCurrentShareUrl(), shareShowControls);
@@ -91,7 +86,6 @@ export function useVideoPlayerShare(data: IPlayerData, staticBase: string) {
         setShareEmbedCode,
         shareShowControls,
         setShareShowControls,
-        getCurrentPosterUrl,
         handleShareAction,
         handleCopyEmbedCode,
     };

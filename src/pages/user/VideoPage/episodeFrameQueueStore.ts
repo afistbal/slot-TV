@@ -6,7 +6,7 @@ type Store = {
     clear: () => void;
 };
 
-/** 各集首帧 data URL：供 poster、邻格占位，以及「时帧图队列」浮层订阅 */
+/** 各集首帧 data URL：供 poster、邻格占位；管理员「首帧队列」浮层仅订阅展示 */
 export const useEpisodeFrameQueueStore = create<Store>((set) => ({
     framesById: {},
     setFrame: (episodeRowId, dataUrl) => {
