@@ -112,15 +112,17 @@ export function VideoPlayerPcEpisodeAside({
                             </div>
                             <span className="flex mt-[4px] text-[14px]">{data.info.favorite}K</span>
                         </div>
-                        <div
-                            className="flex flex-col cursor-pointer items-center text-white/90 md:text-white/70"
-                            onClick={(e) => onToggleVip(e)}
-                        >
-                            <div className="flex text-[32px]">
-                                <Crown className="w-8 h-8 text-[#ffd000] fill-[#ffd000]" />
+                        {!viewerIsVip && (
+                            <div
+                                className="flex flex-col cursor-pointer items-center text-white/90 md:text-white/70"
+                                onClick={(e) => onToggleVip(e)}
+                            >
+                                <div className="flex text-[32px]">
+                                    <Crown className="w-8 h-8 text-[#ffd000] fill-[#ffd000]" />
+                                </div>
+                                <span className="flex mt-[4px] text-[14px]">VIP</span>
                             </div>
-                            <span className="flex mt-[4px] text-[14px]">VIP</span>
-                        </div>
+                        )}
                         <div
                             className="flex flex-col cursor-pointer items-center text-white/90 md:text-white/70"
                             onClick={onOpenShare}

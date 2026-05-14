@@ -932,17 +932,19 @@ export function VideoPlayer({
     if (isDesktop) {
         const currentEpisodeNo = episode?.episode ?? props.index + 1;
         const maxEpisode = data.episodes.reduce((m, v) => Math.max(m, v.episode), 0);
-        const tabRanges = Array.from({ length: Math.ceil((maxEpisode + 1) / 50) }, (_, i) => {
-            const start = i * 50;
-            const end = Math.min(start + 49, maxEpisode);
-            return { start, end };
-        });
+        const tabRanges =
+            maxEpisode < 1
+                ? [{ start: 1, end: 1 }]
+                : Array.from({ length: Math.ceil(maxEpisode / 50) }, (_, i) => {
+                      const start = i * 50 + 1;
+                      const end = Math.min(start + 49, maxEpisode);
+                      return { start, end };
+                  });
         const activeTab = Math.min(desktopEpisodeTab, Math.max(0, tabRanges.length - 1));
-        const selectedRange = tabRanges[activeTab] ?? { start: 0, end: maxEpisode };
-        const filteredEpisodes = data.episodes.filter((v) => {
-            if (selectedRange.start === 0) return v.episode >= 1 && v.episode <= selectedRange.end;
-            return v.episode >= selectedRange.start && v.episode <= selectedRange.end;
-        });
+        const selectedRange = tabRanges[activeTab] ?? { start: 1, end: maxEpisode };
+        const filteredEpisodes = data.episodes.filter(
+            (v) => v.episode >= selectedRange.start && v.episode <= selectedRange.end,
+        );
 
         return (
             <div className="video-player-root h-full w-full relative" ref={wrapRef}>
