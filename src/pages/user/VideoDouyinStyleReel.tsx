@@ -10,6 +10,7 @@ import { skipRemoteApi } from '@/env';
 import { offlinePlayerEpisode } from '@/mocks/videoOffline';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import { useConfigStore } from '@/stores/config';
+import { resolveVideoListIndexFromUrlSegment } from '@/pages/user/VideoPage/resolveVideoListIndexFromUrlSegment';
 
 /** 走「Vue 同款」竖滑全屏原生 video 的剧集 id（可继续往 Set 里加） */
 export const DOUYIN_STYLE_REEL_MOVIE_IDS = new Set<string>(['3892']);
@@ -70,12 +71,8 @@ export default function VideoDouyinStyleReel({ data }: Props) {
     const [srcByEpisodeId, setSrcByEpisodeId] = useState<Record<number, string>>({});
 
     const initialSlide = useMemo(() => {
-        let idx = parseInt(params['index'] ?? '1', 10);
-        if (Number.isNaN(idx) || idx < 1) {
-            idx = 1;
-        }
-        return Math.min(Math.max(idx - 1, 0), Math.max(data.episodes.length - 1, 0));
-    }, [params['index'], data.episodes.length]);
+        return resolveVideoListIndexFromUrlSegment(data.episodes, params['episode']);
+    }, [params['episode'], data.episodes]);
 
     useEffect(() => {
         srcMapRef.current = srcByEpisodeId;
@@ -148,12 +145,16 @@ export default function VideoDouyinStyleReel({ data }: Props) {
         (swiper: SwiperClass) => {
             const i = swiper.activeIndex;
             setActiveIndex(i);
-            navigate(`/video/${movieId}/${i + 1}${location.search}`, {
+            const row = data.episodes[i];
+            if (!row) {
+                return;
+            }
+            navigate(`/video/${movieId}/${row.episode}${location.search}`, {
                 replace: true,
                 state: location.state,
             });
         },
-        [navigate, movieId, location.search, location.state],
+        [navigate, movieId, location.search, location.state, data.episodes],
     );
 
     return (

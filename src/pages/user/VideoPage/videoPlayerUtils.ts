@@ -12,7 +12,6 @@ function formatTagText(value: string) {
 export function getTagDisplayText(tag: { name: string; unique_id: string }) {
     const name = String(tag.name ?? '').trim();
     const uid = String(tag.unique_id ?? '').trim();
-    // 某些接口会把 name 返回为内部哈希ID，优先展示更可读的字段
     if (name && !isOpaqueTagId(name)) {
         return name;
     }

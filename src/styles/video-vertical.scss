@@ -30,7 +30,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 20;
+    /** 高于静音蒙层(z-index:40)及竖滑容器内其它调试浮层，保证可点 */
+    z-index: 60;
     cursor: pointer;
     background: rgba(255, 255, 255, 0.26);
     transition: background-color 0.15s ease;
@@ -555,7 +556,8 @@
 .video-player-root .xgplayer-unmute {
     position: absolute;
     inset: 0;
-    z-index: 25;
+    /** 高于 `.video-player-ui` 的合成层，避免 PC 上全屏控制层盖住蒙层导致点击无效 */
+    z-index: 40;
     display: flex;
     justify-content: center;
     align-items: center;

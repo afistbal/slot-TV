@@ -44,11 +44,11 @@ export default function Component() {
     const sourceform = `${location.pathname}${location.search}`;
     /**
      * 默认用 pathname+search 作 key，换 URL 即 remount，避免脏状态。
-     * 播放页例外：换集只改 `/:index`，若整页 remount 会丢掉全屏/播放器状态；同一剧 id 下保持稳定 key。
+     * 播放页例外：换集只改 `/:episode`，若整页 remount 会丢掉全屏/播放器状态；同一剧 id 下保持稳定 key。
      */
     const outletKey = useMemo(() => {
         const { pathname, search } = location;
-        const videoMatch = matchPath({ path: '/video/:id/:index?', end: true }, pathname);
+        const videoMatch = matchPath({ path: '/video/:id/:episode?', end: true }, pathname);
         if (videoMatch?.params?.id != null) {
             return `video:${String(videoMatch.params.id)}${search}`;
         }
@@ -62,6 +62,11 @@ export default function Component() {
     const showPrimaryKeepAlive = isHome || isSearch;
     const pathSegments = location.pathname.toLowerCase().split('/').filter(Boolean);
     const isShoppingRoute = pathSegments[pathSegments.length - 1] === 'shopping';
+    /** 全屏播放器壳：勿叠底部「加入桌面」胶囊，避免挡控制条 / 与 PC 侧栏观感冲突 */
+    const isImmersivePlayerShell = useMemo(() => {
+        const { pathname } = location;
+        return matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null;
+    }, [location.pathname]);
 
     useEffect(() => {
         pixel.track('PageView');
@@ -161,7 +166,7 @@ export default function Component() {
                 </NavLink>
             </div>
         ) : null}
-        {!isShoppingRoute ? <IosAddHomeFloatingBtn /> : null}
+        {!isShoppingRoute && !isImmersivePlayerShell ? <IosAddHomeFloatingBtn /> : null}
     </div>;
 }
 

@@ -1,5 +1,6 @@
 import {
     createBrowserRouter,
+    matchPath,
     Navigate,
     Outlet,
     RouterProvider,
@@ -24,6 +25,7 @@ import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
 import {init as initPixel} from './hooks/usePixel';
 import usePixel from './hooks/usePixel';
+import { useWindowPathname } from './hooks/useWindowPathname';
 import enMessages from './locales/en.json';
 import zhMessages from './locales/zh.json';
 
@@ -51,7 +53,6 @@ import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
 import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
-import ShortsFeedDemoPage from './pages/demo/ShortsFeedDemoPage';
 import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
 
 import LayoutAdmin from './layouts/admin';
@@ -194,7 +195,7 @@ const router = createBrowserRouter([
             },
             /** 须挂在 LayoutUser 下：否则整页离开用户壳子，首页/搜索的 keep-alive 会随 Layout 卸载 */
             {
-                path: 'video/:id/:index?',
+                path: 'video/:id/:episode?',
                 element: <UserVideo />,
             },
             {
@@ -206,11 +207,6 @@ const router = createBrowserRouter([
                 element: <UserTest />,
             },
         ],
-    },
-    {
-        path: '/zgjdemo',
-        errorElement: <ErrorBoundary />,
-        element: <ShortsFeedDemoPage />,
     },
     {
         path: '/zgjdownload',
@@ -392,6 +388,7 @@ function getInitialIntlMessages(): TIntlMessages {
 function App() {
     const pixel = usePixel();
     const mdUp = useMinWidth768();
+    const pathname = useWindowPathname();
     const rootStore = useRootStore();
     const rootShowInstallPrompt = useRootStore((state) => state.showInstallPrompt);
     const setRootShowInstallPrompt = useRootStore((state) => state.setShowInstallPrompt);
@@ -695,14 +692,17 @@ function App() {
 
     }, [checked, sessionBootstrapReady]);
 
-    const appPathSegments = window.location.pathname.toLowerCase().split('/').filter(Boolean);
-    /** 与 `/zgjdemo` 等工具页：不等全站 config 即可挂载路由（页内自举 config/token） */
+    const appPathSegments = pathname.toLowerCase().split('/').filter(Boolean);
+    /** 与 `/zgjdownload` 等工具页：不等全站 config 即可挂载路由（页内自举 config/token） */
     const isStandaloneToolPath =
-        appPathSegments.length === 1 &&
-        (appPathSegments[0] === 'zgjdemo' || appPathSegments[0] === 'zgjdownload');
+        appPathSegments.length === 1 && appPathSegments[0] === 'zgjdownload';
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
+    /** 全屏竖滑播放：勿挡底部控制条（与 `layouts/user` 中隐藏 iOS 胶囊条一致） */
+    const isImmersivePlayerPath =
+        matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null;
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
-    const showInstallPrompt = install > 0 && !isIosLikeDevice() && !isShoppingRoute;
+    const showInstallPrompt =
+        install > 0 && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;
     /** 底部固定安装条 + root 垫高仅窄屏需要；PC（md+）用顶栏下载入口，避免多 60px padding。 */
     const showPwaBottomBar = showInstallPrompt && !mdUp;
 

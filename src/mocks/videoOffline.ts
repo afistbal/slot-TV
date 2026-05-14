@@ -5,6 +5,9 @@ const POSTER = '1060/720/960';
 
 const SAMPLE_MP4 =
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+/** 第二路用于验证 `<source>` 容灾（首路失败时浏览器会尝试下一条） */
+const SAMPLE_MP4_FALLBACK =
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4';
 
 /** 任意 `/video/:id` 共用的详情假数据（不随 id 变化） */
 export const offlinePlayerData: IPlayerData = {
@@ -35,6 +38,7 @@ export function offlinePlayerEpisode(episodeRowId: number): IPlayerEpisode {
         id: episodeRowId,
         episode: num,
         video: SAMPLE_MP4,
+        video_urls: [SAMPLE_MP4, SAMPLE_MP4_FALLBACK],
         subtitle: '',
         lock: false,
         unlock_coins: 0,
