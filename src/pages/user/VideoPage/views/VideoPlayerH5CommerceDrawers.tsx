@@ -15,7 +15,7 @@ export type VideoPlayerH5CommerceDrawersProps = {
     onVipEmbedClose: () => void;
     embedVideoEpisodeRowId: number;
     onEmbedPaySuccessEpisodeDetail: (episode: IPlayerEpisode) => void;
-    /** 嵌入 VIP 购物：「目前劇集」解锁金币；不传则不展示该行 */
+    /** 嵌入 VIP 购物：顶栏「價格」（解锁所需金币）；不传则不展示该行 */
     vipHeaderEpisodeUnlockCoins?: number;
     shareOpen: boolean;
     onShareOpenChange: (open: boolean) => void;

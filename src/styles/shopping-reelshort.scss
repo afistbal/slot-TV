@@ -323,17 +323,20 @@
         }
     }
 
+    /** 与金幣儲值标题 `RadixRc` 中 `text-[calc(16/375*var(--app-vw,100vw))] … md:text-[16px]` 对齐 */
     .rs-shopping__introTitle {
-        margin-bottom: calc(2 / 375 * var(--app-vw));
-        font-size: calc(16 / 375 * var(--app-vw));
-        font-weight: 500;
-        line-height: calc(22 / 375 * var(--app-vw));
+        box-sizing: border-box;
+        width: 100%;
+        margin-bottom: calc(12 / 375 * var(--app-vw, 100vw));
+        font-size: calc(16 / 375 * var(--app-vw, 100vw));
+        font-weight: 700;
+        line-height: 1.25;
         color: rgba(255, 255, 255, 0.9);
 
         @media (min-width: 768px) {
-            margin-bottom: 2px;
+            margin-bottom: 12px;
             font-size: 16px;
-            line-height: 22px;
+            line-height: 1.25;
         }
     }
 
@@ -433,6 +436,12 @@
     /** Demo：固定单列 */
     .rs-shopping__plans--demoSingleCol {
         grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    /** 金幣儲值套餐卡：H5 / PC 统一底色 */
+    .rs-shopping__coinSku {
+        --un-bg-opacity: 1;
+        background-color: rgb(41 41 41 / var(--un-bg-opacity));
     }
 
     .rs-shopping__plan {
@@ -654,7 +663,8 @@
         box-sizing: content-box;
         display: grid;
         margin-top: auto;
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: calc(6 / 375 * var(--app-vw));
         align-items: center;
         justify-content: center;
         background: rgba(255, 255, 255, 0.2);
@@ -665,7 +675,7 @@
         color: #401a06;
 
         @media (min-width: 768px) {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            column-gap: 8px;
             padding: 6px 12px;
             font-size: 12px;
         }
@@ -673,17 +683,12 @@
 
     .rs-shopping__planBenefit {
         display: flex;
+        min-width: 0;
         width: 100%;
         align-items: center;
-    }
-
-    /** H5 不展示；viewport ≥768px 與「無限觀看」並排 */
-    .rs-shopping__planBenefit--1080pDesktop {
-        display: none;
-
-        @media (min-width: 768px) {
-            display: flex;
-        }
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     .rs-shopping__planBenefitIcon {
@@ -1813,6 +1818,11 @@
     background-color: rgb(20 20 20 / var(--un-bg-opacity));
 }
 
+/** 视频页 H5 VIP 抽屉外壳：与整页购物抽屉一致 `rgb(20 20 20)` */
+.rs-shopping-checkout-drawer--vipNoScroll.rs-shopping-drawer-bg {
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+}
+
 /** ReelShort 剧集付费弹层；内边距与整页 `rs-shopping__main` 对齐 */
 .rs-shopping-drawer-sheet {
     box-sizing: border-box;
@@ -1907,13 +1917,14 @@
     }
 }
 
-/** 视频 H5 底部抽屉：顶栏 + 分割线固定，仅 `rs-shopping__main` 区域滚动 */
+/** 视频 H5 底部抽屉：顶栏 + 分割线固定，仅 `rs-shopping__main` 区域滚动；底色与 `.rs-shopping-drawer-sheet` 一致 */
 .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
 }
 
 .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer > .rs-shopping.rs-shopping--drawerEmbed {
@@ -2034,7 +2045,7 @@
     }
 }
 
-/** 顶栏：左侧 kv 区（餘額 / 目前劇集）+ 右侧关闭图；正文区保留倒计时 */
+/** 顶栏：左侧 kv 区（餘額 / 價格）+ 右侧关闭图；正文区保留倒计时 */
 .rs-shopping-drawer-head--reelshort {
     position: sticky;
     top: 0;
@@ -2065,7 +2076,7 @@
     }
 }
 
-/** 顶栏左侧：餘額 / 目前劇集（与 `RadixRc` 抽屉 `kvGroup` 一致） */
+/** 顶栏左侧：餘額 / 價格（与 `RadixRc` 抽屉 `kvGroup` 一致） */
 .rs-shopping-drawer-head__kvStack {
     display: flex;
     flex-direction: column;
@@ -2173,6 +2184,7 @@
     overflow-x: hidden;
     overflow-y: hidden;
     -webkit-overflow-scrolling: auto;
+    background-color: rgb(20 20 20 / var(--un-bg-opacity));
 }
 
 /** 覆盖 vaul 默认 max-h-[80vh] / 内层滚动：H5 约 70% 视口高；md+ 仍允许拉高 */

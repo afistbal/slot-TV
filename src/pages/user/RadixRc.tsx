@@ -118,7 +118,7 @@ export type RadixRcProps = {
     /** 跳转收银台 URL 的 `from=` */
     checkoutFrom?: 'shopping' | 'video';
     /**
-     * 嵌入购物（剧集抽屉 / PC 弹窗）：在 VIP 说明下展示「目前劇集」解锁金币；不传则不展示该行（如 `/profile?tab=topup`）。
+     * 嵌入购物（剧集抽屉 / PC 弹窗）：在 VIP 说明下展示「價格」（解锁所需金币）；不传则不展示该行（如 `/profile?tab=topup`）。
      */
     headerEpisodeUnlockCoins?: number;
     /** `layout=embed` 且 `productFrom=video`：支付成功并刷新 token 后，再打 `movie/episode?id=` 并把 `d` 交给播放器 */
@@ -385,7 +385,7 @@ export default function RadixRc({
         <>
             {headerEpisodeUnlockCoins !== undefined ? (
                 <div className="flex items-center text-sm text-white/75">
-                    <FormattedMessage id="current_episode" />
+                    <FormattedMessage id="episode_unlock_price" />
                     <img src={coinIcon} width={18} height={18} className="ml-1 shrink-0" alt="" />
                     <div className="text-orange-400 font-bold tabular-nums">
                         {intl.formatNumber(headerEpisodeUnlockCoins)}
@@ -523,12 +523,7 @@ export default function RadixRc({
                                         />
                                         <FormattedMessage id="shopping_benefit_unlimited_viewing" />
                                     </div>
-                                    <div
-                                        className={cn(
-                                            'rs-shopping__planBenefit',
-                                            'rs-shopping__planBenefit--1080pDesktop',
-                                        )}
-                                    >
+                                    <div className="rs-shopping__planBenefit">
                                         <img
                                             className="rs-shopping__planBenefitIcon"
                                             src={icon1080p}
@@ -557,11 +552,11 @@ export default function RadixRc({
             </div>
 
             {!loadingProducts && coinProducts.length > 0 ? (
-                <div className="mt-3 rounded-[4px] bg-[#0d0d0d] px-4 pb-4 pt-4 shadow-none">
-                    <div className="mb-3 text-[calc(16/375*var(--app-vw,100vw))] font-bold leading-tight text-white/90 md:text-[16px]">
+                <div className="mt-3 w-full shadow-none">
+                    <div className="mb-3 w-full text-[calc(16/375*var(--app-vw,100vw))] font-bold leading-tight text-white/90 md:text-[16px]">
                         <FormattedMessage id="shopping_top_up_coins" />
                     </div>
-                    <div className="grid grid-cols-2 gap-2 shadow-none md:grid-cols-4">
+                    <div className="grid w-full grid-cols-2 gap-2 shadow-none md:grid-cols-4">
                         {coinProducts.map((p) => {
                             const baseCoin = p.coin ?? 0;
                             const totalCoins = totalCoinsForCoinProduct(p);
@@ -584,8 +579,7 @@ export default function RadixRc({
                                         }
                                     }}
                                     className={cn(
-                                        'relative flex w-full cursor-pointer flex-col rounded-[4px] p-4 shadow-none',
-                                        'bg-[#141414] md:bg-[#292929]',
+                                        'rs-shopping__coinSku relative flex w-full cursor-pointer flex-col rounded-[4px] p-4 shadow-none',
                                         'outline-none focus-visible:outline-none',
                                     )}
                                 >

@@ -54,7 +54,7 @@ export function VideoPlayerPcCommerceDialogs({
                 <DialogContent
                     contentPreset="plain"
                     hideCloseButton
-                    className="video-vip-dialog w-[min(100%,620px)] max-w-[calc(100vw-32px)] h-[min(88vh,840px)]"
+                    className="video-vip-dialog w-[min(100%,760px)] max-w-[calc(100vw-32px)] h-[min(88vh,840px)]"
                 >
                     <div className="h-full w-full overflow-hidden rounded-[16px] border border-white/10 bg-[#141414] text-white">
                         <DialogTitle className="sr-only" unsetTypography>

@@ -152,7 +152,7 @@ export default function UnlockEpisode({
                                 <div className="text-orange-400 font-bold">{balance}</div>
                             </div>
                             <div className="flex">
-                                <FormattedMessage id="current_episode" />
+                                <FormattedMessage id="episode_unlock_price" />
                                 <img src={coinIcon} width={18} height={18} className="ml-1" />
                                 <div className="text-orange-400 font-bold">{coins}</div>
                             </div>
