@@ -54,12 +54,12 @@ export function VideoPlayerH5CommerceDrawers({
             <Drawer open={vip} onOpenChange={onVipOpenChange} disablePreventScroll>
                 <DrawerContent
                     handler
-                    className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col border-t border-white/10 p-0 text-white max-h-[min(98vh,1040px)] overflow-y-visible"
+                    className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col overflow-hidden border-t border-white/10 p-0 text-white max-h-[min(70vh,1040px)] md:max-h-[min(98vh,1040px)]"
                 >
                     <DrawerTitle className="sr-only">
                         {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
                     </DrawerTitle>
-                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort">
+                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
                         {vip ? (
                             <RadixRc
                                 layout="embed"

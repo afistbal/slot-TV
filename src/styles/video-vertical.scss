@@ -519,9 +519,13 @@
     }
 }
 
-/* 视频页 VIP 弹窗：套餐两列（与整页 shopping 一致） */
-.video-vip-dialog .rs-shopping__plans {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+/* 视频页 VIP 弹窗：订阅套餐 H5 单列、PC 双列（与 RadixRc `--vipSubscriptions` 一致） */
+.video-vip-dialog .rs-shopping__plans--vipSubscriptions {
+    grid-template-columns: minmax(0, 1fr) !important;
+
+    @media (min-width: 768px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
 }
 
 @media (min-width: 768px) {

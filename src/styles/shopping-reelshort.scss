@@ -408,19 +408,29 @@
         transform-origin: left center;
     }
 
-    /** H5 与金币区一致：套餐卡两列；`--singleColAlways` / profilePlain 等可覆盖 */
+    /**
+     * 订阅套餐（product type=1）区：H5 始终 1 列；PC（md+）始终 2 列。
+     * 金币包仍用下方 Tailwind `grid-cols-2 / md:grid-cols-4`，与此无关。
+     */
     .rs-shopping__plans {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
     }
 
-    /** 强制单列：PC 也保持一行一个套餐 */
+    .rs-shopping__plans--vipSubscriptions {
+        grid-template-columns: minmax(0, 1fr);
+
+        @media (min-width: 768px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    /** 强制单列：任意视口一行一个套餐 */
     .rs-shopping__plans--singleColAlways {
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
-    /** Demo 页面：固定一行一个套餐（桌面端也不分两列） */
+    /** Demo：固定单列 */
     .rs-shopping__plans--demoSingleCol {
         grid-template-columns: minmax(0, 1fr) !important;
     }
@@ -1897,6 +1907,37 @@
     }
 }
 
+/** 视频 H5 底部抽屉：顶栏 + 分割线固定，仅 `rs-shopping__main` 区域滚动 */
+.rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer > .rs-shopping.rs-shopping--drawerEmbed {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer .rs-shopping-drawer-head--reelshort,
+.rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer .rs-shopping-drawer-head__divider {
+    flex-shrink: 0;
+}
+
+.rs-shopping-drawer-embedBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
 /** PC 账户页右栏：无抽屉顶栏，仅购物主体 + 可选倒计时 */
 .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--profilePlain {
     flex: 1 1 auto;
@@ -1918,7 +1959,6 @@
     }
 
     .rs-shopping__plans {
-        grid-template-columns: minmax(0, 1fr);
         padding-top: calc(6 / 375 * var(--app-vw));
         gap: calc(10 / 375 * var(--app-vw));
     }
@@ -1970,12 +2010,6 @@
 
         .rs-shopping__plan {
             min-height: 136px;
-        }
-    }
-
-    @media (min-width: 1240px) {
-        .rs-shopping__plans {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 }
@@ -2130,28 +2164,32 @@
 }
 
 /**
- * 视频 VIP 购物弹窗：内层不单独滚动，整块随 Drawer 增高展示（依赖外层 max-h 与内容压缩）
+ * 视频 VIP 购物弹窗：外层占满 Drawer 高度；正文滚动交给 `.rs-shopping-drawer-embedBody`
  */
 .rs-shopping-checkout-drawer--vipNoScroll .rs-shopping-checkout-drawer__scroll--reelshort {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     min-height: 0;
     max-height: none;
     overflow-x: hidden;
-    overflow-y: visible;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: auto;
 }
 
-/** 覆盖 vaul 默认 max-h-[80vh] / 内层滚动：整块加高、外层必要时再处理溢出 */
+/** 覆盖 vaul 默认 max-h-[80vh] / 内层滚动：H5 约 70% 视口高；md+ 仍允许拉高 */
 .rs-shopping-checkout-drawer--vipNoScroll[data-slot='drawer-content'] {
-    max-height: min(98vh, 1040px);
+    max-height: min(70vh, 1040px);
     overflow-x: hidden;
-    overflow-y: visible;
+    overflow-y: hidden;
     border: 0 !important;
     outline: none !important;
     box-shadow: none !important;
     /** 顶圆角：大于 Drawer 默认 `rounded-t-lg`，与 ReelShort 大圆角观感一致 */
     border-top-left-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
     border-top-right-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
+
+    @media (min-width: 768px) {
+        max-height: min(98vh, 1040px);
+    }
 }
 
 /* 去掉购物弹窗父层级的金色焦点环（全局 outline-ring 会命中 DrawerContent） */

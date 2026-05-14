@@ -453,7 +453,7 @@ export default function RadixRc({
                 ) : null}
             </div>
 
-            <div className="rs-shopping__plans">
+            <div className={cn('rs-shopping__plans', 'rs-shopping__plans--vipSubscriptions')}>
                 {(loadingProducts ? [] : planProducts).map((p) => {
                     const enableInteraction = true;
                     return (
@@ -937,6 +937,7 @@ export default function RadixRc({
                 className={cn(
                     'rs-shopping-drawer-sheet',
                     embedPresentation === 'plain' && 'rs-shopping-drawer-sheet--profilePlain',
+                    embedPresentation === 'drawer' && 'rs-shopping-drawer-sheet--videoDrawer',
                 )}
             >
                 {/* embed 须包 `.rs-shopping`，否则 SCSS 中 `.rs-shopping .rs-shopping__*`（含顶栏倒计时）无法命中 */}
@@ -970,9 +971,11 @@ export default function RadixRc({
                                 </button>
                             </div>
                             <div className="rs-shopping-drawer-head__divider" />
+                            <div className="rs-shopping-drawer-embedBody">{main}</div>
                         </>
-                    ) : null}
-                    {main}
+                    ) : (
+                        main
+                    )}
                     {showPayModal && typeof document !== 'undefined'
                         ? createPortal(
                               <div className="rs-shopping rs-shopping--payModalEmbedPortal">{payModal}</div>,
