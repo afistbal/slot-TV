@@ -552,7 +552,7 @@ export default function RadixRc({
             </div>
 
             {!loadingProducts && coinProducts.length > 0 ? (
-                <div className="mt-3 w-full shadow-none">
+                <div className="rs-shopping__coinSection w-full shadow-none">
                     <div className="mb-3 w-full text-[calc(16/375*var(--app-vw,100vw))] font-bold leading-tight text-white/90 md:text-[16px]">
                         <FormattedMessage id="shopping_top_up_coins" />
                     </div>

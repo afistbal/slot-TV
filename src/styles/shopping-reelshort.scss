@@ -438,6 +438,15 @@
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
+    /** 金幣儲值區塊：與上方 VIP 套餐區間距（H5 / PC） */
+    .rs-shopping__coinSection {
+        margin-top: calc(20 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-top: 28px;
+        }
+    }
+
     /** 金幣儲值套餐卡：H5 / PC 统一底色 */
     .rs-shopping__coinSku {
         --un-bg-opacity: 1;
