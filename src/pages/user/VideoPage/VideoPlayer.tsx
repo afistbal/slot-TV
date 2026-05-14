@@ -37,6 +37,7 @@ import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
 import { getEpisodePeekFrame, setEpisodePeekFrame } from './episodeFrameQueueStore';
 import { runLoadEpisodeForPlayer } from './videoPlayerLoadEpisode';
 import { formatVideoClock } from './videoPlayerTimeFormat';
+import { putEpisodeDetailCache } from './episodeDetailCache';
 import {
     VideoPlayerEpisodeSpeedIntroDrawers,
     VideoPlayerH5CommerceDrawers,
@@ -119,7 +120,6 @@ export function VideoPlayer({
     const [episodeStatus, setEpisodeStatus] = useState(false);
     const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
     const [vip, setVip] = useState(false);
-    const handleVipEmbedClose = useCallback(() => setVip(false), []);
     // const [unlockEpisodeOpen, setUnlockEpisodeOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [playbackSources, setPlaybackSources] = useState<string[]>([]);
@@ -269,12 +269,21 @@ export function VideoPlayer({
                 controllerTimerRef,
                 episodeFetchOpts: {
                     viewerIsVip: userStore.isVIP(),
-                    episodes: data.episodes,
                 },
             },
             episodeId,
             showLoading,
         );
+    }
+
+    function handleVipEmbedClose() {
+        setVip(false);
+    }
+
+    /** 充值/VIP 支付成功：RadixRc 已拉最新 `movie/episode`，写入缓存并走同一套 `loadData` 更新播放 */
+    function handleEmbedPaySuccessEpisodeDetail(d: IPlayerEpisode) {
+        putEpisodeDetailCache(Number(d.id) || id, d);
+        void loadData(id, false);
     }
 
     function handleSetEpisode(index: number) {
@@ -1225,6 +1234,8 @@ export function VideoPlayer({
                         vip={vip}
                         onVipOpenChange={setVip}
                         onVipEmbedClose={handleVipEmbedClose}
+                        embedVideoEpisodeRowId={id}
+                        onEmbedPaySuccessEpisodeDetail={handleEmbedPaySuccessEpisodeDetail}
                         vipHeaderEpisodeUnlockCoins={episode != null ? episode.unlock_coins : undefined}
                         shareOpen={shareOpen}
                         onShareOpenChange={setShareOpen}
@@ -1546,6 +1557,8 @@ export function VideoPlayer({
                     vip={vip}
                     onVipOpenChange={setVip}
                     onVipEmbedClose={handleVipEmbedClose}
+                    embedVideoEpisodeRowId={id}
+                    onEmbedPaySuccessEpisodeDetail={handleEmbedPaySuccessEpisodeDetail}
                     vipHeaderEpisodeUnlockCoins={episode != null ? episode.unlock_coins : undefined}
                     shareOpen={shareOpen}
                     onShareOpenChange={setShareOpen}

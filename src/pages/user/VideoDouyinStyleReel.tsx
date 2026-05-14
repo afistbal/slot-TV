@@ -10,6 +10,7 @@ import { skipRemoteApi } from '@/env';
 import { offlinePlayerEpisode } from '@/mocks/videoOffline';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import { useConfigStore } from '@/stores/config';
+import { useUserStore } from '@/stores/user';
 import { resolveVideoListIndexFromUrlSegment } from '@/pages/user/VideoPage/resolveVideoListIndexFromUrlSegment';
 
 /** 走「Vue 同款」竖滑全屏原生 video 的剧集 id（可继续往 Set 里加） */
@@ -40,10 +41,11 @@ async function fetchEpisodePlayable(episodeRowId: number): Promise<IPlayerEpisod
     if (skipRemoteApi) {
         return offlinePlayerEpisode(episodeRowId);
     }
+    const viewerIsVip = useUserStore.getState().isVIP();
     const result = await api<IPlayerEpisode>('movie/episode', {
         data: {
             id: episodeRowId,
-            auto_unlock: localStorage.getItem('auto_unlock') ?? 1,
+            auto_unlock: viewerIsVip ? 0 : 1,
         },
         loading: false,
     });

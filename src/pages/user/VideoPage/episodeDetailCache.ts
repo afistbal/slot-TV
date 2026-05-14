@@ -1,15 +1,14 @@
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { offlinePlayerEpisode } from '@/mocks/videoOffline';
-import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
+import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 const detailById = new Map<number, IPlayerEpisode>();
 const inflight = new Map<number, Promise<IPlayerEpisode | null>>();
 
-/** 与 `movie/info` 的 `episodes` 一并传入，用于非会员跳过 VIP 专享集的 `movie/episode` 请求 */
+/** 传入 `viewerIsVip` 用于 `movie/episode` 的 `auto_unlock`（VIP=0，非 VIP=1） */
 export type EpisodeFetchOpts = {
     viewerIsVip: boolean;
-    episodes: IPlayerData['episodes'];
 };
 
 export function getEpisodeDetailFromCache(id: number): IPlayerEpisode | undefined {
@@ -25,46 +24,20 @@ export function clearEpisodeDetailCache(): void {
     inflight.clear();
 }
 
-/**
- * 非会员 + 列表中该集 `vip !== 0`：`movie/info` 已标明为 VIP 区，无需再打 `movie/episode`。
- * 不写入缓存，避免用户开通会员后仍命中旧占位。
- */
-export function buildNonVipStubForVipOnlyEpisode(row: IPlayerData['episodes'][number]): IPlayerEpisode {
-    return {
-        id: Number(row.id),
-        episode: row.episode,
-        video: '',
-        subtitle: '',
-        lock: true,
-        unlock_coins: 0,
-        can_unlock: false,
-    };
-}
-
-function tryNonVipVipOnlyEpisodeStub(id: number, opts?: EpisodeFetchOpts): IPlayerEpisode | null {
-    if (!opts || opts.viewerIsVip) {
-        return null;
-    }
-    const row = opts.episodes.find((e) => Number(e.id) === Number(id));
-    if (!row || row.vip === 0) {
-        return null;
-    }
-    return buildNonVipStubForVipOnlyEpisode(row);
+/** 支付/VIP 变更后：去掉该集缓存，下次 `fetchEpisodeDetailOrNull` 会再打 `movie/episode` */
+export function invalidateEpisodeDetailCache(id: number): void {
+    detailById.delete(Number(id));
 }
 
 /**
  * 唯一入口：缓存命中、与进行中的请求合并，避免预拉与 VideoPlayer 等对同一 id 重复打 `movie/episode`。
+ * 含列表标 VIP、非会员等场景一律请求接口，由后端结合 `auto_unlock` 返回是否已解锁 / 锁集信息。
  */
 export async function fetchEpisodeDetailOrNull(
     id: number,
     showApiLoading = false,
     opts?: EpisodeFetchOpts,
 ): Promise<IPlayerEpisode | null> {
-    const stub = tryNonVipVipOnlyEpisodeStub(id, opts);
-    if (stub) {
-        return stub;
-    }
-
     const nid = Number(id);
     const cached = detailById.get(nid);
     if (cached) {
@@ -83,10 +56,11 @@ export async function fetchEpisodeDetailOrNull(
                 detailById.set(nid, ep);
                 return ep;
             }
+            const autoUnlock = opts?.viewerIsVip ? 0 : 1;
             const result = await api<IPlayerEpisode>('movie/episode', {
                 data: {
                     id: nid,
-                    auto_unlock: localStorage.getItem('auto_unlock') ?? 1,
+                    auto_unlock: autoUnlock,
                 },
                 loading: showApiLoading,
             });
@@ -106,8 +80,5 @@ export async function fetchEpisodeDetailOrNull(
 }
 
 export async function prewarmEpisodeDetail(id: number, opts?: EpisodeFetchOpts): Promise<void> {
-    if (tryNonVipVipOnlyEpisodeStub(id, opts)) {
-        return;
-    }
     await fetchEpisodeDetailOrNull(id, false, opts);
 }

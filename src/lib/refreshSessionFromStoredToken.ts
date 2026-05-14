@@ -24,6 +24,11 @@ export async function refreshSessionFromStoredToken(): Promise<boolean> {
         const raw = result.d as TData;
         const info = (raw['info'] as TData | undefined) ?? raw;
         useUserStore.getState().signin(info);
+        /** `signin` 不写 balance；`login/token` 的 info 也未必含最新金币，与支付/解锁后一致需再拉 `user/balance` */
+        const bal = await api<number>('user/balance', { loading: false, toastOnError: false });
+        if (bal.c === 0) {
+            useUserStore.getState().setBalance(bal.d);
+        }
         return true;
     }
     localStorage.removeItem('token');

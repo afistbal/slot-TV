@@ -23,6 +23,7 @@ import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidSe
 import { MembershipInlinePanel } from '@/pages/user/Membership';
 import { refreshSessionFromStoredToken } from '@/lib/refreshSessionFromStoredToken';
 import { useUserStore } from '@/stores/user';
+import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 function paywallImage(file: string) {
     return new URL(`../../assets/images/${file}`, import.meta.url).href;
@@ -85,6 +86,15 @@ type Product = {
     bouns?: string;
 };
 
+/** 与金币包列表 grid 一致：基础币 + `bouns` 比例折算的赠送币，用于支付弹窗展示（不影响 type=1 订阅分支） */
+function totalCoinsForCoinProduct(p: Pick<Product, 'coin' | 'bouns'>): number {
+    const baseCoin = p.coin ?? 0;
+    const bonus = Number.parseFloat(p.bouns ?? '0');
+    const bonusCoins =
+        baseCoin > 0 && Number.isFinite(bonus) ? Math.round(baseCoin * bonus) : 0;
+    return baseCoin + bonusCoins;
+}
+
 function pickDefaultSubscriptionPlanId(list: Product[]): number | null {
     const subs = list.filter((p) => p.type === 1);
     const planPick = subs.length > 0 ? subs : list;
@@ -111,6 +121,9 @@ export type RadixRcProps = {
      * 嵌入购物（剧集抽屉 / PC 弹窗）：在 VIP 说明下展示「目前劇集」解锁金币；不传则不展示该行（如 `/profile?tab=topup`）。
      */
     headerEpisodeUnlockCoins?: number;
+    /** `layout=embed` 且 `productFrom=video`：支付成功并刷新 token 后，再打 `movie/episode?id=` 并把 `d` 交给播放器 */
+    embedVideoEpisodeRowId?: number;
+    onEmbedPaySuccessEpisodeDetail?: (episode: IPlayerEpisode) => void;
 };
 
 type ProductFromKey = NonNullable<RadixRcProps['productFrom']>;
@@ -126,6 +139,8 @@ export default function RadixRc({
     productFrom = 'shopping',
     checkoutFrom = 'shopping',
     headerEpisodeUnlockCoins,
+    embedVideoEpisodeRowId,
+    onEmbedPaySuccessEpisodeDetail,
 }: RadixRcProps = {}) {
     const intl = useIntl();
     const userStore = useUserStore();
@@ -223,14 +238,40 @@ export default function RadixRc({
                 setPayModalStatus('idle');
                 setShowPayModal(false);
                 setPaySessionSeed((prev) => prev + 1);
+                await refreshSessionFromStoredToken();
+                if (
+                    layout === 'embed' &&
+                    productFrom === 'video' &&
+                    embedVideoEpisodeRowId != null &&
+                    embedVideoEpisodeRowId > 0
+                ) {
+                    const viewerIsVip = useUserStore.getState().isVIP();
+                    const res = await api<IPlayerEpisode>('movie/episode', {
+                        data: {
+                            id: embedVideoEpisodeRowId,
+                            auto_unlock: viewerIsVip ? 0 : 1,
+                        },
+                        loading: false,
+                    });
+                    if (res.c === 0) {
+                        onEmbedPaySuccessEpisodeDetail?.(res.d);
+                    }
+                }
                 if (layout === 'embed') {
                     onEmbedClose?.();
                 }
-                await refreshSessionFromStoredToken();
             })();
         }, 2500);
         return () => window.clearTimeout(timer);
-    }, [payModalStatus, showPayModal, layout, onEmbedClose]);
+    }, [
+        payModalStatus,
+        showPayModal,
+        layout,
+        onEmbedClose,
+        productFrom,
+        embedVideoEpisodeRowId,
+        onEmbedPaySuccessEpisodeDetail,
+    ]);
 
     useEffect(() => {
         if (payModalStatus !== 'processing' || !showPayModal) return;
@@ -523,12 +564,12 @@ export default function RadixRc({
                     <div className="grid grid-cols-2 gap-2 shadow-none md:grid-cols-4">
                         {coinProducts.map((p) => {
                             const baseCoin = p.coin ?? 0;
+                            const totalCoins = totalCoinsForCoinProduct(p);
                             const bonus = Number.parseFloat(p.bouns ?? '0');
                             const bonusCoins =
                                 baseCoin > 0 && Number.isFinite(bonus)
                                     ? Math.round(baseCoin * bonus)
                                     : 0;
-                            const totalCoins = baseCoin + bonusCoins;
                             const bonusPct = bonus > 0 ? Math.round(bonus * 100) : 0;
                             return (
                                 <div
@@ -632,11 +673,14 @@ export default function RadixRc({
                             </div>
                             <div className="rs-shopping__payModalCopy">
                                 {currentCheckoutProduct?.type === 2 &&
-                                currentCheckoutProduct.coin != null &&
-                                currentCheckoutProduct.coin > 0 ? (
+                                totalCoinsForCoinProduct(currentCheckoutProduct) > 0 ? (
                                     <p className="mb-2 flex items-center justify-center gap-1.5 text-sm font-semibold text-white">
                                         <img src={coinIcon} alt="" width={16} height={16} />
-                                        <span>{currentCheckoutProduct.coin}</span>
+                                        <span>
+                                            {intl.formatNumber(
+                                                totalCoinsForCoinProduct(currentCheckoutProduct),
+                                            )}
+                                        </span>
                                         <span className="text-white/70">·</span>
                                         <span>${currentCheckoutProduct.price}</span>
                                     </p>

@@ -30,7 +30,7 @@ import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFrom
 import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { canNavigateBack, isPerformanceNavigationReload } from './videoPlayerUtils';
 
-/** 非会员：邻格不挂播放器，避免对 VIP 集打 `movie/episode` 预拉；滑到该集后由主格再请求一次即可 */
+/** 非会员：邻格不挂播放器，避免邻格 `VideoPlayer` 再打一遍详情；主格/预拉仍会请求 `movie/episode`（含 auto_unlock） */
 function shouldMountNeighborPeekPlayer(
     row: NonNullable<IPlayerData['episodes']>[number],
     viewerIsVip: boolean,
@@ -357,7 +357,7 @@ export default function VideoVerticalSwiper() {
         const center = resolveVideoListIndexFromUrlSegment(data.episodes, params['episode']);
         const ids = getEpisodeIdsToPrewarm(data.episodes, center, viewerIsVip, !isDesktop);
         for (const episodeId of ids) {
-            void prewarmEpisodeDetail(episodeId, { viewerIsVip, episodes: data.episodes });
+            void prewarmEpisodeDetail(episodeId, { viewerIsVip });
         }
     }, [data, params['episode'], viewerIsVip, isDesktop]);
 

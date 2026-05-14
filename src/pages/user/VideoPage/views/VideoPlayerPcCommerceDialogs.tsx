@@ -7,11 +7,14 @@ import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { ShareAction } from '../videoPlayerConstants';
+import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 export type VideoPlayerPcCommerceDialogsProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
+    embedVideoEpisodeRowId: number;
+    onEmbedPaySuccessEpisodeDetail: (episode: IPlayerEpisode) => void;
     vipHeaderEpisodeUnlockCoins?: number;
     shareOpen: boolean;
     onShareOpenChange: (open: boolean) => void;
@@ -29,6 +32,8 @@ export function VideoPlayerPcCommerceDialogs({
     vip,
     onVipOpenChange,
     onVipEmbedClose,
+    embedVideoEpisodeRowId,
+    onEmbedPaySuccessEpisodeDetail,
     vipHeaderEpisodeUnlockCoins,
     shareOpen,
     onShareOpenChange,
@@ -63,6 +68,8 @@ export function VideoPlayerPcCommerceDialogs({
                                     checkoutFrom="video"
                                     onEmbedClose={onVipEmbedClose}
                                     headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                                    embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                                    onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
                                 />
                             ) : null}
                         </div>

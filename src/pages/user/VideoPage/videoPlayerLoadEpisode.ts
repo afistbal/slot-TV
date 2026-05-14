@@ -26,7 +26,7 @@ export type LoadEpisodeRuntime = {
     showController: (autoClose?: boolean) => void;
     hideController: () => void;
     controllerTimerRef: RefObject<number>;
-    /** 与 `movie/info` 对齐：非会员且列表标 VIP 的集不打 `movie/episode` */
+    /** 传给 `fetchEpisodeDetailOrNull`：用于 `movie/episode` 的 `auto_unlock` */
     episodeFetchOpts?: EpisodeFetchOpts;
 };
 
@@ -35,7 +35,11 @@ export async function runLoadEpisodeForPlayer(
     id: number,
     loading: boolean,
 ): Promise<void> {
+    /** 换集 / 重拉详情前清掉上一集的自动隐藏定时器，避免对已切到「付费锁页」仍用旧 closure 执行 hide */
+    window.clearTimeout(rt.controllerTimerRef.current);
+
     const applyEpisode = async (d: IPlayerEpisode) => {
+        window.clearTimeout(rt.controllerTimerRef.current);
         rt.setLoading(false);
         rt.setEpisode(d);
         rt.setShowTapToUnmute(false);
@@ -62,11 +66,8 @@ export async function runLoadEpisodeForPlayer(
             rt.setPlaying(false);
             rt.setCanPlay(false);
             rt.setShowTapToUnmute(false);
-            if (rt.suppressPlayback) {
-                rt.showController(false);
-            } else {
-                rt.showController(true);
-            }
+            /** 锁页必须常驻：`showController(true)` 会起 10s 定时器，此时 React 尚未提交 lock，`hideController` 仍读到旧 `episode.lock` 会把整块 UI 透明掉 */
+            rt.showController(false);
             return;
         }
 

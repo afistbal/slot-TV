@@ -7,11 +7,14 @@ import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import type { ShareAction } from '../videoPlayerConstants';
+import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 export type VideoPlayerH5CommerceDrawersProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
+    embedVideoEpisodeRowId: number;
+    onEmbedPaySuccessEpisodeDetail: (episode: IPlayerEpisode) => void;
     /** 嵌入 VIP 购物：「目前劇集」解锁金币；不传则不展示该行 */
     vipHeaderEpisodeUnlockCoins?: number;
     shareOpen: boolean;
@@ -30,6 +33,8 @@ export function VideoPlayerH5CommerceDrawers({
     vip,
     onVipOpenChange,
     onVipEmbedClose,
+    embedVideoEpisodeRowId,
+    onEmbedPaySuccessEpisodeDetail,
     vipHeaderEpisodeUnlockCoins,
     shareOpen,
     onShareOpenChange,
@@ -62,6 +67,8 @@ export function VideoPlayerH5CommerceDrawers({
                                 checkoutFrom="video"
                                 onEmbedClose={onVipEmbedClose}
                                 headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
                             />
                         ) : null}
                     </div>
