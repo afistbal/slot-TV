@@ -73,27 +73,26 @@ export async function toggleVideoFullscreen(
         return;
       }
     }
-    if (disableNativeVideoFullscreen) {
-      // iOS 上避免回退到系统视频全屏，保持页面内“全屏样式”交互。
-      return;
-    }
   }
 
-  if (video.webkitEnterFullscreen) {
-    try {
-      video.webkitEnterFullscreen();
-    } catch {
-      // ignore
+  /** 非 `disableNativeVideoFullscreen` 时才走 iOS 系统视频全屏；与「容器全屏」异步衔接时易脱离用户手势导致静音 */
+  if (!disableNativeVideoFullscreen) {
+    if (video.webkitEnterFullscreen) {
+      try {
+        video.webkitEnterFullscreen();
+      } catch {
+        // ignore
+      }
+      return;
     }
-    return;
-  }
-  if (video.webkitEnterFullScreen) {
-    try {
-      video.webkitEnterFullScreen();
-    } catch {
-      // ignore
+    if (video.webkitEnterFullScreen) {
+      try {
+        video.webkitEnterFullScreen();
+      } catch {
+        // ignore
+      }
+      return;
     }
-    return;
   }
 
   if (video.requestFullscreen) {

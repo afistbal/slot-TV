@@ -4,6 +4,7 @@ import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from './episodeDetailCache';
 import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
 import { SPEED } from './videoPlayerConstants';
+import { hasVideoSessionUserUnmuted } from './videoSessionMute';
 import { isPerformanceNavigationReload } from './videoPlayerUtils';
 
 export type LoadEpisodeRuntime = {
@@ -148,8 +149,13 @@ export async function runLoadEpisodeForPlayer(
             typeof location !== 'undefined' &&
             location.search.length > 1 &&
             location.search.indexOf('auto_play=0') === -1;
-        /** 「點擊取消靜音」：整页刷新（F5）或带上述 query 的冷链（否则静音后无入口） */
-        const showTapToUnmuteOnMutedAutoplay = isReload || marketingSoundQuery;
+        /** 全屏「点按取消静音」蒙层：仅 PC 使用。H5 一律用底栏音量图标，避免带 query 的 URL / 路由 state 丢失时反复出现 Click to unmute */
+        const sessionUnmuted = hasVideoSessionUserUnmuted();
+        const showTapToUnmuteOnMutedAutoplay =
+            isPcViewport &&
+            (isReload ||
+                marketingSoundQuery ||
+                (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
         let allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport || marketingSoundQuery;
         if (isReload && !rt.fromHomeVideoPlayback && !isPcViewport) {
             allowSoundAutoplay = false;

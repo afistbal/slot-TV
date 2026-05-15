@@ -8,6 +8,8 @@ import {
     PlayIcon,
     Star,
     Unlock,
+    Volume2,
+    VolumeX,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
 import fullscreenIcon from '@/assets/images/is_full_screen_icon.88dfd7dd.png';
@@ -36,6 +38,7 @@ import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
 import { getEpisodePeekFrame, setEpisodePeekFrame } from './episodeFrameQueueStore';
 import { runLoadEpisodeForPlayer } from './videoPlayerLoadEpisode';
+import { markVideoSessionUserUnmuted } from './videoSessionMute';
 import { formatVideoClock } from './videoPlayerTimeFormat';
 import { putEpisodeDetailCache } from './episodeDetailCache';
 import {
@@ -153,6 +156,8 @@ export function VideoPlayer({
     const [progressDragging, setProgressDragging] = useState(false);
     /** 冷启动/刷新：静音自动播时展示（PC 用 `.xgplayer-unmute-bt`，H5 用底部按钮层） */
     const [showTapToUnmute, setShowTapToUnmute] = useState(false);
+    /** 与 `<video>.muted` 同步，用于底部音量图标（对标 douyin BaseMusic 入口） */
+    const [videoMutedUi, setVideoMutedUi] = useState(true);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const fullscreenRestoreInFlightRef = useRef(false);
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
@@ -550,9 +555,26 @@ export function VideoPlayer({
         if (!v) {
             return;
         }
+        markVideoSessionUserUnmuted();
         v.muted = false;
+        setVideoMutedUi(false);
         setShowTapToUnmute(false);
         void v.play().then(() => setPlaying(true)).catch(() => {});
+        showController();
+    }
+
+    function handleToggleVideoMute(ev: MouseEvent<HTMLButtonElement>) {
+        ev.stopPropagation();
+        const v = videoRef.current;
+        if (!v || episode?.lock) {
+            return;
+        }
+        if (v.muted) {
+            handleTapToUnmute();
+            return;
+        }
+        v.muted = true;
+        setVideoMutedUi(true);
         showController();
     }
 
@@ -727,6 +749,15 @@ export function VideoPlayer({
         };
         v.addEventListener('playing', videoPlaying);
 
+        const syncMutedFromVideo = () => {
+            const el = videoRef.current;
+            if (el) {
+                setVideoMutedUi(el.muted);
+            }
+        };
+        syncMutedFromVideo();
+        v.addEventListener('volumechange', syncMutedFromVideo);
+
         const videoError = () => {
             setWaiting(false);
             setPlaying(false);
@@ -770,6 +801,7 @@ export function VideoPlayer({
             v.removeEventListener('ended', videoEnded);
             v.removeEventListener('canplay', videoCanPlay);
             v.removeEventListener('playing', videoPlaying);
+            v.removeEventListener('volumechange', syncMutedFromVideo);
             v.removeEventListener('error', videoError);
             progressEl?.removeEventListener('touchmove', progressTouchMove);
             window.removeEventListener('mouseup', mouseUp);
@@ -856,6 +888,18 @@ export function VideoPlayer({
         const onWebkitBeginFullscreen = () => {
             setPcFullscreen(true);
             onFullscreenPrefChange(true);
+            const v = videoRef.current;
+            if (!v || episode?.lock || location.search.indexOf('auto_play=0') !== -1) {
+                return;
+            }
+            /** iOS 系统全屏常在非手势链路上触发，浏览器会静音；在回调栈内尝试恢复有声 */
+            if (v.muted) {
+                v.muted = false;
+                markVideoSessionUserUnmuted();
+                setShowTapToUnmute(false);
+                setVideoMutedUi(false);
+                void v.play().then(() => setPlaying(true)).catch(() => {});
+            }
         };
         /** iOS 退出系统全屏后常会处于 paused；单次 play 常失败，需同步先试一次再短时多次重试。 */
         const resumeInlineAfterNativeFullscreenExit = () => {
@@ -920,7 +964,7 @@ export function VideoPlayer({
                 onWebkitEndFullscreen as EventListener,
             );
         };
-    }, [isDesktop, shouldKeepFullscreen, shouldIgnoreFullscreenExit, onFullscreenPrefChange, episode?.lock]);
+    }, [isDesktop, shouldKeepFullscreen, shouldIgnoreFullscreenExit, onFullscreenPrefChange, episode?.lock, setPlaying, setShowTapToUnmute, setVideoMutedUi]);
 
     useEffect(() => {
         fullscreenRestoreInFlightRef.current = false;
@@ -946,7 +990,7 @@ export function VideoPlayer({
         fullscreenRestoreInFlightRef.current = true;
         void toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
             preferContainer: true,
-            disableNativeVideoFullscreen: isDesktop,
+            disableNativeVideoFullscreen: isDesktop || fromHomeVideoPlayback,
         })
             .then(() => {
                 const inFullscreen = Boolean(getFullscreenElement());
@@ -973,6 +1017,7 @@ export function VideoPlayer({
         fullscreenTargetRef,
         onFullscreenPrefChange,
         playbackPolicy,
+        fromHomeVideoPlayback,
     ]);
 
     if (isDesktop) {
@@ -1119,7 +1164,7 @@ export function VideoPlayer({
                                         {canPlay && (
                                             <button
                                                 type="button"
-                                                className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pr-2 text-white cursor-pointer touch-manipulation"
+                                                className="shrink-0 flex items-center justify-center border-0 bg-transparent px-2 py-0 mr-2 text-white cursor-pointer touch-manipulation"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleTogglePlay(e);
@@ -1158,11 +1203,35 @@ export function VideoPlayer({
                                             {current} / {duration}
                                         </div>
                                         <div
-                                            className="text-white text-xs flex items-center justify-center px-3"
+                                            className="text-white text-xs flex shrink-0 items-center justify-center pl-3 pr-2"
                                             onClick={handleSpeedControlClick}
                                         >
                                             {SPEED[speed]}x
                                         </div>
+                                        {canPlay && episode?.lock === false && (
+                                            <button
+                                                type="button"
+                                                className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pl-3 pr-3 text-white cursor-pointer touch-manipulation"
+                                                onClick={handleToggleVideoMute}
+                                                aria-label={
+                                                    videoMutedUi
+                                                        ? intl.formatMessage({
+                                                              id: 'video_sound_unmute',
+                                                              defaultMessage: 'Unmute',
+                                                          })
+                                                        : intl.formatMessage({
+                                                              id: 'video_sound_mute',
+                                                              defaultMessage: 'Mute',
+                                                          })
+                                                }
+                                            >
+                                                {videoMutedUi ? (
+                                                    <VolumeX className="w-5 h-5" aria-hidden />
+                                                ) : (
+                                                    <Volume2 className="w-5 h-5" aria-hidden />
+                                                )}
+                                            </button>
+                                        )}
                                         {hasNextEpisode() && (
                                             <div
                                                 className="video-player-next-episode-trigger text-white text-xs flex items-center justify-center px-2 cursor-pointer"
@@ -1176,7 +1245,7 @@ export function VideoPlayer({
                                             </div>
                                         )}
                                         <div
-                                            className="text-white text-xs flex items-center justify-center px-3 cursor-pointer"
+                                            className="text-white text-xs flex shrink-0 items-center justify-center px-2 cursor-pointer"
                                             onClick={handleToggleFullscreen}
                                         >
                                             {isFullscreenUi ? (
@@ -1466,7 +1535,7 @@ export function VideoPlayer({
                             {canPlay && (
                                 <button
                                     type="button"
-                                    className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pr-2 text-white cursor-pointer touch-manipulation"
+                                    className="shrink-0 flex items-center justify-center border-0 bg-transparent px-2 py-0 mr-2 text-white cursor-pointer touch-manipulation"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleTogglePlay(e);
@@ -1505,11 +1574,35 @@ export function VideoPlayer({
                                 {current} / {duration}
                             </div>
                             <div
-                                className="text-white text-xs flex items-center justify-center px-4"
+                                className="text-white text-xs flex shrink-0 items-center justify-center pl-4 pr-2"
                                 onClick={handleSpeedControlClick}
                             >
                                 {SPEED[speed]}x
                             </div>
+                            {canPlay && episode?.lock === false && (
+                                <button
+                                    type="button"
+                                    className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pl-3 pr-4 text-white cursor-pointer touch-manipulation"
+                                    onClick={handleToggleVideoMute}
+                                    aria-label={
+                                        videoMutedUi
+                                            ? intl.formatMessage({
+                                                  id: 'video_sound_unmute',
+                                                  defaultMessage: 'Unmute',
+                                              })
+                                            : intl.formatMessage({
+                                                  id: 'video_sound_mute',
+                                                  defaultMessage: 'Mute',
+                                              })
+                                    }
+                                >
+                                    {videoMutedUi ? (
+                                        <VolumeX className="w-5 h-5" aria-hidden />
+                                    ) : (
+                                        <Volume2 className="w-5 h-5" aria-hidden />
+                                    )}
+                                </button>
+                            )}
                             {hasNextEpisode() && (
                                 <div
                                     className="video-player-next-episode-trigger text-white text-xs flex items-center justify-center px-2 cursor-pointer"
@@ -1523,7 +1616,7 @@ export function VideoPlayer({
                                 </div>
                             )}
                             <div
-                                className="text-white text-xs flex items-center justify-center px-4 cursor-pointer"
+                                className="text-white text-xs flex shrink-0 items-center justify-center px-2 cursor-pointer"
                                 onClick={handleToggleFullscreen}
                             >
                                 {isFullscreenUi ? (
