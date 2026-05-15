@@ -31,6 +31,7 @@
     margin-right: 6px;
     padding: 24px;
     padding-right: 10px;
+    padding-bottom: 0;
     display: flex;
     gap: 24px;
     align-items: center;
@@ -137,6 +138,89 @@
     line-height: 1.2;
 }
 
+/** H5 Profile 非 VIP：ReelShort DashboardPage_amount */
+.rs-profile__h5Amount {
+    margin: 0 16px 16px;
+    margin-bottom: 0;
+    border-radius: calc(4 / 375 * var(--app-vw));
+    background: #141414;
+    padding: calc(16 / 375 * var(--app-vw));
+    box-sizing: border-box;
+}
+
+.rs-profile__h5AmountTitle {
+    width: 100%;
+    font-size: calc(12 / 375 * var(--app-vw));
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.35;
+}
+
+.rs-profile__h5AmountRow {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    margin-top: calc(16 / 375 * var(--app-vw));
+}
+
+.rs-profile__h5AmountCol {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.rs-profile__h5AmountValueRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(2 / 375 * var(--app-vw));
+    margin-bottom: calc(1 / 375 * var(--app-vw));
+
+    img {
+        width: calc(16 / 375 * var(--app-vw));
+        height: calc(16 / 375 * var(--app-vw));
+        flex-shrink: 0;
+    }
+
+    span {
+        font-size: calc(20 / 375 * var(--app-vw));
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.2;
+    }
+}
+
+.rs-profile__h5AmountLabel {
+    font-size: calc(12 / 375 * var(--app-vw));
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.35;
+}
+
+.rs-profile__h5AmountTopUp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: calc(16 / 375 * var(--app-vw));
+    min-height: calc(36 / 375 * var(--app-vw));
+    padding: 0 calc(16 / 375 * var(--app-vw));
+    border: none;
+    border-radius: calc(4 / 375 * var(--app-vw));
+    background: #e52e2e;
+    color: #fff;
+    font-size: calc(14 / 375 * var(--app-vw));
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    &:active {
+        opacity: 0.92;
+    }
+}
+
 .rs-profile__menu {
     margin: 16px;
     margin-top: 16px;
@@ -176,6 +260,13 @@
     height: 24px;
     flex-shrink: 0;
     display: block;
+}
+
+.rs-profile__menuIconSvg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    color: hsla(0, 0%, 100%, 0.9);
 }
 
 .rs-profile__menuChevronIcon {

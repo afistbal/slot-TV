@@ -143,6 +143,8 @@ export async function runLoadEpisodeForPlayer(
         const isPcViewport =
             typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
         const isReload = isPerformanceNavigationReload();
+        /** 「點擊取消靜音」仅整页刷新（F5）展示；站内跳转（含钱包/首页等）不展示 */
+        const showTapToUnmuteOnMutedAutoplay = isReload;
         let allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport;
         if (isReload && !rt.fromHomeVideoPlayback && !isPcViewport) {
             allowSoundAutoplay = false;
@@ -170,7 +172,7 @@ export async function runLoadEpisodeForPlayer(
                     el.muted = false;
                 } else {
                     el.muted = true;
-                    rt.setShowTapToUnmute(true);
+                    rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
                 }
                 const runPlay = () => {
                     const v = rt.videoRef.current;
@@ -191,7 +193,7 @@ export async function runLoadEpisodeForPlayer(
                         .catch(() => {
                             if (allowSoundAutoplay && !v.muted) {
                                 v.muted = true;
-                                rt.setShowTapToUnmute(true);
+                                rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
                                 v.play()
                                     .then(() => rt.setPlaying(true))
                                     .catch(onPlayFail);

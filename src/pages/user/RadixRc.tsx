@@ -428,7 +428,7 @@ export default function RadixRc({
                                     </span>
                                 </span>
                             </div>
-                            <Link to="/user/my-balance" className="rs-shopping__pageWalletBar__history">
+                            <Link to="/wallet" className="rs-shopping__pageWalletBar__history">
                                 <span className="rs-shopping__pageWalletBar__historyLabel">
                                     <FormattedMessage id="shopping_bar_history" />
                                 </span>

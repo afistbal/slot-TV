@@ -48,6 +48,7 @@ import UserLogin from './pages/user/Login';
 import UserPay from './pages/user/Pay';
 import UserSearch from './pages/user/Search';
 import UserMyBalance from './pages/user/MyBanlance';
+import UserWallet from './pages/user/Wallet';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
@@ -184,6 +185,14 @@ const router = createBrowserRouter([
             {
                 path: 'profile',
                 element: <UserProfile />,
+            },
+            {
+                path: 'wallet',
+                element: <UserWallet />,
+            },
+            {
+                path: ':locale/wallet',
+                element: <UserWallet />,
             },
             {
                 path: 'user/detail',

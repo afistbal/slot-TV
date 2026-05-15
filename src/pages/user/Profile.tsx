@@ -3,12 +3,15 @@ import {
     RsPcHelpMenuIcon,
     RsPcHistoryMenuIcon,
     RsPcMyListMenuIcon,
+    RsPcWalletMenuIcon,
 } from '@/components/icons/reelshortDashboardPcMenuIcons';
+import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 import gift from '@/assets/gift.svg';
 import gem from '@/assets/gem.svg';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconFeedback from '@/assets/images/59f06ad0-876c-11ee-aed2-cfe3d80f70eb.png';
 import iconHistory from '@/assets/images/history.png';
+import iconWallet from '@/assets/04030ab0-876c-11ee-aed2-cfe3d80f70eb.png';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
 import coinIcon from '@/assets/coin.svg';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -31,7 +34,7 @@ import FeedbackPanel from '@/pages/user/Feedback';
 import UserDetailPanel from '@/pages/user/UserDetail';
 import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
 import { PcLoginDialog } from '@/pages/user/Login';
-type ProfilePcTab = 'topup' | 'profile' | 'mylist' | 'feedback';
+type ProfilePcTab = 'topup' | 'wallet' | 'profile' | 'mylist' | 'feedback';
 
 export default function Component() {
     const intl = useIntl();
@@ -50,7 +53,9 @@ export default function Component() {
     const [profileMyListSubTab, setProfileMyListSubTab] = useState<ProfileMyListSubTab>('favorite');
 
     /** PC：与 ReelShort `?tab=mylist` / `history` 类似，用查询串驱动侧栏（可分享、可外链）。 */
-    function setProfileTabQuery(tab: 'topup' | 'profile' | 'mylist' | 'history' | 'feedback') {
+    function setProfileTabQuery(
+        tab: 'topup' | 'wallet' | 'profile' | 'mylist' | 'history' | 'feedback',
+    ) {
         setSearchParams(
             (prev) => {
                 const next = new URLSearchParams(prev);
@@ -73,18 +78,25 @@ export default function Component() {
         }
     }
 
-    /** H5：观看记录在 `/my-list/history`，`/profile?tab=history` 仅 PC 解析；否则外链/旧链会停在 Profile 首页 */
+    /** H5：观看记录在 `/my-list/history`、钱包在 `/wallet`；对应 `?tab=` 仅 PC 解析 */
     useEffect(() => {
         if (isPc) {
             return;
         }
-        if (searchParams.get('tab')?.toLowerCase() !== 'history') {
+        const tab = searchParams.get('tab')?.toLowerCase();
+        if (tab === 'history') {
+            const next = new URLSearchParams(searchParams);
+            next.delete('tab');
+            const q = next.toString();
+            navigate(`/my-list/history${q ? `?${q}` : ''}`, { replace: true, state: location.state });
             return;
         }
-        const next = new URLSearchParams(searchParams);
-        next.delete('tab');
-        const q = next.toString();
-        navigate(`/my-list/history${q ? `?${q}` : ''}`, { replace: true, state: location.state });
+        if (tab === 'wallet') {
+            const next = new URLSearchParams(searchParams);
+            next.delete('tab');
+            const q = next.toString();
+            navigate(`/wallet${q ? `?${q}` : ''}`, { replace: true, state: location.state });
+        }
     }, [isPc, searchParams, navigate, location.state]);
 
     /** PC：URL → 侧栏与主栏状态 */
@@ -93,8 +105,12 @@ export default function Component() {
             return;
         }
         const tab = searchParams.get('tab')?.toLowerCase();
-        if (!tab || tab === 'topup' || tab === 'wallet') {
+        if (!tab || tab === 'topup') {
             setPcTab('topup');
+            return;
+        }
+        if (tab === 'wallet') {
+            setPcTab('wallet');
             return;
         }
         if (tab === 'profile') {
@@ -322,6 +338,15 @@ export default function Component() {
                     </Link>
                 </>
             )}
+            <Link to="/wallet" className="rs-profile__menuItem">
+                <div className="rs-profile__menuLeft">
+                    <img src={iconWallet} alt="" className="rs-profile__menuIcon" />
+                    <div className="rs-profile__menuText">
+                        <FormattedMessage id="profile_wallet" />
+                    </div>
+                </div>
+                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+            </Link>
             <Link
                 to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
                 state={{ sourceform }}
@@ -353,6 +378,11 @@ export default function Component() {
             pcTab === tab && 'dashboard_pc_menu_item_active__H7KVg',
         );
 
+    const pcWalletSidebarLiClass = cn(
+        'dashboard_pc_menu_item__GBkNY',
+        pcTab === 'wallet' && 'dashboard_pc_menu_item_active__H7KVg',
+    );
+
     const pcMyListSidebarLiClass = cn(
         'dashboard_pc_menu_item__GBkNY',
         pcTab === 'mylist' &&
@@ -381,6 +411,35 @@ export default function Component() {
         if (pending) return '···';
         return intl.formatNumber(n);
     }
+
+    /** H5 非 VIP：ReelShort DashboardPage_amount（金幣 + 儲值） */
+    const h5AccountBalanceCard = (
+        <div className="rs-profile__h5Amount">
+            <div className="rs-profile__h5AmountTitle">
+                <FormattedMessage id="shopping_bar_account_balance" />
+            </div>
+            <div className="rs-profile__h5AmountRow">
+                <div className="rs-profile__h5AmountCol">
+                    <div className="rs-profile__h5AmountValueRow">
+                        <img src={coinIcon} alt="" aria-hidden />
+                        <span className="tabular-nums">
+                            {formatPcWalletStat(pcWalletDisplay.total, pcWalletDisplay.pending)}
+                        </span>
+                    </div>
+                    <div className="rs-profile__h5AmountLabel">
+                        <FormattedMessage id="shopping_bar_coins" />
+                    </div>
+                </div>
+            </div>
+            <button
+                type="button"
+                className="rs-profile__h5AmountTopUp"
+                onClick={handleVipCardClick}
+            >
+                <FormattedMessage id="top_up" />
+            </button>
+        </div>
+    );
 
     /** 与 ReelShort `dashboard_pc_*` DOM + `9cb3e9a284588d0e.css` 一致（见 `reelshort-dashboard-pc-mirror.scss`） */
     const pcUserInfo = (
@@ -488,8 +547,8 @@ export default function Component() {
             >
                 <ReelShortTopNav
                     scrollParentRef={scrollRef}
-                    /* 与首页同结构，避免 PC 下 `brand-cluster` 居中 ↔ 左对齐 + 主导览 切换导致顶栏「宽度/重心」晃动感 */
-                    showPrimaryNav
+                    /* PC：与首页同结构，避免 brand-cluster 居中 ↔ 左对齐切换晃眼；H5 不展示首頁/類別 subnav */
+                    showPrimaryNav={isPc}
                     showSearch={true}
                     showProfile={false}
                     showLeftAction
@@ -549,6 +608,20 @@ export default function Component() {
                                             </button>
                                         </li>
                                     ) : null}
+                                    <li className={pcWalletSidebarLiClass}>
+                                        <button
+                                            type="button"
+                                            className="rs-profile__pc-menuHit"
+                                            onClick={() => setProfileTabQuery('wallet')}
+                                        >
+                                            <i>
+                                                <RsPcWalletMenuIcon />
+                                            </i>
+                                            <span>
+                                                <FormattedMessage id="profile_wallet" />
+                                            </span>
+                                        </button>
+                                    </li>
                                     <li className={pcMyListSidebarLiClass}>
                                         <button
                                             type="button"
@@ -608,6 +681,11 @@ export default function Component() {
                                             checkoutFrom="shopping"
                                         />
                                     ) : null}
+                                    {pcTab === 'wallet' ? (
+                                        <div className="rs-profile__pc-wallet">
+                                            <WalletTransactionHistory variant="pc" />
+                                        </div>
+                                    ) : null}
                                     {pcTab === 'mylist' ? (
                                         <ProfilePcMyListPane
                                             subTab={profileMyListSubTab}
@@ -633,7 +711,7 @@ export default function Component() {
                         {userStore.signed && !userStore.isAnonymous()
                             ? loginCardSigned
                             : loginCardGuest}
-                        {vipCard}
+                        {userStore.isVIP() ? vipCard : h5AccountBalanceCard}
                         {h5Menu}
                         {userStore.isAnonymous() ? (
                             <Link to="/page/login" className="rs-profile__btnLogin">
