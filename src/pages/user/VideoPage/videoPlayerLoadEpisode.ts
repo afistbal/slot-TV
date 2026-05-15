@@ -4,6 +4,7 @@ import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from './episodeDetailCache';
 import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
 import { SPEED } from './videoPlayerConstants';
+import { hasH5UnmuteOverlaySuppressed, hasVideoSessionUserUnmuted } from './videoSessionMute';
 import { isPerformanceNavigationReload } from './videoPlayerUtils';
 
 export type LoadEpisodeRuntime = {
@@ -148,12 +149,24 @@ export async function runLoadEpisodeForPlayer(
             typeof location !== 'undefined' &&
             location.search.length > 1 &&
             location.search.indexOf('auto_play=0') === -1;
-        /** 「點擊取消靜音」：整页刷新（F5）或带上述 query 的冷链（否则静音后无入口） */
-        const showTapToUnmuteOnMutedAutoplay = isReload || marketingSoundQuery;
-        let allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport || marketingSoundQuery;
-        if (isReload && !rt.fromHomeVideoPlayback && !isPcViewport) {
-            allowSoundAutoplay = false;
-        }
+        const sessionUnmuted = hasVideoSessionUserUnmuted();
+        /** PC：整页刷新、带归因 query、或站内冷链（可结合 session 少打蒙层） */
+        const showTapToUnmutePc =
+            isPcViewport &&
+            (isReload ||
+                marketingSoundQuery ||
+                (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
+        /**
+         * H5 全屏蒙层：仅 **站内带行为链进入**（`fromHomeVideoPlayback`）且本会话尚未滑动/切集、用户未主动开声时展示。
+         * 直链 / 刷新 / 外部分享等「非站内栈进入」不展示（仍可用底栏音量图标）。
+         */
+        const showTapToUnmuteH5 =
+            !isPcViewport &&
+            rt.fromHomeVideoPlayback &&
+            !sessionUnmuted &&
+            !hasH5UnmuteOverlaySuppressed();
+        const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc || showTapToUnmuteH5;
+        const allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport || marketingSoundQuery;
         const isColdVideoAutoplay = !allowSoundAutoplay;
 
         const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;

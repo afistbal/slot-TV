@@ -29,6 +29,7 @@ import { getEpisodeIdsToPrewarm } from './episodePrewarm';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
 import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { canNavigateBack, isPerformanceNavigationReload } from './videoPlayerUtils';
+import { clearH5UnmuteOverlaySuppressed, markH5UnmuteOverlaySuppressed } from './videoSessionMute';
 
 /** 非会员：邻格不挂播放器，避免邻格 `VideoPlayer` 再打一遍详情；主格/预拉仍会请求 `movie/episode`（含 auto_unlock） */
 function shouldMountNeighborPeekPlayer(
@@ -73,6 +74,8 @@ export default function VideoVerticalSwiper() {
     const switchingEpisodeInFullscreenRef = useRef(false);
     const [viewportH, setViewportH] = useState(0);
     const skipLayoutUrlSyncRef = useRef(false);
+    /** 竖滑手势起点集索引：用于与 `pointerup` 后 `localIndex` 比较，判定是否因滑动换集而抑制 H5 静音蒙层 */
+    const swipeStartIndexForUnmuteRef = useRef(0);
     const didInitialLayoutRef = useRef(false);
     const neighborLegacyAutoplayRef = useRef(false);
     const isDesktop = useMinWidth768();
@@ -187,6 +190,7 @@ export default function VideoVerticalSwiper() {
             return;
         }
         const onPointerDown = (e: PointerEvent) => {
+            swipeStartIndexForUnmuteRef.current = slideStateRef.current.localIndex;
             if ((e.target as Element | null)?.closest('[data-pc-episode-aside]')) {
                 return;
             }
@@ -203,6 +207,9 @@ export default function VideoVerticalSwiper() {
         const onPointerUp = (e: PointerEvent) => {
             slideTouchEnd(e, slideStateRef.current, null, null, null);
             const idx = slideStateRef.current.localIndex;
+            if (!isDesktop && idx !== swipeStartIndexForUnmuteRef.current) {
+                markH5UnmuteOverlaySuppressed();
+            }
             markFullscreenTransition();
             skipLayoutUrlSyncRef.current = true;
             flushSync(() => {
@@ -235,7 +242,7 @@ export default function VideoVerticalSwiper() {
             el.removeEventListener('pointerup', onPointerUp, opts);
             el.removeEventListener('pointercancel', onPointerUp, opts);
         };
-    }, [data, syncNavigateForIndex, markFullscreenTransition]);
+    }, [data, syncNavigateForIndex, markFullscreenTransition, isDesktop]);
 
     const handleSetEpisode = useCallback(
         (index: number) => {
@@ -244,6 +251,7 @@ export default function VideoVerticalSwiper() {
             if (el === null || outer === null || data === undefined) {
                 return;
             }
+            const prev = slideStateRef.current.localIndex;
             markFullscreenTransition();
             let next = index;
             if (next > data.episodes.length - 1) {
@@ -251,6 +259,9 @@ export default function VideoVerticalSwiper() {
             }
             if (next < 0) {
                 next = 0;
+            }
+            if (next !== prev) {
+                markH5UnmuteOverlaySuppressed();
             }
             slideStateRef.current.localIndex = next;
             flushSync(() => {
@@ -345,6 +356,7 @@ export default function VideoVerticalSwiper() {
     useEffect(() => {
         clearEpisodeDetailCache();
         clearEpisodePeekFrameCache();
+        clearH5UnmuteOverlaySuppressed();
         didInitialLayoutRef.current = false;
         setInitialized(false);
     }, [params['id']]);

@@ -404,6 +404,8 @@
     "introduction": "簡介",
     "no_introduction_available": "無簡介",
     "video_tap_to_unmute": "點擊取消靜音",
+    "video_sound_mute": "靜音",
+    "video_sound_unmute": "取消靜音",
     "shopping_pay_status_success": "支付成功",
     "shopping_pay_status_failed": "支付失敗",
     "shopping_pay_status_failed_desc": "請再試一次完成支付",

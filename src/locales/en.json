@@ -404,6 +404,8 @@
     "introduction": "Introduction",
     "no_introduction_available": "No introduction available",
     "video_tap_to_unmute": "Click to unmute",
+    "video_sound_mute": "Mute",
+    "video_sound_unmute": "Unmute",
     "shopping_pay_status_success": "Payment successful",
     "shopping_pay_status_failed": "Payment failed",
     "shopping_pay_status_failed_desc": "Please try to make the payment again",
