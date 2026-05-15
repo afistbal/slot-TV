@@ -12,6 +12,7 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle as DrawerA11yTitle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
+import episodePlayingBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
 
 function pad2(n: number) {
     return String(Math.max(0, Math.floor(n))).padStart(2, '0');
@@ -1041,8 +1042,7 @@ export default function Component() {
                                                             <div className="flex absolute right-2/vw bottom-2/vw w-12/vw h-12/vw">
                                                                 <img
                                                                     alt=""
-                                                                    // 你说“动态的先不改”，这里保留外链
-                                                                    src="https://v-mps.crazymaplestudios.com/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif"
+                                                                    src={episodePlayingBadgeGif}
                                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                                 />
                                                             </div>

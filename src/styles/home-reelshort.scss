@@ -377,8 +377,8 @@
 
 /* 排名/为您推荐：ReelShort 镜像 `fb8bb5c8…css` 中 Slider 分页 + 行内一屏（`www.reelshort.com` 离线图） */
 .home-page {
-    /* 本地：`public/netshort/icon-right-outline.png`（对站 media `icon_right_outline.*.png`） */
-    $reel-pager-icon: url('/netshort/icon-right-outline.png');
+    /* 打包进产物：`src/assets/icons/slider-pager-next.svg`（原 `/netshort/icon-right-outline.png` 依赖 public） */
+    $reel-pager-icon: url('../assets/icons/slider-pager-next.svg');
 
     .HomePage_reelSlider__root.Slider_slider__g_dkb {
         width: 100%;

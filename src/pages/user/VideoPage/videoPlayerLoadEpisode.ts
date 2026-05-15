@@ -143,9 +143,14 @@ export async function runLoadEpisodeForPlayer(
         const isPcViewport =
             typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
         const isReload = isPerformanceNavigationReload();
-        /** 「點擊取消靜音」仅整页刷新（F5）展示；站内跳转（含钱包/首页等）不展示 */
-        const showTapToUnmuteOnMutedAutoplay = isReload;
-        let allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport;
+        /** 带推广/归因等 query（如 `?A100C100`）且未显式禁止自动播：与「无 query 的站内进播放页」一样先试有声，失败再静音并允许展示「取消静音」 */
+        const marketingSoundQuery =
+            typeof location !== 'undefined' &&
+            location.search.length > 1 &&
+            location.search.indexOf('auto_play=0') === -1;
+        /** 「點擊取消靜音」：整页刷新（F5）或带上述 query 的冷链（否则静音后无入口） */
+        const showTapToUnmuteOnMutedAutoplay = isReload || marketingSoundQuery;
+        let allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport || marketingSoundQuery;
         if (isReload && !rt.fromHomeVideoPlayback && !isPcViewport) {
             allowSoundAutoplay = false;
         }
