@@ -4,7 +4,7 @@ import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from './episodeDetailCache';
 import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
 import { SPEED } from './videoPlayerConstants';
-import { hasH5UnmuteOverlaySuppressed, hasVideoSessionUserUnmuted } from './videoSessionMute';
+import { hasVideoSessionUserUnmuted } from './videoSessionMute';
 import { isPerformanceNavigationReload } from './videoPlayerUtils';
 
 export type LoadEpisodeRuntime = {
@@ -156,16 +156,8 @@ export async function runLoadEpisodeForPlayer(
             (isReload ||
                 marketingSoundQuery ||
                 (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
-        /**
-         * H5 全屏蒙层：仅 **站内带行为链进入**（`fromHomeVideoPlayback`）且本会话尚未滑动/切集、用户未主动开声时展示。
-         * 直链 / 刷新 / 外部分享等「非站内栈进入」不展示（仍可用底栏音量图标）。
-         */
-        const showTapToUnmuteH5 =
-            !isPcViewport &&
-            rt.fromHomeVideoPlayback &&
-            !sessionUnmuted &&
-            !hasH5UnmuteOverlaySuppressed();
-        const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc || showTapToUnmuteH5;
+        /** PC 全屏点按开声蒙层（H5 改由 `VideoPlayer` 按 `video.muted` + 底栏音量是否点过控制） */
+        const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
         const allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport || marketingSoundQuery;
         const isColdVideoAutoplay = !allowSoundAutoplay;
 

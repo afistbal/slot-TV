@@ -158,6 +158,8 @@ export function VideoPlayer({
     const [showTapToUnmute, setShowTapToUnmute] = useState(false);
     /** 与 `<video>.muted` 同步，用于底部音量图标（对标 douyin BaseMusic 入口） */
     const [videoMutedUi, setVideoMutedUi] = useState(true);
+    /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
+    const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const fullscreenRestoreInFlightRef = useRef(false);
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
@@ -175,6 +177,15 @@ export function VideoPlayer({
     const isFullscreenUi = shouldKeepFullscreen || pcFullscreen;
     /** 主格与邻格均用 metadata，便于邻格在拖拽时尽快出首帧占位（比 none 少黑屏） */
     const videoPreload: 'none' | 'metadata' = 'metadata';
+
+    /** H5：与 `<video>.muted` 一致且正在播时出全屏点按开声蒙层；用户点过底栏音量后不再出 */
+    const showH5FullscreenUnmuteOverlay =
+        !isDesktop &&
+        videoMutedUi &&
+        playing &&
+        !h5UserDismissedUnmuteOverlay &&
+        episode?.lock === false &&
+        location.search.indexOf('auto_play=0') === -1;
 
     async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
@@ -569,6 +580,9 @@ export function VideoPlayer({
         if (!v || episode?.lock) {
             return;
         }
+        if (!isDesktop) {
+            setH5UserDismissedUnmuteOverlay(true);
+        }
         if (v.muted) {
             handleTapToUnmute();
             return;
@@ -604,6 +618,10 @@ export function VideoPlayer({
             await document.exitFullscreen();
         }
     }
+
+    useEffect(() => {
+        setH5UserDismissedUnmuteOverlay(false);
+    }, [id]);
 
     useEffect(() => {
         if (!sessionBootstrapReady) {
@@ -888,6 +906,18 @@ export function VideoPlayer({
         const onWebkitBeginFullscreen = () => {
             setPcFullscreen(true);
             onFullscreenPrefChange(true);
+            const v = videoRef.current;
+            if (!v || episode?.lock || location.search.indexOf('auto_play=0') !== -1) {
+                return;
+            }
+            /** iOS 系统全屏常在非手势链路上触发，浏览器会静音；在回调栈内尝试恢复有声 */
+            if (v.muted) {
+                v.muted = false;
+                markVideoSessionUserUnmuted();
+                setShowTapToUnmute(false);
+                setVideoMutedUi(false);
+                void v.play().then(() => setPlaying(true)).catch(() => {});
+            }
         };
         /** iOS 退出系统全屏后常会处于 paused；单次 play 常失败，需同步先试一次再短时多次重试。 */
         const resumeInlineAfterNativeFullscreenExit = () => {
@@ -952,7 +982,7 @@ export function VideoPlayer({
                 onWebkitEndFullscreen as EventListener,
             );
         };
-    }, [isDesktop, shouldKeepFullscreen, shouldIgnoreFullscreenExit, onFullscreenPrefChange, episode?.lock]);
+    }, [isDesktop, shouldKeepFullscreen, shouldIgnoreFullscreenExit, onFullscreenPrefChange, episode?.lock, setPlaying, setShowTapToUnmute, setVideoMutedUi]);
 
     useEffect(() => {
         fullscreenRestoreInFlightRef.current = false;
@@ -978,7 +1008,7 @@ export function VideoPlayer({
         fullscreenRestoreInFlightRef.current = true;
         void toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
             preferContainer: true,
-            disableNativeVideoFullscreen: isDesktop,
+            disableNativeVideoFullscreen: isDesktop || fromHomeVideoPlayback,
         })
             .then(() => {
                 const inFullscreen = Boolean(getFullscreenElement());
@@ -1005,6 +1035,7 @@ export function VideoPlayer({
         fullscreenTargetRef,
         onFullscreenPrefChange,
         playbackPolicy,
+        fromHomeVideoPlayback,
     ]);
 
     if (isDesktop) {
@@ -1332,10 +1363,7 @@ export function VideoPlayer({
                     ))}
                 </video>
                 {!isDesktop &&
-                    showTapToUnmute &&
-                    playing &&
-                    episode?.lock === false &&
-                    location.search.indexOf('auto_play=0') === -1 && (
+                    showH5FullscreenUnmuteOverlay && (
                         <button
                             type="button"
                             className="absolute inset-0 z-[25] flex cursor-pointer items-center justify-center border-0 bg-black/35 px-6 p-0"
@@ -1370,7 +1398,7 @@ export function VideoPlayer({
                     className={cn(
                         'video-player-ui relative w-full h-full transition-opacity duration-300 ease-linear',
                         /** 与 PC 一致：静音蒙层出现时勿让全屏控制层挡在「取消静音」之上 */
-                        showTapToUnmute && 'pointer-events-none',
+                        showH5FullscreenUnmuteOverlay && 'pointer-events-none',
                     )}
                     ref={controllerRef}
                     onClick={handleControllerTouchStart}
@@ -1407,7 +1435,7 @@ export function VideoPlayer({
                     )}
                     {canPlay &&
                         episode?.lock === false &&
-                        !showTapToUnmute &&
+                        !showH5FullscreenUnmuteOverlay &&
                         !playing && (
                             <div
                                 className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto cursor-pointer"
