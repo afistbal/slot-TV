@@ -481,23 +481,23 @@
     .HomePage_reelSlider__root .Slider_nextButton__a5KCv {
         right: 0;
         top: 50%;
-        /* 整颗移到轨道右侧外，避免压住末列卡片（原先 translateX(50%) 使半颗叠在内容上） */
-        transform: translateY(-50%) translateX(calc(100% + min(0.75vw, 14px)));
+        /* 半颗压在轨道右缘（Slider_sliderContainer），对标 ReelShort */
+        transform: translateY(-50%) translateX(50%);
     }
 
     .HomePage_reelSlider__root .Slider_prevButton__5XAPR {
         left: 0;
         top: 50%;
-        transform: translateY(-50%) translateX(calc(-100% - min(0.75vw, 14px))) scaleX(-1);
+        transform: translateY(-50%) translateX(-50%) scaleX(-1);
     }
 
     @media screen and (max-width: 1766.88px) {
         .HomePage_reelSlider__root .Slider_nextButton__a5KCv {
-            right: min(4vw, 56px);
+            right: 0;
         }
 
         .HomePage_reelSlider__root .Slider_prevButton__5XAPR {
-            left: min(4vw, 56px);
+            left: 0;
         }
     }
 

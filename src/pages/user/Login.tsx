@@ -170,7 +170,7 @@ function useLoginBase(
             localStorage.setItem('login-method', 'email');
             localStorage.removeItem('user-avatar');
             userStore.signin(result.d['info'] as { [key: string]: unknown });
-            pixel.track('Register');
+            pixel.track('emailLogin');
 
             closePcLoginModal();
             navigate(profilePathAfterLogin, { replace: true, state: {} });
@@ -293,7 +293,7 @@ function useLoginBase(
                 }),
             );
             loadingStore.hide();
-            pixel.track('Register');
+            pixel.track('GoogleLogin');
             closePcLoginModal();
             navigate(profilePathAfterLogin, { replace: true, state: {} });
         } catch {
@@ -363,7 +363,7 @@ function useLoginBase(
                     id: 'login_success',
                 }),
             );
-            pixel.track('Register');
+            pixel.track('GoogleLogin');
             closePcLoginModal();
             navigate(profilePathAfterLogin, { replace: true, state: {} });
         } catch (error: unknown) {

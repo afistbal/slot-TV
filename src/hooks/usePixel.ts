@@ -47,12 +47,35 @@ class Pixel {
 
 const singleton = new Pixel();
 let initialized = false;
+let pendingAnonymousCompleteRegistration = false;
+let pixelReady = false;
+
+function flushAnonymousCompleteRegistration() {
+    if (!pendingAnonymousCompleteRegistration || !pixelReady) {
+        return;
+    }
+    pendingAnonymousCompleteRegistration = false;
+    singleton.track('CompleteRegistration');
+}
+
+/** `login/anonymous` 成功时调用；若 Pixel 尚未 init，会在 init 完成后补发 */
+export function trackAnonymousCompleteRegistration() {
+    pendingAnonymousCompleteRegistration = true;
+    flushAnonymousCompleteRegistration();
+}
+
+function markPixelReady() {
+    pixelReady = true;
+    flushAnonymousCompleteRegistration();
+}
 
 export async function init(config: { [key: string]: unknown }) {
     if (!config['analyzation']) {
+        markPixelReady();
         return;
     }
     if (initialized) {
+        markPixelReady();
         return;
     }
 
@@ -80,19 +103,21 @@ export async function init(config: { [key: string]: unknown }) {
     const analyzation = config['analyzation'] as { type: 'facebook' | 'tiktok' | '', id: string };
     if (analyzation.type === '') {
         initialized = true;
+        markPixelReady();
         return;
     }
 
     switch (analyzation.type) {
         case 'facebook':
-            initializeFacebookPixel(analyzation.id);
+            await initializeFacebookPixel(analyzation.id);
             break;
         case 'tiktok':
-            intitalizeTiktokPixel(analyzation.id);
+            await intitalizeTiktokPixel(analyzation.id);
             break;
     }
 
     initialized = true;
+    markPixelReady();
 }
 
 const usePixel = () => {
