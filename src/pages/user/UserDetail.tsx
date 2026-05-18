@@ -1,10 +1,7 @@
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useUserStore } from '@/stores/user';
 import { toast } from 'sonner';
-import { useLoadingStore } from '@/stores/loading';
-import { auth } from '@/firebase';
-import { api } from '@/api';
-import { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
+import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
 import { useNavigate } from 'react-router';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { Page } from '@/layouts/user';
@@ -13,7 +10,6 @@ import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 export default function Component({ embedded = false }: { embedded?: boolean } = {}) {
   const intl = useIntl();
   const userStore = useUserStore();
-  const loadingStore = useLoadingStore();
   const navigate = useNavigate();
   const isPc = useMinWidth768();
 
@@ -26,35 +22,14 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
   }
 
   async function handleLogout() {
-    try {
-      loadingStore.show();
-      if (isPc) {
-        navigate('/profile', { state: { openPcLogin: true }, replace: true });
-      } else {
-        navigate('/page/login', { replace: true });
-      }
-      localStorage.removeItem('token');
-      localStorage.removeItem('login-method');
-      localStorage.removeItem('user-avatar');
-
-      // @ts-expect-error - injected by Flutter InAppWebView
-      if (window.flutter_inappwebview) {
-        // @ts-expect-error - injected by Flutter InAppWebView
-        await window.flutter_inappwebview.callHandler('logout');
-      } else {
-        await auth.signOut();
-      }
-
-      const result = await api<{ token: string; info: { [key: string]: unknown } }>('login/anonymous', {
-        loading: false,
-      });
-      if (result.c !== 0) return;
-
-      localStorage.setItem('token', result.d['token'] as string);
-      userStore.signin(result.d['info'] as { [key: string]: unknown });
-      trackAnonymousCompleteRegistration();
-    } finally {
-      loadingStore.hide();
+    const ok = await logoutToAnonymousSession();
+    if (!ok) {
+      return;
+    }
+    if (isPc) {
+      navigate('/profile', { state: { openPcLogin: true }, replace: true });
+    } else {
+      navigate('/page/login', { replace: true });
     }
   }
 

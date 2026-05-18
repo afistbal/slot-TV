@@ -4,7 +4,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { cn } from '@/lib/utils';
 import { api, type IPagination, type TData } from '@/api';
-import { auth } from '@/firebase';
 import { ReelShortNavDrawer } from '@/components/ReelShortNavDrawer';
 import {
   DropdownMenu,
@@ -12,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useUserStore } from '@/stores/user';
-import { useLoadingStore } from '@/stores/loading';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
@@ -26,7 +24,8 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
-import usePixel, { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
+import usePixel from '@/hooks/usePixel';
+import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
 import { prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
@@ -598,7 +597,6 @@ function NavProfileAvatar() {
   const intl = useIntl();
   const navigate = useNavigate();
   const userStore = useUserStore();
-  const loadingStore = useLoadingStore();
   const isSignedUser = userStore.signed && !userStore.isAnonymous();
   const avatar =
     isSignedUser
@@ -677,38 +675,14 @@ function NavProfileAvatar() {
   }
 
   async function handleLogout() {
-    try {
-      loadingStore.show();
-      if (isDesktop) {
-        navigate('/profile', { state: { openPcLogin: true }, replace: true });
-      } else {
-        navigate('/page/login');
-      }
-      localStorage.removeItem('token');
-      localStorage.removeItem('login-method');
-      localStorage.removeItem('user-avatar');
-
-      // @ts-expect-error - injected by Flutter InAppWebView
-      if (window.flutter_inappwebview) {
-        // @ts-expect-error - injected by Flutter InAppWebView
-        await window.flutter_inappwebview.callHandler('logout');
-      } else {
-        await auth.signOut();
-      }
-
-      const result = await api<{ token: string; info: { [key: string]: unknown } }>('login/anonymous', {
-        loading: false,
-      });
-
-      if (result.c !== 0) {
-        return;
-      }
-
-      localStorage.setItem('token', result.d['token'] as string);
-      userStore.signin(result.d['info'] as { [key: string]: unknown });
-      trackAnonymousCompleteRegistration();
-    } finally {
-      loadingStore.hide();
+    const ok = await logoutToAnonymousSession();
+    if (!ok) {
+      return;
+    }
+    if (isDesktop) {
+      navigate('/profile', { state: { openPcLogin: true }, replace: true });
+    } else {
+      navigate('/page/login');
     }
   }
 

@@ -24,11 +24,9 @@ import { cn } from '@/lib/utils';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api, type TData } from '@/api';
-import { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
+import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
-import { useLoadingStore } from '@/stores/loading';
-import { auth } from '@/firebase';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import RadixRc from '@/pages/user/RadixRc';
 import FeedbackPanel from '@/pages/user/Feedback';
@@ -45,7 +43,6 @@ export default function Component() {
     const [searchParams, setSearchParams] = useSearchParams();
     const location = useLocation();
     const sourceform = `${location.pathname}${location.search}`;
-    const loadingStore = useLoadingStore();
     const [vip, setVip] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPc = useMinWidth768();
@@ -172,47 +169,26 @@ export default function Component() {
     }, [isPc, searchParams, setSearchParams]);
 
     useEffect(() => {
-        if (!sessionBootstrapReady) {
+        if (!sessionBootstrapReady || !localStorage.getItem('token')) {
             return;
         }
         api<number>('user/balance', {
             loading: false,
+            toastOnError: false,
         }).then((res) => {
-            useUserStore.getState().setBalance(res.d);
+            if (res.c === 0) {
+                useUserStore.getState().setBalance(res.d);
+            }
         });
     }, [sessionBootstrapReady]);
 
     async function handleLogout() {
-        try {
-            loadingStore.show();
-            localStorage.removeItem('token');
-            localStorage.removeItem('login-method');
-            localStorage.removeItem('user-avatar');
-
-            // @ts-expect-error - injected by Flutter InAppWebView
-            if (window.flutter_inappwebview) {
-                // @ts-expect-error - injected by Flutter InAppWebView
-                await window.flutter_inappwebview.callHandler('logout');
-            } else {
-                await auth.signOut();
-            }
-
-            const result = await api<{ token: string; info: { [key: string]: unknown } }>(
-                'login/anonymous',
-                {
-                    loading: false,
-                },
-            );
-
-            if (result.c !== 0) {
-                return;
-            }
-
-            localStorage.setItem('token', result.d['token'] as string);
-            userStore.signin(result.d['info'] as { [key: string]: unknown });
-            trackAnonymousCompleteRegistration();
-        } finally {
-            loadingStore.hide();
+        const ok = await logoutToAnonymousSession();
+        if (!ok) {
+            return;
+        }
+        if (isPc) {
+            setPcLoginOpen(true);
         }
     }
 
