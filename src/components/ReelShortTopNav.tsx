@@ -26,7 +26,7 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
-import usePixel from '@/hooks/usePixel';
+import usePixel, { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
 import { prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
@@ -706,6 +706,7 @@ function NavProfileAvatar() {
 
       localStorage.setItem('token', result.d['token'] as string);
       userStore.signin(result.d['info'] as { [key: string]: unknown });
+      trackAnonymousCompleteRegistration();
     } finally {
       loadingStore.hide();
     }

@@ -23,7 +23,7 @@ import { Button } from "./components/ui/button";
 import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
-import {init as initPixel} from './hooks/usePixel';
+import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/usePixel';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
 import enMessages from './locales/en.json';
@@ -470,6 +470,7 @@ function App() {
                     localStorage.setItem('token', anon.d['token'] as string);
                     useUserStore.getState().signin(anon.d['info'] as TData);
                     useRootStore.getState().setSessionBootstrapReady(true);
+                    trackAnonymousCompleteRegistration();
                     return;
                 }
                 const anon = await api<TData>('login/anonymous', {
@@ -484,6 +485,7 @@ function App() {
                 localStorage.setItem('token', anon.d['token'] as string);
                 useUserStore.getState().signin(anon.d['info'] as TData);
                 useRootStore.getState().setSessionBootstrapReady(true);
+                trackAnonymousCompleteRegistration();
             } catch {
                 /* 会话失败时保持 sessionBootstrapReady=false */
             }

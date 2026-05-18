@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useLoadingStore } from '@/stores/loading';
 import { auth } from '@/firebase';
 import { api } from '@/api';
+import { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
 import { useNavigate } from 'react-router';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { Page } from '@/layouts/user';
@@ -51,6 +52,7 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
 
       localStorage.setItem('token', result.d['token'] as string);
       userStore.signin(result.d['info'] as { [key: string]: unknown });
+      trackAnonymousCompleteRegistration();
     } finally {
       loadingStore.hide();
     }

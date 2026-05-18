@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type IPagination, type TData } from '@/api';
 import { useConfigStore } from '@/stores/config';
 import { useUserStore } from '@/stores/user';
+import { init as initPixel, trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
 
 /**
  * 限制「扫描影片」最多请求的页数。`null` = 拉全部分页（上线全量时用）。
@@ -27,6 +28,7 @@ async function ensureApiBootstrap() {
         }
         configStore.setConfig(cfg.d);
     }
+    void initPixel(configStore.config);
     if (!localStorage.getItem('token')) {
         const anon = await api<TData>('login/anonymous', { loading: false });
         if (anon.c !== 0) {
@@ -34,6 +36,7 @@ async function ensureApiBootstrap() {
         }
         localStorage.setItem('token', anon.d['token'] as string);
         useUserStore.getState().signin(anon.d['info'] as TData);
+        trackAnonymousCompleteRegistration();
     }
 }
 

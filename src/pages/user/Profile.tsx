@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api, type TData } from '@/api';
+import { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useLoadingStore } from '@/stores/loading';
@@ -209,6 +210,7 @@ export default function Component() {
 
             localStorage.setItem('token', result.d['token'] as string);
             userStore.signin(result.d['info'] as { [key: string]: unknown });
+            trackAnonymousCompleteRegistration();
         } finally {
             loadingStore.hide();
         }
