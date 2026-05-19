@@ -5,10 +5,10 @@ export const skipRemoteApi = import.meta.env.VITE_SKIP_API === 'true';
 export const showPwaInstallPrompt = import.meta.env.VITE_PWA_INSTALL_PROMPT === 'true';
 
 /**
- * ReelShort 无底部 Tab；设为 `true` 可恢复旧版三栏底栏（需重启 dev / 重构建）。
- * 默认 `false` = 隐藏底栏，对齐 ReelShort。
+ * H5 底部四栏 Tab；设为 `false` 可关闭（`VITE_BOTTOM_TAB_BAR=false`，需重启 dev / 重构建）。
+ * 默认开启，对齐 YogoShort 底栏。
  */
-export const showBottomTabBar = import.meta.env.VITE_BOTTOM_TAB_BAR === 'true';
+export const showBottomTabBar = import.meta.env.VITE_BOTTOM_TAB_BAR !== 'false';
 
 /**
  * 可选：分享链接基础域名（用于开发环境替换 localhost）。

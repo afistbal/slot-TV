@@ -54,6 +54,7 @@ import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
 import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
+import DemoDouyinHome from './pages/demo/index';
 import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
 
 import LayoutAdmin from './layouts/admin';
@@ -73,7 +74,6 @@ import AdminWeeklyUpdateTable from './pages/admin/WeeklyUpdateTable';
 import NotFound from './pages/NotFound';
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
-import { useMinWidth768 } from "@/hooks/useMinWidth768";
 
 /** 旧书签 `/page/checkout/:id`、已废弃的整页收银 → 购物页 */
 function LegacyCheckoutToShoppingRedirect() {
@@ -214,6 +214,10 @@ const router = createBrowserRouter([
             {
                 path: 'test',
                 element: <UserTest />,
+            },
+            {
+                path: 'for-you',
+                element: <DemoDouyinHome />,
             },
         ],
     },
@@ -396,7 +400,6 @@ function getInitialIntlMessages(): TIntlMessages {
 
 function App() {
     const pixel = usePixel();
-    const mdUp = useMinWidth768();
     const pathname = useWindowPathname();
     const rootStore = useRootStore();
     const rootShowInstallPrompt = useRootStore((state) => state.showInstallPrompt);
@@ -714,9 +717,6 @@ function App() {
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =
         install > 0 && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;
-    /** 底部固定安装条 + root 垫高仅窄屏需要；PC（md+）用顶栏下载入口，避免多 60px padding。 */
-    const showPwaBottomBar = showInstallPrompt && !mdUp;
-
     useEffect(() => {
         if (rootShowInstallPrompt !== showInstallPrompt) {
             setRootShowInstallPrompt(showInstallPrompt);
@@ -726,38 +726,8 @@ function App() {
     return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
         <div
             className={cn('root', `root-${rootStore.theme}`)}
-            style={showPwaBottomBar ? { paddingBottom: '60px' } : undefined}
         >
-            {showPwaBottomBar && (
-                <div className="pwa-install-shell pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center">
-                    <div
-                        id="install"
-                        className="pwa-install w-full max-w-[480px]"
-                    >
-                        <div className="pwa-install__left">
-                            <div className="pwa-install__logoWrap">
-                                <img
-                                    alt="logo"
-                                    src="/logo.png"
-                                    className="pwa-install__logo"
-                                    loading="lazy"
-                                />
-                            </div>
-                            <div className="pwa-install__text">
-                                <FormattedMessage id="add_desktop" />
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            className="pwa-install__btn pwa-install-open-btn"
-                            onClick={handleExecuteInstall}
-                        >
-                            <FormattedMessage id="pwa_open" />
-                        </button>
-                    </div>
-                </div>
-            )}
-            {showInstallPrompt && mdUp ? (
+            {showInstallPrompt ? (
                 <button
                     type="button"
                     className="pwa-install-open-btn fixed top-0 left-0 h-px w-px overflow-hidden opacity-0"

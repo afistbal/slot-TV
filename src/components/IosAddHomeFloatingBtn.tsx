@@ -20,12 +20,12 @@ export function IosAddHomeFloatingBtn() {
             to="/page/ios-add-home"
             className="ios-pwa-add-btn"
             role="button"
-            aria-label="Add to Home Screen"
+            aria-label="Add to Desktop"
             onClick={() => pixel.track('Download')}
         >
             <img className="ios-pwa-add-btn__icon" src={BRAND_LOGO_SRC} alt="" loading="lazy" />
             <span className="ios-pwa-add-btn__text">
-                <FormattedMessage id="ios_add_home_fab_text" />
+                <FormattedMessage id="add_desktop_short" />
             </span>
         </Link>
     );

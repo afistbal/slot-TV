@@ -1,0 +1,141 @@
+/**
+ * H5 底部：黑色 Tab 栏（fixed 贴底）+ 独立「添加桌面」胶囊（透明底，浮在 Tab 上方）
+ */
+
+:root {
+    --rs-bottom-tab-inner-height: calc(var(--rs-vw, min(100vw, 480px)) * 50 / 375);
+    --rs-bottom-tab-safe: env(safe-area-inset-bottom, 0px);
+    --rs-bottom-tab-bar-height: calc(var(--rs-bottom-tab-inner-height) + var(--rs-bottom-tab-safe));
+    --rs-bottom-add-gap: calc(var(--rs-vw, min(100vw, 480px)) * 10 / 375);
+    --rs-bottom-add-btn-height: calc(var(--rs-vw, min(100vw, 480px)) * 40 / 375);
+    /* 仅 Tab 栏占位；「添加桌面」胶囊 fixed 浮层，不计入页面 padding */
+    --rs-bottom-nav-stack: var(--rs-bottom-tab-bar-height);
+}
+
+html.has-rs-bottom-nav .root {
+    padding-bottom: var(--rs-bottom-nav-stack);
+}
+
+/* 仅 Tab 栏：贴底、黑底 */
+.reelshort-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    background: transparent;
+}
+
+.reelshort-bottom-nav__tabs {
+    pointer-events: auto;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 480px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: stretch;
+    min-height: var(--rs-bottom-tab-inner-height);
+    padding-top: calc(var(--rs-vw, min(100vw, 480px)) * 6 / 375);
+    padding-bottom: var(--rs-bottom-tab-safe);
+    background: #000;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.reelshort-bottom-nav__tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--rs-vw, min(100vw, 480px)) * 2 / 375);
+    padding: calc(var(--rs-vw, min(100vw, 480px)) * 2 / 375) 0;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.55);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.reelshort-bottom-nav__tab--active {
+    color: #ff3d5d;
+}
+
+.reelshort-bottom-nav__tab-icon {
+    width: calc(var(--rs-vw, min(100vw, 480px)) * 24 / 375);
+    height: calc(var(--rs-vw, min(100vw, 480px)) * 24 / 375);
+    object-fit: contain;
+}
+
+.reelshort-bottom-nav__tab-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: calc(var(--rs-vw, min(100vw, 480px)) * 10 / 375);
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+/* 「添加桌面」：与 Tab 栏分离的独立层，无黑底 */
+.reelshort-bottom-nav-add {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--rs-bottom-tab-bar-height) + var(--rs-bottom-add-gap));
+    z-index: 101;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    background: transparent;
+}
+
+.reelshort-bottom-nav__add {
+    pointer-events: auto;
+    box-sizing: border-box;
+    display: inline-flex;
+    width: auto;
+    max-width: min(calc(100vw - 32px), 480px);
+    height: var(--rs-bottom-add-btn-height);
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--rs-vw, min(100vw, 480px)) * 6 / 375);
+    margin: 0;
+    padding: 0 calc(var(--rs-vw, min(100vw, 480px)) * 18 / 375);
+    border: 0;
+    border-radius: calc(var(--rs-vw, min(100vw, 480px)) * 40 / 375);
+    background: linear-gradient(90deg, #fd36bc 0%, #fd3a5a 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.reelshort-bottom-nav__add:active {
+    transform: translateY(1px);
+}
+
+.reelshort-bottom-nav__add-icon {
+    flex: 0 0 auto;
+    width: auto;
+    height: calc(var(--rs-vw, min(100vw, 480px)) * 22 / 375);
+    object-fit: contain;
+}
+
+.reelshort-bottom-nav__add-text {
+    flex: 0 1 auto;
+    white-space: nowrap;
+    font-size: calc(var(--rs-vw, min(100vw, 480px)) * 13 / 375);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+    .reelshort-bottom-nav,
+    .reelshort-bottom-nav-add {
+        display: none;
+    }
+
+    html.has-rs-bottom-nav .root {
+        padding-bottom: 0;
+    }
+}

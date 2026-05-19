@@ -171,13 +171,24 @@ export default function Component() {
     /** 与 `layouts/user` keep-alive 一致：非 `/` 时 DOM 仍挂载，须停 Banner 自动轮播避免离屏耗电 */
     const isHomeRouteActive = matchPath({ path: '/', end: true }, location.pathname) != null;
     const mdUp = useMinWidth768();
-    const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
-    /** 与 App `showPwaBottomBar` 一致：窄屏且展示 Chromium 底栏时，回顶钮需抬高避免被 z-[100] 条盖住 */
-    const liftScrollFabForPwaH5 = !mdUp && showInstallPrompt;
+    /** 窄屏底栏（Tab + 可选「添加桌面」）时抬高回顶钮，避免被 `ReelShortBottomNav` 挡住 */
+    const liftScrollFabForBottomNav = !mdUp;
     const configStore = useConfigStore();
     const homeStore = useHomeStore();
     const scrollRef = useRef<HTMLDivElement>(null);
+    /** H5 首页顶栏：仅 Logo + Home/Categories + 搜索；PC 保留汉堡/语言/头像 */
+    const homeTopNavProps = useMemo(
+        () => ({
+            scrollParentRef: scrollRef,
+            showPrimaryNav: true as const,
+            showLeftAction: mdUp,
+            showProfile: mdUp,
+            showLanguage: mdUp,
+            showHistory: mdUp,
+        }),
+        [mdUp],
+    );
     const searching = useRef(false);
     const requesting = useRef(false);
     const didRestoreScrollRef = useRef(false);
@@ -430,7 +441,7 @@ export default function Component() {
                     className="home-page__scroll relative z-[1] flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
                     ref={scrollRef}
                 >
-                    <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
+                    <ReelShortTopNav {...homeTopNavProps} />
                     <div
                         className={cn('min-h-0 flex-1', mdUp ? 'bg-[#151314]' : 'bg-black')}
                         aria-hidden
@@ -495,7 +506,7 @@ export default function Component() {
                         aria-hidden
                     />
                     <div className="relative z-[2] w-full min-w-0 max-w-full">
-                        <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
+                        <ReelShortTopNav {...homeTopNavProps} />
                         <div className="h-10"></div>
                         <div className="min-w-0 max-w-full overflow-x-clip">
                             <NetShortPcCoverflowHero goHeroIndex={goHeroIndex} />
@@ -504,7 +515,7 @@ export default function Component() {
                 </div>
             ) : (
                 <>
-                    <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
+                    <ReelShortTopNav {...homeTopNavProps} />
                     <div className="h-10"></div>
                 </>
             )}
@@ -722,8 +733,8 @@ export default function Component() {
                         scrollTopFabOpaque ? 'opacity-100' : 'pointer-events-none opacity-0',
                         'right-6',
                         /* 60px：与 pwa-install 条高度一致，整体上移避免被 z-[100] 底栏压住 */
-                        liftScrollFabForPwaH5
-                            ? 'bottom-[calc(60px+max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1.5rem)))]'
+                        liftScrollFabForBottomNav
+                            ? 'bottom-[calc(var(--rs-bottom-nav-stack,0px)+1.5rem)]'
                             : 'bottom-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]',
                         'md:bottom-12 md:right-6 md:z-[99]',
                     )}

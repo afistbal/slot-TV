@@ -815,6 +815,10 @@ export type ReelShortTopNavProps = {
   showSearch?: boolean;
   /** 是否展示右侧头像（跳转 profile）入口 */
   showProfile?: boolean;
+  /** 是否展示语言切换 */
+  showLanguage?: boolean;
+  /** 是否展示观看历史（PC 顶栏；H5 本身不渲染） */
+  showHistory?: boolean;
   /** PC 账户页：右侧仅保留 Desktop 下载入口（窄屏仍为 default 全套按钮） */
   rightActionsMode?: 'default' | 'profilePc';
 };
@@ -828,6 +832,8 @@ export function ReelShortTopNav({
   showLeftAction = true,
   showSearch = showPrimaryNav,
   showProfile = true,
+  showLanguage = true,
+  showHistory = true,
   rightActionsMode = 'default',
 }: ReelShortTopNavProps = {}) {
   const isMd = useMinWidth768();
@@ -971,8 +977,8 @@ export function ReelShortTopNav({
                       </div>
                     ) : null}
                     <TopNavInstallEntry />
-                    <TopNavHistoryEntry />
-                    <TopNavLanguageSwitcher />
+                    {showHistory ? <TopNavHistoryEntry /> : null}
+                    {showLanguage ? <TopNavLanguageSwitcher /> : null}
                     {showProfile ? <NavProfileAvatar /> : null}
                   </>
                 )}

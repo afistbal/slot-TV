@@ -361,7 +361,6 @@ export default function Component() {
     const intl = useIntl();
     const location = useLocation();
     const configStore = useConfigStore();
-    const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const timer = useRef(0);
     const requesting = useRef(false);
@@ -375,8 +374,8 @@ export default function Component() {
     /** 折疊態下僅渲染前 n 個標籤 + 展開鈕，使鈕緊跟最後可見 tag */
     const [pcCollapsedVisibleCount, setPcCollapsedVisibleCount] = useState<number | null>(null);
     const isPc = useMinWidth768();
-    /** 与 App `showPwaBottomBar` 一致：窄屏 PWA 底栏时回顶钮抬高 */
-    const liftScrollFabForPwaH5 = !isPc && showInstallPrompt;
+    /** 窄屏底栏（Tab + 可选「添加桌面」）时抬高回顶钮 */
+    const liftScrollFabForBottomNav = !isPc;
 
     const [scrollTopFabMounted, setScrollTopFabMounted] = useState(false);
     const [scrollTopFabOpaque, setScrollTopFabOpaque] = useState(true);
@@ -1199,8 +1198,8 @@ export default function Component() {
                         'hover:bg-[#d42d4c] active:scale-[0.96]',
                         scrollTopFabOpaque ? 'opacity-100' : 'pointer-events-none opacity-0',
                         'right-6',
-                        liftScrollFabForPwaH5
-                            ? 'bottom-[calc(60px+max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1.5rem)))]'
+                        liftScrollFabForBottomNav
+                            ? 'bottom-[calc(var(--rs-bottom-nav-stack,0px)+1.5rem)]'
                             : 'bottom-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]',
                         'md:bottom-12 md:right-6 md:z-[99]',
                     )}
