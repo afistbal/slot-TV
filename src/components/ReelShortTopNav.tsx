@@ -27,6 +27,7 @@ import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
 import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
 import { prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -802,6 +803,8 @@ function NavProfileAvatar() {
 
 const HEADER_SCROLL_SOLID_THRESHOLD = 4;
 
+export type ReelShortTopNavLeftAction = 'menu' | 'back' | 'none';
+
 export type ReelShortTopNavProps = {
   /** 实际滚动的祖先节点（如首页 `overflow-y-auto` 容器）；在顶部透明，滚动后出现画布背景 */
   scrollParentRef?: RefObject<HTMLElement | null>;
@@ -809,8 +812,14 @@ export type ReelShortTopNavProps = {
   showPrimaryNav?: boolean;
   /** 内页标题左侧是否显示品牌 icon */
   showTitleIcon?: boolean;
-  /** 是否展示左侧菜单/返回按钮 */
+  /** 左侧：汉堡菜单 / 返回 / 无（优先于 showLeftAction） */
+  leftAction?: ReelShortTopNavLeftAction;
+  /** @deprecated 请用 leftAction；false 等价于 leftAction="none" */
   showLeftAction?: boolean;
+  /** leftAction="back" 时点击回调，默认 navigate(-1) */
+  onBackClick?: () => void;
+  /** 是否展示右侧操作区（搜索/下载/语言/历史/头像等） */
+  showRightActions?: boolean;
   /** 是否展示搜索入口 */
   showSearch?: boolean;
   /** 是否展示右侧头像（跳转 profile）入口 */
@@ -829,7 +838,10 @@ export type ReelShortTopNavProps = {
 export function ReelShortTopNav({
   scrollParentRef,
   showPrimaryNav = false,
+  leftAction: leftActionProp,
   showLeftAction = true,
+  onBackClick,
+  showRightActions = true,
   showSearch = showPrimaryNav,
   showProfile = true,
   showLanguage = true,
@@ -837,11 +849,27 @@ export function ReelShortTopNav({
   rightActionsMode = 'default',
 }: ReelShortTopNavProps = {}) {
   const isMd = useMinWidth768();
+  const navigate = useNavigate();
   const profilePcActions = rightActionsMode === 'profilePc' && isMd;
   const intl = useIntl();
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerSolid, setHeaderSolid] = useState(false);
   const allowTransparent = showPrimaryNav;
+  const leftAction: ReelShortTopNavLeftAction =
+    leftActionProp ?? (showLeftAction === false ? 'none' : 'menu');
+  const isLtr = typeof document !== 'undefined' && document.body.style.direction === 'ltr';
+
+  function handleBack() {
+    if (onBackClick) {
+      onBackClick();
+      return;
+    }
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/');
+  }
 
   useLayoutEffect(() => {
     // 只有首页（展示 primary nav）才允许顶部透明覆盖 Banner。
@@ -916,7 +944,7 @@ export function ReelShortTopNav({
         <div className="reelshort-topnav__inner">
           <div className="reelshort-topnav__row">
             <div className="reelshort-topnav__left">
-              {showLeftAction ? (
+              {leftAction === 'menu' ? (
                 <button
                   type="button"
                   className="reelshort-topnav__menu-btn"
@@ -924,6 +952,20 @@ export function ReelShortTopNav({
                   aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
                 >
                   <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
+                </button>
+              ) : null}
+              {leftAction === 'back' ? (
+                <button
+                  type="button"
+                  className="reelshort-topnav__menu-btn"
+                  onClick={handleBack}
+                  aria-label={intl.formatMessage({ id: 'back', defaultMessage: 'Back' })}
+                >
+                  {isLtr ? (
+                    <ChevronLeft className="reelshort-topnav__back-icon h-6 w-6" aria-hidden />
+                  ) : (
+                    <ChevronRight className="reelshort-topnav__back-icon h-6 w-6" aria-hidden />
+                  )}
                 </button>
               ) : null}
             </div>
@@ -969,7 +1011,7 @@ export function ReelShortTopNav({
               <div className="reelshort-topnav__actions">
                 {profilePcActions ? (
                   <TopNavInstallEntry />
-                ) : (
+                ) : showRightActions ? (
                   <>
                     {showSearch ? (
                       <div className="reelshort-topnav__search">
@@ -981,7 +1023,7 @@ export function ReelShortTopNav({
                     {showLanguage ? <TopNavLanguageSwitcher /> : null}
                     {showProfile ? <NavProfileAvatar /> : null}
                   </>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -1001,7 +1043,7 @@ export function ReelShortTopNav({
                 <FormattedMessage id="home" />
               </NavLink>
               <NavLink
-                to="/search"
+                to={isMd ? '/search' : '/categories'}
                 onPointerEnter={prefetchSearchRouteChunk}
                 onPointerDown={prefetchSearchRouteChunk}
                 className={({ isActive }) =>

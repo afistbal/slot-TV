@@ -21,6 +21,7 @@
 
     &__barPad {
         padding-top: calc(10 / 375 * var(--app-vw));
+        padding-bottom: calc(14 / 375 * var(--app-vw));
     }
 
     &__bar {
@@ -46,7 +47,6 @@
         width: 100%;
         align-items: center;
         border-radius: min(2.13vw, 8px);
-        border: 1px solid rgba(255, 255, 255, 0.5);
         background: rgba(255, 255, 255, 0.1);
         padding: 0 min(3.2vw, 0.75rem);
 
@@ -118,6 +118,112 @@
         flex-direction: column;
     }
 
+    /** H5 /categories：选中标签粉色渐变（须覆盖下方 &__tag--active 的 !important） */
+    &--categories {
+        .rs-search-page__tag--active {
+            border-color: transparent !important;
+            background: #FF3D5D !important;
+            color: #fff !important;
+            border-radius: 40px
+        }
+    }
+
+    &__categoriesPanel {
+        padding-bottom: 4px;
+    }
+
+    &__categoriesHeading,
+    &__popularHeading {
+        margin: 0;
+        font-family: Roboto, Roboto;
+        font-weight: 900;
+        padding: 0 16px 12px;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.25;
+        color: #fff;
+    }
+
+    &__popularHeading {
+        padding-top: 4px;
+    }
+
+    &__tagSearchHeading {
+        padding: 12px 16px 16px;
+    }
+
+    &__tagSearchTitleRow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    &__tagSearchIcon {
+        width: 18px;
+        height: 18;
+        flex-shrink: 0;
+        object-fit: contain;
+    }
+
+    &__tagSearchTitle {
+        margin: 0;
+        min-width: 0;
+        font-family: Roboto, Roboto;
+        font-weight: 500;
+        font-size: 16px;
+        color: #FFFFFF;
+    }
+
+    &__tagSearchMeta {
+        margin: 6px 0 0;
+        font-family: Roboto, Roboto;
+        font-weight: 400;
+        font-size: 12px;
+        color: #999999;
+    }
+
+    /** H5 分類：與 PC 相同，折疊態由 JS 控制渲染行數，展開鈕跟在末尾 tag 後 */
+    &__categoriesTags {
+        --rs-search-categories-tags-collapsed-max: calc(2 * (1.25rem + 8px) + 8px);
+
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        align-content: flex-start;
+        gap: 8px;
+        padding: 0 16px 16px;
+    }
+
+    &__categoriesTagsToggle {
+        box-sizing: border-box;
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 4px;
+        cursor: pointer;
+        border: 0;
+        color: #999999;
+        -webkit-tap-highlight-color: transparent;
+
+        &--expanded {
+            .rs-search-page__categoriesTagsToggleSvg {
+                transform: rotate(180deg);
+            }
+        }
+    }
+
+    &__categoriesTagsToggleSvg {
+        display: block;
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+        transition: transform 0.2s ease;
+    }
+
     &__tagRow {
         display: flex;
         flex-wrap: wrap;
@@ -137,13 +243,8 @@
         padding: 4px 8px;
         font-size: 14px;
         line-height: 1.25rem;
-        color: #fff;
-        background-color: hsla(0, 0%, 100%, 0.12);
-        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-
-        &:hover {
-            background-color: hsla(0, 0%, 100%, 0.18);
-        }
+        color: #999999;
+        transition: border-color 0.15s ease, color 0.15s ease;
 
         &--active {
             border-color: rgb(165, 180, 252) !important;
@@ -199,6 +300,7 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 1rem;
         padding: 1rem;
+        padding-top: 0;
     }
 
     &__card {
@@ -210,16 +312,20 @@
     }
 
     &__title {
-        padding: 0.25rem;
-        font-size: 0.875rem;
-        line-height: 18px;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0.23em;
+        font-size: 14px;
+        line-height: calc(18 / 14);
         color: rgba(255, 255, 255, 0.9);
-        display: -webkit-box;
         overflow: hidden;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
         text-overflow: ellipsis;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        line-clamp: 2;
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
     }
 
     &__inview {
@@ -233,12 +339,12 @@
     &__spinner {
         height: 2rem;
         width: 2rem;
-            color: hsla(0, 0%, 91%, 0.62);
+        color: hsla(0, 0%, 91%, 0.62);
         animation: rsSearchPageSpin 1.5s ease infinite;
     }
 
     &__noMore {
-            color: hsla(0, 0%, 91%, 0.62);
+        color: hsla(0, 0%, 91%, 0.62);
     }
 
     /* --- Tag Drawer（与主列表 tag 同视觉：深色底 + hsla 白底 chip）--- */

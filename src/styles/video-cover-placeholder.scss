@@ -1,0 +1,20 @@
+/** 视频封面未加载：logo 占位层背景（与 ReelShort 封面骨架一致） */
+.video-cover-placeholder {
+    background: #212121;
+
+    &__logo {
+        max-width: min(55%, 4.5rem);
+        max-height: min(40%, 3.5rem);
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        opacity: 0.92;
+        pointer-events: none;
+        user-select: none;
+    }
+}
+
+.rs-bi-coverSkeleton,
+.rs-my-list__coverSkeleton {
+    background: #212121 !important;
+}

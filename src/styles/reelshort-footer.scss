@@ -28,6 +28,17 @@ $rs-footer-bp: 768px;
     }
 }
 
+/* H5 /my-list：支持中心底部分隔线紧贴底部 Tab 顶部分隔线 */
+@media (max-width: ($rs-footer-bp - 1px)) {
+    .reelshort-footer--dock-tab {
+        padding-bottom: 0;
+    }
+
+    .reelshort-footer--dock-tab .reelshort-footer__copyright {
+        display: none;
+    }
+}
+
 /* —— H5 / PC 互斥显示（只在这里写 display，不依赖工具类） —— */
 .reelshort-footer__h5 {
     display: block;

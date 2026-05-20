@@ -7,14 +7,24 @@ import { BRAND_DISPLAY_NAME } from '@/constants/brand';
 
 const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png', import.meta.url).toString();
 
-export function ReelShortFooter() {
+export type ReelShortFooterProps = {
+    /** H5：页脚紧贴底部四栏 Tab，隐藏版权区并去掉底内边距（如 /my-list） */
+    dockAboveBottomTab?: boolean;
+};
+
+export function ReelShortFooter({ dockAboveBottomTab = false }: ReelShortFooterProps) {
     const year = new Date().getFullYear();
     const appVersion = __APP_VERSION__;
     const [aboutOpen, setAboutOpen] = useState(false);
     const [supportOpen, setSupportOpen] = useState(false);
 
     return (
-        <footer className="reelshort-footer">
+        <footer
+            className={cn(
+                'reelshort-footer',
+                dockAboveBottomTab && 'reelshort-footer--dock-tab',
+            )}
+        >
             <div className="reelshort-footer__h5">
                 <div>
                     <div className="reelshort-footer__collapse-box">

@@ -170,7 +170,7 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                         }}
                     </NavLink>
                     <NavLink
-                        to="/profile?tab=topup"
+                        to="/profile"
                         onPointerEnter={prefetchProfileRouteChunk}
                         onPointerDown={prefetchProfileRouteChunk}
                         className={({ isActive }) =>

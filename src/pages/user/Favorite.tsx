@@ -6,8 +6,7 @@ import { api, type IPagination, type TData } from "@/api";
 import NoContent from "@/components/NoContent";
 import { InView } from "react-intersection-observer";
 import { LoaderCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { LazyLoadImage } from "react-lazy-load-image-component";
+import { VideoPosterLazyCover } from "@/components/VideoPosterLazyCover";
 import { cn } from "@/lib/utils";
 import Loader from "@/components/Loader";
 import { useGesture } from '@use-gesture/react';
@@ -176,18 +175,8 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                             <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
                             <div className="rs-bi-poster">
                                 <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
-                                    <Skeleton className="rs-bi-coverSkeleton rounded-[inherit] bg-white/10">
-                                        <div className="rs-bi-coverSkeletonInner flex h-full w-full items-center justify-center p-1 text-center text-base font-bold">
-                                            <FormattedMessage id="site_name" />
-                                        </div>
-                                    </Skeleton>
-                                    <LazyLoadImage
-                                        alt=""
+                                    <VideoPosterLazyCover
                                         src={`${configStore.config['static']}/${v['image'] as number}`}
-                                        onLoad={(e) => {
-                                            e.currentTarget.style.opacity = '1';
-                                        }}
-                                        className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-1000"
                                     />
                                 </Link>
                                 <div className="rs-bi-playMask">
@@ -247,18 +236,10 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
             {list.map((v) => (
                 <div key={v['id'] as number} className="rs-my-list__row" data-id={v['id']} {...gesture()}>
                     <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-my-list__cover block">
-                        <Skeleton className="rs-my-list__coverSkeleton rounded-[inherit] bg-white/10">
-                            <div className="rs-my-list__coverSkeletonInner flex h-full w-full items-center justify-center p-1 text-center text-xl font-bold">
-                                <FormattedMessage id="site_name" />
-                            </div>
-                        </Skeleton>
-                        <LazyLoadImage
-                            alt=""
+                        <VideoPosterLazyCover
                             src={`${configStore.config['static']}/${v['image'] as number}`}
-                            onLoad={(e) => {
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                            className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-1000"
+                            skeletonClassName="rs-my-list__coverSkeleton"
+                            placeholderInnerClassName="rs-my-list__coverSkeletonInner"
                         />
                     </Link>
                     <div className="flex min-w-0 flex-1 flex-col">

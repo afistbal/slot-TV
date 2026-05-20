@@ -1,0 +1,45 @@
+.rs-language {
+    display: flex;
+    flex-direction: column;
+}
+
+.rs-language__item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: calc(16 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw));
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: calc(14 / 375 * var(--app-vw));
+    line-height: 1.35;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:active {
+        background: rgba(255, 255, 255, 0.04);
+    }
+}
+
+.rs-language__item--active {
+    color: #fe4167;
+}
+
+.rs-language__label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rs-language__check {
+    width: calc(20 / 375 * var(--app-vw));
+    height: calc(20 / 375 * var(--app-vw));
+    flex-shrink: 0;
+    color: #fe4167;
+}

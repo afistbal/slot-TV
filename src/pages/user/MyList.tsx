@@ -30,7 +30,7 @@ export default function Component() {
     );
 
     return (
-        <div className="flex h-full min-h-0 flex-col bg-app-canvas text-white">
+        <div className="rs-my-list-page flex h-full min-h-0 flex-col bg-app-canvas text-white">
             <div className="sticky top-0 z-[102] shrink-0 bg-black">
                 {showTopBar ? (
                     <PageBackBar
@@ -92,7 +92,7 @@ export default function Component() {
                     </div>
                 </div>
                 <div className="shrink-0">
-                    <ReelShortFooter />
+                    <ReelShortFooter dockAboveBottomTab />
                 </div>
             </div>
         </div>

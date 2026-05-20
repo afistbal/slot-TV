@@ -38,10 +38,9 @@ html.has-rs-bottom-nav .root {
     grid-template-columns: repeat(4, 1fr);
     align-items: stretch;
     min-height: var(--rs-bottom-tab-inner-height);
-    padding-top: calc(var(--rs-vw, min(100vw, 480px)) * 6 / 375);
     padding-bottom: var(--rs-bottom-tab-safe);
     background: #000;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid hsla(0, 0%, 100%, 0.122);
 }
 
 .reelshort-bottom-nav__tab {
@@ -98,7 +97,7 @@ html.has-rs-bottom-nav .root {
     height: var(--rs-bottom-add-btn-height);
     align-items: center;
     justify-content: center;
-    gap: calc(var(--rs-vw, min(100vw, 480px)) * 6 / 375);
+    gap: calc(var(--rs-vw, min(100vw, 480px)) * 10 / 375);
     margin: 0;
     padding: 0 calc(var(--rs-vw, min(100vw, 480px)) * 18 / 375);
     border: 0;
@@ -117,8 +116,11 @@ html.has-rs-bottom-nav .root {
 .reelshort-bottom-nav__add-icon {
     flex: 0 0 auto;
     width: auto;
-    height: calc(var(--rs-vw, min(100vw, 480px)) * 22 / 375);
+    height: calc(var(--rs-vw, min(100vw, 480px)) * 25 / 375);
     object-fit: contain;
+    position: relative;
+    top: -1.5px;
+    left: -3px;
 }
 
 .reelshort-bottom-nav__add-text {

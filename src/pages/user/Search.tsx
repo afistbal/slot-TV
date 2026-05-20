@@ -1,13 +1,20 @@
 import { api, type IPagination, type TData } from '@/api';
-import { Skeleton } from '@/components/ui/skeleton';
-import { LazyLoadImage } from 'react-lazy-load-image-component';
+import { VideoPosterLazyCover } from '@/components/VideoPosterLazyCover';
 import NoContent from '@/components/NoContent';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { Link, matchPath, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
+import {
+    matchCategoriesPath,
+    matchSearchFamilyPath,
+    matchSearchOnlyPath,
+    matchTagSearchPath,
+    resolveSearchPageType,
+    type SearchPageType,
+} from '@/lib/searchRoutes';
 import Image from '@/components/Image';
 import { useConfigStore } from '@/stores/config';
 import Loader from '@/components/Loader';
@@ -21,6 +28,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
+import iconTag from '@/assets/images/icon_tag@2x.png';
 
 /** 搜索分页合并时接口可能返回重复 id，去重避免 React key 冲突与重复卡片 */
 function dedupeSearchRowsById(rows: TData[]): TData[] {
@@ -75,31 +83,70 @@ const PC_TAG_TOGGLE_INNER_HTML =
     '<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 6L9 13L2 6"/>' +
     '</svg>';
 
+const H5_CATEGORIES_TAG_TOGGLE_INNER_HTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18" class="rs-search-page__categoriesTagsToggleSvg" aria-hidden="true">' +
+    '<path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 6L9 13L2 6"/>' +
+    '</svg>';
+
+type TagsRowMeasureClasses = {
+    containerClass: string;
+    tagClass: string;
+    toggleClass: string;
+    toggleInnerHtml: string;
+};
+
+const PC_TAGS_ROW_MEASURE: TagsRowMeasureClasses = {
+    containerClass: 'rs-search-page__pcTags',
+    tagClass: 'rs-search-page__pcTag',
+    toggleClass: 'rs-search-page__pcTagsToggle',
+    toggleInnerHtml: PC_TAG_TOGGLE_INNER_HTML,
+};
+
+const H5_CATEGORIES_TAGS_ROW_MEASURE: TagsRowMeasureClasses = {
+    containerClass: 'rs-search-page__categoriesTags',
+    tagClass: 'rs-search-page__tag',
+    toggleClass: 'rs-search-page__categoriesTagsToggle',
+    toggleInnerHtml: H5_CATEGORIES_TAG_TOGGLE_INNER_HTML,
+};
+
 /**
  * 測量：僅標籤是否超過兩行；若超過，求「前 n 個標籤 + 展開鈕」整體高度不超過兩行上限的最大 n，
- * 使展開鈕緊跟最後一個可見 tag（對標 ReelShort，而非整列貼右）。
+ * 使展開鈕緊跟最後一個可見 tag（對標 ReelShort，而非另起一行）。
  */
-function measurePcTagsTwoRowSplit(
+function measureTagsTwoRowSplit(
     widthPx: number,
     tags: TData[],
     collapsedMaxPx: number,
     labelFor: (uniqueId: string) => string,
     mountParent: HTMLElement,
+    classes: TagsRowMeasureClasses,
+    leadingButtonLabels: string[] = [],
 ): { needsExpand: boolean; visibleCount: number } {
-    if (tags.length === 0) {
+    if (tags.length === 0 && leadingButtonLabels.length === 0) {
         return { needsExpand: false, visibleCount: 0 };
     }
 
     const ghost = document.createElement('div');
-    ghost.className = 'rs-search-page__pcTags';
+    ghost.className = classes.containerClass;
     ghost.style.cssText = `position:fixed;left:-99999px;top:0;width:${widthPx}px;visibility:hidden;pointer-events:none;`;
 
     mountParent.appendChild(ghost);
 
+    const appendLeading = () => {
+        for (const label of leadingButtonLabels) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = classes.tagClass;
+            b.textContent = label;
+            ghost.appendChild(b);
+        }
+    };
+
+    appendLeading();
     for (const t of tags) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'rs-search-page__pcTag';
+        b.className = classes.tagClass;
         b.textContent = labelFor(String(t['unique_id'] ?? ''));
         ghost.appendChild(b);
     }
@@ -116,8 +163,8 @@ function measurePcTagsTwoRowSplit(
     const makeToggle = (): HTMLButtonElement => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'rs-search-page__pcTagsToggle';
-        btn.innerHTML = PC_TAG_TOGGLE_INNER_HTML;
+        btn.className = classes.toggleClass;
+        btn.innerHTML = classes.toggleInnerHtml;
         return btn;
     };
 
@@ -127,10 +174,11 @@ function measurePcTagsTwoRowSplit(
     while (lo <= hi) {
         const mid = (lo + hi) >> 1;
         ghost.innerHTML = '';
+        appendLeading();
         for (let i = 0; i < mid; i++) {
             const b = document.createElement('button');
             b.type = 'button';
-            b.className = 'rs-search-page__pcTag';
+            b.className = classes.tagClass;
             b.textContent = labelFor(String(tags[i]['unique_id'] ?? ''));
             ghost.appendChild(b);
         }
@@ -150,14 +198,31 @@ function measurePcTagsTwoRowSplit(
     return { needsExpand: true, visibleCount };
 }
 
-/** PC 標籤區展開/收起：對標 ReelShort（白底小方塊 + chevron，無文案） */
-function PcTagsExpandChevronIcon() {
+function measurePcTagsTwoRowSplit(
+    widthPx: number,
+    tags: TData[],
+    collapsedMaxPx: number,
+    labelFor: (uniqueId: string) => string,
+    mountParent: HTMLElement,
+): { needsExpand: boolean; visibleCount: number } {
+    return measureTagsTwoRowSplit(
+        widthPx,
+        tags,
+        collapsedMaxPx,
+        labelFor,
+        mountParent,
+        PC_TAGS_ROW_MEASURE,
+    );
+}
+
+/** PC / H5 分類標籤展開鈕 chevron */
+function TagsExpandChevronIcon({ className }: { className: string }) {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 18 18"
-            className="rs-search-page__pcTagsToggleSvg"
+            className={className}
             aria-hidden
         >
             <path
@@ -169,6 +234,14 @@ function PcTagsExpandChevronIcon() {
             />
         </svg>
     );
+}
+
+function PcTagsExpandChevronIcon() {
+    return <TagsExpandChevronIcon className="rs-search-page__pcTagsToggleSvg" />;
+}
+
+function H5CategoriesTagsExpandChevronIcon() {
+    return <TagsExpandChevronIcon className="rs-search-page__categoriesTagsToggleSvg" />;
 }
 
 /** PC：對標 ReelShort tags 頁數字分頁（如 movie-actors） */
@@ -211,6 +284,24 @@ function formatTagLabel(uniqueId: string): string {
             return ch;
         })
         .join('');
+}
+
+function resolveTagDisplayLabel(
+    tagName: string,
+    tags: TData[],
+    fallbackTagMessage: string,
+): string {
+    if (!tagName) {
+        return '';
+    }
+    const row = tags.find((t) => (t['name'] as string) === tagName);
+    if (row) {
+        return formatTagLabel(String(row['unique_id'] ?? ''));
+    }
+    if (isOpaqueTagId(tagName)) {
+        return fallbackTagMessage;
+    }
+    return tagName;
 }
 
 function resolveImageSrc(staticBase: string, image: string) {
@@ -300,19 +391,7 @@ function SearchPcBookItem({ item }: { item: SearchRowItem }) {
             <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
             <div className="rs-bi-poster">
                 <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
-                    <Skeleton className="rs-bi-coverSkeleton rounded-[inherit] bg-white/10">
-                        <div className="rs-bi-coverSkeletonInner flex h-full w-full items-center justify-center p-1 text-center text-sm font-bold">
-                            <FormattedMessage id="site_name" />
-                        </div>
-                    </Skeleton>
-                    <LazyLoadImage
-                        alt=""
-                        src={imgSrc}
-                        onLoad={(e) => {
-                            e.currentTarget.style.opacity = '1';
-                        }}
-                        className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-1000"
-                    />
+                    <VideoPosterLazyCover src={imgSrc} />
                 </Link>
                 <div className="rs-bi-playMask">
                     <div className="rs-bi-item-mask" />
@@ -358,8 +437,18 @@ function SearchIcon16({ className }: { className?: string }) {
 }
 
 export default function Component() {
+    const { pathname } = useLocation();
+    return <SearchPage type={resolveSearchPageType(pathname)} />;
+}
+
+export function SearchPage({ type }: { type: SearchPageType }) {
     const intl = useIntl();
     const location = useLocation();
+    const navigate = useNavigate();
+    const isCategoriesPage = type === 'categories';
+    const isTagSearchPage = type === 'tagSearch';
+    const showH5SearchBar = type !== 'categories' && !isTagSearchPage;
+    const showH5LegacyTagRow = type !== 'categories' && type !== 'search' && !isTagSearchPage;
     const configStore = useConfigStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const timer = useRef(0);
@@ -373,7 +462,23 @@ export default function Component() {
     const [pcTagsNeedsExpand, setPcTagsNeedsExpand] = useState(false);
     /** 折疊態下僅渲染前 n 個標籤 + 展開鈕，使鈕緊跟最後可見 tag */
     const [pcCollapsedVisibleCount, setPcCollapsedVisibleCount] = useState<number | null>(null);
+    const [h5CategoriesTagsExpanded, setH5CategoriesTagsExpanded] = useState(false);
+    const [h5CategoriesTagsNeedsExpand, setH5CategoriesTagsNeedsExpand] = useState(false);
+    const [h5CategoriesCollapsedVisibleCount, setH5CategoriesCollapsedVisibleCount] = useState<number | null>(
+        null,
+    );
+    const h5CategoriesTagsRef = useRef<HTMLDivElement>(null);
     const isPc = useMinWidth768();
+    const isH5SearchPage = type === 'search' && !isPc;
+    const isH5TagSearchPage = isTagSearchPage && !isPc;
+    const isH5InnerNavPage = isH5SearchPage || isH5TagSearchPage;
+    const tagDisplayLabel = resolveTagDisplayLabel(
+        searchStore.tag,
+        searchStore.tags,
+        intl.formatMessage({ id: 'tag' }),
+    );
+    const tagResultCount =
+        searchStore.totalCount > 0 ? searchStore.totalCount : searchStore.list.length;
     /** 窄屏底栏（Tab + 可选「添加桌面」）时抬高回顶钮 */
     const liftScrollFabForBottomNav = !isPc;
 
@@ -529,16 +634,12 @@ export default function Component() {
     }
 
     function handleTagClick(name: string) {
-        if (searchStore.tag === name) {
-            searchStore.setTag('');
-        } else {
-            searchStore.setTag(name);
-            searchStore.setKeyword('');
-        }
-
         setTagOpen(false);
-        searchStore.setPage(1);
-        loadData();
+        if (searchStore.tag === name) {
+            navigate('/categories');
+            return;
+        }
+        navigate(`/tagSearch?${new URLSearchParams({ movie_tag: name }).toString()}`);
     }
 
     function handleMoreChange(visible: boolean) {
@@ -610,46 +711,69 @@ export default function Component() {
 
     useLayoutEffect(() => {
         const path = location.pathname;
-        const onSearch =
-            matchPath({ path: '/search', end: true }, path) != null ||
-            matchPath({ path: '/:locale/search', end: true }, path) != null;
-        if (!onSearch) {
-            return;
-        }
-
-        const params = new URLSearchParams(location.search);
-        const q = params.get('q');
-        const movieTag = params.get('movie_tag');
-        if (!q && !movieTag) {
+        if (!matchSearchFamilyPath(path)) {
             return;
         }
 
         const s = useSearchStore.getState();
         let changed = false;
 
-        if (q) {
-            const decoded = decodeURIComponent(q.replace(/\+/g, ' ')).trim();
-            if (s.keyword.trim() !== decoded) {
-                s.setKeyword(decoded);
+        if (matchCategoriesPath(path)) {
+            if (s.tag) {
+                s.setTag('');
                 changed = true;
             }
-        } else if (movieTag) {
-            if (s.keyword.trim() !== '') {
+            if (s.keyword.trim()) {
                 s.setKeyword('');
                 changed = true;
             }
+            if (changed) {
+                s.setPage(1);
+            }
+            return;
         }
 
-        if (movieTag) {
+        const params = new URLSearchParams(location.search);
+
+        if (matchSearchOnlyPath(path)) {
+            const q = params.get('q');
+            if (s.tag) {
+                s.setTag('');
+                changed = true;
+            }
+            if (q) {
+                const decoded = decodeURIComponent(q.replace(/\+/g, ' ')).trim();
+                if (s.keyword.trim() !== decoded) {
+                    s.setKeyword(decoded);
+                    changed = true;
+                }
+            } else if (s.keyword.trim()) {
+                s.setKeyword('');
+                changed = true;
+            }
+            if (changed) {
+                s.setPage(1);
+            }
+            return;
+        }
+
+        if (matchTagSearchPath(path)) {
+            const movieTag = params.get('movie_tag');
+            if (!movieTag) {
+                return;
+            }
+            if (s.keyword.trim()) {
+                s.setKeyword('');
+                changed = true;
+            }
             const decodedTag = decodeURIComponent(movieTag.replace(/\+/g, ' ')).trim();
             if (s.tag !== decodedTag) {
                 s.setTag(decodedTag);
                 changed = true;
             }
-        }
-
-        if (changed) {
-            s.setPage(1);
+            if (changed) {
+                s.setPage(1);
+            }
         }
     }, [location.pathname, location.search]);
 
@@ -658,10 +782,7 @@ export default function Component() {
             return;
         }
         const path = location.pathname;
-        const onSearch =
-            matchPath({ path: '/search', end: true }, path) != null ||
-            matchPath({ path: '/:locale/search', end: true }, path) != null;
-        if (!onSearch) {
+        if (!matchSearchFamilyPath(path)) {
             return;
         }
 
@@ -738,6 +859,60 @@ export default function Component() {
         return () => ro.disconnect();
     }, [isPc, searchStore.tags, pcTagsExpanded]);
 
+    useLayoutEffect(() => {
+        if (isPc || !isCategoriesPage || searchStore.tags.length === 0) {
+            setH5CategoriesTagsNeedsExpand(false);
+            setH5CategoriesCollapsedVisibleCount(null);
+            setH5CategoriesTagsExpanded(false);
+            return;
+        }
+        const host = h5CategoriesTagsRef.current;
+        if (!host) {
+            return;
+        }
+
+        const run = () => {
+            if (h5CategoriesTagsExpanded) {
+                return;
+            }
+            const w = host.offsetWidth;
+            if (w <= 0) {
+                return;
+            }
+            const shell = (host.closest('.rs-search-page') ?? document.body) as HTMLElement;
+            const raw = getComputedStyle(host)
+                .getPropertyValue('--rs-search-categories-tags-collapsed-max')
+                .trim();
+            const collapsedMax =
+                Number.isFinite(parseFloat(raw)) && parseFloat(raw) > 0 ? parseFloat(raw) : 96;
+            const { needsExpand, visibleCount } = measureTagsTwoRowSplit(
+                w,
+                searchStore.tags,
+                collapsedMax,
+                (u) => formatTagLabel(u),
+                shell,
+                H5_CATEGORIES_TAGS_ROW_MEASURE,
+                [intl.formatMessage({ id: 'categories_all_plots' })],
+            );
+            setH5CategoriesTagsNeedsExpand(needsExpand);
+            setH5CategoriesCollapsedVisibleCount(visibleCount);
+            if (!needsExpand) {
+                setH5CategoriesTagsExpanded(false);
+            }
+        };
+
+        run();
+        const ro = new ResizeObserver(run);
+        ro.observe(host);
+        return () => ro.disconnect();
+    }, [isPc, isCategoriesPage, h5CategoriesTagsExpanded, searchStore.tags]);
+
+    useEffect(() => {
+        if (!isCategoriesPage) {
+            setH5CategoriesTagsExpanded(false);
+        }
+    }, [isCategoriesPage]);
+
     const searchPlaceholder = intl.formatMessage({ id: 'search_placeholder' });
 
     const pcTagsForRender =
@@ -746,6 +921,13 @@ export default function Component() {
         !pcTagsExpanded &&
         pcCollapsedVisibleCount !== null
             ? searchStore.tags.slice(0, pcCollapsedVisibleCount)
+            : searchStore.tags;
+
+    const h5CategoriesTagsForRender =
+        h5CategoriesTagsNeedsExpand &&
+        !h5CategoriesTagsExpanded &&
+        h5CategoriesCollapsedVisibleCount !== null
+            ? searchStore.tags.slice(0, h5CategoriesCollapsedVisibleCount)
             : searchStore.tags;
 
     const perPage = Math.max(1, searchStore.perPage || 24);
@@ -764,14 +946,31 @@ export default function Component() {
         (totalKnown ? totalPages > 1 : searchStore.more || searchStore.page > 1);
 
     return (
-        <div className="rs-search-page">
+        <div
+            className={cn(
+                'rs-search-page',
+                isCategoriesPage && 'rs-search-page--categories',
+                isH5SearchPage && 'rs-search-page--h5Search',
+                isH5TagSearchPage && 'rs-search-page--h5TagSearch',
+            )}
+        >
             <div
                 className="rs-search-page__scroll"
                 ref={scrollRef}
                 onScroll={handleScrollEnd}
             >
-                <ReelShortTopNav scrollParentRef={scrollRef} />
+                <ReelShortTopNav
+                    scrollParentRef={scrollRef}
+                    showPrimaryNav={isCategoriesPage}
+                    leftAction={isCategoriesPage ? 'none' : isH5InnerNavPage ? 'back' : 'menu'}
+                    showRightActions={!isH5InnerNavPage}
+                    showSearch={isCategoriesPage}
+                    showProfile={!isCategoriesPage && !isH5InnerNavPage}
+                    showLanguage={!isH5InnerNavPage}
+                    showHistory={!isH5InnerNavPage}
+                />
 
+                {showH5SearchBar ? (
                 <div className="rs-search-page__barPad md:hidden">
                     <div role="search-bar" className="rs-search-page__bar">
                         <div className="rs-search-page__barInner">
@@ -815,9 +1014,104 @@ export default function Component() {
                         </div>
                     </div>
                 </div>
+                ) : null}
 
                 <div className="rs-search-page__body">
-                    {searchStore.tags.length > 0 && !isPc ? (
+                    {isH5SearchPage ? (
+                        <h2 className="rs-search-page__popularHeading">
+                            <FormattedMessage id="search_popular_now" defaultMessage="Popular Now" />
+                        </h2>
+                    ) : null}
+                    {isH5TagSearchPage && searchStore.tag ? (
+                        <header className="rs-search-page__tagSearchHeading">
+                            <div className="rs-search-page__tagSearchTitleRow">
+                                <img
+                                    src={iconTag}
+                                    alt=""
+                                    className="rs-search-page__tagSearchIcon"
+                                    aria-hidden
+                                />
+                                <h1 className="rs-search-page__tagSearchTitle">{tagDisplayLabel}</h1>
+                            </div>
+                            <p className="rs-search-page__tagSearchMeta">
+                                <FormattedMessage
+                                    id="tag_search_total_count"
+                                    defaultMessage="{count} in total"
+                                    values={{ count: tagResultCount }}
+                                />
+                            </p>
+                        </header>
+                    ) : null}
+                    {isCategoriesPage && !isPc && searchStore.tags.length > 0 ? (
+                        <section
+                            className="rs-search-page__categoriesPanel"
+                            aria-label={intl.formatMessage({ id: 'nav_categories' })}
+                        >
+                            <h2 className="rs-search-page__categoriesHeading">
+                                <FormattedMessage id="categories_all_dramas" />
+                            </h2>
+                            <div ref={h5CategoriesTagsRef} className="rs-search-page__categoriesTags">
+                                <button
+                                    type="button"
+                                    className={cn(
+                                        'rs-search-page__tag',
+                                        !searchStore.tag && 'rs-search-page__tag--active',
+                                    )}
+                                    onClick={() => {
+                                        if (searchStore.tag) {
+                                            navigate('/categories');
+                                        }
+                                    }}
+                                >
+                                    <FormattedMessage id="categories_all_plots" />
+                                </button>
+                                {h5CategoriesTagsForRender.map((v) => {
+                                    const name = v['name'] as string;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={name}
+                                            className={cn(
+                                                'rs-search-page__tag',
+                                                name === searchStore.tag && 'rs-search-page__tag--active',
+                                            )}
+                                            onClick={() => handleTagClick(name)}
+                                        >
+                                            {formatTagLabel(String(v['unique_id'] ?? ''))}
+                                        </button>
+                                    );
+                                })}
+                                {h5CategoriesTagsNeedsExpand && !h5CategoriesTagsExpanded ? (
+                                    <button
+                                        type="button"
+                                        className="rs-search-page__categoriesTagsToggle"
+                                        onClick={() => setH5CategoriesTagsExpanded(true)}
+                                        aria-expanded={false}
+                                        aria-label="展开标签列表"
+                                        title="展开"
+                                    >
+                                        <H5CategoriesTagsExpandChevronIcon />
+                                    </button>
+                                ) : null}
+                                {h5CategoriesTagsNeedsExpand && h5CategoriesTagsExpanded ? (
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            'rs-search-page__categoriesTagsToggle',
+                                            'rs-search-page__categoriesTagsToggle--expanded',
+                                        )}
+                                        onClick={() => setH5CategoriesTagsExpanded(false)}
+                                        aria-expanded
+                                        aria-label="收起标签列表"
+                                        title="收起"
+                                    >
+                                        <H5CategoriesTagsExpandChevronIcon />
+                                    </button>
+                                ) : null}
+                            </div>
+                        </section>
+                    ) : null}
+                    {showH5LegacyTagRow && searchStore.tags.length > 0 && !isPc ? (
                         <div className="rs-search-page__tagRow">
                             {searchStore.tags.slice(0, 10).map((v) => (
                                 <div

@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { VideoCoverPlaceholder } from '@/components/VideoCoverPlaceholder';
+import { cn } from '@/lib/utils';
 
 export interface HomeBookItemData {
     id: number;
@@ -44,6 +47,11 @@ export function HomeBookItem({
         raw.startsWith('http://') || raw.startsWith('https://')
             ? raw
             : `${staticBase}/${raw}`;
+    const [coverLoaded, setCoverLoaded] = useState(false);
+
+    useEffect(() => {
+        setCoverLoaded(false);
+    }, [src]);
 
     return (
         <div
@@ -63,7 +71,21 @@ export function HomeBookItem({
             />
             {item.showExpo ? <div data-report="expo" className="BookItem_expoItem__EbMPA" /> : null}
             <div className="BookItem_cover__W2qbR">
-                <img src={src} alt={item.title} loading="lazy" decoding="async" />
+                <div className="BookItem_coverPlaceholder" aria-hidden>
+                    <VideoCoverPlaceholder />
+                </div>
+                <img
+                    src={src}
+                    alt={item.title}
+                    loading="lazy"
+                    decoding="async"
+                    className={cn(
+                        'BookItem_coverImg',
+                        coverLoaded ? 'BookItem_coverImg--loaded' : 'BookItem_coverImg--loading',
+                    )}
+                    onLoad={() => setCoverLoaded(true)}
+                    onError={() => setCoverLoaded(false)}
+                />
                 <div className="BookItem_mask__bz19c" aria-hidden />
                 {item.showPlayMask ? null : (
                     <>

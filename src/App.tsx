@@ -80,7 +80,7 @@ function LegacyCheckoutToShoppingRedirect() {
     return <Navigate to="/shopping" replace />;
 }
 
-/** `/`、`/search` 实际内容由 `layouts/user` 内 keep-alive 层渲染；此处仅占位以维持路由匹配 */
+/** `/`、`/search`、`/categories`、`/tagSearch` 实际内容由 `layouts/user` 内 keep-alive 层渲染；此处仅占位以维持路由匹配 */
 function LayoutUserPrimaryTabPlaceholder() {
     return null;
 }
@@ -126,7 +126,11 @@ const router = createBrowserRouter([
             },
             {
                 path: 'categories',
-                element: <Navigate to="/search" replace />,
+                element: <LayoutUserPrimaryTabPlaceholder />,
+            },
+            {
+                path: ':locale/categories',
+                element: <LayoutUserPrimaryTabPlaceholder />,
             },
             {
                 path: 'search',
@@ -134,6 +138,14 @@ const router = createBrowserRouter([
             },
             {
                 path: ':locale/search',
+                element: <LayoutUserPrimaryTabPlaceholder />,
+            },
+            {
+                path: 'tagSearch',
+                element: <LayoutUserPrimaryTabPlaceholder />,
+            },
+            {
+                path: ':locale/tagSearch',
                 element: <LayoutUserPrimaryTabPlaceholder />,
             },
             {

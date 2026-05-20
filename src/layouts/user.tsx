@@ -8,14 +8,13 @@ import { ReelShortBottomNav } from "@/components/ReelShortBottomNav";
 import UserHome from "@/pages/user/Home";
 import UserSearch from "@/pages/user/Search";
 import usePixel from "@/hooks/usePixel";
+import { matchSearchFamilyPath } from "@/lib/searchRoutes";
 
 /** �?App �?`/`、`/search`、`/:locale/search` 占位路由一致；仅这两页�?DOM �?keep-alive，避免反复卸载导致图�?LazyLoad 重跑 */
 function usePrimaryTabKeepAlive() {
     const { pathname } = useLocation();
     const isHome = matchPath({ path: "/", end: true }, pathname) != null;
-    const isSearch =
-        matchPath({ path: "/search", end: true }, pathname) != null ||
-        matchPath({ path: "/:locale/search", end: true }, pathname) != null;
+    const isSearch = matchSearchFamilyPath(pathname);
     return { isHome, isSearch };
 }
 

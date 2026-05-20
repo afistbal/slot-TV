@@ -375,7 +375,7 @@
                 justify-content: flex-start;
                 width: 100%;
 
-                > div {
+                >div {
                     justify-content: flex-start;
                 }
             }
@@ -1168,7 +1168,7 @@
     }
 
     /* Airwallex dropIn 注入的骨架条默认是浅灰，这里统一压成深色 */
-    .rs-shopping__cardDropin .rs-checkout-h5__dropInMount > #loading > div {
+    .rs-shopping__cardDropin .rs-checkout-h5__dropInMount>#loading>div {
         background-color: #222222 !important;
     }
 
@@ -1790,6 +1790,305 @@
         height: 24px;
         object-fit: contain;
     }
+
+    /** H5 Top UP 页额外权益项：仅 `--topUpH5` 展示 */
+    .rs-shopping__planBenefit--topUpExtra {
+        display: none;
+    }
+}
+
+/** H5 `/shopping` 充值页（对齐 Top UP 设计稿，仅 max-width: 767px） */
+@media (max-width: 767px) {
+    .rs-shopping.rs-shopping--topUpH5 {
+        background-color: #000;
+
+        .rs-shopping__scroll {
+            background-color: #000;
+        }
+
+        .rs-shopping__main {
+            padding: calc(8 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+        }
+
+        .rs-shopping__pageWalletBar {
+            display: none;
+        }
+
+        .rs-shopping__sectionTitle {
+            margin: 0 0 calc(12 / 375 * var(--app-vw));
+            font-size: calc(17 / 375 * var(--app-vw));
+            font-weight: 500;
+            color: #FFFFFF;
+        }
+
+        .rs-shopping__plans {
+            gap: calc(12 / 375 * var(--app-vw));
+        }
+
+        .rs-shopping__plan {
+            min-height: calc(148 / 375 * var(--app-vw));
+            border-radius: calc(12 / 375 * var(--app-vw));
+        }
+
+        .rs-shopping__plan--weekly {
+            background: linear-gradient(86deg, #FFECD4 0%, #F3CB93 100%);
+        }
+
+        .rs-shopping__plan--yearly {
+            background: linear-gradient(165deg, #3d3429 0%, #1f1a16 55%, #14110f 100%);
+
+            .rs-shopping__planName,
+            .rs-shopping__planPrice {
+                color: #f3cb93;
+            }
+
+            .rs-shopping__planRenew {
+                color: rgba(243, 203, 147, 0.72);
+            }
+
+            .rs-shopping__planBenefits {
+                background: rgba(0, 0, 0, 0.22);
+                color: rgba(243, 203, 147, 0.92);
+            }
+        }
+
+        .rs-shopping__planBg {
+            opacity: 0.35;
+        }
+
+        .rs-shopping__planCountdown {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 3;
+            margin: 0;
+            pointer-events: none;
+
+            .rs-countdown--planCorner {
+                display: inline-flex;
+                align-items: center;
+                gap: calc(5 / 375 * var(--app-vw));
+                padding: calc(3 / 375 * var(--app-vw)) calc(10 / 375 * var(--app-vw));
+                border-radius: 0 calc(12 / 375 * var(--app-vw)) 0 calc(10 / 375 * var(--app-vw));
+                background: linear-gradient(90deg, #FD36BC 0%, #FD3A5A 100%);
+                color: #fff;
+                font-size: calc(11 / 375 * var(--app-vw));
+                font-weight: 500;
+                letter-spacing: 0.02em;
+                box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
+            }
+
+            .rs-countdown__clockIcon {
+                width: calc(13 / 375 * var(--app-vw));
+                height: calc(13 / 375 * var(--app-vw));
+                flex-shrink: 0;
+                color: #fff;
+            }
+
+            .rs-countdown__time {
+                font-variant-numeric: tabular-nums;
+                white-space: nowrap;
+            }
+        }
+
+        .rs-shopping__planBody {
+            align-items: flex-start;
+            padding: calc(22 / 375 * var(--app-vw)) calc(110 / 375 * var(--app-vw)) calc(10 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw));
+        }
+
+        .rs-shopping__planName {
+            font-size: calc(15 / 375 * var(--app-vw));
+            font-weight: 700;
+            line-height: 1.25;
+            color: #401a06;
+        }
+
+        .rs-shopping__planRenew {
+            margin-top: calc(4 / 375 * var(--app-vw));
+            font-size: calc(11 / 375 * var(--app-vw));
+            line-height: 1.35;
+            color: rgba(64, 26, 6, 0.75);
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+        }
+
+        .rs-shopping__planPriceRow {
+            position: absolute;
+            right: calc(14 / 375 * var(--app-vw));
+            top: 50%;
+            transform: translateY(-50%);
+            margin: 0;
+        }
+
+        .rs-shopping__planPrice {
+            display: inline-flex;
+            min-width: calc(72 / 375 * var(--app-vw));
+            align-items: center;
+            justify-content: center;
+            padding: calc(8 / 375 * var(--app-vw)) calc(14 / 375 * var(--app-vw));
+            border-radius: 999px;
+            background: linear-gradient(90deg, #C17846 0%, #603C24 100%);
+            font-size: calc(15 / 375 * var(--app-vw));
+            font-family: DIN Alternate, DIN Alternate;
+            font-weight: bold;
+            color: #FFFFFF;
+            line-height: 1;
+        }
+
+        .rs-shopping__plan--yearly .rs-shopping__planPrice {
+            background: #2a2420;
+            color: #f3cb93;
+        }
+
+        .rs-shopping__planBenefit--topUpExtra {
+            display: flex;
+        }
+
+        .rs-shopping__planBenefits {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            column-gap: calc(12 / 375 * var(--app-vw));
+            row-gap: calc(8 / 375 * var(--app-vw));
+            align-items: start;
+            justify-items: stretch;
+            padding: calc(10 / 375 * var(--app-vw)) calc(14 / 375 * var(--app-vw));
+            font-size: calc(10 / 375 * var(--app-vw));
+            line-height: 1.25;
+        }
+
+        .rs-shopping__planBenefit {
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: calc(4 / 375 * var(--app-vw));
+            min-width: 0;
+            white-space: nowrap;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .rs-shopping__planBenefitIcon {
+            margin: 0;
+            width: calc(16 / 375 * var(--app-vw));
+            height: calc(16 / 375 * var(--app-vw));
+            flex-shrink: 0;
+        }
+
+        .rs-shopping__coinSection {
+            margin-top: calc(24 / 375 * var(--app-vw));
+        }
+
+        .rs-shopping__coinSku--topUpH5 {
+            min-height: calc(118 / 375 * var(--app-vw));
+            border-radius: calc(10 / 375 * var(--app-vw));
+            background: #292929 !important;
+            padding: calc(14 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+
+            >.absolute {
+                min-width: calc(40 / 375 * var(--app-vw));
+                height: calc(18 / 375 * var(--app-vw));
+                border-radius: 0 calc(10 / 375 * var(--app-vw)) 0 calc(8 / 375 * var(--app-vw));
+                background: #1a1a1a !important;
+                font-size: calc(10 / 375 * var(--app-vw));
+                font-weight: 600;
+                color: #fff;
+            }
+
+            .mb-1 {
+                margin-bottom: calc(6 / 375 * var(--app-vw));
+                font-size: calc(22 / 375 * var(--app-vw));
+                font-weight: 700;
+                color: #fff;
+            }
+
+            >div:not(.mb-1):not(.mt-2):not([class*='absolute']) {
+                min-height: auto !important;
+                font-size: calc(12 / 375 * var(--app-vw));
+                color: rgba(255, 255, 255, 0.45);
+
+                >div:first-child {
+                    display: none;
+                }
+            }
+
+            .mt-2 {
+                margin-top: auto;
+                font-size: calc(16 / 375 * var(--app-vw));
+                font-weight: 600;
+                color: #f3cb93 !important;
+            }
+        }
+
+        .rs-shopping__tipsSection {
+            margin-top: calc(24 / 375 * var(--app-vw));
+        }
+
+        .rs-shopping__tipsList {
+            margin: calc(8 / 375 * var(--app-vw)) 0 0;
+            padding: 0;
+            list-style: none;
+            counter-reset: rs-shopping-tip;
+
+            li {
+                counter-increment: rs-shopping-tip;
+                margin-bottom: calc(10 / 375 * var(--app-vw));
+                padding-left: calc(18 / 375 * var(--app-vw));
+                position: relative;
+                font-size: calc(12 / 375 * var(--app-vw));
+                line-height: 1.45;
+                color: rgba(255, 255, 255, 0.45);
+            }
+
+            li::before {
+                content: counter(rs-shopping-tip) '.';
+                position: absolute;
+                left: 0;
+                top: 0;
+                color: rgba(255, 255, 255, 0.45);
+            }
+        }
+    }
+
+    .rs-shopping__topUpHeader {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(44 / 375 * var(--app-vw));
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: #000;
+        color: #fff;
+    }
+
+    .rs-shopping__topUpHeaderBack {
+        position: absolute;
+        left: calc(4 / 375 * var(--app-vw));
+        top: 50%;
+        display: flex;
+        width: calc(40 / 375 * var(--app-vw));
+        height: calc(40 / 375 * var(--app-vw));
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        background: transparent;
+        color: #fff;
+        transform: translateY(-50%);
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .rs-shopping__topUpHeaderTitle {
+        margin: 0;
+        max-width: 70%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: calc(18 / 375 * var(--app-vw));
+        font-weight: 700;
+        line-height: 1.2;
+    }
 }
 
 /**
@@ -1936,7 +2235,7 @@
     background-color: rgb(20 20 20 / var(--un-bg-opacity));
 }
 
-.rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer > .rs-shopping.rs-shopping--drawerEmbed {
+.rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer>.rs-shopping.rs-shopping--drawerEmbed {
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -2115,7 +2414,7 @@
         flex-wrap: nowrap;
     }
 
-    > div {
+    >div {
         margin-top: 0 !important;
     }
 }

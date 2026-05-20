@@ -11,6 +11,9 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/compone
 import vipCardBg from '@/assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png';
 import iconUnlimitedViewing from '@/assets/images/icon_unlimited_viewing.png';
 import icon1080p from '@/assets/images/icon_1080p.png';
+import { profileH5Assets } from '@/constants/profileAssets';
+import { shoppingVipBenefitIcons } from '@/constants/shoppingVipBenefitAssets';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import payIconBack from '@/assets/images/pay_icon_back.png';
 import iconSecure from '@/assets/icons/shopping-pay/icon_secure.png';
 import checkboxChecked from '@/assets/icons/shopping-pay/checkbox_checked.png';
@@ -29,7 +32,44 @@ function paywallImage(file: string) {
     return new URL(`../../assets/images/${file}`, import.meta.url).href;
 }
 
-/** 与 `layouts/user` 的 `Page` 顶栏一致（`/shopping` 已 VIP 时用，避免与未 VIP 的 `ReelShortTopNav` 视觉不一致） */
+/** H5 `/shopping` ?????????+ ?????????? Top UP??*/
+function ShoppingTopUpHeader() {
+    const navigate = useNavigate();
+    if (
+        typeof window !== 'undefined' &&
+        // @ts-expect-error Flutter InAppWebView
+        window.flutter_inappwebview
+    ) {
+        return null;
+    }
+    return (
+        <header className="rs-shopping__topUpHeader">
+            <button
+                type="button"
+                className="rs-shopping__topUpHeaderBack"
+                onClick={() => {
+                    if (typeof window !== 'undefined' && window.history.length > 1) {
+                        navigate(-1);
+                        return;
+                    }
+                    navigate('/profile');
+                }}
+                aria-label="back"
+            >
+                {document.body.style.direction === 'ltr' ? (
+                    <ChevronLeft className="h-7 w-7" aria-hidden />
+                ) : (
+                    <ChevronRight className="h-7 w-7" aria-hidden />
+                )}
+            </button>
+            <h1 className="rs-shopping__topUpHeaderTitle">
+                <FormattedMessage id="shopping_page_title" />
+            </h1>
+        </header>
+    );
+}
+
+/** ??`layouts/user` ??`Page` ?????`/shopping` ??VIP ????????VIP ??`ReelShortTopNav` ?????? */
 function ShoppingVipMembershipHeader() {
     const navigate = useNavigate();
     if (
@@ -66,7 +106,7 @@ function ShoppingVipMembershipHeader() {
     );
 }
 
-/** 与 `widgets/Vip.tsx` 一致：相对续费价的展示折扣百分比 */
+/** ??`widgets/Vip.tsx` ?????????????????*/
 function limitedOfferOffPercent(price: string, renewalPrice: string): string {
     const p = parseFloat(price);
     const r = parseFloat(renewalPrice);
@@ -86,7 +126,7 @@ type Product = {
     bouns?: string;
 };
 
-/** 与金币包列表 grid 一致：基础币 + `bouns` 比例折算的赠送币，用于支付弹窗展示（不影响 type=1 订阅分支） */
+/** ?????? grid ???????+ `bouns` ??????????????????????type=1 ??????*/
 function totalCoinsForCoinProduct(p: Pick<Product, 'coin' | 'bouns'>): number {
     const baseCoin = p.coin ?? 0;
     const bonus = Number.parseFloat(p.bouns ?? '0');
@@ -104,24 +144,24 @@ function pickDefaultSubscriptionPlanId(list: Product[]): number | null {
 export type RadixRcLayout = 'page' | 'embed';
 
 export type RadixRcProps = {
-    /** 整页：站点顶栏+底栏；嵌入：仅购物主体，可选 VIP 顶栏 */
+    /** ???????????????????????VIP ?? */
     layout?: RadixRcLayout;
-    /** `layout=embed` 时：顶栏右侧关闭 */
+    /** `layout=embed` ???????? */
     onEmbedClose?: () => void;
     /**
-     * `layout=embed`：`drawer` 含倒计时条与关闭钮（剧集付费抽屉）；
-     * `plain` 仅主体，用于 PC 账户页右栏。
+     * `layout=embed`?`drawer` ???????????????????
+     * `plain` ?????? PC ???????
      */
     embedPresentation?: 'drawer' | 'plain';
-    /** `product` 接口的 `from` */
+    /** `product` ????`from` */
     productFrom?: 'shopping' | 'video';
-    /** 跳转收银台 URL 的 `from=` */
+    /** ??????URL ??`from=` */
     checkoutFrom?: 'shopping' | 'video';
     /**
-     * 嵌入购物（剧集抽屉 / PC 弹窗）：在 VIP 说明下展示「價格」（解锁所需金币）；不传则不展示该行（如 `/profile?tab=topup`）。
+     * ??????????/ PC ??????VIP ???????????????????????????? `/profile?tab=topup`???
      */
     headerEpisodeUnlockCoins?: number;
-    /** `layout=embed` 且 `productFrom=video`：支付成功并刷新 token 后，再打 `movie/episode?id=` 并把 `d` 交给播放器 */
+    /** `layout=embed` ??`productFrom=video`???????? token ???? `movie/episode?id=` ?? `d` ??????*/
     embedVideoEpisodeRowId?: number;
     onEmbedPaySuccessEpisodeDetail?: (episode: IPlayerEpisode) => void;
 };
@@ -129,7 +169,7 @@ export type RadixRcProps = {
 type ProductFromKey = NonNullable<RadixRcProps['productFrom']>;
 type PayModalStatus = 'idle' | 'processing' | 'checking' | 'success' | 'failed';
 
-/** SPA 内复用：整页 / 视频抽屉反复打开不重复打 `product` 接口、不闪骨架 */
+/** SPA ?????? / ???????????? `product` ????????*/
 const shoppingProductCache = new Map<ProductFromKey, Product[]>();
 
 export default function RadixRc({
@@ -143,16 +183,19 @@ export default function RadixRc({
     onEmbedPaySuccessEpisodeDetail,
 }: RadixRcProps = {}) {
     const intl = useIntl();
+    const isPc = useMinWidth768();
     const userStore = useUserStore();
+    const isTopUpShoppingPage = layout === 'page' && productFrom === 'shopping';
+    const isTopUpH5Layout = isTopUpShoppingPage && !isPc;
     const [searchParams] = useSearchParams();
-    /** 仅整页 `/shopping` 支持从外链强制展示套餐；嵌入 profile / 抽屉不带该语义。 */
+    /** ????`/shopping` ?????????????? profile / ?????????*/
     const forceShowPlans = layout === 'page' && searchParams.get('show_plans') === '1';
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    /** 整页 `/shopping`：已 VIP 展示会员信息，否则展示订阅套餐；`?show_plans=1` 时强制展示套餐。 */
+    /** ?? `/shopping`?? VIP ????????????????`?show_plans=1` ?????????*/
     const showMembershipOnShoppingPage =
         layout === 'page' && productFrom === 'shopping' && userStore.isVIP() && !forceShowPlans;
-    /** PC `/profile?tab=topup`（embed plain）：已 VIP 也展示会员信息。 */
+    /** PC `/profile?tab=topup`?embed plain????VIP ?????????*/
     const showMembershipOnProfileEmbedTopup =
         layout === 'embed' &&
         embedPresentation === 'plain' &&
@@ -182,16 +225,16 @@ export default function RadixRc({
             try {
                 await refreshSessionFromStoredToken();
             } catch {
-                // 静默失败：保留当前会话，不阻塞页面渲染。
+                // ?????????????????????
             }
         }
 
-        /** 进入页面时拉一次会话即可 */
+        /** ?????????????*/
         void syncSession();
 
         /**
-         * 不在 `window` 上监听 `focus`：嵌入 Profile 时，点登录弹窗等操作会误触 focus，
-         * 导致频繁 `login/token`。切回标签页用 visibility 即可覆盖「后台回来」场景。
+         * ?? `window` ????`focus`????Profile ??????????????focus??
+         * ???? `login/token`????????visibility ??????????????
          */
         let tabWasHidden = document.visibilityState === 'hidden';
         function handleVisibilityChange() {
@@ -365,10 +408,10 @@ export default function RadixRc({
     const showIntroWalletAndCountdown =
         layout === 'embed' || (layout === 'page' && productFrom === 'shopping');
     const isEmbedDrawer = layout === 'embed' && embedPresentation === 'drawer';
-    /** 整页 `/shopping`：顶栏式账户条（与参考 H5 布局一致），餘額不再叠在副标题下 */
+    /** ?? `/shopping`????????????H5 ?????????????????*/
     const showShoppingPageWalletBar = layout === 'page' && productFrom === 'shopping';
 
-    /** 整页 `/shopping` 顶栏钱包条：仅展示金幣总额（与 PC 侧栏一致），不重复帳戶餘額/贈送 */
+    /** ?? `/shopping` ??????????????? PC ?????????????/???*/
     const shoppingPageWalletDisplay = useMemo(() => {
         if (!userStore.signed || userStore.balance < 0) {
             return { total: 0, pending: userStore.signed && userStore.balance === -1 };
@@ -377,7 +420,7 @@ export default function RadixRc({
     }, [userStore.signed, userStore.balance]);
 
     function formatWalletAmount(n: number, pending: boolean) {
-        if (pending) return '···';
+        if (pending) return '???';
         return intl.formatNumber(n);
     }
 
@@ -401,7 +444,7 @@ export default function RadixRc({
                 <FormattedMessage id="balance" />
                 <img src={coinIcon} width={18} height={18} className="ml-1 shrink-0" alt="" />
                 <div className="text-orange-400 font-bold tabular-nums">
-                    {!userStore.signed ? 0 : userStore.balance === -1 ? '···' : intl.formatNumber(userStore.balance)}
+                    {!userStore.signed ? 0 : userStore.balance === -1 ? '???' : intl.formatNumber(userStore.balance)}
                 </div>
             </div>
         </>
@@ -437,13 +480,21 @@ export default function RadixRc({
                         </div>
                     </div>
                 ) : null}
-                <div className="rs-shopping__introTitle">
-                    <FormattedMessage id="shopping_vip_unlock_all" />
-                </div>
-                <div className="rs-shopping__introSub">
-                    <FormattedMessage id="shopping_auto_renew_cancel_anytime" />
-                </div>
-                {showIntroWalletAndCountdown && (!isEmbedDrawer || countdownMainEl) ? (
+                {isTopUpH5Layout ? (
+                    <h2 className="rs-shopping__sectionTitle">
+                        <FormattedMessage id="shopping_section_membership" />
+                    </h2>
+                ) : (
+                    <>
+                        <div className="rs-shopping__introTitle">
+                            <FormattedMessage id="shopping_vip_unlock_all" />
+                        </div>
+                        <div className="rs-shopping__introSub">
+                            <FormattedMessage id="shopping_auto_renew_cancel_anytime" />
+                        </div>
+                    </>
+                )}
+                {showIntroWalletAndCountdown && (!isEmbedDrawer || countdownMainEl) && !isTopUpH5Layout ? (
                     <div className="rs-shopping__introEmbedExtras">
                         {isEmbedDrawer || showShoppingPageWalletBar ? null : (
                             <div className="rs-shopping__embedWallet">{embedWalletRowsEl}</div>
@@ -454,8 +505,45 @@ export default function RadixRc({
             </div>
 
             <div className={cn('rs-shopping__plans', 'rs-shopping__plans--vipSubscriptions')}>
-                {(loadingProducts ? [] : planProducts).map((p) => {
+                {(loadingProducts ? [] : planProducts).map((p, planIndex) => {
                     const enableInteraction = true;
+                    const isFirstPlan = planIndex === 0;
+                    const planBenefitIcons = isTopUpH5Layout
+                        ? isFirstPlan
+                            ? shoppingVipBenefitIcons.weekly
+                            : shoppingVipBenefitIcons.yearly
+                        : {
+                              unlimited: iconUnlimitedViewing,
+                              adFree: icon1080p,
+                              hd: profileH5Assets.benefitHd,
+                              more: profileH5Assets.benefitMore,
+                          };
+                    const planBenefitRows: {
+                        icon: string;
+                        messageId: string;
+                        topUpExtra?: boolean;
+                    }[] = [
+                        {
+                            icon: planBenefitIcons.unlimited,
+                            messageId: 'shopping_benefit_unlimited_viewing',
+                        },
+                        {
+                            icon: planBenefitIcons.adFree,
+                            messageId: isTopUpH5Layout
+                                ? 'shopping_benefit_ad_free'
+                                : 'shopping_benefit_1080p',
+                        },
+                        {
+                            icon: planBenefitIcons.hd,
+                            messageId: 'shopping_benefit_hd',
+                            topUpExtra: true,
+                        },
+                        {
+                            icon: planBenefitIcons.more,
+                            messageId: 'shopping_benefit_more',
+                            topUpExtra: true,
+                        },
+                    ];
                     return (
                         <div
                             key={p.id}
@@ -475,6 +563,8 @@ export default function RadixRc({
                             }
                             className={cn(
                                 'rs-shopping__plan',
+                                isFirstPlan && 'rs-shopping__plan--weekly',
+                                !isFirstPlan && 'rs-shopping__plan--yearly',
                                 currentId === p.id && 'rs-shopping__plan--selected',
                                 !enableInteraction && 'cursor-default',
                             )}
@@ -485,12 +575,20 @@ export default function RadixRc({
                                     style={{ backgroundImage: `url(${vipCardBg})` }}
                                 />
 
-                                <div className="rs-shopping__planOfferBadge">
-                                    <FormattedMessage
-                                        id="limited_time_offer"
-                                        values={{ off: limitedOfferOffPercent(p.price, p.renewal_price) }}
-                                    />
-                                </div>
+                                {isTopUpH5Layout && showCountdown ? (
+                                    <div className="rs-shopping__planCountdown">
+                                        <Countdown variant="planCorner" />
+                                    </div>
+                                ) : null}
+
+                                {!isTopUpH5Layout ? (
+                                    <div className="rs-shopping__planOfferBadge">
+                                        <FormattedMessage
+                                            id="limited_time_offer"
+                                            values={{ off: limitedOfferOffPercent(p.price, p.renewal_price) }}
+                                        />
+                                    </div>
+                                ) : null}
                                 {/* {currentId === p.id ? (
                                     <img
                                         className="rs-shopping__planCheckedIcon"
@@ -503,34 +601,46 @@ export default function RadixRc({
                                 <div className="rs-shopping__planBody">
                                     <div className="rs-shopping__planText">
                                         <div className="rs-shopping__planName">
-                                            {intl.formatMessage({ id: `${p.name}_subscription` })}
+                                            {isTopUpH5Layout && isFirstPlan
+                                                ? intl.formatMessage({ id: 'shopping_vip_weekly_special_title' })
+                                                : intl.formatMessage({ id: `${p.name}_subscription` })}
                                         </div>
                                         <div className="rs-shopping__planPriceRow">
                                             <div className="rs-shopping__planPrice">${p.price}</div>
                                         </div>
                                         <div className="rs-shopping__planRenew">
-                                            {intl.formatMessage({ id: 'shopping_auto_renew_short' })}
+                                            {isTopUpH5Layout && isFirstPlan
+                                                ? intl.formatMessage(
+                                                      { id: 'shopping_vip_weekly_subtitle' },
+                                                      {
+                                                          price1: `$${p.price}`,
+                                                          price2: `$${p.renewal_price}`,
+                                                      },
+                                                  )
+                                                : intl.formatMessage({ id: 'shopping_auto_renew_short' })}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="rs-shopping__planBenefits">
-                                    <div className="rs-shopping__planBenefit">
-                                        <img
-                                            className="rs-shopping__planBenefitIcon"
-                                            src={iconUnlimitedViewing}
-                                            alt=""
-                                        />
-                                        <FormattedMessage id="shopping_benefit_unlimited_viewing" />
-                                    </div>
-                                    <div className="rs-shopping__planBenefit">
-                                        <img
-                                            className="rs-shopping__planBenefitIcon"
-                                            src={icon1080p}
-                                            alt=""
-                                        />
-                                        <FormattedMessage id="shopping_benefit_1080p" />
-                                    </div>
+                                    {planBenefitRows.map((row) => (
+                                        <div
+                                            key={row.messageId}
+                                            className={cn(
+                                                'rs-shopping__planBenefit',
+                                                row.topUpExtra && 'rs-shopping__planBenefit--topUpExtra',
+                                            )}
+                                        >
+                                            {row.icon ? (
+                                                <img
+                                                    className="rs-shopping__planBenefitIcon"
+                                                    src={row.icon}
+                                                    alt=""
+                                                />
+                                            ) : null}
+                                            <FormattedMessage id={row.messageId} />
+                                        </div>
+                                    ))}
                                 </div>
                             </>
                         </div>
@@ -553,8 +663,17 @@ export default function RadixRc({
 
             {!loadingProducts && coinProducts.length > 0 ? (
                 <div className="rs-shopping__coinSection w-full shadow-none">
-                    <div className="mb-3 w-full text-[calc(16/375*var(--app-vw,100vw))] font-bold leading-tight text-white/90 md:text-[16px]">
-                        <FormattedMessage id="shopping_top_up_coins" />
+                    <div
+                        className={cn(
+                            'mb-3 w-full font-bold leading-tight text-white/90',
+                            isTopUpH5Layout
+                                ? 'rs-shopping__sectionTitle'
+                                : 'text-[calc(16/375*var(--app-vw,100vw))] md:text-[16px]',
+                        )}
+                    >
+                        <FormattedMessage
+                            id={isTopUpH5Layout ? 'shopping_bar_coins' : 'shopping_top_up_coins'}
+                        />
                     </div>
                     <div className="grid w-full grid-cols-2 gap-2 shadow-none md:grid-cols-4">
                         {coinProducts.map((p) => {
@@ -581,6 +700,7 @@ export default function RadixRc({
                                     className={cn(
                                         'rs-shopping__coinSku relative flex w-full cursor-pointer flex-col rounded-[4px] p-4 shadow-none',
                                         'outline-none focus-visible:outline-none',
+                                        isTopUpH5Layout && 'rs-shopping__coinSku--topUpH5',
                                     )}
                                 >
                                     {bonusPct > 0 ? (
@@ -633,6 +753,28 @@ export default function RadixRc({
                 </div>
             ) : null}
 
+            {isTopUpH5Layout ? (
+                <section className="rs-shopping__tipsSection" aria-labelledby="rs-shopping-tips-title">
+                    <h2 id="rs-shopping-tips-title" className="rs-shopping__sectionTitle">
+                        <FormattedMessage id="shopping_section_tips" />
+                    </h2>
+                    <ol className="rs-shopping__tipsList">
+                        <li>
+                            <FormattedMessage
+                                id="shopping_tips_item_1"
+                                values={{ site: intl.formatMessage({ id: 'site_name' }) }}
+                            />
+                        </li>
+                        <li>
+                            <FormattedMessage
+                                id="shopping_tips_item_2"
+                                values={{ site: intl.formatMessage({ id: 'site_name' }) }}
+                            />
+                        </li>
+                    </ol>
+                </section>
+            ) : null}
+
         </div>
     );
 
@@ -675,7 +817,7 @@ export default function RadixRc({
                                                 totalCoinsForCoinProduct(currentCheckoutProduct),
                                             )}
                                         </span>
-                                        <span className="text-white/70">·</span>
+                                        <span className="text-white/70">?</span>
                                         <span>${currentCheckoutProduct.price}</span>
                                     </p>
                                 ) : null}
@@ -695,7 +837,7 @@ export default function RadixRc({
                                     <span className="rs-shopping__payModalCopyAmount">{retryAmount}</span>
                                 </p>
                             </div>
-                            {/* 支付进行中勿用 key 整棵卸载本区，以免 destroy 丢 on('success')/on('error')；重试用 paySessionSeed prop 重建钱包 effect。redirectToCheckout 以回跳+Webhook/查单为准。 */}
+                            {/* ????????key ??????????destroy ??on('success')/on('error')???? paySessionSeed prop ???? effect?redirectToCheckout ????Webhook/??????*/}
                             <div className="rs-shopping__payStack">
                                 <RadixRcShoppingPaySection
                                     key={String(walletProductId ?? 'wallet')}
@@ -758,7 +900,7 @@ export default function RadixRc({
                                         type="button"
                                         className="rs-shopping__payStatusRetryBtn"
                                         onClick={() => {
-                                            // 强制重建支付组件，避免复用已消费/失效的 Airwallex intent。
+                                            // ????????????????/????Airwallex intent??
                                             setPaySessionSeed((prev) => prev + 1);
                                             setPayModalStatus('idle');
                                         }}
@@ -934,7 +1076,7 @@ export default function RadixRc({
                     embedPresentation === 'drawer' && 'rs-shopping-drawer-sheet--videoDrawer',
                 )}
             >
-                {/* embed 须包 `.rs-shopping`，否则 SCSS 中 `.rs-shopping .rs-shopping__*`（含顶栏倒计时）无法命中 */}
+                {/* embed ?? `.rs-shopping`????SCSS ??`.rs-shopping .rs-shopping__*`???????????? */}
                 <div className="rs-shopping rs-shopping--drawerEmbed">
                     {showDrawerChrome ? (
                         <>
@@ -981,7 +1123,7 @@ export default function RadixRc({
         );
     }
 
-    /* 已 VIP：与 `layouts/user` 的 `Page` 同级结构 — 顶栏在滚动区外，正文单独 `overflow-auto`，避免顶栏跟着滚、也避免会员区 `min-height:100%` 在嵌套滚动里撑出大块空档 */
+    /* ??VIP?? `layouts/user` ??`Page` ???? ?????????????? `overflow-auto`????????????????`min-height:100%` ???????????? */
     if (showMembershipOnShoppingPage) {
         return (
             <div className="rs-shopping rs-shopping--vipMembership">
@@ -995,11 +1137,12 @@ export default function RadixRc({
     }
 
     return (
-        <div className="rs-shopping">
+        <div className={cn('rs-shopping', isTopUpShoppingPage && 'rs-shopping--topUpH5')}>
+            {isTopUpH5Layout ? <ShoppingTopUpHeader /> : null}
             <div ref={scrollRef} className="rs-shopping__scroll">
-                <ReelShortTopNav scrollParentRef={scrollRef} showSearch={true} />
+                {isTopUpH5Layout ? null : <ReelShortTopNav scrollParentRef={scrollRef} showSearch={true} />}
                 {main}
-                <ReelShortFooter />
+                {isTopUpH5Layout ? null : <ReelShortFooter />}
             </div>
             {payModal}
         </div>

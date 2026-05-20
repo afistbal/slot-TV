@@ -17,5 +17,5 @@ export function formatVideoIntroTagLabel(uniqueId: string): string {
 
 /** 与 Search 页一致：仅 `movie_tag`（接口 tag/name），列表请求只用 tag、不带 keyword */
 export function videoIntroTagSearchPath(tag: { name: string; unique_id: string }): string {
-    return `/search?${new URLSearchParams({ movie_tag: tag.name }).toString()}`;
+    return `/tagSearch?${new URLSearchParams({ movie_tag: tag.name }).toString()}`;
 }

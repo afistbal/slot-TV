@@ -1,4 +1,4 @@
-import { CircleUser } from 'lucide-react';
+﻿import { CircleUser } from 'lucide-react';
 import {
     RsPcHelpMenuIcon,
     RsPcHistoryMenuIcon,
@@ -6,14 +6,9 @@ import {
     RsPcWalletMenuIcon,
 } from '@/components/icons/reelshortDashboardPcMenuIcons';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
-import gift from '@/assets/gift.svg';
-import gem from '@/assets/gem.svg';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
-import iconFeedback from '@/assets/images/59f06ad0-876c-11ee-aed2-cfe3d80f70eb.png';
-import iconHistory from '@/assets/images/history.png';
-import iconWallet from '@/assets/04030ab0-876c-11ee-aed2-cfe3d80f70eb.png';
-import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
 import coinIcon from '@/assets/coin.svg';
+import { profileH5Assets } from '@/constants/profileAssets';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Vip from '@/widgets/Vip';
@@ -25,6 +20,11 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api, type TData } from '@/api';
 import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
+import {
+    clearProfileMembershipRenewalAt,
+    getProfileMembershipRenewalAt,
+    setProfileMembershipRenewalAt,
+} from '@/lib/profileMembershipCache';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
@@ -49,8 +49,12 @@ export default function Component() {
     const [pcLoginOpen, setPcLoginOpen] = useState(false);
     const [pcTab, setPcTab] = useState<ProfilePcTab>('topup');
     const [profileMyListSubTab, setProfileMyListSubTab] = useState<ProfileMyListSubTab>('favorite');
+    const [membershipRenewalAt, setMembershipRenewalAt] = useState<string | null>(
+        () => getProfileMembershipRenewalAt(),
+    );
+    const isVipProfile = userStore.isVIP();
 
-    /** PC：与 ReelShort `?tab=mylist` / `history` 类似，用查询串驱动侧栏（可分享、可外链）。 */
+    /** PC?? ReelShort `?tab=mylist` / `history` ????????????????????? */
     function setProfileTabQuery(
         tab: 'topup' | 'wallet' | 'profile' | 'mylist' | 'history' | 'feedback',
     ) {
@@ -76,7 +80,7 @@ export default function Component() {
         }
     }
 
-    /** H5：观看记录在 `/my-list/history`、钱包在 `/wallet`；对应 `?tab=` 仅 PC 解析 */
+    /** H5?????? `/my-list/history`???? `/wallet`??? `?tab=` ? PC ?? */
     useEffect(() => {
         if (isPc) {
             return;
@@ -94,10 +98,17 @@ export default function Component() {
             next.delete('tab');
             const q = next.toString();
             navigate(`/wallet${q ? `?${q}` : ''}`, { replace: true, state: location.state });
+            return;
+        }
+        if (tab === 'topup') {
+            const next = new URLSearchParams(searchParams);
+            next.delete('tab');
+            const q = next.toString();
+            navigate(`/profile${q ? `?${q}` : ''}`, { replace: true, state: location.state });
         }
     }, [isPc, searchParams, navigate, location.state]);
 
-    /** PC：URL → 侧栏与主栏状态 */
+    /** PC?URL ? ??????? */
     useEffect(() => {
         if (!isPc) {
             return;
@@ -136,7 +147,7 @@ export default function Component() {
         setPcTab('topup');
     }, [isPc, location.search, userStore]);
 
-    /** PC 登录：由 `navigate('/profile', { state: { openPcLogin: true } })` 打开，不写 URL 查询串。 */
+    /** PC ???? `navigate('/profile', { state: { openPcLogin: true } })` ????? URL ???? */
     useEffect(() => {
         const st = location.state as { openPcLogin?: boolean } | null | undefined;
         if (!st?.openPcLogin) {
@@ -149,7 +160,7 @@ export default function Component() {
         );
     }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
-    /** 兼容旧链 `/profile?login=1`：去掉查询串并仅拉起弹窗。 */
+    /** ???? `/profile?login=1`????????????? */
     useEffect(() => {
         if (!isPc) {
             return;
@@ -182,11 +193,48 @@ export default function Component() {
         });
     }, [sessionBootstrapReady]);
 
+    /** H5 /profile：VIP 拉取 renewal_at，有缓存则不再重复请求 */
+    useEffect(() => {
+        if (isPc || !isVipProfile || !sessionBootstrapReady) {
+            if (!isVipProfile) {
+                setMembershipRenewalAt(null);
+                clearProfileMembershipRenewalAt();
+            }
+            return;
+        }
+
+        const cached = getProfileMembershipRenewalAt();
+        if (cached) {
+            setMembershipRenewalAt(cached);
+            return;
+        }
+
+        let cancelled = false;
+        api<TData>('user/membership', { loading: false, toastOnError: false })
+            .then((res) => {
+                if (cancelled || res.c !== 0) {
+                    return;
+                }
+                const raw = res.d['renewal_at'];
+                if (typeof raw === 'string' && raw.trim()) {
+                    const value = raw.trim();
+                    setProfileMembershipRenewalAt(value);
+                    setMembershipRenewalAt(value);
+                }
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [isPc, isVipProfile, sessionBootstrapReady]);
+
     async function handleLogout() {
         const ok = await logoutToAnonymousSession();
         if (!ok) {
             return;
         }
+        clearProfileMembershipRenewalAt();
+        setMembershipRenewalAt(null);
         if (isPc) {
             setPcLoginOpen(true);
         }
@@ -208,8 +256,21 @@ export default function Component() {
             ? getUserAvatarDisplayUrl(userStore.info as TData | undefined)
             : undefined;
 
+    const h5HeaderLoginBtn = (
+        <Link to="/page/login" className="rs-profile__h5HeaderAuth">
+            <FormattedMessage id="login" />
+        </Link>
+    );
+
+    const h5HeaderLogoutBtn = (
+        <button type="button" className="rs-profile__h5HeaderAuth" onClick={() => void handleLogout()}>
+            <FormattedMessage id="logout" />
+        </button>
+    );
+
     const loginCardSigned = userStore.signed && !userStore.isAnonymous() && (
-        <Link to="/user/detail" className="rs-profile__loginCard">
+        <div className="rs-profile__loginCard">
+            <Link to="/user/detail" className="rs-profile__loginCardUserLink">
             <div className="rs-profile__avatarWrap">
                 {avatarUrl ? (
                     <img
@@ -226,16 +287,17 @@ export default function Component() {
                     <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
                 )}
             </div>
-            <div className="rs-profile__loginCardMain">
+            <div className="rs-profile__loginCardMain rs-profile__loginCardMain--link">
                 <div>
                     <div className="rs-profile__name">
                         <div>{userStore.info!['name'] as string}</div>
                     </div>
                     {profileUidRow}
                 </div>
-                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
             </div>
-        </Link>
+            </Link>
+            {h5HeaderLogoutBtn}
+        </div>
     );
 
     const loginCardGuest = (
@@ -250,13 +312,29 @@ export default function Component() {
                     </div>
                     {profileUidRow}
                 </div>
+                {h5HeaderLoginBtn}
             </div>
         </div>
     );
 
-    const vipCard = (
+    const h5VipRenewalDateLabel = useMemo(() => {
+        if (!membershipRenewalAt) {
+            return null;
+        }
+        const datePart = membershipRenewalAt.slice(0, 10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+            return datePart;
+        }
+        const parsed = new Date(membershipRenewalAt.replace(' ', 'T'));
+        if (Number.isNaN(parsed.getTime())) {
+            return null;
+        }
+        return intl.formatDate(parsed, { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }, [membershipRenewalAt, intl]);
+
+    const h5VipSubscribedCard = (
         <div
-            className="rs-profile__vipCard"
+            className="rs-profile__h5Vip rs-profile__h5Vip--active"
             onClick={handleVipCardClick}
             role="button"
             tabIndex={0}
@@ -267,35 +345,36 @@ export default function Component() {
                 }
             }}
         >
-            <img
-                src={gift}
-                className={cn(
-                    'w-20 h-20 absolute top-3',
-                    document.body.style.direction === 'ltr' ? 'right-2' : 'left-2',
-                )}
-                alt=""
-            />
-            <img
-                src={gem}
-                className={cn(
-                    'w-16 h-16 absolute bottom-2 -rotate-45',
-                    document.body.style.direction === 'ltr' ? 'right-10' : 'left-10',
-                )}
-                alt=""
-            />
-            <div className="rs-profile__vipCardText">
-                <div className="rs-profile__vipPill">
-                    <FormattedMessage id={userStore.isVIP() ? 'is_vip' : 'vip'} />
+            <div className="rs-profile__h5VipActiveBody">
+                <div className="rs-profile__h5VipActiveLeft">
+                    <div className="rs-profile__h5VipActiveMain">
+                        <img
+                            src={profileH5Assets.vipCardDecor}
+                            alt=""
+                            className="rs-profile__h5VipActiveIcon"
+                            aria-hidden
+                        />
+                        <div className="rs-profile__h5VipActiveTitle">
+                            <FormattedMessage id="vip" />
+                        </div>
+                    </div>
+                    <div className="rs-profile__h5VipActiveValid">
+                        <FormattedMessage
+                            id="profile_h5_vip_valid_until"
+                            values={{ date: h5VipRenewalDateLabel ?? '--' }}
+                        />
+                    </div>
                 </div>
-                <div className="rs-profile__vipHint">
-                    <FormattedMessage id="enjoy" />
-                </div>
+                <span className="rs-profile__h5VipActiveBadge">
+                    <FormattedMessage id="profile_h5_subscribed" />
+                </span>
             </div>
         </div>
     );
 
+
     const h5Menu = (
-        <div className="rs-profile__menu">
+        <div className="rs-profile__menu rs-profile__menu--h5">
             {userStore.isAdmin() && (
                 <>
                     <Link to="/z" className="rs-profile__menuItem">
@@ -305,47 +384,47 @@ export default function Component() {
                                 <FormattedMessage id="admin" />
                             </div>
                         </div>
-                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                        <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
                     </Link>
                     <Link to="/shopping?show_plans=1" className="rs-profile__menuItem">
                         <div className="rs-profile__menuLeft">
                             <CircleUser className="w-5 h-5" />
                             <div className="rs-profile__menuText">产品列表</div>
                         </div>
-                        <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                        <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
                     </Link>
                 </>
             )}
-            <Link to="/wallet" className="rs-profile__menuItem">
-                <div className="rs-profile__menuLeft">
-                    <img src={iconWallet} alt="" className="rs-profile__menuIcon" />
-                    <div className="rs-profile__menuText">
-                        <FormattedMessage id="profile_wallet" />
-                    </div>
-                </div>
-                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
-            </Link>
             <Link
                 to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
                 state={{ sourceform }}
                 className="rs-profile__menuItem"
             >
                 <div className="rs-profile__menuLeft">
-                    <img src={iconHistory} alt="" className="rs-profile__menuIcon" />
+                    <img src={profileH5Assets.menuHistory} alt="" className="rs-profile__menuIcon" />
                     <div className="rs-profile__menuText">
                         <FormattedMessage id="history" />
                     </div>
                 </div>
-                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
+            </Link>
+            <Link to="/page/language" className="rs-profile__menuItem">
+                <div className="rs-profile__menuLeft">
+                    <img src={profileH5Assets.menuLanguage} alt="" className="rs-profile__menuIcon" />
+                    <div className="rs-profile__menuText">
+                        <FormattedMessage id="language" />
+                    </div>
+                </div>
+                <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
             </Link>
             <Link to="/page/feedback" className="rs-profile__menuItem">
                 <div className="rs-profile__menuLeft">
-                    <img src={iconFeedback} alt="" className="rs-profile__menuIcon" />
+                    <img src={profileH5Assets.menuHelp} alt="" className="rs-profile__menuIcon" />
                     <div className="rs-profile__menuText">
                         <FormattedMessage id="feedback_help" />
                     </div>
                 </div>
-                <img src={iconChevron} alt="" className="rs-profile__menuChevronIcon" />
+                <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
             </Link>
         </div>
     );
@@ -386,40 +465,98 @@ export default function Component() {
     }, [userStore.signed, userStore.balance]);
 
     function formatPcWalletStat(n: number, pending: boolean) {
-        if (pending) return '···';
+        if (pending) return '\u00b7\u00b7\u00b7';
         return intl.formatNumber(n);
     }
 
-    /** H5 非 VIP：ReelShort DashboardPage_amount（金幣 + 儲值） */
-    const h5AccountBalanceCard = (
-        <div className="rs-profile__h5Amount">
-            <div className="rs-profile__h5AmountTitle">
-                <FormattedMessage id="shopping_bar_account_balance" />
-            </div>
-            <div className="rs-profile__h5AmountRow">
-                <div className="rs-profile__h5AmountCol">
-                    <div className="rs-profile__h5AmountValueRow">
-                        <img src={coinIcon} alt="" aria-hidden />
-                        <span className="tabular-nums">
-                            {formatPcWalletStat(pcWalletDisplay.total, pcWalletDisplay.pending)}
-                        </span>
-                    </div>
-                    <div className="rs-profile__h5AmountLabel">
-                        <FormattedMessage id="shopping_bar_coins" />
-                    </div>
+    /** H5 ? VIP?ReelShort DashboardPage_amount??? + ??? */
+    const h5VipUpgradeCard = (
+        <div
+            className="rs-profile__h5Vip"
+            onClick={handleVipCardClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleVipCardClick();
+                }
+            }}
+        >
+            <p className="rs-profile__h5VipTitle">
+                <FormattedMessage id="profile_h5_upgrade_vip" />
+            </p>
+            <div className="rs-profile__h5VipBenefits">
+                <div className="rs-profile__h5VipBenefit">
+                    <img src={profileH5Assets.benefitShort} alt="" className="rs-profile__h5VipBenefitIcon" />
+                    <span>
+                        <FormattedMessage id="shopping_benefit_unlimited_viewing" />
+                    </span>
+                </div>
+                <div className="rs-profile__h5VipBenefit">
+                    <img src={profileH5Assets.benefitHd} alt="" className="rs-profile__h5VipBenefitIcon" />
+                    <span>
+                        <FormattedMessage id="shopping_benefit_1080p" />
+                    </span>
+                </div>
+                <div className="rs-profile__h5VipBenefit">
+                    <img src={profileH5Assets.benefitMore} alt="" className="rs-profile__h5VipBenefitIcon" />
+                    <span>
+                        <FormattedMessage id="shopping_benefit_more" />
+                    </span>
                 </div>
             </div>
             <button
                 type="button"
-                className="rs-profile__h5AmountTopUp"
-                onClick={handleVipCardClick}
+                className="rs-profile__h5VipSubscribe"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    handleVipCardClick();
+                }}
             >
-                <FormattedMessage id="top_up" />
+                <FormattedMessage id="profile_subscribe" />
             </button>
         </div>
     );
 
-    /** 与 ReelShort `dashboard_pc_*` DOM + `9cb3e9a284588d0e.css` 一致（见 `reelshort-dashboard-pc-mirror.scss`） */
+    const h5MyAccountCard = (
+        <div className="rs-profile__h5Account">
+            <div className="rs-profile__h5AccountHead">
+                <span className="rs-profile__h5AccountTitle">
+                    <FormattedMessage id="profile_h5_my_account" />
+                </span>
+                <Link to="/wallet" className="rs-profile__h5AccountDetails">
+                    <FormattedMessage id="profile_h5_details" />
+                    <img src={profileH5Assets.chevron} alt="" aria-hidden />
+                </Link>
+            </div>
+            <div className="rs-profile__h5AccountDivider" aria-hidden />
+            <div className="rs-profile__h5AccountBody">
+                <div className="rs-profile__h5AccountCoins">
+                    <span className="rs-profile__h5AccountCoinsLabel">
+                        <FormattedMessage id="shopping_bar_coins" />
+                    </span>
+                    <div className="rs-profile__h5AccountCoinsValue">
+                        <img src={profileH5Assets.coin} alt="" aria-hidden />
+                        <span className="tabular-nums">
+                            {formatPcWalletStat(pcWalletDisplay.total, pcWalletDisplay.pending)}
+                        </span>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    className="rs-profile__h5AccountTopUp"
+                    onClick={handleVipCardClick}
+                >
+                    <FormattedMessage id="top_up" />
+                </button>
+            </div>
+        </div>
+    );
+
+
+
+        /** ? ReelShort `dashboard_pc_*` DOM + `9cb3e9a284588d0e.css` ???? `reelshort-dashboard-pc-mirror.scss`? */
     const pcUserInfo = (
         <div className="rs-profile__pc-reelshortMirror">
             <div className="dashboard_pc_dashboard_pc__EjjRI">
@@ -490,7 +627,7 @@ export default function Component() {
         </div>
     );
 
-    /** PC 侧栏：头像区下方、菜单上方 — 深色卡内含餘額、金幣與儲值（跳转 tab=topup） */
+    /** PC ????????????? ? ???????????????? tab=topup? */
     const pcAccountBalance = (
         <div className="rs-profile__pc-accountBalance">
             <div className="rs-profile__pc-accountBalance__panel">
@@ -525,7 +662,7 @@ export default function Component() {
             >
                 <ReelShortTopNav
                     scrollParentRef={scrollRef}
-                    /* PC：与首页同结构，避免 brand-cluster 居中 ↔ 左对齐切换晃眼；H5 不展示首頁/類別 subnav */
+                    /* PC?????????? brand-cluster ?? ? ????????H5 ?????/?? subnav */
                     showPrimaryNav={isPc}
                     showSearch={true}
                     showProfile={false}
@@ -689,22 +826,10 @@ export default function Component() {
                         {userStore.signed && !userStore.isAnonymous()
                             ? loginCardSigned
                             : loginCardGuest}
-                        {userStore.isVIP() ? vipCard : h5AccountBalanceCard}
+                        {isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard}
+                        {h5MyAccountCard}
                         {h5Menu}
-                        {userStore.isAnonymous() ? (
-                            <Link to="/page/login" className="rs-profile__btnLogin">
-                                <FormattedMessage id="login" />
-                            </Link>
-                        ) : (
-                            <button
-                                type="button"
-                                className="rs-profile__btnLogin"
-                                onClick={handleLogout}
-                            >
-                                <FormattedMessage id="logout" />
-                            </button>
-                        )}
-                        <ReelShortFooter />
+                        <ReelShortFooter dockAboveBottomTab />
                     </div>
                 )}
                 <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
