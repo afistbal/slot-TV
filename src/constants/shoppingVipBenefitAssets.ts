@@ -1,4 +1,12 @@
-import weeklyBenefitUnlimited from '@/assets/profile/icon_short@2x.png';
+import weeklyIcon1 from '@/assets/profile/icon_short@2x.png';
+import weeklyIcon2 from '@/assets/profile/icon_ad@2x.png';
+import weeklyIcon3 from '@/assets/profile/icon_hd@2x.png';
+import weeklyIcon4 from '@/assets/profile/icon_benefit@2x.png';
+import yearIcon1 from '@/assets/profile/icon_short_nor@2x.png';
+import yearIcon2 from '@/assets/profile/icon_ad_nor@2x.png';
+import yearIcon3 from '@/assets/profile/icon_hd_nor@2x.png';
+import yearIcon4 from '@/assets/profile/icon_benefit_nor@2x.png';
+
 
 /**
  * 购物页 H5 VIP 卡底部权益图标（周卡 / 年卡各 4 张金色图）。
@@ -25,15 +33,15 @@ export type ShoppingVipBenefitIconSet = {
 
 export const shoppingVipBenefitIcons = {
     weekly: {
-        unlimited: weeklyBenefitUnlimited,
-        adFree: '',
-        hd: '',
-        more: '',
+        unlimited: weeklyIcon1,
+        adFree: weeklyIcon2,
+        hd: weeklyIcon3,
+        more: weeklyIcon4,
     },
     yearly: {
-        unlimited: '',
-        adFree: '',
-        hd: '',
-        more: '',
+        unlimited: yearIcon1,
+        adFree: yearIcon2,
+        hd: yearIcon3,
+        more: yearIcon4,
     },
 } as const satisfies Record<'weekly' | 'yearly', ShoppingVipBenefitIconSet>;

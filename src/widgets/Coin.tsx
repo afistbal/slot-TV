@@ -8,7 +8,7 @@ import Loader from '@/components/Loader';
 import usePixel from '@/hooks/usePixel';
 import { init } from '@airwallex/components-sdk';
 import { toast } from 'sonner';
-import coinIcon from '@/assets/coin.svg';
+import coinIcon from '@/assets/profile/icon_coin@2x.png';
 import Payment from './Payment';
 import Countdown from './Countdown';
 // import Adjust from "@adjustcom/adjust-web-sdk";

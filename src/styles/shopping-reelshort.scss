@@ -390,6 +390,60 @@
         }
     }
 
+    .rs-shopping__embedWalletRow {
+        display: flex;
+        align-items: center;
+        font-size: calc(14 / 375 * var(--app-vw));
+        line-height: 1.25;
+        color: rgba(255, 255, 255, 0.75);
+
+        @media (min-width: 768px) {
+            font-size: 14px;
+        }
+
+        &+& {
+            margin-top: calc(4 / 375 * var(--app-vw));
+
+            @media (min-width: 768px) {
+                margin-top: 4px;
+            }
+        }
+    }
+
+    .rs-shopping__embedWalletLabel {
+        flex-shrink: 0;
+        font-weight: 400;
+        font-size: 14px;
+        color: #999999;
+
+    }
+
+    .rs-shopping__embedWalletCoin {
+        width: calc(14 / 375 * var(--app-vw));
+        height: calc(14 / 375 * var(--app-vw));
+        margin-left: calc(4 / 375 * var(--app-vw));
+        flex-shrink: 0;
+        object-fit: contain;
+
+        @media (min-width: 768px) {
+            width: 18px;
+            height: 18px;
+            margin-left: 4px;
+        }
+    }
+
+    .rs-shopping__embedWalletAmount {
+        font-family: DIN Alternate, DIN Alternate;
+        margin-left: calc(3 / 375 * var(--app-vw));
+        color: #fff;
+        font-variant-numeric: tabular-nums;
+        font-size: calc(14 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            margin-left: 2px;
+        }
+    }
+
     /* 与 VIP 弹窗 `widgets/Countdown` 同款粉块倒计时，外层仅负责间距与居中 */
     .rs-shopping__countdown {
         margin-bottom: calc(12 / 375 * var(--app-vw));
@@ -462,7 +516,7 @@
         cursor: pointer;
         overflow: hidden;
         border-radius: calc(4 / 375 * var(--app-vw));
-        background: linear-gradient(180deg, #ffedd5 0%, #f3cb93 49.68%);
+        background: linear-gradient(180deg, #ffedd5 0%, #F1DA97 49.68%);
         -webkit-tap-highlight-color: transparent;
 
         @media (min-width: 768px) {
@@ -679,9 +733,8 @@
         background: rgba(255, 255, 255, 0.2);
         padding: calc(8 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw));
         font-size: calc(10 / 375 * var(--app-vw));
-        font-weight: 500;
-        line-height: normal;
-        color: #401a06;
+        font-weight: 400;
+        color: #633E25;
 
         @media (min-width: 768px) {
             column-gap: 8px;
@@ -1806,9 +1859,9 @@
             background-color: #000;
         }
 
-        .rs-shopping__main {
-            padding: calc(8 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
-        }
+        // .rs-shopping__main {
+        //     padding: calc(8 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw)) calc(24 / 375 * var(--app-vw));
+        // }
 
         .rs-shopping__pageWalletBar {
             display: none;
@@ -1821,6 +1874,13 @@
             color: #FFFFFF;
         }
 
+        .rs-shopping__tipTitle {
+            margin: 0 0 calc(12 / 375 * var(--app-vw));
+            font-size: calc(17 / 375 * var(--app-vw));
+            font-weight: 500;
+            color: #999999;
+        }
+
         .rs-shopping__plans {
             gap: calc(12 / 375 * var(--app-vw));
         }
@@ -1831,24 +1891,24 @@
         }
 
         .rs-shopping__plan--weekly {
-            background: linear-gradient(86deg, #FFECD4 0%, #F3CB93 100%);
+            background: linear-gradient(86deg, #FFECD4 0%, #F1DA97 100%);
         }
 
         .rs-shopping__plan--yearly {
-            background: linear-gradient(165deg, #3d3429 0%, #1f1a16 55%, #14110f 100%);
+            background: linear-gradient(87deg, #3C3427 0%, #201816 100%);
 
             .rs-shopping__planName,
             .rs-shopping__planPrice {
-                color: #f3cb93;
+                color: #FFFFFF;
             }
 
             .rs-shopping__planRenew {
-                color: rgba(243, 203, 147, 0.72);
+                color: rgba(255, 255, 255, 0.75);
             }
 
             .rs-shopping__planBenefits {
-                background: rgba(0, 0, 0, 0.22);
-                color: rgba(243, 203, 147, 0.92);
+                background: rgba(78, 78, 78, 0.35);
+                color: #F1DA97;
             }
         }
 
@@ -1898,18 +1958,18 @@
 
         .rs-shopping__planName {
             font-size: calc(15 / 375 * var(--app-vw));
-            font-weight: 700;
-            line-height: 1.25;
-            color: #401a06;
+            font-weight: 500;
+            color: #633E25;
         }
 
         .rs-shopping__planRenew {
-            margin-top: calc(4 / 375 * var(--app-vw));
+            margin-top: calc(7 / 375 * var(--app-vw));
             font-size: calc(11 / 375 * var(--app-vw));
             line-height: 1.35;
             color: rgba(64, 26, 6, 0.75);
             -webkit-line-clamp: 3;
             line-clamp: 3;
+            font-weight: 400;
         }
 
         .rs-shopping__planPriceRow {
@@ -1936,8 +1996,8 @@
         }
 
         .rs-shopping__plan--yearly .rs-shopping__planPrice {
-            background: #2a2420;
-            color: #f3cb93;
+            background: #3A342F;
+            color: #F1DA97;
         }
 
         .rs-shopping__planBenefit--topUpExtra {
@@ -1947,7 +2007,7 @@
         .rs-shopping__planBenefits {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             column-gap: calc(12 / 375 * var(--app-vw));
-            row-gap: calc(8 / 375 * var(--app-vw));
+            row-gap: calc(10 / 375 * var(--app-vw));
             align-items: start;
             justify-items: stretch;
             padding: calc(10 / 375 * var(--app-vw)) calc(14 / 375 * var(--app-vw));
@@ -1980,43 +2040,81 @@
 
         .rs-shopping__coinSku--topUpH5 {
             min-height: calc(118 / 375 * var(--app-vw));
+            padding: 0;
             border-radius: calc(10 / 375 * var(--app-vw));
-            background: #292929 !important;
-            padding: calc(14 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+            overflow: hidden;
+            background: transparent !important;
+        }
 
-            >.absolute {
-                min-width: calc(40 / 375 * var(--app-vw));
-                height: calc(18 / 375 * var(--app-vw));
-                border-radius: 0 calc(10 / 375 * var(--app-vw)) 0 calc(8 / 375 * var(--app-vw));
-                background: #1a1a1a !important;
-                font-size: calc(10 / 375 * var(--app-vw));
-                font-weight: 600;
-                color: #fff;
+        .rs-shopping__coinSkuBadge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: calc(44 / 375 * var(--app-vw));
+            height: calc(22 / 375 * var(--app-vw));
+            padding: 0 calc(8 / 375 * var(--app-vw));
+            border-radius: 0 calc(10 / 375 * var(--app-vw)) 0 calc(8 / 375 * var(--app-vw));
+            background: linear-gradient(270deg, rgba(234, 111, 60, 0.1) 0%, rgba(235, 163, 65, 0.1) 100%);
+            font-size: calc(12 / 375 * var(--app-vw));
+            font-weight: 500;
+            line-height: 1;
+            color: #fff;
+        }
+
+        .rs-shopping__coinSkuBody {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: calc(4 / 375 * var(--app-vw));
+            padding: calc(14 / 375 * var(--app-vw)) calc(10 / 375 * var(--app-vw)) 0;
+            background: #332F2A;
+        }
+
+        .rs-shopping__coinSkuAmount {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: calc(4 / 375 * var(--app-vw));
+            font-size: calc(18 / 375 * var(--app-vw));
+            font-weight: 500;
+            line-height: 1.2;
+            color: #fff;
+
+            img {
+                width: calc(20 / 375 * var(--app-vw));
+                height: calc(20 / 375 * var(--app-vw));
+                flex-shrink: 0;
             }
+        }
 
-            .mb-1 {
-                margin-bottom: calc(6 / 375 * var(--app-vw));
-                font-size: calc(22 / 375 * var(--app-vw));
-                font-weight: 700;
-                color: #fff;
-            }
+        .rs-shopping__coinSkuBonus {
+            margin: 0;
+            font-size: calc(14 / 375 * var(--app-vw));
+            font-weight: 400;
+            line-height: 1.2;
+            color: rgba(255, 255, 255, 0.75);
+        }
 
-            >div:not(.mb-1):not(.mt-2):not([class*='absolute']) {
-                min-height: auto !important;
-                font-size: calc(12 / 375 * var(--app-vw));
-                color: rgba(255, 255, 255, 0.45);
-
-                >div:first-child {
-                    display: none;
-                }
-            }
-
-            .mt-2 {
-                margin-top: auto;
-                font-size: calc(16 / 375 * var(--app-vw));
-                font-weight: 600;
-                color: #f3cb93 !important;
-            }
+        .rs-shopping__coinSkuPrice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: calc(36 / 375 * var(--app-vw));
+            padding: calc(8 / 375 * var(--app-vw)) calc(10 / 375 * var(--app-vw));
+            background: #3d3a37FF;
+            font-family: DIN Alternate, DIN Alternate;
+            font-weight: bold;
+            font-size: calc(14 / 375 * var(--app-vw));
+            line-height: 1.2;
+            color: #F1DA97;
+            text-align: center;
         }
 
         .rs-shopping__tipsSection {
@@ -2032,18 +2130,9 @@
             li {
                 counter-increment: rs-shopping-tip;
                 margin-bottom: calc(10 / 375 * var(--app-vw));
-                padding-left: calc(18 / 375 * var(--app-vw));
                 position: relative;
                 font-size: calc(12 / 375 * var(--app-vw));
                 line-height: 1.45;
-                color: rgba(255, 255, 255, 0.45);
-            }
-
-            li::before {
-                content: counter(rs-shopping-tip) '.';
-                position: absolute;
-                left: 0;
-                top: 0;
                 color: rgba(255, 255, 255, 0.45);
             }
         }
@@ -2088,6 +2177,17 @@
         font-size: calc(18 / 375 * var(--app-vw));
         font-weight: 700;
         line-height: 1.2;
+    }
+
+    /** 视频页 H5 抽屉：周卡～Tips 与整页 `/shopping` 共用 `--topUpH5` 样式 */
+    .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer:has(.rs-shopping--topUpH5) {
+        background-color: #000;
+    }
+
+    .rs-shopping-drawer-sheet--videoDrawer .rs-shopping.rs-shopping--drawerEmbed.rs-shopping--topUpH5 {
+        .rs-shopping__intro {
+            margin-bottom: calc(12 / 375 * var(--app-vw));
+        }
     }
 }
 
@@ -2139,8 +2239,8 @@
     --un-bg-opacity: 1;
     background-color: rgb(20 20 20 / var(--un-bg-opacity));
     color: rgba(255, 255, 255, 0.9);
-    padding-left: calc(18 / 375 * var(--app-vw));
-    padding-right: calc(18 / 375 * var(--app-vw));
+    padding-left: calc(15 / 375 * var(--app-vw));
+    padding-right: calc(15 / 375 * var(--app-vw));
     padding-bottom: max(calc(4 / 375 * var(--app-vw)), env(safe-area-inset-bottom, 0px));
 
     @media (min-width: 768px) {
@@ -2365,7 +2465,7 @@
     padding-top: calc(16 / 375 * var(--app-vw));
     padding-bottom: 0;
     --un-bg-opacity: 1;
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    font-size: calc(14 / 375 * var(--app-vw));
 
     @media (min-width: 768px) {
         padding-top: 24px;
@@ -2414,8 +2514,8 @@
         flex-wrap: nowrap;
     }
 
-    >div {
-        margin-top: 0 !important;
+    .rs-shopping__embedWalletRow+.rs-shopping__embedWalletRow {
+        margin-top: 0;
     }
 }
 

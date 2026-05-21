@@ -17,7 +17,7 @@
     "shopping_auto_renew_cancel_anytime": "تجديد تلقائي. يمكن الإلغاء في أي وقت.",
     "shopping_auto_renew_short": "Auto-renewal. Cancel anytime.",
     "shopping_benefit_unlimited_viewing": "مشاهدة غير محدودة",
-    "shopping_benefit_1080p": "1080p High Quality",
+    "shopping_benefit_1080p": "جودة 1080p عالية",
     "shopping_subscription_about": "About subscription:",
     "shopping_subscription_item1": "1. During the subscription period, you can watch {site} episodes without limits.",
     "shopping_subscription_item2": "2. Auto-renewal: the subscription renews automatically at the original price and will be charged 24 hours before each cycle begins unless you cancel.",
@@ -398,5 +398,10 @@
     "shopping_benefit_hd": "جودة HD",
     "shopping_tips_item_1": "1. خلال فترة الاشتراك، يمكنك مشاهدة حلقات {site} بلا حدود.",
     "shopping_tips_item_2": "2. التجديد التلقائي: يتجدد الاشتراك تلقائيًا بالسعر الأصلي ويتم الخصم قبل 24 ساعة من بداية كل دورة ما لم تلغِ.",
-    "shopping_countdown_aria": "عرض لفترة محدودة، متبقي {time}"
+    "shopping_countdown_aria": "عرض لفترة محدودة، متبقي {time}",
+    "profile_admin_product_list": "قائمة المنتجات",
+    "wallet_page_title": "التفاصيل",
+    "wallet_tab_recharge": "شحن",
+    "wallet_tab_consumption": "استهلاك",
+    "wallet_episode_short": "الحلقة {n}"
 }

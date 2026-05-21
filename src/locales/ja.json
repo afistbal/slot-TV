@@ -19,7 +19,7 @@
     "shopping_auto_renew_cancel_anytime": "自動更新。いつでも解約できます。",
     "shopping_auto_renew_short": "Auto-renewal. Cancel anytime.",
     "shopping_benefit_unlimited_viewing": "見放題",
-    "shopping_benefit_1080p": "1080p High Quality",
+    "shopping_benefit_1080p": "1080p高画質",
     "shopping_subscription_about": "About subscription:",
     "shopping_subscription_item1": "1. During the subscription period, you can watch {site} episodes without limits.",
     "shopping_subscription_item2": "2. Auto-renewal: the subscription renews automatically at the original price and will be charged 24 hours before each cycle begins unless you cancel.",
@@ -401,5 +401,10 @@
     "shopping_benefit_hd": "HD画質",
     "shopping_tips_item_1": "1. サブスクリプション期間中、{site} のエピソードを無制限に視聴できます。",
     "shopping_tips_item_2": "2. 自動更新：解約しない限り、各サイクル開始の24時間前に元の価格で自動更新・課金されます。",
-    "shopping_countdown_aria": "期間限定、残り {time}"
+    "shopping_countdown_aria": "期間限定、残り {time}",
+    "profile_admin_product_list": "製品一覧",
+    "wallet_page_title": "詳細",
+    "wallet_tab_recharge": "チャージ",
+    "wallet_tab_consumption": "消費",
+    "wallet_episode_short": "第{n}話"
 }

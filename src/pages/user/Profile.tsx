@@ -1,4 +1,4 @@
-﻿import { CircleUser } from 'lucide-react';
+import { CircleUser } from 'lucide-react';
 import {
     RsPcHelpMenuIcon,
     RsPcHistoryMenuIcon,
@@ -7,7 +7,7 @@ import {
 } from '@/components/icons/reelshortDashboardPcMenuIcons';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
-import coinIcon from '@/assets/coin.svg';
+import coinIcon from '@/assets/profile/icon_coin@2x.png';
 import { profileH5Assets } from '@/constants/profileAssets';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -193,7 +193,7 @@ export default function Component() {
         });
     }, [sessionBootstrapReady]);
 
-    /** H5 /profile：VIP 拉取 renewal_at，有缓存则不再重复请求 */
+    /** H5 /profile??VIP ??? renewal_at?????????????????? */
     useEffect(() => {
         if (isPc || !isVipProfile || !sessionBootstrapReady) {
             if (!isVipProfile) {
@@ -389,7 +389,9 @@ export default function Component() {
                     <Link to="/shopping?show_plans=1" className="rs-profile__menuItem">
                         <div className="rs-profile__menuLeft">
                             <CircleUser className="w-5 h-5" />
-                            <div className="rs-profile__menuText">产品列表</div>
+                            <div className="rs-profile__menuText">
+                                <FormattedMessage id="profile_admin_product_list" />
+                            </div>
                         </div>
                         <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
                     </Link>
@@ -699,7 +701,9 @@ export default function Component() {
                                                     <i>
                                                         <RsPcMyListMenuIcon />
                                                     </i>
-                                                    <span>产品列表</span>
+                                                    <span>
+                                                        <FormattedMessage id="profile_admin_product_list" />
+                                                    </span>
                                                 </Link>
                                             </li>
                                         </>

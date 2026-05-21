@@ -437,5 +437,10 @@
     "shopping_benefit_ad_free": "免廣告",
     "shopping_benefit_hd": "HD 畫質",
     "shopping_tips_item_1": "1. 訂閱期間可無限制觀看 {site} 劇集。",
-    "shopping_tips_item_2": "2. 自動續訂：訂閱將按原始價格自動續訂，每個週期開始前 24 小時扣款，除非取消訂閱。"
+    "shopping_tips_item_2": "2. 自動續訂：訂閱將按原始價格自動續訂，每個週期開始前 24 小時扣款，除非取消訂閱。",
+    "profile_admin_product_list": "產品列表",
+    "wallet_page_title": "詳情",
+    "wallet_tab_recharge": "充值",
+    "wallet_tab_consumption": "消費",
+    "wallet_episode_short": "第{n}集"
 }

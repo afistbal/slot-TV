@@ -24,7 +24,6 @@ import {
 } from './videoVerticalDouyinSlide';
 import { clearEpisodeDetailCache, prewarmEpisodeDetail } from './episodeDetailCache';
 import { clearEpisodePeekFrameCache } from './episodeFrameQueueStore';
-import { EpisodeFrameQueueOverlay } from './EpisodeFrameQueueOverlay';
 import { getEpisodeIdsToPrewarm } from './episodePrewarm';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
 import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
@@ -79,10 +78,6 @@ export default function VideoVerticalSwiper() {
     const configStore = useConfigStore();
     const staticBase = useMemo(() => String(configStore.config['static'] ?? ''), [configStore.config['static']]);
     const viewerIsVip = useUserStore((s) => Boolean(s.signed && s.info?.['is_vip']));
-    /** 首帧调试队列仅管理员可见（与 `userStore.isAdmin` / `info.admin` 一致） */
-    const showEpisodeFrameQueue = useUserStore((s) =>
-        Boolean(s.signed && Number(s.info?.['admin'] ?? 0) > 0),
-    );
     const navigateRef = useRef(navigate);
     navigateRef.current = navigate;
     const paramsRef = useRef(params);
@@ -533,9 +528,6 @@ export default function VideoVerticalSwiper() {
                         })
                         : null}
                 </div>
-                {data && showEpisodeFrameQueue && (
-                    <EpisodeFrameQueueOverlay episodes={data.episodes} activeListIndex={current} />
-                )}
             </div>
         </div>
     );

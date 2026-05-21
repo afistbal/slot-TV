@@ -17,7 +17,7 @@
     "shopping_auto_renew_cancel_anytime": "Tự động gia hạn. Có thể hủy bất cứ lúc nào.",
     "shopping_auto_renew_short": "Auto-renewal. Cancel anytime.",
     "shopping_benefit_unlimited_viewing": "Xem không giới hạn",
-    "shopping_benefit_1080p": "1080p High Quality",
+    "shopping_benefit_1080p": "Chất lượng 1080p",
     "shopping_subscription_about": "About subscription:",
     "shopping_subscription_item1": "1. During the subscription period, you can watch {site} episodes without limits.",
     "shopping_subscription_item2": "2. Auto-renewal: the subscription renews automatically at the original price and will be charged 24 hours before each cycle begins unless you cancel.",
@@ -398,5 +398,10 @@
     "shopping_benefit_hd": "Chất lượng HD",
     "shopping_tips_item_1": "1. Trong thời gian đăng ký, bạn có thể xem tập phim {site} không giới hạn.",
     "shopping_tips_item_2": "2. Gia hạn tự động: gói sẽ tự gia hạn với giá gốc và bị trừ 24 giờ trước khi mỗi chu kỳ bắt đầu trừ khi bạn hủy.",
-    "shopping_countdown_aria": "Ưu đãi có thời hạn, còn {time}"
+    "shopping_countdown_aria": "Ưu đãi có thời hạn, còn {time}",
+    "profile_admin_product_list": "Danh sách sản phẩm",
+    "wallet_page_title": "Chi tiết",
+    "wallet_tab_recharge": "Nạp tiền",
+    "wallet_tab_consumption": "Tiêu dùng",
+    "wallet_episode_short": "Tập {n}"
 }

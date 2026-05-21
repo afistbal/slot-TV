@@ -20,11 +20,12 @@ import checkboxChecked from '@/assets/icons/shopping-pay/checkbox_checked.png';
 import iconSuccessful from '@/assets/icons/shopping-pay/icon_successful.png';
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import Countdown from '@/widgets/Countdown';
-import coinIcon from '@/assets/coin.svg';
+import coinIcon from '@/assets/profile/icon_coin@2x.png';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
 import { MembershipInlinePanel } from '@/pages/user/Membership';
 import { refreshSessionFromStoredToken } from '@/lib/refreshSessionFromStoredToken';
+import { useRootStore } from '@/stores/root';
 import { useUserStore } from '@/stores/user';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 
@@ -184,9 +185,15 @@ export default function RadixRc({
 }: RadixRcProps = {}) {
     const intl = useIntl();
     const isPc = useMinWidth768();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const userStore = useUserStore();
     const isTopUpShoppingPage = layout === 'page' && productFrom === 'shopping';
     const isTopUpH5Layout = isTopUpShoppingPage && !isPc;
+    const isEmbedDrawer = layout === 'embed' && embedPresentation === 'drawer';
+    /** H5????`/shopping` ???????? Top UP ??/??/Tips ?? */
+    const isReelshortH5StoreUi = !isPc && (isTopUpShoppingPage || isEmbedDrawer);
+    /** H5 ?? Top UP ??????/ ????????????????*/
+    const showH5StoreSectionTitles = isReelshortH5StoreUi && !isEmbedDrawer;
     const [searchParams] = useSearchParams();
     /** ????`/shopping` ?????????????? profile / ?????????*/
     const forceShowPlans = layout === 'page' && searchParams.get('show_plans') === '1';
@@ -257,14 +264,14 @@ export default function RadixRc({
     }, []);
 
     useEffect(() => {
-        if (!localStorage.getItem('token')) return;
+        if (!sessionBootstrapReady || !localStorage.getItem('token')) return;
         const needBalance =
             layout === 'embed' || (layout === 'page' && productFrom === 'shopping');
         if (!needBalance) return;
         void api<number>('user/balance', { loading: false }).then((res) => {
             if (res.c === 0) useUserStore.getState().setBalance(res.d);
         });
-    }, [layout, productFrom]);
+    }, [layout, productFrom, sessionBootstrapReady]);
 
     function closePayModal() {
         setShowPaidServiceAgreement(false);
@@ -333,6 +340,10 @@ export default function RadixRc({
     }, [payModalStatus, showPayModal]);
 
     useEffect(() => {
+        if (!sessionBootstrapReady || !localStorage.getItem('token')) {
+            return;
+        }
+
         const cached = shoppingProductCache.get(productFrom);
         if (cached?.length) {
             setProducts(cached);
@@ -348,6 +359,7 @@ export default function RadixRc({
         api<Product[]>('product', {
             data: { from: productFrom, type: 10 },
             loading: false,
+            toastOnError: false,
         })
             .then((res) => {
                 if (!alive) return;
@@ -363,7 +375,7 @@ export default function RadixRc({
         return () => {
             alive = false;
         };
-    }, [productFrom]);
+    }, [productFrom, sessionBootstrapReady]);
 
     const planProducts = useMemo(() => {
         const subs = products.filter((p) => p.type === 1);
@@ -407,7 +419,6 @@ export default function RadixRc({
 
     const showIntroWalletAndCountdown =
         layout === 'embed' || (layout === 'page' && productFrom === 'shopping');
-    const isEmbedDrawer = layout === 'embed' && embedPresentation === 'drawer';
     /** ?? `/shopping`????????????H5 ?????????????????*/
     const showShoppingPageWalletBar = layout === 'page' && productFrom === 'shopping';
 
@@ -427,31 +438,40 @@ export default function RadixRc({
     const embedWalletRowsEl = (
         <>
             {headerEpisodeUnlockCoins !== undefined ? (
-                <div className="flex items-center text-sm text-white/75">
-                    <FormattedMessage id="episode_unlock_price" />
-                    <img src={coinIcon} width={18} height={18} className="ml-1 shrink-0" alt="" />
-                    <div className="text-orange-400 font-bold tabular-nums">
+                <div className="rs-shopping__embedWalletRow">
+                    <span className="rs-shopping__embedWalletLabel">
+                        <FormattedMessage id="episode_unlock_price" />:
+                    </span>
+                    <img
+                        className="rs-shopping__embedWalletCoin"
+                        src={coinIcon}
+                        alt=""
+                        aria-hidden
+                    />
+                    <span className="rs-shopping__embedWalletAmount tabular-nums">
                         {intl.formatNumber(headerEpisodeUnlockCoins)}
-                    </div>
+                    </span>
                 </div>
             ) : null}
-            <div
-                className={cn(
-                    'flex items-center text-sm text-white/75',
-                    headerEpisodeUnlockCoins !== undefined && 'mt-1',
-                )}
-            >
-                <FormattedMessage id="balance" />
-                <img src={coinIcon} width={18} height={18} className="ml-1 shrink-0" alt="" />
-                <div className="text-orange-400 font-bold tabular-nums">
-                    {!userStore.signed ? 0 : userStore.balance === -1 ? '???' : intl.formatNumber(userStore.balance)}
-                </div>
+            <div className="rs-shopping__embedWalletRow">
+                <span className="rs-shopping__embedWalletLabel">
+                    <FormattedMessage id="balance" />:
+                </span>
+                <img className="rs-shopping__embedWalletCoin" src={coinIcon} alt="" aria-hidden />
+                <span className="rs-shopping__embedWalletAmount tabular-nums">
+                    {!userStore.signed
+                        ? 0
+                        : userStore.balance === -1
+                          ? '???'
+                          : intl.formatNumber(userStore.balance)}
+                </span>
             </div>
         </>
     );
 
     const main = (
         <div className="rs-shopping__main">
+            {!(isEmbedDrawer && isReelshortH5StoreUi) ? (
             <div className="rs-shopping__intro">
                 {showShoppingPageWalletBar ? (
                     <div className="rs-shopping__pageWalletBar">
@@ -480,11 +500,11 @@ export default function RadixRc({
                         </div>
                     </div>
                 ) : null}
-                {isTopUpH5Layout ? (
+                {showH5StoreSectionTitles ? (
                     <h2 className="rs-shopping__sectionTitle">
                         <FormattedMessage id="shopping_section_membership" />
                     </h2>
-                ) : (
+                ) : !isReelshortH5StoreUi ? (
                     <>
                         <div className="rs-shopping__introTitle">
                             <FormattedMessage id="shopping_vip_unlock_all" />
@@ -493,8 +513,8 @@ export default function RadixRc({
                             <FormattedMessage id="shopping_auto_renew_cancel_anytime" />
                         </div>
                     </>
-                )}
-                {showIntroWalletAndCountdown && (!isEmbedDrawer || countdownMainEl) && !isTopUpH5Layout ? (
+                ) : null}
+                {showIntroWalletAndCountdown && (!isEmbedDrawer || countdownMainEl) && !isReelshortH5StoreUi ? (
                     <div className="rs-shopping__introEmbedExtras">
                         {isEmbedDrawer || showShoppingPageWalletBar ? null : (
                             <div className="rs-shopping__embedWallet">{embedWalletRowsEl}</div>
@@ -503,12 +523,13 @@ export default function RadixRc({
                     </div>
                 ) : null}
             </div>
+            ) : null}
 
             <div className={cn('rs-shopping__plans', 'rs-shopping__plans--vipSubscriptions')}>
                 {(loadingProducts ? [] : planProducts).map((p, planIndex) => {
                     const enableInteraction = true;
                     const isFirstPlan = planIndex === 0;
-                    const planBenefitIcons = isTopUpH5Layout
+                    const planBenefitIcons = isReelshortH5StoreUi
                         ? isFirstPlan
                             ? shoppingVipBenefitIcons.weekly
                             : shoppingVipBenefitIcons.yearly
@@ -529,7 +550,7 @@ export default function RadixRc({
                         },
                         {
                             icon: planBenefitIcons.adFree,
-                            messageId: isTopUpH5Layout
+                            messageId: isReelshortH5StoreUi
                                 ? 'shopping_benefit_ad_free'
                                 : 'shopping_benefit_1080p',
                         },
@@ -575,13 +596,13 @@ export default function RadixRc({
                                     style={{ backgroundImage: `url(${vipCardBg})` }}
                                 />
 
-                                {isTopUpH5Layout && showCountdown ? (
+                                {isReelshortH5StoreUi && showCountdown ? (
                                     <div className="rs-shopping__planCountdown">
                                         <Countdown variant="planCorner" />
                                     </div>
                                 ) : null}
 
-                                {!isTopUpH5Layout ? (
+                                {!isReelshortH5StoreUi ? (
                                     <div className="rs-shopping__planOfferBadge">
                                         <FormattedMessage
                                             id="limited_time_offer"
@@ -601,7 +622,7 @@ export default function RadixRc({
                                 <div className="rs-shopping__planBody">
                                     <div className="rs-shopping__planText">
                                         <div className="rs-shopping__planName">
-                                            {isTopUpH5Layout && isFirstPlan
+                                            {isReelshortH5StoreUi && isFirstPlan
                                                 ? intl.formatMessage({ id: 'shopping_vip_weekly_special_title' })
                                                 : intl.formatMessage({ id: `${p.name}_subscription` })}
                                         </div>
@@ -609,7 +630,7 @@ export default function RadixRc({
                                             <div className="rs-shopping__planPrice">${p.price}</div>
                                         </div>
                                         <div className="rs-shopping__planRenew">
-                                            {isTopUpH5Layout && isFirstPlan
+                                            {isReelshortH5StoreUi && isFirstPlan
                                                 ? intl.formatMessage(
                                                       { id: 'shopping_vip_weekly_subtitle' },
                                                       {
@@ -663,18 +684,25 @@ export default function RadixRc({
 
             {!loadingProducts && coinProducts.length > 0 ? (
                 <div className="rs-shopping__coinSection w-full shadow-none">
-                    <div
-                        className={cn(
-                            'mb-3 w-full font-bold leading-tight text-white/90',
-                            isTopUpH5Layout
-                                ? 'rs-shopping__sectionTitle'
-                                : 'text-[calc(16/375*var(--app-vw,100vw))] md:text-[16px]',
-                        )}
-                    >
-                        <FormattedMessage
-                            id={isTopUpH5Layout ? 'shopping_bar_coins' : 'shopping_top_up_coins'}
-                        />
-                    </div>
+                    {showH5StoreSectionTitles ? (
+                        <div
+                            className={cn(
+                                'mb-3 w-full font-bold leading-tight text-white/90',
+                                'rs-shopping__sectionTitle',
+                            )}
+                        >
+                            <FormattedMessage id="shopping_bar_coins" />
+                        </div>
+                    ) : !isReelshortH5StoreUi ? (
+                        <div
+                            className={cn(
+                                'mb-3 w-full font-bold leading-tight text-white/90',
+                                'text-[calc(16/375*var(--app-vw,100vw))] md:text-[16px]',
+                            )}
+                        >
+                            <FormattedMessage id="shopping_top_up_coins" />
+                        </div>
+                    ) : null}
                     <div className="grid w-full grid-cols-2 gap-2 shadow-none md:grid-cols-4">
                         {coinProducts.map((p) => {
                             const baseCoin = p.coin ?? 0;
@@ -698,12 +726,40 @@ export default function RadixRc({
                                         }
                                     }}
                                     className={cn(
-                                        'rs-shopping__coinSku relative flex w-full cursor-pointer flex-col rounded-[4px] p-4 shadow-none',
+                                        'rs-shopping__coinSku relative flex w-full cursor-pointer flex-col shadow-none',
                                         'outline-none focus-visible:outline-none',
-                                        isTopUpH5Layout && 'rs-shopping__coinSku--topUpH5',
+                                        isReelshortH5StoreUi
+                                            ? 'rs-shopping__coinSku--topUpH5'
+                                            : 'rounded-[4px] p-4',
                                     )}
                                 >
-                                    {bonusPct > 0 ? (
+                                    {isReelshortH5StoreUi ? (
+                                        <>
+                                            {bonusPct > 0 ? (
+                                                <div className="rs-shopping__coinSkuBadge">
+                                                    +{bonusPct}%
+                                                </div>
+                                            ) : null}
+                                            <div className="rs-shopping__coinSkuBody">
+                                                <div className="rs-shopping__coinSkuAmount">
+                                                    <img src={coinIcon} alt="" aria-hidden />
+                                                    <span className="tabular-nums">
+                                                        {intl.formatNumber(baseCoin)}
+                                                    </span>
+                                                </div>
+                                                {bonusCoins > 0 ? (
+                                                    <p className="rs-shopping__coinSkuBonus tabular-nums">
+                                                        +{intl.formatNumber(bonusCoins)}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                            <div className="rs-shopping__coinSkuPrice tabular-nums">
+                                                ${p.price}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {bonusPct > 0 ? (
                                         <div
                                             className={cn(
                                                 'absolute right-0 top-0 flex h-4 min-w-[2.25rem] items-center justify-center rounded-tr-[4px] rounded-bl-[4px] px-2',
@@ -743,9 +799,11 @@ export default function RadixRc({
                                             />
                                         </div>
                                     )}
-                                    <div className="mt-2 text-left text-base font-medium text-white/90 md:mt-3">
-                                        ${p.price}
-                                    </div>
+                                            <div className="mt-2 text-left text-base font-medium text-white/90 md:mt-3">
+                                                ${p.price}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             );
                         })}
@@ -753,9 +811,9 @@ export default function RadixRc({
                 </div>
             ) : null}
 
-            {isTopUpH5Layout ? (
-                <section className="rs-shopping__tipsSection" aria-labelledby="rs-shopping-tips-title">
-                    <h2 id="rs-shopping-tips-title" className="rs-shopping__sectionTitle">
+            {isReelshortH5StoreUi ? (
+                <section className="rs-shopping__tipsSection" aria-labelledby="shopping__tipTitle">
+                    <h2 id="rs-shopping-tips-title" className="rs-shopping__tipTitle">
                         <FormattedMessage id="shopping_section_tips" />
                     </h2>
                     <ol className="rs-shopping__tipsList">
@@ -1077,7 +1135,11 @@ export default function RadixRc({
                 )}
             >
                 {/* embed ?? `.rs-shopping`????SCSS ??`.rs-shopping .rs-shopping__*`???????????? */}
-                <div className="rs-shopping rs-shopping--drawerEmbed">
+                <div className={cn(
+                    'rs-shopping',
+                    'rs-shopping--drawerEmbed',
+                    isReelshortH5StoreUi && 'rs-shopping--topUpH5',
+                )}>
                     {showDrawerChrome ? (
                         <>
                             <div className="rs-shopping-drawer-head rs-shopping-drawer-head--reelshort">

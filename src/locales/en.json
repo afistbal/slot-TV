@@ -430,12 +430,16 @@
     "shopping_page_title": "Top UP",
     "shopping_section_membership": "Membership",
     "shopping_countdown_aria": "Limited-time offer, {time} remaining",
-    "shopping_countdown_aria": "Limited-time offer, {time} remaining",
     "shopping_section_tips": "Tips :",
     "shopping_vip_weekly_special_title": "Weekly VIP Special Price",
     "shopping_vip_weekly_subtitle": "First week {price1}, then {price2}/week",
     "shopping_benefit_ad_free": "AD-Free",
     "shopping_benefit_hd": "HD Quality",
     "shopping_tips_item_1": "1. During the subscription period, you can watch {site} episodes without limits.",
-    "shopping_tips_item_2": "2. Auto-renewal: the subscription renews automatically at the original price and will be charged 24 hours before each cycle begins unless you cancel."
+    "shopping_tips_item_2": "2. Auto-renewal: the subscription renews automatically at the original price and will be charged 24 hours before each cycle begins unless you cancel.",
+    "profile_admin_product_list": "Product list",
+    "wallet_page_title": "Details",
+    "wallet_tab_recharge": "Recharge",
+    "wallet_tab_consumption": "Consumption",
+    "wallet_episode_short": "Ep.{n}"
 }
