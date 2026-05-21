@@ -19,9 +19,21 @@ export type DemoSlideState = {
     wrapper: { width: number; height: number; childrenLength: number };
 };
 
+function measureSlideHeight(el: HTMLDivElement): number {
+    const h = Number(css(el, 'height'));
+    if (h > 0) {
+        return h;
+    }
+    const slide = el.parentElement;
+    if (slide && slide.clientHeight > 0) {
+        return slide.clientHeight;
+    }
+    return window.visualViewport?.height ?? window.innerHeight;
+}
+
 export function slideInit(el: HTMLDivElement, state: DemoSlideState): void {
     state.wrapper.width = css(el, 'width') as number;
-    state.wrapper.height = css(el, 'height') as number;
+    state.wrapper.height = measureSlideHeight(el);
     queueMicrotask(() => {
         state.wrapper.childrenLength = el.children.length;
     });

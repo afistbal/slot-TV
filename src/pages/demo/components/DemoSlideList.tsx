@@ -1,38 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { DEMO_AWEME_FEED } from '../data/buildDemoAwemeFeed';
-import { demoBus, DEMO_EVENT_KEY } from '../douyin/bus';
-import { SlideVerticalInfinite } from './SlideVerticalInfinite';
+import { DemoForYouReel } from './DemoForYouReel';
 
-/** douyin `SlideList.vue` + `Slide4.vue`：硬编码推荐流，无 API */
+/** `/for-you`：Swiper 竖滑 + 单路视频，避免虚拟列表在移动端卡死 */
 export function DemoSlideList() {
     const [list] = useState(DEMO_AWEME_FEED);
-    const [index, setIndex] = useState(0);
-    const indexRef = useRef(0);
-    indexRef.current = index;
 
-    useEffect(() => {
-        const onSingleClick = (uid: unknown) => {
-            if (uid !== 'home') {
-                return;
-            }
-            demoBus.emit(DEMO_EVENT_KEY.SINGLE_CLICK_BROADCAST, {
-                uniqueId: 'home',
-                index: indexRef.current,
-                type: DEMO_EVENT_KEY.ITEM_TOGGLE,
-            });
-        };
-        demoBus.on(DEMO_EVENT_KEY.SINGLE_CLICK, onSingleClick);
-        return () => demoBus.off(DEMO_EVENT_KEY.SINGLE_CLICK, onSingleClick);
-    }, []);
-
-    return (
-        <SlideVerticalInfinite
-            uniqueId="home"
-            name="infinite"
-            list={list}
-            active
-            index={index}
-            onIndexChange={setIndex}
-        />
-    );
+    return <DemoForYouReel list={list} />;
 }

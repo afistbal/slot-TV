@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import type { DemoAwemeItem } from '../data/buildDemoAwemeFeed';
 import { demoBus, DEMO_EVENT_KEY } from '../douyin/bus';
 import { css } from '../douyin/dom';
@@ -24,7 +25,14 @@ type Props = {
     onIndexChange?: (index: number) => void;
 };
 
-function computeWindow(localIndex: number, listLength: number, virtualTotal: number) {
+const ITEM_CLASS = 'slide-item';
+
+type SlideMount = {
+    root: Root;
+    parent: HTMLDivElement;
+};
+
+function computeWindowStart(localIndex: number, listLength: number, virtualTotal: number): number {
     const half = Math.floor(virtualTotal / 2);
     let start = 0;
     if (localIndex > half) {
@@ -35,14 +43,10 @@ function computeWindow(localIndex: number, listLength: number, virtualTotal: num
         end = listLength;
         start = Math.max(0, end - virtualTotal);
     }
-    const indices: number[] = [];
-    for (let i = start; i < end; i += 1) {
-        indices.push(i);
-    }
-    return { start, end, indices };
+    return start;
 }
 
-/** douyin `SlideVerticalInfinite.vue` */
+/** douyin 增量 DOM + 绝对定位；仅当前条加载 mp4（见 DemoBaseVideo） */
 export function SlideVerticalInfinite({
     list,
     uniqueId,
@@ -53,7 +57,11 @@ export function SlideVerticalInfinite({
     onIndexChange,
 }: Props) {
     const slideListRef = useRef<HTMLDivElement>(null);
+    const appInsMapRef = useRef(new Map<number, SlideMount>());
     const [localIndex, setLocalIndex] = useState(indexProp);
+    const prevLocalIndexRef = useRef(indexProp);
+    const listRef = useRef(list);
+    listRef.current = list;
 
     const stateRef = useRef<DemoSlideState>({
         judgeValue: 20,
@@ -65,35 +73,85 @@ export function SlideVerticalInfinite({
         isDown: false,
         start: { x: 0, y: 0, time: 0 },
         move: { x: 0, y: 0 },
-        wrapper: { width: 0, height: 0, childrenLength: list.length },
+        wrapper: { width: 0, height: 0, childrenLength: 0 },
     });
 
-    const windowPlan = useMemo(
-        () => computeWindow(localIndex, list.length, virtualTotal),
-        [localIndex, list.length, virtualTotal],
-    );
+    const half = Math.floor(virtualTotal / 2);
+    const stopEmitTimerRef = useRef<number | null>(null);
 
     const emitIndexSwitch = useCallback(
         (newIndex: number, oldIndex: number) => {
-            if (!list.length) {
+            const items = listRef.current;
+            if (!items.length) {
                 return;
             }
-            demoBus.emit(DEMO_EVENT_KEY.CURRENT_ITEM, list[newIndex]);
+            if (stopEmitTimerRef.current) {
+                window.clearTimeout(stopEmitTimerRef.current);
+                stopEmitTimerRef.current = null;
+            }
+            demoBus.emit(DEMO_EVENT_KEY.CURRENT_ITEM, items[newIndex]);
             demoBus.emit(DEMO_EVENT_KEY.SINGLE_CLICK_BROADCAST, {
                 uniqueId,
                 index: newIndex,
                 type: DEMO_EVENT_KEY.ITEM_PLAY,
             });
-            window.setTimeout(() => {
+            stopEmitTimerRef.current = window.setTimeout(() => {
                 demoBus.emit(DEMO_EVENT_KEY.SINGLE_CLICK_BROADCAST, {
                     uniqueId,
                     index: oldIndex,
                     type: DEMO_EVENT_KEY.ITEM_STOP,
                 });
+                stopEmitTimerRef.current = null;
             }, 200);
             onIndexChange?.(newIndex);
         },
-        [list, onIndexChange, uniqueId],
+        [onIndexChange, uniqueId],
+    );
+
+    useEffect(() => {
+        const prev = prevLocalIndexRef.current;
+        if (prev === localIndex) {
+            return;
+        }
+        prevLocalIndexRef.current = localIndex;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                emitIndexSwitch(localIndex, prev);
+            });
+        });
+    }, [localIndex, emitIndexSwitch]);
+
+    const unmountSlideItem = useCallback((index: number) => {
+        const entry = appInsMapRef.current.get(index);
+        if (!entry) {
+            return;
+        }
+        entry.root.unmount();
+        entry.parent.remove();
+        appInsMapRef.current.delete(index);
+    }, []);
+
+    const positionSlideItem = useCallback((node: HTMLElement, dataIndex: number, h: number) => {
+        css(node, 'top', dataIndex * h);
+    }, []);
+
+    const getInsEl = useCallback(
+        (item: DemoAwemeItem, index: number, play = false) => {
+            const parent = document.createElement('div');
+            parent.className = ITEM_CLASS;
+            parent.setAttribute('data-index', String(index));
+            const root = createRoot(parent);
+            root.render(
+                <DemoBaseVideo
+                    item={item}
+                    position={{ uniqueId, index }}
+                    isPlay={active && play}
+                />,
+            );
+            appInsMapRef.current.set(index, { root, parent });
+            return parent;
+        },
+        [active, uniqueId],
     );
 
     const applyListTransform = useCallback(() => {
@@ -102,18 +160,89 @@ export function SlideVerticalInfinite({
         if (!el) {
             return;
         }
-        state.wrapper.childrenLength = list.length;
+        slideInit(el, state);
         css(el, 'transform', `translate3d(0px, ${getSlideOffset(state, el)}px, 0)`);
-    }, [list.length]);
+    }, []);
 
-    useLayoutEffect(() => {
-        stateRef.current.localIndex = localIndex;
+    const insertContent = useCallback(() => {
         const el = slideListRef.current;
-        if (el) {
-            slideInit(el, stateRef.current);
-            applyListTransform();
+        const items = listRef.current;
+        const state = stateRef.current;
+        if (!el || !items.length) {
+            return;
         }
-    }, [localIndex, applyListTransform, windowPlan.indices.join(',')]);
+
+        for (const idx of [...appInsMapRef.current.keys()]) {
+            unmountSlideItem(idx);
+        }
+        el.innerHTML = '';
+
+        slideInit(el, state);
+        const h = state.wrapper.height;
+        if (h <= 0) {
+            return;
+        }
+
+        const start = computeWindowStart(state.localIndex, items.length, virtualTotal);
+        const end = Math.min(start + virtualTotal, items.length);
+
+        items.slice(start, end).forEach((item, i) => {
+            const dataIndex = start + i;
+            const node = getInsEl(item, dataIndex, dataIndex === state.localIndex);
+            positionSlideItem(node, dataIndex, h);
+            el.appendChild(node);
+        });
+
+        state.wrapper.childrenLength = el.children.length;
+        applyListTransform();
+        demoBus.emit(DEMO_EVENT_KEY.CURRENT_ITEM, items[state.localIndex]);
+    }, [applyListTransform, getInsEl, positionSlideItem, unmountSlideItem, virtualTotal]);
+
+    const needsFullRebuild = useCallback(
+        (idx: number) => {
+            const items = listRef.current;
+            const el = slideListRef.current;
+            if (!el || items.length <= virtualTotal) {
+                return false;
+            }
+            if (!el.querySelector(`.${ITEM_CLASS}[data-index="${idx}"]`)) {
+                return true;
+            }
+            /** 尾部 douyin 不再增量换 DOM，整窗重建避免黑屏 */
+            return idx >= items.length - half;
+        },
+        [half, virtualTotal],
+    );
+
+    useEffect(() => {
+        const el = slideListRef.current;
+        if (!el) {
+            return;
+        }
+        stateRef.current.localIndex = indexProp;
+        insertContent();
+    }, [indexProp, insertContent, list]);
+
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        const onResize = () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            timer = setTimeout(() => {
+                insertContent();
+            }, 150);
+        };
+        window.addEventListener('resize', onResize);
+        window.visualViewport?.addEventListener('resize', onResize);
+        return () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            window.removeEventListener('resize', onResize);
+            window.visualViewport?.removeEventListener('resize', onResize);
+        };
+    }, [insertContent]);
 
     useEffect(() => {
         const el = slideListRef.current;
@@ -124,7 +253,7 @@ export function SlideVerticalInfinite({
         const canNext = (state: DemoSlideState, isNext: boolean) =>
             !(
                 (state.localIndex === 0 && !isNext) ||
-                (state.localIndex === list.length - 1 && isNext)
+                (state.localIndex === listRef.current.length - 1 && isNext)
             );
 
         const touchStart = (e: PointerEvent) => slideTouchStart(e, el, stateRef.current);
@@ -132,11 +261,57 @@ export function SlideVerticalInfinite({
         const touchEnd = (e: PointerEvent) => {
             const state = stateRef.current;
             const oldIndex = state.localIndex;
-            slideTouchEnd(e, state, canNext);
+            const items = listRef.current;
+
+            slideTouchEnd(e, state, canNext, (next) => {
+                if (items.length <= virtualTotal) {
+                    return;
+                }
+                const h = state.wrapper.height;
+                if (h <= 0) {
+                    return;
+                }
+                const idx = state.localIndex;
+                if (needsFullRebuild(idx)) {
+                    return;
+                }
+                if (next) {
+                    if (idx > half && idx < items.length - half) {
+                        const addItemIndex = idx + half;
+                        if (!el.querySelector(`.${ITEM_CLASS}[data-index="${addItemIndex}"]`) && items[addItemIndex]) {
+                            const node = getInsEl(items[addItemIndex], addItemIndex);
+                            positionSlideItem(node, addItemIndex, h);
+                            el.appendChild(node);
+                        }
+                        const first = el.querySelector(`.${ITEM_CLASS}:first-child`);
+                        const removeIndex = Number(first?.getAttribute('data-index'));
+                        if (!Number.isNaN(removeIndex)) {
+                            unmountSlideItem(removeIndex);
+                        }
+                    }
+                } else if (idx >= half && idx < items.length - (half + 1)) {
+                    const addIndex = idx - half;
+                    if (addIndex >= 0 && !el.querySelector(`.${ITEM_CLASS}[data-index="${addIndex}"]`) && items[addIndex]) {
+                        const node = getInsEl(items[addIndex], addIndex);
+                        positionSlideItem(node, addIndex, h);
+                        el.prepend(node);
+                    }
+                    const last = el.querySelector(`.${ITEM_CLASS}:last-child`);
+                    const removeIndex = Number(last?.getAttribute('data-index'));
+                    if (!Number.isNaN(removeIndex)) {
+                        unmountSlideItem(removeIndex);
+                    }
+                }
+                state.wrapper.childrenLength = el.children.length;
+            });
+
             slideReset(e, el, state, (idx) => {
                 if (idx !== oldIndex) {
+                    if (needsFullRebuild(idx)) {
+                        insertContent();
+                    }
+                    applyListTransform();
                     setLocalIndex(idx);
-                    emitIndexSwitch(idx, oldIndex);
                 } else {
                     applyListTransform();
                 }
@@ -196,15 +371,25 @@ export function SlideVerticalInfinite({
                 clearTimeout(clickTimer);
             }
         };
-    }, [applyListTransform, emitIndexSwitch, list.length, uniqueId]);
+    }, [
+        applyListTransform,
+        getInsEl,
+        insertContent,
+        needsFullRebuild,
+        positionSlideItem,
+        half,
+        unmountSlideItem,
+        uniqueId,
+        virtualTotal,
+    ]);
 
-    const wrapperH = stateRef.current.wrapper.height;
-    const itemTopPx =
-        wrapperH > 0 && localIndex > 2 && list.length > 5
-            ? windowPlan.indices.length - localIndex > 2
-                ? (localIndex - 2) * wrapperH
-                : windowPlan.start * wrapperH
-            : 0;
+    useEffect(() => {
+        return () => {
+            for (const idx of [...appInsMapRef.current.keys()]) {
+                unmountSlideItem(idx);
+            }
+        };
+    }, [unmountSlideItem]);
 
     return (
         <div className="slide slide-infinite">
@@ -214,23 +399,7 @@ export function SlideVerticalInfinite({
                 onPointerDown={(e) => e.preventDefault()}
                 onPointerMove={(e) => e.preventDefault()}
                 onPointerUp={(e) => e.preventDefault()}
-            >
-                {windowPlan.indices.map((idx) => (
-                    <div
-                        key={list[idx]!.aweme_id}
-                        className="slide-item"
-                        data-index={idx}
-                        style={itemTopPx > 0 ? { top: itemTopPx } : undefined}
-                    >
-                        <DemoBaseVideo
-                            item={list[idx]!}
-                            position={{ uniqueId, index: idx }}
-                            isPlay={active && idx === localIndex}
-                        />
-                    </div>
-                ))}
-            </div>
+            />
         </div>
     );
 }
-

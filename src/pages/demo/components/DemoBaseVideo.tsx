@@ -9,11 +9,40 @@ import { DemoMuteButton } from './DemoMuteButton';
 type Props = {
     item: DemoAwemeItem;
     position: { uniqueId: string; index: number };
-    /** douyin：首条 isPlay=true + autoplay；换条靠 bus ITEM_PLAY/STOP */
+    /** douyin：首条 isPlay=true；换条靠 bus ITEM_PLAY/STOP */
     isPlay: boolean;
 };
 
-/** douyin `BaseVideo.vue` 精简：单 useLayoutEffect 管播放/静音/bus */
+function detachVideoMedia(video: HTMLVideoElement): void {
+    video.pause();
+    video.removeAttribute('src');
+    while (video.firstChild) {
+        video.removeChild(video.firstChild);
+    }
+    video.load();
+}
+
+function attachVideoMedia(video: HTMLVideoElement, url: string): void {
+    if (!url) {
+        return;
+    }
+    const hit = video.querySelector('source');
+    if (hit?.getAttribute('src') === url) {
+        if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+            video.load();
+        }
+        return;
+    }
+    detachVideoMedia(video);
+    const source = document.createElement('source');
+    source.src = url;
+    source.type = 'video/mp4';
+    video.appendChild(source);
+    video.preload = 'auto';
+    video.load();
+}
+
+/** douyin `BaseVideo.vue`：仅当前条挂 src，邻格只显示 poster，减轻手机内存与并发请求 */
 export function DemoBaseVideo({ item, position, isPlay }: Props) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const progressRef = useRef<HTMLDivElement>(null);
@@ -29,10 +58,12 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
     const [isMove, setIsMove] = useState(false);
     const stepRef = useRef(0);
     const dragRef = useRef({ startX: 0, lastX: 0, lastTime: 0 });
+    /** 邻格挂载时 isPlay=false，但 ITEM_PLAY 后需播；勿用 props.isPlay 判断 canplay */
+    const wantPlayRef = useRef(isPlay);
 
     const isPlaying = status === SlideItemPlayStatus.Play;
     const poster = item.video.poster ?? item.video.cover.url_list[0] ?? '';
-    const urls = item.video.play_addr.url_list;
+    const primaryUrl = item.video.play_addr.url_list[0] ?? '';
 
     useLayoutEffect(() => {
         const video = videoRef.current;
@@ -49,7 +80,19 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
             setIsMuted(m);
         };
 
+        const retryPlayIfWanted = () => {
+            if (!wantPlayRef.current || !video.querySelector('source')) {
+                return;
+            }
+            setStatus(SlideItemPlayStatus.Play);
+            video.volume = 1;
+            syncMuted();
+            safePlay(video);
+        };
+
         const doPlay = (resetTime: boolean) => {
+            wantPlayRef.current = true;
+            attachVideoMedia(video, primaryUrl);
             if (resetTime) {
                 video.currentTime = 0;
             }
@@ -60,6 +103,7 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
         };
 
         const doPause = () => {
+            wantPlayRef.current = false;
             setStatus(SlideItemPlayStatus.Pause);
             video.pause();
         };
@@ -77,14 +121,15 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
                 }
             } else if (type === DEMO_EVENT_KEY.ITEM_STOP) {
                 ignoreWaiting = true;
-                video.currentTime = 0;
+                detachVideoMedia(video);
                 doPause();
                 window.setTimeout(() => {
                     ignoreWaiting = false;
                 }, 300);
             } else if (type === DEMO_EVENT_KEY.ITEM_PLAY) {
                 ignoreWaiting = true;
-                doPlay(true);
+                /** 切条：勿 resetTime+重复 detach，避免 Network 里 (canceled) 后黑屏 */
+                doPlay(false);
                 window.setTimeout(() => {
                     ignoreWaiting = false;
                 }, 300);
@@ -123,13 +168,6 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
 
         const onPlaying = () => setLoading(false);
 
-        const tryStartIfActive = () => {
-            if (!isPlay) {
-                return;
-            }
-            doPlay(false);
-        };
-
         demoBus.on(DEMO_EVENT_KEY.SINGLE_CLICK_BROADCAST, onBroadcast);
         demoBus.on(DEMO_EVENT_KEY.REMOVE_MUTED, onRemoveMuted);
         demoBus.on(DEMO_EVENT_KEY.HIDE_MUTED_NOTICE, onHideMutedNotice);
@@ -137,18 +175,20 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
         video.addEventListener('timeupdate', onTimeUpdate);
         video.addEventListener('waiting', onWaiting);
         video.addEventListener('playing', onPlaying);
-        video.addEventListener('canplay', tryStartIfActive, { once: true });
+        video.addEventListener('canplay', retryPlayIfWanted);
+        video.addEventListener('loadeddata', retryPlayIfWanted);
 
         syncMuted();
+        video.preload = 'none';
+        wantPlayRef.current = isPlay;
         if (isPlay) {
-            if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-                tryStartIfActive();
-            }
+            doPlay(false);
         } else {
             doPause();
         }
 
         return () => {
+            wantPlayRef.current = false;
             demoBus.off(DEMO_EVENT_KEY.SINGLE_CLICK_BROADCAST, onBroadcast);
             demoBus.off(DEMO_EVENT_KEY.REMOVE_MUTED, onRemoveMuted);
             demoBus.off(DEMO_EVENT_KEY.HIDE_MUTED_NOTICE, onHideMutedNotice);
@@ -156,10 +196,11 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
             video.removeEventListener('timeupdate', onTimeUpdate);
             video.removeEventListener('waiting', onWaiting);
             video.removeEventListener('playing', onPlaying);
-            video.removeEventListener('canplay', tryStartIfActive);
-            video.pause();
+            video.removeEventListener('canplay', retryPlayIfWanted);
+            video.removeEventListener('loadeddata', retryPlayIfWanted);
+            detachVideoMedia(video);
         };
-    }, [item.aweme_id, isPlay, position.index, position.uniqueId]);
+    }, [item.aweme_id, isPlay, position.index, position.uniqueId, primaryUrl]);
 
     const progressClass = isMove ? 'move' : isPlaying ? '' : 'stop';
     const showProgress = duration > 15 || isMove || !isPlaying;
@@ -171,15 +212,12 @@ export function DemoBaseVideo({ item, position, isPlay }: Props) {
                 ref={videoRef}
                 poster={poster}
                 muted={isMuted}
-                preload="auto"
+                preload="none"
                 loop
                 playsInline
+                {...({ 'webkit-playsinline': 'true', 'x5-playsinline': 'true' } as Record<string, string>)}
                 x-webkit-airplay="allow"
-            >
-                {urls.map((url) => (
-                    <source key={url} src={url} type="video/mp4" />
-                ))}
-            </video>
+            />
             {!isPlaying ? (
                 <svg className="demo-douyin-pause-icon" viewBox="0 0 28 28" aria-hidden>
                     <path fill="currentColor" d="M8 5v18l15-9z" />
