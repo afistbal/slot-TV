@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  Demo 联调页（有 UI，无 OG）；FB / Twitter 请分享 share-test.html
+  好友点帖子 → share-test.html → 回到本页 og-share.html
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OG 分享测试台 · Episode 1 - The 5-time rejected luna</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #050505;
+      min-height: 100vh;
+      padding: 24px 16px 40px;
+    }
+    .wrap { max-width: 560px; margin: 0 auto; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    .hint { font-size: 13px; color: #65676b; line-height: 1.55; margin-bottom: 16px; }
+    .hint a { color: #1877f2; }
+    .hint code { background: #e4e6eb; padding: 2px 6px; border-radius: 4px; font-size: 12px; word-break: break-all; }
+    .ep-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 14px; }
+    .ep-row input { width: 64px; height: 36px; border: 1px solid #ccd0d5; border-radius: 8px; padding: 0 10px; font-size: 14px; }
+    .drama-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .drama-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border: 2px solid #1877f2; border-radius: 8px; background: #e7f3ff; width: 100%;
+    }
+    .drama-item img { width: 40px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+    .drama-item__meta { flex: 1; min-width: 0; }
+    .drama-item__id { font-size: 11px; color: #65676b; }
+    .drama-item__title { font-size: 13px; font-weight: 600; line-height: 1.3; }
+    .fb-preview {
+      background: #fff; border: 1px solid #dddfe2; border-radius: 8px; overflow: hidden;
+      margin-bottom: 12px; display: flex; align-items: stretch; min-height: 120px;
+    }
+    .fb-preview__thumb { flex: 0 0 120px; width: 120px; background: #e4e6eb; overflow: hidden; }
+    .fb-preview__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .fb-preview__body {
+      flex: 1; min-width: 0; padding: 10px 12px; background: #f2f3f5;
+      display: flex; flex-direction: column; justify-content: center; gap: 4px;
+    }
+    .fb-preview__domain { font-size: 11px; color: #65676b; text-transform: uppercase; }
+    .fb-preview__title { font-size: 14px; font-weight: 600; line-height: 1.3; }
+    .fb-preview__desc { font-size: 13px; color: #65676b; line-height: 1.35; }
+    .url-box { font-size: 12px; color: #65676b; word-break: break-all; margin-bottom: 8px; line-height: 1.45; }
+    .url-box strong { color: #050505; display: block; margin-bottom: 2px; }
+    .url-box a { color: #1877f2; }
+    .btns { display: flex; flex-direction: column; gap: 10px; }
+    .btn {
+      display: flex; align-items: center; justify-content: center; height: 46px;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; color: #fff;
+    }
+    .btn-fb { background: #1877f2; }
+    .btn-tw { background: #000; }
+    .btn-debug { background: #42b72a; }
+    .btn-copy { background: #65676b; }
+    .btn-open { background: #e4e6eb; color: #050505; }
+    .btn:active { opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>OG 分享测试台</h1>
+    <p class="hint">
+      本页 <strong>og-share.html</strong> 为 Demo（<strong>没有</strong> FB OG，发帖不要分享本页 URL）。<br />
+      发帖 / Debugger 请用 <code>https://yogoshort.com/share-test.html</code>（与 testm 的 og-share-test2 同理）。<br />
+      好友点帖子 → share-test → 回到本页。正片：<code>https://yogoshort.com/video/2708/{ep}</code>。
+    </p>
+    <div class="ep-row">
+      <label for="ep-input">正片集数 ep：</label>
+      <input type="number" id="ep-input" min="1" max="99" value="1" />
+    </div>
+    <div class="drama-list">
+      <div class="drama-item">
+        <img src="https://cos.yogoshort.com/1eae756c4a56bd812763c01eba786f699fb347c763c5aa1c1ee720184efe07e4.webp" alt="" width="40" height="56" />
+        <div class="drama-item__meta">
+          <div class="drama-item__id">id: 2708</div>
+          <div class="drama-item__title">The 5-time rejected luna</div>
+        </div>
+      </div>
+    </div>
+    <div class="fb-preview">
+      <div class="fb-preview__thumb">
+        <img src="https://cos.yogoshort.com/1eae756c4a56bd812763c01eba786f699fb347c763c5aa1c1ee720184efe07e4.webp" alt="cover" width="360" height="640" />
+      </div>
+      <div class="fb-preview__body">
+        <div class="fb-preview__domain" id="preview-domain">YOGOSHORT.COM</div>
+        <div class="fb-preview__title">Episode 1 - The 5-time rejected luna | YogoShort</div>
+        <div class="fb-preview__desc">Lyra and her stepsister Mia are both Betas. Alpha Kael chooses Lyra as his bride. Believing she’s found her fated love, Lyra soon discovers Kael’s heart belongs to Mia. Devastated by his betrayal, Lyra swaps marriages with Mia and weds the blind Leo. Kael soon realizes his mistake, loses Lyra, and is left filled with endless regret.</div>
+      </div>
+    </div>
+    <p class="url-box">
+      <strong>分享 URL（share-test.html，供 FB 抓取）</strong>
+      <a id="share-page-url" href="#" target="_blank" rel="noopener"></a>
+    </p>
+    <p class="url-box">
+      <strong>正片落地</strong>
+      <a id="landing-url" href="https://yogoshort.com/video/2708/1" target="_blank" rel="noopener">https://yogoshort.com/video/2708/1</a>
+    </p>
+    <div class="btns">
+      <button type="button" class="btn btn-debug" id="btn-debug">FB Debugger（抓 share-test）</button>
+      <button type="button" class="btn btn-fb" id="share-fb">分享到 Facebook</button>
+      <button type="button" class="btn btn-tw" id="share-tw">分享到 Twitter</button>
+      <button type="button" class="btn btn-copy" id="btn-copy">复制分享链接</button>
+      <button type="button" class="btn btn-open" id="btn-open-bridge">新窗口打开 share-test</button>
+      <button type="button" class="btn btn-open" id="btn-open-video">打开正片</button>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var SHARE_TEST = { vid: 2708, ep: 1, tweetText: 'Episode 1 - The 5-time rejected luna' };
+      var SHARE_BRIDGE = location.origin + '/share-test.html';
+      function buildLandingUrl(ep) {
+        return 'https://yogoshort.com/video/' + SHARE_TEST.vid + '/' + ep;
+      }
+      function updatePanel() {
+        var ep = Math.max(1, parseInt(document.getElementById('ep-input').value, 10) || 1);
+        document.getElementById('ep-input').value = String(ep);
+        document.getElementById('share-page-url').href = SHARE_BRIDGE;
+        document.getElementById('share-page-url').textContent = SHARE_BRIDGE;
+        document.getElementById('landing-url').href = buildLandingUrl(ep);
+        document.getElementById('landing-url').textContent = buildLandingUrl(ep);
+        window.__currentShareUrl = SHARE_BRIDGE;
+        window.__currentTitle = SHARE_TEST.tweetText;
+      }
+      try {
+        document.getElementById('preview-domain').textContent =
+          location.hostname.replace(/^www\./i, '').toUpperCase();
+      } catch (e) {
+        document.getElementById('preview-domain').textContent = 'YOGOSHORT.COM';
+      }
+      document.getElementById('ep-input').addEventListener('change', updatePanel);
+      document.getElementById('ep-input').addEventListener('input', updatePanel);
+      document.getElementById('btn-debug').addEventListener('click', function () {
+        window.open('https://developers.facebook.com/tools/debug/?q=' + encodeURIComponent(SHARE_BRIDGE), '_blank', 'noopener,noreferrer');
+      });
+      document.getElementById('share-fb').addEventListener('click', function () {
+        window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(SHARE_BRIDGE), '_blank', 'noopener,noreferrer');
+      });
+      document.getElementById('share-tw').addEventListener('click', function () {
+        var tw = new URL('https://twitter.com/intent/tweet');
+        tw.searchParams.set('url', SHARE_BRIDGE);
+        tw.searchParams.set('text', SHARE_TEST.tweetText);
+        window.open(tw.toString(), '_blank', 'noopener,noreferrer');
+      });
+      document.getElementById('btn-copy').addEventListener('click', function () {
+        navigator.clipboard.writeText(SHARE_BRIDGE).then(function () { alert('已复制'); }).catch(function () { prompt('复制', SHARE_BRIDGE); });
+      });
+      document.getElementById('btn-open-bridge').addEventListener('click', function () {
+        window.open(SHARE_BRIDGE, '_blank', 'noopener,noreferrer');
+      });
+      document.getElementById('btn-open-video').addEventListener('click', function () {
+        var ep = Math.max(1, parseInt(document.getElementById('ep-input').value, 10) || 1);
+        window.open(buildLandingUrl(ep), '_blank', 'noopener,noreferrer');
+      });
+      updatePanel();
+    })();
+  </script>
+</body>
+</html>

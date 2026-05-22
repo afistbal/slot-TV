@@ -41,6 +41,7 @@ import { runLoadEpisodeForPlayer } from './videoPlayerLoadEpisode';
 import { markVideoSessionUserUnmuted } from './videoSessionMute';
 import { formatVideoClock } from './videoPlayerTimeFormat';
 import { putEpisodeDetailCache } from './episodeDetailCache';
+import { readVideoOrientation, type VideoOrientation } from './videoOrientation';
 import {
     VideoPlayerEpisodeSpeedIntroDrawers,
     VideoPlayerH5CommerceDrawers,
@@ -160,8 +161,18 @@ export function VideoPlayer({
     const [videoMutedUi, setVideoMutedUi] = useState(true);
     /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
     const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
+    /** `loadedmetadata`：videoWidth > videoHeight 为横屏，否则竖屏 */
+    const [videoOrientation, setVideoOrientation] = useState<VideoOrientation | null>(null);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const fullscreenRestoreInFlightRef = useRef(false);
+    const isLandscapeVideo = videoOrientation === 'landscape';
+    /** 横竖屏共用 9:16 舞台宽度；横屏视频在舞台内 object-contain 上下留黑边 */
+    const videoStageClassName =
+        'relative h-full max-h-full w-auto max-w-full overflow-hidden aspect-[9/16] bg-black';
+    const videoElementClassName = cn(
+        'absolute inset-0 h-full w-full',
+        isLandscapeVideo ? 'object-contain' : 'object-cover',
+    );
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
     /** 因页签/窗口不可见而自动暂停时置 true，回到前台仅在此情况下自动续播 */
     const pausedByDocumentVisibilityRef = useRef(false);
@@ -621,6 +632,7 @@ export function VideoPlayer({
 
     useEffect(() => {
         setH5UserDismissedUnmuteOverlay(false);
+        setVideoOrientation(null);
     }, [id]);
 
     useEffect(() => {
@@ -717,6 +729,17 @@ export function VideoPlayer({
             setDuration(durOk ? formatVideoClock(d) : '00:00');
         };
 
+        const syncVideoOrientation = () => {
+            const el = videoRef.current;
+            if (!el) {
+                return;
+            }
+            const next = readVideoOrientation(el);
+            if (next) {
+                setVideoOrientation(next);
+            }
+        };
+
         const videoTimeUpdate = () => {
             syncUiFromVideoTime();
             if (videoRef.current === null) {
@@ -735,7 +758,12 @@ export function VideoPlayer({
         };
 
         v.addEventListener('timeupdate', videoTimeUpdate);
-        v.addEventListener('loadedmetadata', syncUiFromVideoTime);
+        const onLoadedMetadata = () => {
+            syncVideoOrientation();
+            syncUiFromVideoTime();
+        };
+        v.addEventListener('loadedmetadata', onLoadedMetadata);
+        syncVideoOrientation();
 
         const progressEl = progressWrapRef.current;
         const progressTouchMove = (e: TouchEvent) => {
@@ -815,7 +843,7 @@ export function VideoPlayer({
 
         return () => {
             v.removeEventListener('timeupdate', videoTimeUpdate);
-            v.removeEventListener('loadedmetadata', syncUiFromVideoTime);
+            v.removeEventListener('loadedmetadata', onLoadedMetadata);
             v.removeEventListener('ended', videoEnded);
             v.removeEventListener('canplay', videoCanPlay);
             v.removeEventListener('playing', videoPlaying);
@@ -1053,10 +1081,10 @@ export function VideoPlayer({
                 <div className="h-full w-full relative opacity-100 transition-opacity duration-500">
                     <div className="absolute inset-0 flex bg-black">
                         <div className="relative flex-1 flex justify-center items-center bg-black">
-                            <div className="relative h-full max-h-full aspect-[9/16] w-auto max-w-full overflow-hidden">
+                            <div className={videoStageClassName}>
                             <video
                                 ref={videoRef}
-                                className="w-full h-full object-cover absolute"
+                                className={videoElementClassName}
                                 playsInline
                                 poster={videoPosterAttr}
                                 preload={videoPreload}
@@ -1343,25 +1371,29 @@ export function VideoPlayer({
 
     return (
         <div className="video-player-root h-full w-full relative" ref={wrapRef}>
-            <div className="h-full w-full relative opacity-100 transition-opacity duration-500">
-                <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover absolute"
-                    playsInline
-                    poster={videoPosterAttr}
-                    preload={videoPreload}
-                    {...({
-                        fetchPriority: playbackPolicy === 'paused' ? 'low' : 'high',
-                    } as React.HTMLAttributes<HTMLVideoElement>)}
-                    controlsList="nodownload noplaybackrate noremoteplayback"
-                    disablePictureInPicture
-                    disableRemotePlayback
-                    onContextMenu={(e) => e.preventDefault()}
-                >
-                    {playbackSources.map((srcUrl, i) => (
-                        <source key={`${id}-${i}`} src={srcUrl} type="video/mp4" />
-                    ))}
-                </video>
+            <div className="h-full w-full relative bg-black opacity-100 transition-opacity duration-500">
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className={videoStageClassName}>
+                        <video
+                            ref={videoRef}
+                            className={videoElementClassName}
+                            playsInline
+                            poster={videoPosterAttr}
+                            preload={videoPreload}
+                            {...({
+                                fetchPriority: playbackPolicy === 'paused' ? 'low' : 'high',
+                            } as React.HTMLAttributes<HTMLVideoElement>)}
+                            controlsList="nodownload noplaybackrate noremoteplayback"
+                            disablePictureInPicture
+                            disableRemotePlayback
+                            onContextMenu={(e) => e.preventDefault()}
+                        >
+                            {playbackSources.map((srcUrl, i) => (
+                                <source key={`${id}-${i}`} src={srcUrl} type="video/mp4" />
+                            ))}
+                        </video>
+                    </div>
+                </div>
                 {!isDesktop &&
                     showH5FullscreenUnmuteOverlay && (
                         <button

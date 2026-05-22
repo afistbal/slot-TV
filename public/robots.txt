@@ -1,2 +1,16 @@
+# 社交分享爬虫（抓 OG 预览，必须放行，否则 FB Debugger 返回 403）
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# 其它爬虫默认禁止整站抓取
 User-agent: *
 Disallow: /

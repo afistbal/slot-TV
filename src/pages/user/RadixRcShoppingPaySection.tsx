@@ -53,6 +53,14 @@ function toNumericValue(value: unknown): number {
     return 0;
 }
 
+/** 收起软键盘，避免点 Google Pay 时隐藏区 iframe/input 抢焦点 */
+function dismissSoftKeyboard() {
+    const el = document.activeElement;
+    if (el instanceof HTMLElement) {
+        el.blur();
+    }
+}
+
 export type RadixRcShoppingPaySectionProps = {
     /** 当前选中套餐；用于钱包 pay/create 与挂载 */
     walletProductId: number | null;
@@ -161,6 +169,8 @@ type WalletPayActionProps = {
     onWalletPointerDown?: () => void;
     mountRef: RefObject<HTMLDivElement | null>;
     hidden?: boolean;
+    /** 选中 Google Pay 时，隐藏的钱包槽不参与焦点（防软键盘闪一下） */
+    inert?: boolean;
 };
 
 function WalletPayAction({
@@ -171,12 +181,14 @@ function WalletPayAction({
     onWalletPointerDown,
     mountRef,
     hidden = false,
+    inert = false,
 }: WalletPayActionProps) {
     return (
         <div
             className="rs-shopping__airwallexWalletSlot"
             style={{ display: hidden ? 'none' : undefined }}
             aria-hidden={hidden || undefined}
+            {...(inert ? { inert: true as const } : {})}
         >
             <div className="rs-shopping__payWalletSlot">
                 <button
@@ -225,7 +237,10 @@ function WalletPayAction({
                     onPointerDownCapture={onWalletPointerDown}
                     style={{
                         display: 'flex',
-                        pointerEvents: !walletDirectCheckout && walletState === 'ready' ? 'auto' : 'none',
+                        pointerEvents:
+                            inert || (!walletDirectCheckout && walletState !== 'ready')
+                                ? 'none'
+                                : 'auto',
                     }}
                 />
             </div>
@@ -236,14 +251,16 @@ function WalletPayAction({
 type CardPayActionProps = {
     mountRef: RefObject<HTMLDivElement | null>;
     visuallyHidden: boolean;
+    inert?: boolean;
 };
 
-function CardPayAction({ mountRef, visuallyHidden }: CardPayActionProps) {
+function CardPayAction({ mountRef, visuallyHidden, inert = false }: CardPayActionProps) {
     return (
         <div
             className="rs-shopping__cardDropin"
             style={{ display: visuallyHidden ? 'none' : undefined }}
             aria-hidden={visuallyHidden || undefined}
+            {...(inert ? { inert: true as const } : {})}
         >
             <div className={cn('rs-checkout rs-checkout-h5 rs-checkout-h5--embedded')}>
                 <div className="rs-checkout-h5__inner">
@@ -292,6 +309,8 @@ export default function RadixRcShoppingPaySection({
         currency: string;
         amountValue: number;
     } | null>(null);
+    const paymentRef = useRef(payment);
+    paymentRef.current = payment;
 
     function buildCheckoutPayload(targetProductId: number, fallbackCurrency = 'USD', fallbackAmount = 0) {
         return {
@@ -487,6 +506,7 @@ export default function RadixRcShoppingPaySection({
                 if (!google || cancelled) return;
                 google.mount(googleHost);
                 google.on('click', () => {
+                    dismissSoftKeyboard();
                     pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
                     onPayStateChange?.('processing');
                 });
@@ -535,12 +555,20 @@ export default function RadixRcShoppingPaySection({
                 } as Parameters<typeof createElement<'dropIn'>>[1]);
                 if (!dropIn || cancelled) return;
                 dropIn.mount(cardHost);
+                dropIn.on('ready', () => {
+                    if (paymentRef.current === 2) {
+                        dismissSoftKeyboard();
+                    }
+                });
                 dropIn.on('clickConfirmButton', () => {
                     pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
                     onPayStateChange?.('processing');
                 });
                 bindCommon(dropIn);
                 instancesRef.current.push(dropIn);
+                if (paymentRef.current === 2) {
+                    dismissSoftKeyboard();
+                }
             } catch {
                 onPayStateChange?.('failed');
             }
@@ -559,7 +587,12 @@ export default function RadixRcShoppingPaySection({
             return;
         }
         setPayment(payMethod);
+        if (payMethod === 2) {
+            dismissSoftKeyboard();
+        }
     }
+
+    const googlePayFocusGuard = payment === 2;
 
     useEffect(() => {
         if (!canPickApple && payment === 1) {
@@ -583,6 +616,7 @@ export default function RadixRcShoppingPaySection({
                 onCheckout={handleWalletCheckoutClick}
                 mountRef={appleMountRef}
                 hidden={payment !== 1}
+                inert={googlePayFocusGuard}
             />
 
             <WalletPayAction
@@ -590,11 +624,16 @@ export default function RadixRcShoppingPaySection({
                 walletState={walletState.google}
                 walletMethod={'google'}
                 onCheckout={handleWalletCheckoutClick}
+                onWalletPointerDown={dismissSoftKeyboard}
                 mountRef={googleMountRef}
                 hidden={payment !== 2}
             />
 
-            <CardPayAction mountRef={cardMountRef} visuallyHidden={payment !== 3} />
+            <CardPayAction
+                mountRef={cardMountRef}
+                visuallyHidden={payment !== 3}
+                inert={googlePayFocusGuard}
+            />
 
             {!checkoutTargetProductId ? (
                 <div className="text-xs text-white/60 mt-2">

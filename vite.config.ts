@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 // import legacy from '@vitejs/plugin-legacy'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { readFileSync } from 'node:fs'
+import { copyFileSync, existsSync, readFileSync } from 'node:fs'
 import path from "path"
 
 const packageJson = JSON.parse(
@@ -55,6 +55,22 @@ function injectApiOriginPreconnect(apiOrigin: string): Plugin {
   }
 }
 
+/** 打包时把根目录分享相关 HTML 复制到 outDir，与 index.html 同级 */
+function copyShareHtmlFiles(outDir: string): Plugin {
+  const names = ['share.template.html', 'share-test.html', 'og-share.html']
+  return {
+    name: 'copy-share-html-files',
+    closeBundle() {
+      for (const name of names) {
+        const src = path.join(process.cwd(), name)
+        if (existsSync(src)) {
+          copyFileSync(src, path.join(outDir, name))
+        }
+      }
+    },
+  }
+}
+
 function htmlAssetCacheBust(version: string): Plugin {
   const publicHtmlNames = new Set(['reelshort-privacy-policy.html', 'airwallex.html'])
   return {
@@ -98,6 +114,7 @@ export default ({ mode }: { mode: string }) => {
     },
     plugins: [
       htmlAssetCacheBust(appVersion),
+      copyShareHtmlFiles(outDir),
       injectApiOriginPreconnect(apiOriginForHints),
       react(),
       tailwindcss(),
@@ -131,8 +148,10 @@ export default ({ mode }: { mode: string }) => {
       emptyOutDir: false,
       rollupOptions: {
         input: {
-          'index': 'index.html',
-          'share': 'share.html',
+          index: 'index.html',
+          share: 'share.html',
+          'share-test': 'share-test.html',
+          'og-share': 'og-share.html',
         },
       }
     },
