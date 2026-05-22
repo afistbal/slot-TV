@@ -55,16 +55,18 @@ function injectApiOriginPreconnect(apiOrigin: string): Plugin {
   }
 }
 
-/** 打包时把根目录 share.template.html 复制到 outDir，与 index.html 同级 */
-function copyShareTemplate(outDir: string): Plugin {
+/** 打包时把根目录分享相关 HTML 复制到 outDir，与 index.html 同级 */
+function copyShareHtmlFiles(outDir: string): Plugin {
+  const names = ['share.template.html', 'share-test.html', 'og-share.html']
   return {
-    name: 'copy-share-template',
+    name: 'copy-share-html-files',
     closeBundle() {
-      const src = path.join(process.cwd(), 'share.template.html')
-      if (!existsSync(src)) {
-        return
+      for (const name of names) {
+        const src = path.join(process.cwd(), name)
+        if (existsSync(src)) {
+          copyFileSync(src, path.join(outDir, name))
+        }
       }
-      copyFileSync(src, path.join(outDir, 'share.template.html'))
     },
   }
 }
@@ -112,7 +114,7 @@ export default ({ mode }: { mode: string }) => {
     },
     plugins: [
       htmlAssetCacheBust(appVersion),
-      copyShareTemplate(outDir),
+      copyShareHtmlFiles(outDir),
       injectApiOriginPreconnect(apiOriginForHints),
       react(),
       tailwindcss(),
@@ -146,8 +148,10 @@ export default ({ mode }: { mode: string }) => {
       emptyOutDir: false,
       rollupOptions: {
         input: {
-          'index': 'index.html',
-          'share': 'share.html',
+          index: 'index.html',
+          share: 'share.html',
+          'share-test': 'share-test.html',
+          'og-share': 'og-share.html',
         },
       }
     },
