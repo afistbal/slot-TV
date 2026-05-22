@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  社交分享页 HTML 模板（后端替换占位符后输出）
+
+  发帖预览（对标 Reelshort）：
+    左侧竖图 + 右侧 域名 / 标题 / 描述
+  好友点击帖子（图二）：
+    先打开本分享页 → meta refresh 跳到 {{LANDING_URL}}
+    例：https://yogoshort.com/video/9652/1
+
+  占位符：
+    {{OG_URL}}           本分享页完整 URL（与分享出去的链接一致，FB 用于缓存）
+    {{OG_TITLE}}         如 Episode 9 - Mic Drop Diva | YogoShort
+    {{OG_DESCRIPTION}}   简介（必须填，否则右侧无描述）
+    {{OG_IMAGE}}         封面 HTTPS 绝对地址，文件本身建议 9:16 竖图（如 360×640）
+    {{OG_SITE_NAME}}     如 YogoShort
+    {{OG_LOCALE}}        如 en_US
+    {{LANDING_URL}}      正片 https://yogoshort.com/video/{vid}/{ep}
+    {{PAGE_TITLE}}       可与 {{OG_TITLE}} 相同
+
+  无封面：删除 OG_IMAGE、TWITTER_IMAGE 注释块。
+  不自动跳转：删除 REDIRECT 块内 meta refresh。
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- REDIRECT：真人点击分享链接后跳正片 -->
+  <meta http-equiv="refresh" content="0;url={{LANDING_URL}}" />
+  <!-- /REDIRECT -->
+
+  <!-- Facebook Open Graph（左图 + 标题 + 描述） -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="{{OG_LOCALE}}" />
+  <meta property="og:site_name" content="{{OG_SITE_NAME}}" />
+  <meta property="og:url" content="{{OG_URL}}" />
+  <meta property="og:title" content="{{OG_TITLE}}" />
+  <meta property="og:description" content="{{OG_DESCRIPTION}}" />
+  <!-- OG_IMAGE -->
+  <meta property="og:image" content="{{OG_IMAGE}}" />
+  <meta property="og:image:secure_url" content="{{OG_IMAGE}}" />
+  <meta property="og:image:type" content="image/webp" />
+  <meta property="og:image:width" content="360" />
+  <meta property="og:image:height" content="640" />
+  <!-- /OG_IMAGE -->
+
+  <!-- Twitter：summary = 左图右文（勿用 summary_large_image） -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="{{OG_TITLE}}" />
+  <meta name="twitter:description" content="{{OG_DESCRIPTION}}" />
+  <!-- TWITTER_IMAGE -->
+  <meta name="twitter:image" content="{{OG_IMAGE}}" />
+  <!-- /TWITTER_IMAGE -->
+
+  <meta name="description" content="{{OG_DESCRIPTION}}" />
+  <title>{{PAGE_TITLE}}</title>
+</head>
+<body>
+  <p><a href="{{LANDING_URL}}">Watch on {{OG_SITE_NAME}}</a></p>
+</body>
+</html>
