@@ -52,7 +52,7 @@ export default function Component() {
                             localStorage.setItem('paid_url', location.href);
                             const checkout = localStorage.getItem('checkout');
                             if (checkout) {
-                                pixel.track('Subscribe', JSON.parse(checkout));
+                                pixel.track('Purchase', JSON.parse(checkout));
                             }
                         }
                     }).finally(() => {
@@ -75,7 +75,7 @@ export default function Component() {
                             localStorage.setItem('paid_url', location.href);
                             const checkout = localStorage.getItem('checkout');
                             if (checkout) {
-                                pixel.track('Subscribe', JSON.parse(checkout));
+                                pixel.track('Purchase', JSON.parse(checkout));
                             }
                         }
                     }).finally(() => {
@@ -93,7 +93,7 @@ export default function Component() {
             const sn = query.get('sn');
             if (checkout && sn) {
                 const parsed = JSON.parse(checkout);
-                pixel.track('Subscribe', JSON.parse(checkout));
+                pixel.track('Purchase', JSON.parse(checkout));
                 Adjust.trackEvent({
                     deduplicationId: sn,
                     eventToken: 'ux3ud3',

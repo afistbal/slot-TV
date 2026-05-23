@@ -446,7 +446,7 @@ export default function RadixRcShoppingPaySection({
             const subscribePayload = buildCheckoutPayload(targetProductId, currency, amountValue);
             const bindCommon = (element: any) => {
                 element.on('success', () => {
-                    pixel.track('Subscribe', subscribePayload);
+                    pixel.track('Purchase', subscribePayload);
                     onPayStateChange?.('success');
                 });
                 element.on('error', () => onPayStateChange?.('failed'));
