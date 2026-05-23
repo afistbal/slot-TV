@@ -27,8 +27,7 @@ class _Tiktok {
     instance: TiktokPixel | null = null;
 
     public track(name: unknown, data?: unknown) {
-        const eventName = name === 'Purchase' ? 'CompletePayment' : name;
-        this.instance?.track(eventName, data);
+        this.instance?.track(name, data);
     }
 }
 
