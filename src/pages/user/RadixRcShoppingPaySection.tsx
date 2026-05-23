@@ -415,8 +415,7 @@ export default function RadixRcShoppingPaySection({
                     ),
                 ),
             };
-            console.info('[pixel] AddToCart fired', addToCartData);
-            pixel.track('AddToCart', addToCartData);
+            pixel.track('InitiateCheckout', addToCartData);
             
             setSessionReady(true);
         })();
