@@ -32,7 +32,8 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import Forward from '@/components/Forward';
 // import { useLoadingStore } from "@/stores/loading";
 import { SPEED } from './videoPlayerConstants';
-import { canNavigateBack } from './videoPlayerUtils';
+import { canNavigateBack, getTagDisplayText } from './videoPlayerUtils';
+import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
 import { getFullscreenElement } from './videoPlayerFullscreen';
 import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
@@ -1416,7 +1417,7 @@ export function VideoPlayer({
                 <div
                     className={cn(
                         'absolute bottom-0 left-0 right-0 z-[5] mx-auto flex w-10/12 flex-col items-center justify-end gap-1 text-center pointer-events-none',
-                        isFullscreenUi ? 'pb-12' : 'pb-[124px]',
+                        isFullscreenUi ? 'pb-12' : 'video-player-h5-subtitle-pad',
                     )}
                     ref={subtitleRef}
                 >
@@ -1437,13 +1438,13 @@ export function VideoPlayer({
                 >
                     {!isFullscreenUi && (
                         <div
-                            className="flex justify-between h-16 items-center bg-black absolute top-0 w-full transition-opacity ease-linear"
+                            className="video-player-h5-topbar absolute top-0 left-0 right-0 w-full transition-opacity ease-linear"
                             onClick={(e) => e.stopPropagation()}
                             onTouchStart={(e) => e.stopPropagation()}
                         >
                             <div
                                 onClick={handleBack}
-                                className="text-white w-10 h-16 flex justify-center items-center shrink-0"
+                                className="video-player-h5-topbar-back text-white flex justify-center items-center shrink-0"
                             >
                                 {canNavigateBack() ? (
                                     <ChevronLeft className="w-5 h-5" />
@@ -1451,18 +1452,9 @@ export function VideoPlayer({
                                     <Home className="w-5 h-5" />
                                 )}
                             </div>
-                            <div className="text-white text-lg font-bold text-ellipsis flex-1 whitespace-nowrap overflow-hidden pr-2">
-                                {data.info.title}
+                            <div className="video-player-h5-topbar-ep text-white shrink-0 font-bold">
+                                EP.{episode?.episode ?? '..'}
                             </div>
-                            <div className="text-white shrink-0 font-bold">
-                                {episode?.episode ?? '..'} / {data.episodes.length}
-                            </div>
-                            <Link
-                                to="/"
-                                className="text-white w-10 h-16 flex justify-center items-center shrink-0"
-                            >
-                                <Home className="w-5 h-5" />
-                            </Link>
                         </div>
                     )}
                     {canPlay &&
@@ -1493,7 +1485,7 @@ export function VideoPlayer({
                     )}
                     {!isFullscreenUi && (
                         <div
-                            className="w-10 h-36 absolute right-4 m-auto bottom-56 flex flex-col gap-4"
+                            className="video-player-h5-side-actions absolute right-4 flex flex-col gap-4"
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -1547,132 +1539,137 @@ export function VideoPlayer({
                             </div>
                         </div>
                     )}
-                    {!isFullscreenUi && episode?.lock === false && (
-                        <div
-                            className="absolute bg-black/30 w-full bottom-0 text-white h-[76px] overflow-hidden text-sm p-4 pt-0 flex gap-1 items-center"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleIntroduction();
-                            }}
-                        >
-                            {data.info.introduction ? (
-                                <>
-                                    <div className="text-ellipsis line-clamp-3 leading-5 text-white/90">
-                                        {data.info.introduction}
-                                    </div>
-                                    <div>
-                                        <Forward />
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="flex justify-center items-center w-full">
-                                    <FormattedMessage id="no_introduction_available" />
-                                </div>
-                            )}
-                        </div>
-                    )}
                     {episode?.lock === false && (
                         <div
                             className={cn(
-                                'absolute bg-black/30 w-full mx-auto pl-4 pr-2 left-0 right-0 h-10 flex items-center bottom-0',
-                                isFullscreenUi ? 'mb-0' : 'mb-[76px]',
+                                'video-player-h5-bottom absolute bottom-0 left-0 right-0 w-full',
+                                isFullscreenUi && 'video-player-h5-bottom--fullscreen',
                             )}
                             ref={progressWrapRef}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {canPlay && (
-                                <button
-                                    type="button"
-                                    className="shrink-0 flex items-center justify-center border-0 bg-transparent px-2 py-0 mr-2 text-white cursor-pointer touch-manipulation"
+                            {!isFullscreenUi && (
+                                <div
+                                    className="video-player-h5-info"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleTogglePlay(e);
+                                        handleIntroduction();
                                     }}
                                 >
-                                    {playing ? (
-                                        <Pause className="w-5 h-5" aria-hidden />
-                                    ) : (
-                                        <PlayIcon className="w-5 h-5" aria-hidden />
+                                    <div className="video-player-h5-title-row">
+                                        <span className="video-player-h5-title">{data.info.title}</span>
+                                        <Forward className="video-player-h5-title-chevron w-4 h-4 shrink-0" />
+                                    </div>
+                                    <div className="video-player-h5-desc">
+                                        {data.info.introduction ? (
+                                            <>
+                                                <span className="video-player-h5-ep">
+                                                    EP.{episode?.episode ?? '..'}
+                                                </span>
+                                                <span className="video-player-h5-desc-sep" aria-hidden="true">
+                                                    {' | '}
+                                                </span>
+                                                <span className="video-player-h5-desc-text">
+                                                    {data.info.introduction}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <span className="video-player-h5-desc-text">
+                                                <FormattedMessage id="no_introduction_available" />
+                                            </span>
+                                        )}
+                                    </div>
+                                    {data.tags.length > 0 && (
+                                        <div className="video-player-h5-tags">
+                                            {data.tags.map((v) => (
+                                                <Link
+                                                    key={v.name}
+                                                    to={videoIntroTagSearchPath(v)}
+                                                    className="video-player-h5-tag"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {getTagDisplayText(v)}
+                                                </Link>
+                                            ))}
+                                        </div>
                                     )}
-                                </button>
+                                </div>
                             )}
-                            <div
-                                className="flex-1 flex items-center justify-center"
-                                ref={progressRef}
-                                onMouseDown={handleProgressMouseDown}
-                                onMouseMove={handleProgressMouseMove}
-                                onMouseEnter={handleProgressMouseEnter}
-                                onMouseLeave={handleProgressMouseLeave}
-                                onTouchStart={handleProgressTouchStart}
-                                onTouchMove={handleProgressTouchMove}
-                            >
-                                <div className="video-player-progress-track w-full h-1 bg-white/50 rounded-full overflow-visible">
-                                    <div className="bg-white/80 h-1 w-0 rounded-full relative" ref={progressCurrentRef}>
-                                        <span
-                                            className={cn(
-                                                'video-player-progress-thumb',
-                                                (progressHover || progressDragging) &&
-                                                    'video-player-progress-thumb--visible',
-                                            )}
-                                        />
+                            <div className="video-player-h5-progress-row">
+                                {isFullscreenUi && canPlay && (
+                                    <button
+                                        type="button"
+                                        className="video-player-h5-fullscreen-play shrink-0 flex items-center justify-center border-0 bg-transparent px-2 py-0 mr-2 text-white cursor-pointer touch-manipulation"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleTogglePlay(e);
+                                        }}
+                                    >
+                                        {playing ? (
+                                            <Pause className="w-5 h-5" aria-hidden />
+                                        ) : (
+                                            <PlayIcon className="w-5 h-5" aria-hidden />
+                                        )}
+                                    </button>
+                                )}
+                                <div
+                                    className="video-player-h5-progress-track-wrap flex-1 flex items-center justify-center"
+                                    ref={progressRef}
+                                    onMouseDown={handleProgressMouseDown}
+                                    onMouseMove={handleProgressMouseMove}
+                                    onMouseEnter={handleProgressMouseEnter}
+                                    onMouseLeave={handleProgressMouseLeave}
+                                    onTouchStart={handleProgressTouchStart}
+                                    onTouchMove={handleProgressTouchMove}
+                                >
+                                    <div className="video-player-progress-track w-full h-1 bg-white/50 rounded-full overflow-visible">
+                                        <div
+                                            className="bg-white/80 h-1 w-0 rounded-full relative"
+                                            ref={progressCurrentRef}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    'video-player-progress-thumb',
+                                                    (progressHover || progressDragging) &&
+                                                        'video-player-progress-thumb--visible',
+                                                )}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-white text-xs flex items-center justify-center pl-4 whitespace-nowrap text-nowrap">
-                                {current} / {duration}
-                            </div>
-                            <div
-                                className="text-white text-xs flex shrink-0 items-center justify-center pl-4 pr-2"
-                                onClick={handleSpeedControlClick}
-                            >
-                                {SPEED[speed]}x
-                            </div>
-                            {episode?.lock === false && (
-                                <button
-                                    type="button"
-                                    data-vertical-swipe-ignore
-                                    className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pl-3 pr-4 text-white cursor-pointer touch-manipulation"
-                                    onClick={handleToggleVideoMute}
-                                    aria-label={
-                                        videoMutedUi
-                                            ? intl.formatMessage({
-                                                  id: 'video_sound_unmute',
-                                                  defaultMessage: 'Unmute',
-                                              })
-                                            : intl.formatMessage({
-                                                  id: 'video_sound_mute',
-                                                  defaultMessage: 'Mute',
-                                              })
-                                    }
-                                >
-                                    {videoMutedUi ? (
-                                        <VolumeX className="w-5 h-5" aria-hidden />
-                                    ) : (
-                                        <Volume2 className="w-5 h-5" aria-hidden />
+                            <div className="video-player-h5-toolbar">
+                                <div className="video-player-h5-time">{current} / {duration}</div>
+                                <div className="video-player-h5-toolbar-actions">
+                                    <div
+                                        className="video-player-h5-speed"
+                                        onClick={handleSpeedControlClick}
+                                    >
+                                        {SPEED[speed]}x
+                                    </div>
+                                    {hasNextEpisode() && (
+                                        <div
+                                            className="video-player-next-episode-trigger video-player-h5-next text-white flex items-center justify-center cursor-pointer"
+                                            onClick={(e) => void handleJumpNextEpisode(e)}
+                                        >
+                                            <img
+                                                src={nextEpisodeIcon}
+                                                alt="next episode"
+                                                className="video-player-next-episode-icon"
+                                            />
+                                        </div>
                                     )}
-                                </button>
-                            )}
-                            {hasNextEpisode() && (
-                                <div
-                                    className="video-player-next-episode-trigger text-white text-xs flex items-center justify-center px-2 cursor-pointer"
-                                    onClick={(e) => void handleJumpNextEpisode(e)}
-                                >
-                                    <img
-                                        src={nextEpisodeIcon}
-                                        alt="next episode"
-                                        className="video-player-next-episode-icon"
-                                    />
+                                    <div
+                                        className="video-player-h5-fullscreen text-white flex shrink-0 items-center justify-center cursor-pointer"
+                                        onClick={handleToggleFullscreen}
+                                    >
+                                        {isFullscreenUi ? (
+                                            <Minimize className="w-5 h-5" />
+                                        ) : (
+                                            <img src={fullscreenIcon} alt="" className="w-5 h-5" />
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-                            <div
-                                className="text-white text-xs flex shrink-0 items-center justify-center px-2 cursor-pointer"
-                                onClick={handleToggleFullscreen}
-                            >
-                                {isFullscreenUi ? (
-                                    <Minimize className="w-5 h-5" />
-                                ) : (
-                                    <img src={fullscreenIcon} alt="" className="w-5 h-5" />
-                                )}
                             </div>
                         </div>
                     )}

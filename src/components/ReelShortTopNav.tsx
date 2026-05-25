@@ -1004,6 +1004,17 @@ export function ReelShortTopNav({
                 >
                   <FormattedMessage id="nav_categories" />
                 </NavLink>
+                <NavLink
+                  to="/for-you"
+                  className={({ isActive }) =>
+                    cn(
+                      'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
+                      isActive && 'reelshort-topnav__segment-link--active',
+                    )
+                  }
+                >
+                  <FormattedMessage id="for_you" />
+                </NavLink>
               </nav>
             </div>
 
