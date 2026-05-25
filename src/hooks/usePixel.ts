@@ -27,6 +27,7 @@ class _Tiktok {
     instance: TiktokPixel | null = null;
 
     public track(name: unknown, data?: unknown) {
+        // 支付
         this.instance?.track(name, data);
     }
 }

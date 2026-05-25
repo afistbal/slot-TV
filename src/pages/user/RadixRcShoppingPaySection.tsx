@@ -415,8 +415,7 @@ export default function RadixRcShoppingPaySection({
                     ),
                 ),
             };
-            console.info('[pixel] AddToCart fired', addToCartData);
-            pixel.track('AddToCart', addToCartData);
+            pixel.track('InitiateCheckout', addToCartData);
             
             setSessionReady(true);
         })();
@@ -446,7 +445,7 @@ export default function RadixRcShoppingPaySection({
             const subscribePayload = buildCheckoutPayload(targetProductId, currency, amountValue);
             const bindCommon = (element: any) => {
                 element.on('success', () => {
-                    pixel.track('Subscribe', subscribePayload);
+                    pixel.track('Purchase', subscribePayload);
                     onPayStateChange?.('success');
                 });
                 element.on('error', () => onPayStateChange?.('failed'));

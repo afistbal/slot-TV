@@ -222,6 +222,11 @@ export default function RadixRc({
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
     const [payModalStatus, setPayModalStatus] = useState<PayModalStatus>('idle');
     const [paySessionSeed, setPaySessionSeed] = useState(0);
+    /** 视频页父组件因 timeupdate 等高频重渲染，回调勿放进 success 定时 effect 依赖，否则 2.5s 关闭计时器会被反复清掉 */
+    const onEmbedCloseRef = useRef(onEmbedClose);
+    onEmbedCloseRef.current = onEmbedClose;
+    const onEmbedPaySuccessEpisodeDetailRef = useRef(onEmbedPaySuccessEpisodeDetail);
+    onEmbedPaySuccessEpisodeDetailRef.current = onEmbedPaySuccessEpisodeDetail;
 
     useEffect(() => {
         let cancelled = false;
@@ -282,46 +287,39 @@ export default function RadixRc({
 
     useEffect(() => {
         if (payModalStatus !== 'success' || !showPayModal) return;
+        const episodeRowId = embedVideoEpisodeRowId;
         const timer = window.setTimeout(() => {
             void (async () => {
-                setShowPaidServiceAgreement(false);
-                setPayModalStatus('idle');
-                setShowPayModal(false);
-                setPaySessionSeed((prev) => prev + 1);
                 await refreshSessionFromStoredToken();
                 if (
                     layout === 'embed' &&
                     productFrom === 'video' &&
-                    embedVideoEpisodeRowId != null &&
-                    embedVideoEpisodeRowId > 0
+                    episodeRowId != null &&
+                    episodeRowId > 0
                 ) {
                     const viewerIsVip = useUserStore.getState().isVIP();
                     const res = await api<IPlayerEpisode>('movie/episode', {
                         data: {
-                            id: embedVideoEpisodeRowId,
+                            id: episodeRowId,
                             auto_unlock: viewerIsVip ? 0 : 1,
                         },
                         loading: false,
                     });
                     if (res.c === 0) {
-                        onEmbedPaySuccessEpisodeDetail?.(res.d);
+                        onEmbedPaySuccessEpisodeDetailRef.current?.(res.d);
                     }
                 }
+                setShowPaidServiceAgreement(false);
+                setPayModalStatus('idle');
+                setShowPayModal(false);
+                setPaySessionSeed((prev) => prev + 1);
                 if (layout === 'embed') {
-                    onEmbedClose?.();
+                    onEmbedCloseRef.current?.();
                 }
             })();
-        }, 2500);
+        }, 100);
         return () => window.clearTimeout(timer);
-    }, [
-        payModalStatus,
-        showPayModal,
-        layout,
-        onEmbedClose,
-        productFrom,
-        embedVideoEpisodeRowId,
-        onEmbedPaySuccessEpisodeDetail,
-    ]);
+    }, [payModalStatus, showPayModal, layout, productFrom, embedVideoEpisodeRowId]);
 
     useEffect(() => {
         if (payModalStatus !== 'processing' || !showPayModal) return;
