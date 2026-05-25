@@ -12,11 +12,13 @@ import {
     VolumeX,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
-import fullscreenIcon from '@/assets/images/is_full_screen_icon.88dfd7dd.png';
+import fullscreenIcon from '@/assets/video/icon_full@2x.png';
 import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
 import pcBackIcon from '@/assets/icons/video-pc-back.svg';
 import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
+import iconPlay1 from '@/assets/video/icon_play1@2x.webp';
+import iconStop from '@/assets/video/icon_stop@2x.webp';
 import { cn } from '@/lib/utils';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
@@ -115,6 +117,9 @@ export function VideoPlayer({
     const controllerIsShow = useRef(true);
     const subtitlesRef = useRef<VTTCue[]>([]);
     const [playing, setPlaying] = useState(false);
+    /** 用户曾点开播放浮层后，播放态才显示居中暂停 icon */
+    const [centerPlayUiEngaged, setCenterPlayUiEngaged] = useState(false);
+    const [controllerVisible, setControllerVisible] = useState(true);
     const [canPlay, setCanPlay] = useState(false);
     const setWaiting = useCallback((..._args: unknown[]) => {}, []);
     const [framePosterDataUrl, setFramePosterDataUrl] = useState(() => getEpisodePeekFrame(id) ?? '');
@@ -165,6 +170,7 @@ export function VideoPlayer({
     /** `loadedmetadata`：videoWidth > videoHeight 为横屏，否则竖屏 */
     const [videoOrientation, setVideoOrientation] = useState<VideoOrientation | null>(null);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
+    const progressSeekRatioRef = useRef(0);
     const fullscreenRestoreInFlightRef = useRef(false);
     const isLandscapeVideo = videoOrientation === 'landscape';
     /** 横竖屏共用 9:16 舞台宽度；横屏视频在舞台内 object-contain 上下留黑边 */
@@ -234,6 +240,7 @@ export function VideoPlayer({
         if (controllerIsShow.current) {
             hideController();
         } else {
+            setCenterPlayUiEngaged(true);
             showController();
         }
     }
@@ -244,6 +251,7 @@ export function VideoPlayer({
         }
         window.clearTimeout(controllerTimerRef.current);
         controllerIsShow.current = true;
+        setControllerVisible(true);
         controllerRef.current.style.opacity = '1';
         if (autoClose) {
             controllerTimerRef.current = window.setTimeout(() => {
@@ -262,6 +270,7 @@ export function VideoPlayer({
         window.clearTimeout(controllerTimerRef.current);
         controllerRef.current.style.opacity = '0';
         controllerIsShow.current = false;
+        setControllerVisible(false);
     }
 
     function handleDesktopControllerMouseEnter() {
@@ -464,6 +473,29 @@ export function VideoPlayer({
         setPlaying(!videoRef.current.paused);
     }
 
+    function handleCenterTogglePlay(e: React.MouseEvent<HTMLElement>) {
+        if (videoRef.current === null) {
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        setCenterPlayUiEngaged(true);
+        showController();
+        if (videoRef.current.paused) {
+            videoRef.current.play().catch(() => {
+                console.log('点击播放失败');
+            });
+        } else {
+            videoRef.current.pause();
+        }
+        setPlaying(!videoRef.current.paused);
+    }
+
+    const showCenterPlayControl =
+        canPlay &&
+        episode?.lock === false &&
+        (!playing || (centerPlayUiEngaged && controllerVisible && playing));
+
     function processTouchStart(element: HTMLDivElement, x: number) {
         if (!controllerIsShow.current) {
             return;
@@ -634,6 +666,7 @@ export function VideoPlayer({
     useEffect(() => {
         setH5UserDismissedUnmuteOverlay(false);
         setVideoOrientation(null);
+        setCenterPlayUiEngaged(false);
     }, [id]);
 
     useEffect(() => {
@@ -652,6 +685,7 @@ export function VideoPlayer({
         }
         window.clearTimeout(controllerTimerRef.current);
         controllerIsShow.current = true;
+        setControllerVisible(true);
         controllerRef.current.style.opacity = '1';
     }, [playbackPolicy, loading, id]);
 
@@ -1150,17 +1184,19 @@ export function VideoPlayer({
                                 onMouseEnter={handleDesktopControllerMouseEnter}
                                 onMouseLeave={handleDesktopControllerMouseLeave}
                             >
-                                {canPlay &&
-                                    episode?.lock === false &&
-                                    !showTapToUnmute &&
-                                    !playing && (
-                                        <div
-                                            className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto cursor-pointer"
-                                            onClick={handleTogglePlay}
-                                        >
-                                            <PlayIcon className="text-white w-10 h-10" />
-                                        </div>
-                                    )}
+                                {showCenterPlayControl && !showTapToUnmute && (
+                                    <button
+                                        type="button"
+                                        className="video-player-center-play absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
+                                        onClick={handleCenterTogglePlay}
+                                    >
+                                        <img
+                                            src={playing ? iconStop : iconPlay1}
+                                            alt=""
+                                            className="h-16 w-16 object-contain"
+                                        />
+                                    </button>
+                                )}
                                 {episode?.lock === true && (
                                     <div className="absolute inset-0 flex-center flex-col leading-normal mb-6 text-sm px-8 md:px-[70px]">
                                         <img src={paidEpisodeLockIcon} alt="" className="h-16 w-16" />
@@ -1453,21 +1489,26 @@ export function VideoPlayer({
                                 )}
                             </div>
                             <div className="video-player-h5-topbar-ep text-white shrink-0 font-bold">
-                                EP.{episode?.episode ?? '..'}
+                                <FormattedMessage
+                                    id="wallet_episode_short"
+                                    values={{ n: episode?.episode ?? '..' }}
+                                />
                             </div>
                         </div>
                     )}
-                    {canPlay &&
-                        episode?.lock === false &&
-                        !showH5FullscreenUnmuteOverlay &&
-                        !playing && (
-                            <div
-                                className="w-20 h-20 rounded-full bg-black flex justify-center items-center absolute left-0 right-0 top-0 bottom-0 m-auto cursor-pointer"
-                                onClick={handleTogglePlay}
-                            >
-                                <PlayIcon className="text-white w-10 h-10" />
-                            </div>
-                        )}
+                    {showCenterPlayControl && !showH5FullscreenUnmuteOverlay && (
+                        <button
+                            type="button"
+                            className="video-player-center-play absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
+                            onClick={handleCenterTogglePlay}
+                        >
+                            <img
+                                src={playing ? iconStop : iconPlay1}
+                                alt=""
+                                className="h-16 w-16 object-contain"
+                            />
+                        </button>
+                    )}
                     {episode?.lock === true && (
                         <div>
                             <div
@@ -1564,7 +1605,10 @@ export function VideoPlayer({
                                         {data.info.introduction ? (
                                             <>
                                                 <span className="video-player-h5-ep">
-                                                    EP.{episode?.episode ?? '..'}
+                                                    <FormattedMessage
+                                                        id="wallet_episode_short"
+                                                        values={{ n: episode?.episode ?? '..' }}
+                                                    />
                                                 </span>
                                                 <span className="video-player-h5-desc-sep" aria-hidden="true">
                                                     {' | '}

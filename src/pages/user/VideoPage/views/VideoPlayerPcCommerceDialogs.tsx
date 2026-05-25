@@ -1,8 +1,8 @@
 import { useIntl } from 'react-intl';
 import shareCloseIcon from '@/assets/icons/share/close.svg';
-import shareFacebookIcon from '@/assets/icons/share/facebook.svg';
-import shareLinkIcon from '@/assets/icons/share/link.svg';
-import shareTwitterIcon from '@/assets/icons/share/twitter.svg';
+import shareFacebookIcon from '@/assets/video/share_icon_facebook@2x.webp';
+import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
+import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';

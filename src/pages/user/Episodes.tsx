@@ -700,7 +700,7 @@ export default function Component() {
                                                         className="icon"
                                                         width={20}
                                                         height={20}
-                                                        src={localImg('is_full_screen_icon.88dfd7dd.png')}
+                                                        src={new URL('../../assets/video/icon_full@2x.png', import.meta.url).toString()}
                                                         alt=""
                                                     />
                                                 </div>
