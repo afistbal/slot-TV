@@ -211,7 +211,8 @@ type EpisodeRow = {
     coverImageFile: string;
     time: string;
     episode: string;
-    address: string;
+    videoAddress: string;
+    audioAddress: string;
     groupIndex: number;
 };
 
@@ -315,8 +316,9 @@ function CoverCell({
     );
 }
 
-function AddressCell({ addr }: { addr: string }) {
+function AddressLine({ addr }: { addr: string }) {
     const a = String(addr ?? '');
+    const display = a || '—';
     const isHttp = /^https?:\/\//.test(a);
     const isPath = a.startsWith('/');
     const body =
@@ -335,15 +337,33 @@ function AddressCell({ addr }: { addr: string }) {
                 {a}
             </a>
         ) : (
-            <span className="block truncate text-slate-700">{a}</span>
+            <span className="block truncate text-slate-700">{display}</span>
         );
 
     return (
-        <div className="flex min-w-0 max-w-full items-center gap-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1">
             <div className="min-w-0 flex-1 truncate" title={a && a !== '—' ? a : undefined}>
                 {body}
             </div>
             <CopyButton text={a} />
+        </div>
+    );
+}
+
+function AddressCell({ videoAddr, audioAddr }: { videoAddr: string; audioAddr: string }) {
+    const hasAudio = Boolean(String(audioAddr ?? '').trim());
+    return (
+        <div className="flex min-w-0 flex-col gap-0.5">
+            <div className="flex min-w-0 items-center gap-1">
+                <span className="shrink-0 text-[11px] text-slate-500">视频：</span>
+                <AddressLine addr={videoAddr} />
+            </div>
+            {hasAudio ? (
+                <div className="flex min-w-0 items-center gap-1">
+                    <span className="shrink-0 text-[11px] text-slate-500">字幕：</span>
+                    <AddressLine addr={audioAddr} />
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -449,7 +469,8 @@ export default function Component() {
                         coverImageFile,
                         time: formatDisplayTime(outerTime || '—'),
                         episode: pickText(row, ['episode', 'episodes', 'currentEp', 'current_ep', 'videos']),
-                        address: toFallbackAddress(row),
+                        videoAddress: toFallbackAddress(row),
+                        audioAddress: '',
                         groupIndex,
                     },
                 ];
@@ -458,7 +479,9 @@ export default function Component() {
                 const record = item as Record<string, unknown>;
                 const episodeValue = record['episode'];
                 const video = String(record['video'] ?? '').trim();
-                const address = video ? joinUrl(staticBase, video) : toFallbackAddress(row);
+                const audio = String(record['url'] ?? '').trim();
+                const videoAddress = video ? joinUrl(staticBase, video) : toFallbackAddress(row);
+                const audioAddress = audio ? joinUrl(staticBase, audio) : '';
                 const normalizedEpisode = Number(episodeValue);
                 const innerTime = pickText(
                     record as TData,
@@ -476,7 +499,8 @@ export default function Component() {
                         Number.isFinite(normalizedEpisode) && normalizedEpisode > 0
                             ? String(normalizedEpisode)
                             : String(index + 1),
-                    address,
+                    videoAddress,
+                    audioAddress,
                     groupIndex,
                 };
             });
@@ -638,7 +662,7 @@ export default function Component() {
                                                 {row.episode}
                                             </td>
                                             <td className="border-b border-slate-200 px-2 py-1 align-top">
-                                                <AddressCell addr={row.address} />
+                                                <AddressCell videoAddr={row.videoAddress} audioAddr={row.audioAddress} />
                                             </td>
                                         </tr>
                                     );
