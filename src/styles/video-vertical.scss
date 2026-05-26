@@ -75,6 +75,24 @@
     cursor: pointer;
 }
 
+/** 进度条拖拽：扩大可触区域，避免竖滑抢手势；拖拽时仅节流 seek，跟手用宽度百分比 */
+.video-player-progress-scrub {
+    touch-action: none;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.video-player-progress-scrub.video-player-h5-progress-track-wrap {
+    min-height: 44px;
+    margin: -14px 0;
+    box-sizing: content-box;
+}
+
+.video-player-progress-scrub.video-player-h5-progress-track-wrap .video-player-progress-track {
+    width: 100%;
+}
+
 .video-player-progress-thumb {
     position: absolute;
     right: -7px;
@@ -519,41 +537,59 @@
     }
 }
 
-/* 视频页 VIP 弹窗：订阅套餐 H5 单列、PC 双列（与 RadixRc `--vipSubscriptions` 一致） */
+/* 视频页 VIP 弹窗：订阅套餐始终单列（与 H5 抽屉一致） */
 .video-vip-dialog .rs-shopping__plans--vipSubscriptions {
     grid-template-columns: minmax(0, 1fr) !important;
+}
 
+.video-vip-dialog .rs-shopping__coinSection > .grid {
     @media (min-width: 768px) {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
 
-@media (min-width: 768px) {
-    /* PC 视频 VIP 弹窗：intro 区倒计时靠右上（与账户侧栏 shopping 一致） */
-    .video-vip-dialog .rs-shopping__intro {
-        position: relative;
-        padding-right: 200px;
-    }
+/** PC 视频 VIP 弹窗：bonus 在 coinSkuAmount 内横向紧跟主数量（H5 无 .video-vip-dialog） */
+.video-vip-dialog .rs-shopping.rs-shopping--topUpH5 .rs-shopping__coinSkuAmount {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
 
-    .video-vip-dialog .rs-shopping__introEmbedExtras {
-        position: absolute;
-        top: 0;
-        right: 0;
-        margin-top: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        text-align: right;
-    }
+.video-vip-dialog .rs-shopping.rs-shopping--topUpH5 .rs-shopping__coinSkuAmount .rs-shopping__coinSkuBonus {
+    margin: 0;
+    flex-shrink: 0;
+}
 
-    .video-vip-dialog .rs-shopping__countdown {
-        justify-content: flex-end;
-        margin-bottom: 0;
-    }
+.video-vip-dialog.rs-shopping-checkout-drawer--vipNoScroll[data-slot='dialog-content'] {
+    width: min(518px, calc(100vw - 32px));
+    max-width: min(518px, calc(100vw - 32px));
+    max-height: min(80vh, 840px);
+    overflow: hidden;
+    outline: none !important;
+    box-shadow: none !important;
+}
 
-    .video-vip-dialog .rs-shopping__countdown > div {
-        justify-content: flex-end;
-    }
+.video-vip-dialog.rs-shopping-checkout-drawer--vipNoScroll[data-slot='dialog-content']:focus,
+.video-vip-dialog.rs-shopping-checkout-drawer--vipNoScroll[data-slot='dialog-content']:focus-visible,
+.video-vip-dialog.rs-shopping-checkout-drawer--vipNoScroll[data-slot='dialog-content'] *:focus,
+.video-vip-dialog.rs-shopping-checkout-drawer--vipNoScroll[data-slot='dialog-content'] *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.video-vip-dialog.rs-shopping-checkout-drawer--vipNoScroll .rs-shopping-checkout-drawer__scroll--reelshort {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.video-vip-dialog .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer:has(.rs-shopping--topUpH5) {
+    background-color: #000;
 }
 
 /* 简介弹窗：彻底移除金色焦点边框/阴影 */
@@ -647,6 +683,260 @@
     background-color: rgba(0, 0, 0, 0.3);
 }
 
+/** 控制层隐藏：子元素仍有 pointer-events:auto，会挡沉浸态竖滑，需整层穿透 */
+.video-player-ui--chrome-hidden {
+    pointer-events: none !important;
+
+    * {
+        pointer-events: none !important;
+    }
+}
+
+/** 沉浸态拖进度条：仅进度条区域可点，其余仍穿透给竖滑 */
+.video-player-ui--chrome-hidden.video-player-ui--scrubbing .video-player-progress-scrub,
+.video-player-ui--chrome-hidden.video-player-ui--scrubbing .video-player-progress-scrub * {
+    pointer-events: auto !important;
+}
+
+/** 拖进度时收起侧栏/标题（对齐 douyin BaseVideo isMove opacity:0） */
+.video-player-ui--scrubbing .video-player-h5-topbar,
+.video-player-ui--scrubbing .video-player-h5-side-actions,
+.video-player-ui--scrubbing .video-player-h5-info {
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+/** 沉浸态底栏隐藏（PC / H5 共用） */
+.video-player-ui--chrome-hidden .video-player-h5-bottom,
+.video-player-ui--chrome-hidden .video-player-h5-bottom--fullscreen {
+    opacity: 0;
+}
+
+/** 沉浸态仍保留居中播放/暂停按钮可点（H5 收起底栏后续播） */
+.video-player-ui--chrome-hidden:not(.video-player-ui--scrubbing) .video-player-center-play {
+    pointer-events: auto !important;
+}
+
+/** PC：控制层不拦截视频区点击，底栏/解锁层仍可交互；居中 icon 仅展示 */
+@media (min-width: 768px) {
+    .video-player-root .video-player-ui {
+        pointer-events: none;
+
+        .video-player-h5-bottom,
+        .video-player-h5-bottom *,
+        .video-player-pc-lock-overlay,
+        .video-player-pc-lock-overlay * {
+            pointer-events: auto;
+        }
+    }
+
+    .video-player-root .video-player-center-play--pc-decor {
+        pointer-events: none !important;
+    }
+
+    .video-player-root .video-player-ui--chrome-hidden {
+        pointer-events: none !important;
+
+        * {
+            pointer-events: none !important;
+        }
+
+        .video-player-h5-bottom,
+        .video-player-h5-bottom *,
+        .video-player-pc-lock-overlay,
+        .video-player-pc-lock-overlay * {
+            pointer-events: auto !important;
+        }
+    }
+}
+
+/** PC / H5 共用：底部标题、简介、标签 */
+.video-player-root .video-player-h5-bottom {
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: auto;
+    padding: 12px 16px 10px;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.25) 24%, rgba(0, 0, 0, 0.62) 100%);
+    transition: opacity 0.3s ease-linear;
+}
+
+.video-player-root .video-player-h5-bottom--fullscreen {
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 16px 10px;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.video-player-root .video-player-h5-progress-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.video-player-root .video-player-h5-bottom .video-player-progress-track {
+    height: 2px !important;
+    background: rgba(255, 255, 255, 0.28) !important;
+}
+
+.video-player-root .video-player-h5-bottom .video-player-progress-track > div {
+    height: 2px !important;
+    background: #ff3d5d !important;
+}
+
+.video-player-root .video-player-h5-bottom .video-player-progress-thumb {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+}
+
+.video-player-root .video-player-h5-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+}
+
+.video-player-root .video-player-h5-time {
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.video-player-root .video-player-h5-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.video-player-root .video-player-h5-speed {
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.video-player-root .video-player-h5-mute {
+    cursor: pointer;
+}
+
+.video-player-root .video-player-h5-next .video-player-next-episode-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.video-player-root .video-player-h5-fullscreen img,
+.video-player-root .video-player-h5-fullscreen svg {
+    width: 20px;
+    height: 20px;
+}
+
+.video-player-root .video-player-pc-subtitle-pad {
+    padding-bottom: 200px;
+}
+
+.video-player-root .video-player-h5-info {
+    text-align: left;
+    min-width: 0;
+    padding-right: 56px;
+    cursor: pointer;
+}
+
+.video-player-root .video-player-h5-title-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    margin-bottom: 4px;
+}
+
+.video-player-root .video-player-h5-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.video-player-root .video-player-h5-title-chevron {
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.video-player-root .video-player-h5-desc {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin-bottom: 8px;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.video-player-root .video-player-h5-ep,
+.video-player-root .video-player-h5-desc-sep {
+    flex-shrink: 0;
+}
+
+.video-player-root .video-player-h5-desc-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.video-player-root .video-player-h5-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.video-player-root .video-player-h5-tag {
+    display: inline-flex;
+    max-width: 120px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 11px;
+    line-height: 18px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.video-player-root .video-player-pc-controls-row {
+    touch-action: manipulation;
+}
+
+.video-player-scrub-time {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 120px;
+    z-index: 12;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    pointer-events: none;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+
+    .video-player-scrub-time-sep {
+        color: rgba(255, 255, 255, 0.45);
+        font-weight: 500;
+    }
+}
+
 /** H5 竖屏播放页：顶部栏 / 底部信息 / 控制条（仅 mobile 分支 DOM，@media 双保险不影响 PC） */
 @media (max-width: 767px) {
     .video-player-h5-subtitle-pad {
@@ -682,113 +972,35 @@
     }
 
     .video-player-h5-bottom {
-        z-index: 10;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
         padding: 12px 16px 10px;
         padding-bottom: max(10px, env(safe-area-inset-bottom));
         background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.25) 24%, rgba(0, 0, 0, 0.62) 100%);
-        pointer-events: auto;
     }
 
+    /** 全屏：与竖屏相同双行（progress-row + toolbar），仅无 info 区、底栏略紧凑 */
     .video-player-h5-bottom--fullscreen {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0;
-        padding: 0 12px 8px;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 16px 10px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
         background: rgba(0, 0, 0, 0.35);
     }
 
     .video-player-h5-bottom--fullscreen .video-player-h5-progress-row {
-        order: 1;
-        flex: 1;
+        width: 100%;
         display: flex;
         align-items: center;
-        min-width: 0;
-        padding: 0 8px;
     }
 
     .video-player-h5-bottom--fullscreen .video-player-h5-toolbar {
-        order: 2;
-        width: auto;
-        flex-shrink: 0;
+        width: 100%;
     }
 
-    .video-player-h5-info {
-        text-align: left;
-        min-width: 0;
-        padding-right: 56px;
-    }
-
-    .video-player-h5-title-row {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        min-width: 0;
-        margin-bottom: 4px;
-    }
-
-    .video-player-h5-title {
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        color: #fff;
-        font-size: 18px;
-        font-weight: 700;
-        line-height: 1.3;
-    }
-
-    .video-player-h5-title-chevron {
-        color: #fff;
-        flex-shrink: 0;
-    }
-
-    .video-player-h5-desc {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        margin-bottom: 8px;
-        color: rgba(255, 255, 255, 0.88);
-        font-size: 13px;
-        line-height: 1.35;
-    }
-
-    .video-player-h5-ep,
-    .video-player-h5-desc-sep {
-        flex-shrink: 0;
-    }
-
-    .video-player-h5-desc-text {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .video-player-h5-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 4px;
-    }
-
-    .video-player-h5-tag {
-        display: inline-flex;
-        max-width: 120px;
-        padding: 2px 8px;
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.15);
-        color: rgba(255, 255, 255, 0.92);
-        font-size: 11px;
-        line-height: 18px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        text-decoration: none;
+    .video-player-h5-title-intro-btn {
+        min-width: 32px;
+        min-height: 32px;
+        cursor: pointer;
+        touch-action: manipulation;
     }
 
     .video-player-h5-progress-row {

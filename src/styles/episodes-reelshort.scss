@@ -1886,6 +1886,41 @@
     line-height: 1.5;
 }
 
+/** PC 侧栏简介：允许单词内断行；固定 3 行高 + float 把 ...更多 钉在第 3 行末尾 */
+.video-pc-intro-measure,
+.video-pc-intro {
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+.video-pc-intro--clamped {
+    height: calc(1.5em * 3);
+    overflow: hidden;
+}
+
+.video-pc-intro-float-spacer {
+    float: right;
+    width: 0;
+    height: calc(100% - 1.5em);
+}
+
+.video-pc-intro-more-tail {
+    float: right;
+    clear: right;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-left: -0.2em;
+    white-space: nowrap;
+    background: #000;
+    box-shadow: -0.35rem 0 0 #000;
+}
+
+.video-pc-intro-more-btn {
+    display: inline;
+    vertical-align: baseline;
+}
+
 @media (min-width: 768px) {
     .rs-episodes__player {
         height: 100vh;

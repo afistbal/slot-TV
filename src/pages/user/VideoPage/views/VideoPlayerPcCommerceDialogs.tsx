@@ -54,25 +54,23 @@ export function VideoPlayerPcCommerceDialogs({
                 <DialogContent
                     contentPreset="plain"
                     hideCloseButton
-                    className="video-vip-dialog w-[min(100%,760px)] max-w-[calc(100vw-32px)] h-[min(88vh,840px)]"
+                    className="video-vip-dialog rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 w-[min(518px,calc(100vw-32px))] h-[min(80vh,840px)] flex-col overflow-hidden rounded-[16px] border border-white/10 p-0 text-white"
                 >
-                    <div className="h-full w-full overflow-hidden rounded-[16px] border border-white/10 bg-[#141414] text-white">
-                        <DialogTitle className="sr-only" unsetTypography>
-                            {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
-                        </DialogTitle>
-                        <div className="h-full overflow-y-auto">
-                            {vip ? (
-                                <RadixRc
-                                    layout="embed"
-                                    productFrom="video"
-                                    checkoutFrom="video"
-                                    onEmbedClose={onVipEmbedClose}
-                                    headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-                                    embedVideoEpisodeRowId={embedVideoEpisodeRowId}
-                                    onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
-                                />
-                            ) : null}
-                        </div>
+                    <DialogTitle className="sr-only" unsetTypography>
+                        {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
+                    </DialogTitle>
+                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
+                        {vip ? (
+                            <RadixRc
+                                layout="embed"
+                                productFrom="video"
+                                checkoutFrom="video"
+                                onEmbedClose={onVipEmbedClose}
+                                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
+                            />
+                        ) : null}
                     </div>
                 </DialogContent>
             </Dialog>

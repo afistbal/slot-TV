@@ -49,7 +49,7 @@ export function shouldBypassVerticalSlidePointer(target: EventTarget | null): bo
     }
     return Boolean(
         target.closest(
-            'button, a[href], input, textarea, select, [role="button"], .xgplayer-unmute, [data-vertical-swipe-ignore]',
+            'button, a[href], input, textarea, select, [role="button"], .xgplayer-unmute, .video-player-progress-scrub, [data-vertical-swipe-ignore]',
         ),
     );
 }

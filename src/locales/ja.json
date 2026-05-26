@@ -379,6 +379,7 @@
     "introduction": "はじめに",
     "no_introduction_available": "紹介文がありません",
     "video_tap_to_unmute": "タップしてミュート解除",
+    "video_show_controls": "コントロールを表示",
     "shopping_pay_status_success": "お支払いが完了しました",
     "shopping_pay_status_failed": "お支払いに失敗しました",
     "shopping_pay_status_failed_desc": "もう一度お支払いをお試しください",

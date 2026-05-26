@@ -190,8 +190,11 @@ export default function RadixRc({
     const isTopUpShoppingPage = layout === 'page' && productFrom === 'shopping';
     const isTopUpH5Layout = isTopUpShoppingPage && !isPc;
     const isEmbedDrawer = layout === 'embed' && embedPresentation === 'drawer';
+    const isPcVideoVipEmbed = isPc && layout === 'embed' && productFrom === 'video';
     /** H5????`/shopping` ???????? Top UP ??/??/Tips ?? */
-    const isReelshortH5StoreUi = !isPc && (isTopUpShoppingPage || isEmbedDrawer);
+    const isReelshortH5StoreUi =
+        (!isPc && (isTopUpShoppingPage || isEmbedDrawer)) ||
+        (isEmbedDrawer && productFrom === 'video');
     /** H5 ?? Top UP ??????/ ????????????????*/
     const showH5StoreSectionTitles = isReelshortH5StoreUi && !isEmbedDrawer;
     const [searchParams] = useSearchParams();
@@ -744,8 +747,13 @@ export default function RadixRc({
                                                     <span className="tabular-nums">
                                                         {intl.formatNumber(baseCoin)}
                                                     </span>
+                                                    {bonusCoins > 0 && isPcVideoVipEmbed ? (
+                                                        <p className="rs-shopping__coinSkuBonus tabular-nums">
+                                                            +{intl.formatNumber(bonusCoins)}
+                                                        </p>
+                                                    ) : null}
                                                 </div>
-                                                {bonusCoins > 0 ? (
+                                                {bonusCoins > 0 && !isPcVideoVipEmbed ? (
                                                     <p className="rs-shopping__coinSkuBonus tabular-nums">
                                                         +{intl.formatNumber(bonusCoins)}
                                                     </p>

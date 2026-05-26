@@ -1,5 +1,5 @@
 import { Crown, Star } from 'lucide-react';
-import type { MouseEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { Link } from 'react-router';
 import activeEpisodeBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
@@ -10,6 +10,8 @@ import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
 import { cn } from '@/lib/utils';
 import type { IPlayerData } from '@/types/videoPlayer';
 import { getTagDisplayText } from '../videoPlayerUtils';
+
+const INTRO_MAX_LINES = 3;
 
 export type EpisodeTabRange = { start: number; end: number };
 
@@ -48,6 +50,36 @@ export function VideoPlayerPcEpisodeAside({
     viewerIsVip,
 }: VideoPlayerPcEpisodeAsideProps) {
     const intl = useIntl();
+    const introMeasureRef = useRef<HTMLDivElement>(null);
+    const [introNeedsMore, setIntroNeedsMore] = useState(false);
+    const [introExpanded, setIntroExpanded] = useState(false);
+    const moreLabel = intl.formatMessage({ id: 'more' });
+
+    useLayoutEffect(() => {
+        setIntroExpanded(false);
+    }, [currentEpisodeNo]);
+
+    useLayoutEffect(() => {
+        const measureEl = introMeasureRef.current;
+        const text = data.info.introduction?.trim() ?? '';
+
+        if (!measureEl || !text || introExpanded) {
+            setIntroNeedsMore(false);
+            return;
+        }
+
+        const sync = () => {
+            measureEl.textContent = text;
+            const lineHeight = Number.parseFloat(getComputedStyle(measureEl).lineHeight);
+            setIntroNeedsMore(measureEl.scrollHeight > lineHeight * INTRO_MAX_LINES + 1);
+        };
+
+        sync();
+        window.addEventListener('resize', sync);
+        return () => {
+            window.removeEventListener('resize', sync);
+        };
+    }, [data.info.introduction, currentEpisodeNo, introExpanded]);
 
     return (
         <aside
@@ -82,8 +114,43 @@ export function VideoPlayerPcEpisodeAside({
                 <h3 className="line-clamp-2 mt-[24px] font-normal text-[18px]">
                     Plot of Episode {currentEpisodeNo}
                 </h3>
-                <div className="mt-[8px] break-words text-[14px] text-white/50 leading-[1.5] line-clamp-3">
-                    {data.info.introduction}
+                <div className="relative mt-[8px]">
+                    {data.info.introduction ? (
+                        <>
+                            <div
+                                ref={introMeasureRef}
+                                className="video-pc-intro-measure pointer-events-none absolute left-0 top-0 w-full text-[14px] text-white/50 leading-[1.5] opacity-0"
+                                aria-hidden
+                            />
+                            <div
+                                className={cn(
+                                    'video-pc-intro text-[14px] text-white/50 leading-[1.5]',
+                                    !introExpanded && introNeedsMore && 'video-pc-intro--clamped',
+                                )}
+                            >
+                                {!introExpanded && introNeedsMore ? (
+                                    <>
+                                        <span className="video-pc-intro-float-spacer" aria-hidden />
+                                        <span className="video-pc-intro-more-tail">
+                                            <span className="video-pc-intro-ellipsis text-white/50">...</span>
+                                            <button
+                                                type="button"
+                                                className="video-pc-intro-more-btn border-0 bg-transparent p-0 font-medium text-[#E52E2E] cursor-pointer"
+                                                onClick={() => setIntroExpanded(true)}
+                                            >
+                                                {moreLabel}
+                                            </button>
+                                        </span>
+                                    </>
+                                ) : null}
+                                {data.info.introduction}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="break-words text-[14px] text-white/50 leading-[1.5]">
+                            <FormattedMessage id="no_introduction_available" />
+                        </div>
+                    )}
                 </div>
                 <div className="flex flex-wrap overflow-hidden max-h-none mt-[16px]">
                     {data.tags.map((v) => (

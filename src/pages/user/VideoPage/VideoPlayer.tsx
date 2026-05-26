@@ -4,8 +4,6 @@ import {
     Home,
     LayoutGrid,
     Minimize,
-    Pause,
-    PlayIcon,
     Star,
     Unlock,
     Volume2,
@@ -22,7 +20,7 @@ import iconStop from '@/assets/video/icon_stop@2x.webp';
 import { cn } from '@/lib/utils';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
@@ -31,11 +29,9 @@ import { useConfigStore } from '@/stores/config';
 import { useRootStore } from '@/stores/root';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 // import UnlockEpisode from '@/widgets/UnlockEpisode';
-import Forward from '@/components/Forward';
 // import { useLoadingStore } from "@/stores/loading";
 import { SPEED } from './videoPlayerConstants';
-import { canNavigateBack, getTagDisplayText } from './videoPlayerUtils';
-import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
+import { canNavigateBack } from './videoPlayerUtils';
 import { getFullscreenElement } from './videoPlayerFullscreen';
 import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
@@ -46,6 +42,7 @@ import { formatVideoClock } from './videoPlayerTimeFormat';
 import { putEpisodeDetailCache } from './episodeDetailCache';
 import { readVideoOrientation, type VideoOrientation } from './videoOrientation';
 import {
+    VideoPlayerBottomInfo,
     VideoPlayerEpisodeSpeedIntroDrawers,
     VideoPlayerH5CommerceDrawers,
     VideoPlayerPcCommerceDialogs,
@@ -107,6 +104,7 @@ export function VideoPlayer({
     const progressRef = useRef<HTMLDivElement>(null);
     const progressCurrentRef = useRef<HTMLDivElement>(null);
     const progressDragStartRef = useRef(false);
+    const wasPlayingBeforeScrubRef = useRef(false);
     const controllerRef = useRef<HTMLDivElement>(null);
     const subtitleRef = useRef<HTMLDivElement>(null);
     const episodeRef = useRef<HTMLDivElement>(null);
@@ -175,7 +173,7 @@ export function VideoPlayer({
     const isLandscapeVideo = videoOrientation === 'landscape';
     /** 横竖屏共用 9:16 舞台宽度；横屏视频在舞台内 object-contain 上下留黑边 */
     const videoStageClassName =
-        'relative h-full max-h-full w-auto max-w-full overflow-hidden aspect-[9/16] bg-black';
+        'relative h-full max-h-full w-auto max-w-full overflow-hidden aspect-[9/16] bg-black cursor-pointer';
     const videoElementClassName = cn(
         'absolute inset-0 h-full w-full',
         isLandscapeVideo ? 'object-contain' : 'object-cover',
@@ -237,6 +235,9 @@ export function VideoPlayer({
     }
 
     function handleControllerTouchStart() {
+        if (progressDragStartRef.current) {
+            return;
+        }
         if (controllerIsShow.current) {
             hideController();
         } else {
@@ -268,16 +269,57 @@ export function VideoPlayer({
             return;
         }
         window.clearTimeout(controllerTimerRef.current);
-        controllerRef.current.style.opacity = '0';
+        /** PC 暂停态：底栏与居中 icon 始终展示（移出鼠标也不收） */
+        if (isDesktop && videoRef.current != null && videoRef.current.paused) {
+            controllerIsShow.current = true;
+            setControllerVisible(true);
+            controllerRef.current.style.opacity = '1';
+            return;
+        }
         controllerIsShow.current = false;
         setControllerVisible(false);
+        controllerRef.current.style.opacity = '0';
     }
 
-    function handleDesktopControllerMouseEnter() {
+    function handleDesktopPlayerMouseEnter() {
+        if (episode?.lock === true) {
+            return;
+        }
         showController(false);
     }
 
-    function handleDesktopControllerMouseLeave() {
+    function handleDesktopPlayerMouseLeave() {
+        if (progressDragStartRef.current) {
+            return;
+        }
+        hideController();
+    }
+
+    function handleDesktopPlayerClick(e: React.MouseEvent<HTMLElement>) {
+        if (progressDragStartRef.current || episode?.lock === true) {
+            return;
+        }
+        const target = e.target as HTMLElement;
+        if (
+            target.closest(
+                '.video-player-h5-bottom, .video-player-pc-close-btn, .video-player-progress-scrub, .xgplayer-unmute',
+            )
+        ) {
+            return;
+        }
+        const v = videoRef.current;
+        if (!v) {
+            return;
+        }
+        setCenterPlayUiEngaged(true);
+        if (v.paused) {
+            void v.play()
+                .then(() => setPlaying(true))
+                .catch(() => {});
+            return;
+        }
+        v.pause();
+        setPlaying(false);
         hideController();
     }
 
@@ -453,26 +495,6 @@ export function VideoPlayer({
     //     onReload();
     // }
 
-    function handleTogglePlay(e: React.MouseEvent<HTMLElement>) {
-        if (videoRef.current === null) {
-            return;
-        }
-        if (!controllerIsShow.current) {
-            return;
-        }
-        e.preventDefault();
-        e.stopPropagation();
-        if (videoRef.current.paused) {
-            videoRef.current.play().catch(() => {
-                console.log('点击播放失败');
-            });
-        } else {
-            videoRef.current.pause();
-        }
-        showController();
-        setPlaying(!videoRef.current.paused);
-    }
-
     function handleCenterTogglePlay(e: React.MouseEvent<HTMLElement>) {
         if (videoRef.current === null) {
             return;
@@ -480,15 +502,23 @@ export function VideoPlayer({
         e.preventDefault();
         e.stopPropagation();
         setCenterPlayUiEngaged(true);
-        showController();
-        if (videoRef.current.paused) {
-            videoRef.current.play().catch(() => {
+        const v = videoRef.current;
+        if (v.paused) {
+            void v.play().catch(() => {
                 console.log('点击播放失败');
             });
+            if (!isDesktop) {
+                showController();
+            }
         } else {
-            videoRef.current.pause();
+            v.pause();
+            if (isDesktop) {
+                hideController();
+            } else {
+                showController();
+            }
         }
-        setPlaying(!videoRef.current.paused);
+        setPlaying(!v.paused);
     }
 
     const showCenterPlayControl =
@@ -496,65 +526,93 @@ export function VideoPlayer({
         episode?.lock === false &&
         (!playing || (centerPlayUiEngaged && controllerVisible && playing));
 
-    function processTouchStart(element: HTMLDivElement, x: number) {
-        if (!controllerIsShow.current) {
-            return;
-        }
-        if (!videoRef.current) {
-            return;
-        }
-        if (videoRef.current.duration <= 0) {
-            return;
-        }
-        showController();
-        progressDragStartRef.current = true;
-        progressActiveElementRef.current = element;
-        setProgressDragging(true);
+    const videoPlayerUiClassName = cn(
+        'video-player-ui relative w-full h-full transition-opacity duration-300 ease-linear',
+        !controllerVisible && 'video-player-ui--chrome-hidden',
+        progressDragging && 'video-player-ui--scrubbing',
+    );
+
+    function ratioFromProgressPointer(element: HTMLDivElement, clientX: number): number {
         const rect = element.getBoundingClientRect();
-        let width = x - rect.left;
-        if (width < 0) {
-            width = 0;
-        } else if (width > rect.width) {
-            width = rect.width;
+        if (rect.width <= 0) {
+            return 0;
         }
-        progressCurrentRef.current!.style.width = `${width}px`;
-        videoRef.current.currentTime = (width / rect.width) * videoRef.current.duration;
+        return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     }
 
-    function processTouchMove(element: HTMLDivElement, x: number) {
-        if (!controllerIsShow.current) {
-            return;
+    /** 拖进度只改 UI，结束时再 seek（对齐 douyin BaseVideo touchmove/touchend） */
+    function applyProgressPreview(ratio: number) {
+        progressSeekRatioRef.current = ratio;
+        if (progressCurrentRef.current) {
+            progressCurrentRef.current.style.width = `${ratio * 100}%`;
         }
-        if (!videoRef.current) {
-            return;
+        const v = videoRef.current;
+        if (v && Number.isFinite(v.duration) && v.duration > 0) {
+            setCurrent(formatVideoClock(ratio * v.duration));
         }
-        if (videoRef.current.duration <= 0) {
-            return;
-        }
+    }
+
+    const endProgressScrub = useCallback(() => {
         if (!progressDragStartRef.current) {
             return;
         }
-        showController();
-        const rect = element.getBoundingClientRect();
-        let width = x - rect.left;
-        if (width < 0) {
-            width = 0;
-        } else if (width > rect.width) {
-            width = rect.width;
+        const v = videoRef.current;
+        if (v && v.duration > 0) {
+            v.currentTime = progressSeekRatioRef.current * v.duration;
+            if (wasPlayingBeforeScrubRef.current) {
+                void v.play()
+                    .then(() => setPlaying(true))
+                    .catch(() => setPlaying(false));
+            }
         }
-        progressCurrentRef.current!.style.width = `${width}px`;
-        videoRef.current.currentTime = (width / rect.width) * videoRef.current.duration;
+        progressDragStartRef.current = false;
+        progressActiveElementRef.current = null;
+        setProgressDragging(false);
+        if (controllerIsShow.current && episode?.lock === false) {
+            controllerTimerRef.current = window.setTimeout(() => {
+                hideController();
+            }, 10000);
+        }
+    }, [episode?.lock]);
+
+    function processTouchStart(element: HTMLDivElement, x: number) {
+        const v = videoRef.current;
+        if (!v || v.duration <= 0) {
+            return;
+        }
+        window.clearTimeout(controllerTimerRef.current);
+        showController(false);
+        wasPlayingBeforeScrubRef.current = !v.paused;
+        if (wasPlayingBeforeScrubRef.current) {
+            v.pause();
+            setPlaying(false);
+        }
+        progressDragStartRef.current = true;
+        progressActiveElementRef.current = element;
+        setProgressDragging(true);
+        applyProgressPreview(ratioFromProgressPointer(element, x));
+    }
+
+    function processTouchMove(element: HTMLDivElement, x: number) {
+        const v = videoRef.current;
+        if (!v || v.duration <= 0 || !progressDragStartRef.current) {
+            return;
+        }
+        applyProgressPreview(ratioFromProgressPointer(element, x));
     }
 
     function handleProgressTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+        e.stopPropagation();
         processTouchStart(e.currentTarget as HTMLDivElement, e.touches[0].clientX);
     }
 
     function handleProgressTouchMove(e: React.TouchEvent<HTMLDivElement>) {
+        e.stopPropagation();
         processTouchMove(e.currentTarget as HTMLDivElement, e.touches[0].clientX);
     }
 
     function handleProgressMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+        e.stopPropagation();
         processTouchStart(e.currentTarget as HTMLDivElement, e.clientX);
     }
 
@@ -636,7 +694,7 @@ export function VideoPlayer({
         showController();
     }
 
-    async function handleToggleFullscreen(e: React.MouseEvent<HTMLDivElement>) {
+    async function handleToggleFullscreen(e: React.MouseEvent<HTMLElement>) {
         e.stopPropagation();
         if (isFullscreenUi) {
             await forceExitFullscreen();
@@ -749,6 +807,9 @@ export function VideoPlayer({
         }
 
         const syncUiFromVideoTime = () => {
+            if (progressDragStartRef.current) {
+                return;
+            }
             if (videoRef.current === null) {
                 return;
             }
@@ -850,9 +911,7 @@ export function VideoPlayer({
         v.addEventListener('error', videoError);
 
         const mouseUp = () => {
-            progressDragStartRef.current = false;
-            progressActiveElementRef.current = null;
-            setProgressDragging(false);
+            endProgressScrub();
         };
         const mouseMove = (e: globalThis.MouseEvent) => {
             if (!progressDragStartRef.current || !progressActiveElementRef.current) {
@@ -891,7 +950,7 @@ export function VideoPlayer({
             window.removeEventListener('touchend', touchEnd);
             window.removeEventListener('touchcancel', touchEnd);
         };
-    }, [loading, id, episode?.lock]);
+    }, [loading, id, episode?.lock, endProgressScrub]);
 
     useEffect(() => {
         const onVisibilityChange = () => {
@@ -1116,7 +1175,12 @@ export function VideoPlayer({
                 <div className="h-full w-full relative opacity-100 transition-opacity duration-500">
                     <div className="absolute inset-0 flex bg-black">
                         <div className="relative flex-1 flex justify-center items-center bg-black">
-                            <div className={videoStageClassName}>
+                            <div
+                                className={videoStageClassName}
+                                onClick={handleDesktopPlayerClick}
+                                onMouseEnter={handleDesktopPlayerMouseEnter}
+                                onMouseLeave={handleDesktopPlayerMouseLeave}
+                            >
                             <video
                                 ref={videoRef}
                                 className={videoElementClassName}
@@ -1164,7 +1228,7 @@ export function VideoPlayer({
                             <div
                                 className={cn(
                                     'absolute bottom-0 left-0 right-0 z-[5] mx-auto flex w-10/12 flex-col items-center justify-end gap-1 text-center pointer-events-none',
-                                    isFullscreenUi ? 'pb-12' : 'pb-[124px]',
+                                    isFullscreenUi ? 'pb-12' : 'video-player-pc-subtitle-pad',
                                 )}
                                 ref={subtitleRef}
                             >
@@ -1176,19 +1240,18 @@ export function VideoPlayer({
                             </div>
                             <div
                                 className={cn(
-                                    'video-player-ui relative w-full h-full transition-opacity duration-300 ease-linear',
+                                    videoPlayerUiClassName,
                                     /** 静音蒙层在 DOM 序在前；全屏控制器含 translateZ(0) 时会盖住蒙层并吞点击，需让事件穿透到 .xgplayer-unmute */
                                     showTapToUnmute && 'pointer-events-none',
                                 )}
                                 ref={controllerRef}
-                                onMouseEnter={handleDesktopControllerMouseEnter}
-                                onMouseLeave={handleDesktopControllerMouseLeave}
                             >
                                 {showCenterPlayControl && !showTapToUnmute && (
                                     <button
                                         type="button"
-                                        className="video-player-center-play absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
-                                        onClick={handleCenterTogglePlay}
+                                        className="video-player-center-play video-player-center-play--pc-decor absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
+                                        aria-hidden
+                                        tabIndex={-1}
                                     >
                                         <img
                                             src={playing ? iconStop : iconPlay1}
@@ -1198,7 +1261,7 @@ export function VideoPlayer({
                                     </button>
                                 )}
                                 {episode?.lock === true && (
-                                    <div className="absolute inset-0 flex-center flex-col leading-normal mb-6 text-sm px-8 md:px-[70px]">
+                                    <div className="video-player-pc-lock-overlay absolute inset-0 flex-center flex-col leading-normal mb-6 text-sm px-8 md:px-[70px]">
                                         <img src={paidEpisodeLockIcon} alt="" className="h-16 w-16" />
                                         <p className="text-center text-[20px] font-bold text-white/90 mt-6 mb-10 w-[320px]">
                                             <FormattedMessage id="pay_unlock_toast_locked_episode" />
@@ -1216,52 +1279,16 @@ export function VideoPlayer({
                                 )}
                                 {episode?.lock === false && (
                                     <div
-                                        className="absolute bg-black/30 w-full bottom-0 text-white h-[76px] overflow-hidden text-sm p-4 pt-0 flex gap-1 items-center"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleIntroduction();
-                                        }}
-                                    >
-                                        {data.info.introduction ? (
-                                            <>
-                                                <div className="text-ellipsis line-clamp-3 leading-5 text-white/90">
-                                                    {data.info.introduction}
-                                                </div>
-                                                <div>
-                                                    <Forward />
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div className="flex justify-center items-center w-full">
-                                                <FormattedMessage id="no_introduction_available" />
-                                            </div>
+                                        className={cn(
+                                            'video-player-h5-bottom absolute bottom-0 left-0 right-0 w-full z-10',
+                                            isFullscreenUi && 'video-player-h5-bottom--fullscreen',
                                         )}
-                                    </div>
-                                )}
-                                {episode?.lock === false && (
-                                    <div
-                                        className="absolute bg-black/30 w-full mx-auto pl-4 pr-2 left-0 right-0 h-10 flex bottom-0 mb-[76px] items-center"
                                         ref={progressWrapRef}
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        {canPlay && (
-                                            <button
-                                                type="button"
-                                                className="shrink-0 flex items-center justify-center border-0 bg-transparent px-2 py-0 mr-2 text-white cursor-pointer touch-manipulation"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleTogglePlay(e);
-                                                }}
-                                            >
-                                                {playing ? (
-                                                    <Pause className="w-5 h-5" aria-hidden />
-                                                ) : (
-                                                    <PlayIcon className="w-5 h-5" aria-hidden />
-                                                )}
-                                            </button>
-                                        )}
+                                        <div className="video-player-h5-progress-row">
                                         <div
-                                            className="flex-1 flex items-center justify-center"
+                                            className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
                                             ref={progressRef}
                                             onMouseDown={handleProgressMouseDown}
                                             onMouseMove={handleProgressMouseMove}
@@ -1282,61 +1309,62 @@ export function VideoPlayer({
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="text-white text-xs flex items-center justify-center pl-3 whitespace-nowrap text-nowrap">
-                                            {current} / {duration}
                                         </div>
-                                        <div
-                                            className="text-white text-xs flex shrink-0 items-center justify-center pl-3 pr-2"
-                                            onClick={handleSpeedControlClick}
-                                        >
-                                            {SPEED[speed]}x
-                                        </div>
-                                        {episode?.lock === false && (
-                                            <button
-                                                type="button"
-                                                data-vertical-swipe-ignore
-                                                className="shrink-0 flex items-center justify-center border-0 bg-transparent p-0 pl-3 pr-3 text-white cursor-pointer touch-manipulation"
-                                                onClick={handleToggleVideoMute}
-                                                aria-label={
-                                                    videoMutedUi
-                                                        ? intl.formatMessage({
-                                                              id: 'video_sound_unmute',
-                                                              defaultMessage: 'Unmute',
-                                                          })
-                                                        : intl.formatMessage({
-                                                              id: 'video_sound_mute',
-                                                              defaultMessage: 'Mute',
-                                                          })
-                                                }
-                                            >
-                                                {videoMutedUi ? (
-                                                    <VolumeX className="w-5 h-5" aria-hidden />
-                                                ) : (
-                                                    <Volume2 className="w-5 h-5" aria-hidden />
+                                        <div className="video-player-h5-toolbar">
+                                            <div className="video-player-h5-time">{current} / {duration}</div>
+                                            <div className="video-player-h5-toolbar-actions">
+                                                <div
+                                                    className="video-player-h5-speed"
+                                                    onClick={handleSpeedControlClick}
+                                                >
+                                                    {SPEED[speed]}x
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    data-vertical-swipe-ignore
+                                                    className="video-player-h5-mute shrink-0 flex items-center justify-center border-0 bg-transparent p-0 text-white cursor-pointer"
+                                                    onClick={handleToggleVideoMute}
+                                                    aria-label={
+                                                        videoMutedUi
+                                                            ? intl.formatMessage({
+                                                                  id: 'video_sound_unmute',
+                                                                  defaultMessage: 'Unmute',
+                                                              })
+                                                            : intl.formatMessage({
+                                                                  id: 'video_sound_mute',
+                                                                  defaultMessage: 'Mute',
+                                                              })
+                                                    }
+                                                >
+                                                    {videoMutedUi ? (
+                                                        <VolumeX className="w-5 h-5" aria-hidden />
+                                                    ) : (
+                                                        <Volume2 className="w-5 h-5" aria-hidden />
+                                                    )}
+                                                </button>
+                                                {hasNextEpisode() && (
+                                                    <div
+                                                        className="video-player-next-episode-trigger video-player-h5-next text-white flex items-center justify-center cursor-pointer"
+                                                        onClick={(e) => void handleJumpNextEpisode(e)}
+                                                    >
+                                                        <img
+                                                            src={nextEpisodeIcon}
+                                                            alt="next episode"
+                                                            className="video-player-next-episode-icon"
+                                                        />
+                                                    </div>
                                                 )}
-                                            </button>
-                                        )}
-                                        {hasNextEpisode() && (
-                                            <div
-                                                className="video-player-next-episode-trigger text-white text-xs flex items-center justify-center px-2 cursor-pointer"
-                                                onClick={(e) => void handleJumpNextEpisode(e)}
-                                            >
-                                                <img
-                                                    src={nextEpisodeIcon}
-                                                    alt="next episode"
-                                                    className="video-player-next-episode-icon"
-                                                />
+                                                <div
+                                                    className="video-player-h5-fullscreen text-white flex shrink-0 items-center justify-center cursor-pointer"
+                                                    onClick={(e) => void handleToggleFullscreen(e)}
+                                                >
+                                                    {isFullscreenUi ? (
+                                                        <Minimize className="w-5 h-5" aria-hidden />
+                                                    ) : (
+                                                        <img src={fullscreenIcon} alt="" className="w-5 h-5" />
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                        <div
-                                            className="text-white text-xs flex shrink-0 items-center justify-center px-2 cursor-pointer"
-                                            onClick={handleToggleFullscreen}
-                                        >
-                                            {isFullscreenUi ? (
-                                                <Minimize className="w-5 h-5" />
-                                            ) : (
-                                                <img src={fullscreenIcon} alt="" className="w-5 h-5" />
-                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -1410,7 +1438,16 @@ export function VideoPlayer({
         <div className="video-player-root h-full w-full relative" ref={wrapRef}>
             <div className="h-full w-full relative bg-black opacity-100 transition-opacity duration-500">
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className={videoStageClassName}>
+                    <div
+                        className={videoStageClassName}
+                        onClick={(e) => {
+                            if (!controllerVisible && !progressDragging) {
+                                e.stopPropagation();
+                                setCenterPlayUiEngaged(true);
+                                showController();
+                            }
+                        }}
+                    >
                         <video
                             ref={videoRef}
                             className={videoElementClassName}
@@ -1463,9 +1500,16 @@ export function VideoPlayer({
                         </div>
                     )}
                 </div>
+                {progressDragging && episode?.lock === false && (
+                    <div className="video-player-scrub-time" aria-live="polite">
+                        <span>{current}</span>
+                        <span className="video-player-scrub-time-sep"> / </span>
+                        <span>{duration}</span>
+                    </div>
+                )}
                 <div
                     className={cn(
-                        'video-player-ui relative w-full h-full transition-opacity duration-300 ease-linear',
+                        videoPlayerUiClassName,
                         /** 与 PC 一致：静音蒙层出现时勿让全屏控制层挡在「取消静音」之上 */
                         showH5FullscreenUnmuteOverlay && 'pointer-events-none',
                     )}
@@ -1590,74 +1634,15 @@ export function VideoPlayer({
                             onClick={(e) => e.stopPropagation()}
                         >
                             {!isFullscreenUi && (
-                                <div
-                                    className="video-player-h5-info"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleIntroduction();
-                                    }}
-                                >
-                                    <div className="video-player-h5-title-row">
-                                        <span className="video-player-h5-title">{data.info.title}</span>
-                                        <Forward className="video-player-h5-title-chevron w-4 h-4 shrink-0" />
-                                    </div>
-                                    <div className="video-player-h5-desc">
-                                        {data.info.introduction ? (
-                                            <>
-                                                <span className="video-player-h5-ep">
-                                                    <FormattedMessage
-                                                        id="wallet_episode_short"
-                                                        values={{ n: episode?.episode ?? '..' }}
-                                                    />
-                                                </span>
-                                                <span className="video-player-h5-desc-sep" aria-hidden="true">
-                                                    {' | '}
-                                                </span>
-                                                <span className="video-player-h5-desc-text">
-                                                    {data.info.introduction}
-                                                </span>
-                                            </>
-                                        ) : (
-                                            <span className="video-player-h5-desc-text">
-                                                <FormattedMessage id="no_introduction_available" />
-                                            </span>
-                                        )}
-                                    </div>
-                                    {data.tags.length > 0 && (
-                                        <div className="video-player-h5-tags">
-                                            {data.tags.map((v) => (
-                                                <Link
-                                                    key={v.name}
-                                                    to={videoIntroTagSearchPath(v)}
-                                                    className="video-player-h5-tag"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    {getTagDisplayText(v)}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                <VideoPlayerBottomInfo
+                                    data={data}
+                                    episode={episode}
+                                    onOpenIntroduction={handleIntroduction}
+                                />
                             )}
                             <div className="video-player-h5-progress-row">
-                                {isFullscreenUi && canPlay && (
-                                    <button
-                                        type="button"
-                                        className="video-player-h5-fullscreen-play shrink-0 flex items-center justify-center border-0 bg-transparent px-2 py-0 mr-2 text-white cursor-pointer touch-manipulation"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleTogglePlay(e);
-                                        }}
-                                    >
-                                        {playing ? (
-                                            <Pause className="w-5 h-5" aria-hidden />
-                                        ) : (
-                                            <PlayIcon className="w-5 h-5" aria-hidden />
-                                        )}
-                                    </button>
-                                )}
                                 <div
-                                    className="video-player-h5-progress-track-wrap flex-1 flex items-center justify-center"
+                                    className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
                                     ref={progressRef}
                                     onMouseDown={handleProgressMouseDown}
                                     onMouseMove={handleProgressMouseMove}
@@ -1705,10 +1690,10 @@ export function VideoPlayer({
                                     )}
                                     <div
                                         className="video-player-h5-fullscreen text-white flex shrink-0 items-center justify-center cursor-pointer"
-                                        onClick={handleToggleFullscreen}
+                                        onClick={(e) => void handleToggleFullscreen(e)}
                                     >
                                         {isFullscreenUi ? (
-                                            <Minimize className="w-5 h-5" />
+                                            <Minimize className="w-5 h-5" aria-hidden />
                                         ) : (
                                             <img src={fullscreenIcon} alt="" className="w-5 h-5" />
                                         )}
