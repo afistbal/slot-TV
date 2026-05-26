@@ -1,73 +1,12 @@
 import { api, type IPagination, type TData } from '@/api';
 import Loader from '@/components/Loader';
 import { useConfigStore } from '@/stores/config';
-import { Copy, Download } from 'lucide-react';
+import { Copy, Download, Eye, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 const COS_FALLBACK_BASE = 'https://cos.yogoshort.com';
-const CLIENT_PAGE_SIZE = 200;
-
-function pad(num: number) {
-    return String(num).padStart(2, '0');
-}
-
-function formatDateInput(input: Date) {
-    return `${input.getFullYear()}-${pad(input.getMonth() + 1)}-${pad(input.getDate())}`;
-}
-
-function defaultDateRange(): [string, string] {
-    const end = new Date();
-    end.setHours(0, 0, 0, 0);
-    const start = new Date(end);
-    start.setDate(start.getDate() - 6);
-    return [formatDateInput(start), formatDateInput(end)];
-}
-
-function parseDateInput(value: string): Date | null {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
-    if (!m) return null;
-    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    if (Number.isNaN(d.getTime())) return null;
-    return d;
-}
-
-function rangeToApiStrings(range: [string, string]): [string, string] {
-    let a = parseDateInput(range[0]);
-    let b = parseDateInput(range[1]);
-    if (!a || !b) {
-        const fallback = defaultDateRange();
-        a = parseDateInput(fallback[0])!;
-        b = parseDateInput(fallback[1])!;
-    }
-    if (a.getTime() > b.getTime()) {
-        const t = a;
-        a = b;
-        b = t;
-    }
-    const start = new Date(a);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(b);
-    end.setHours(23, 59, 59, 999);
-    return [
-        `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())} ${pad(start.getHours())}:${pad(start.getMinutes())}:${pad(start.getSeconds())}`,
-        `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())} ${pad(end.getHours())}:${pad(end.getMinutes())}:${pad(end.getSeconds())}`,
-    ];
-}
-
-function formatDisplayTime(raw: string) {
-    const value = String(raw ?? '').trim();
-    if (!value) return '—';
-    const normalized = value
-        .replace('T', ' ')
-        .replace(/(\.\d+)?Z$/i, '')
-        .trim();
-    const d = new Date(value);
-    if (!Number.isNaN(d.getTime())) {
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    }
-    return normalized;
-}
+const LIST_DEFAULT_PER_PAGE = 200;
 
 function pickText(row: TData, keys: string[], fallback = '—') {
     for (const key of keys) {
@@ -191,50 +130,63 @@ async function downloadImageAsFile(url: string, filename: string) {
     toast.error('无法直接保存到本地（跨域限制）。请在大图预览里右键「图片另存为」。');
 }
 
-function toFallbackAddress(row: TData) {
-    const direct = pickText(row, ['address', 'url', 'href', 'link', 'episode_url', 'episode_href'], '');
-    if (direct) return direct;
-    const id = row['id'];
-    if (id !== undefined && id !== null && String(id).trim() !== '') {
-        return `/video/${id}`;
-    }
-    const slug = pickText(row, ['episode_slug', 'slug'], '');
-    if (slug) return `/episodes/${slug}`;
-    return '—';
-}
-
-type EpisodeRow = {
+type DramaRow = {
     key: string;
+    id: string;
+    movieId: number;
     title: string;
     coverUrl: string;
-    dramaId: string;
     coverImageFile: string;
-    time: string;
-    episode: string;
-    videoAddress: string;
-    audioAddress: string;
-    groupIndex: number;
 };
 
-function computeTitleRowSpans(rows: EpisodeRow[]): number[] {
-    const result = rows.map(() => 0);
-    const countByGroup = new Map<number, number>();
-    const firstIndexByGroup = new Map<number, number>();
-    rows.forEach((r, i) => {
-        countByGroup.set(r.groupIndex, (countByGroup.get(r.groupIndex) ?? 0) + 1);
-        if (!firstIndexByGroup.has(r.groupIndex)) {
-            firstIndexByGroup.set(r.groupIndex, i);
+type MovieEpisodeRow = {
+    id?: number;
+    episode?: number;
+    video?: string;
+    url?: string;
+    subtitle?: { id?: number; url?: string } | null;
+    [key: string]: unknown;
+};
+
+type MovieDetailPayload = {
+    list?: MovieEpisodeRow[];
+    episodes?: MovieEpisodeRow[];
+    data?: MovieEpisodeRow[];
+    info?: Record<string, unknown>;
+    [key: string]: unknown;
+};
+
+type EpisodeDisplayRow = {
+    key: string;
+    episode: string;
+    videoUrl: string;
+    subtitleUrl: string;
+};
+
+function movieIdFromRow(row: TData): number | null {
+    const n = Number(row['id']);
+    return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function episodesFromDetailPayload(d: MovieDetailPayload | undefined): MovieEpisodeRow[] {
+    if (!d) return [];
+    const raw = d.list ?? d.episodes ?? d.data;
+    return Array.isArray(raw) ? raw : [];
+}
+
+function subtitleUrlFromEpisode(item: MovieEpisodeRow): string {
+    const top = item.url;
+    if (top != null && String(top).trim() !== '') {
+        return String(top).trim();
+    }
+    const st = item.subtitle;
+    if (st != null && typeof st === 'object') {
+        const nested = (st as { url?: unknown }).url;
+        if (nested != null && String(nested).trim() !== '') {
+            return String(nested).trim();
         }
-    });
-    rows.forEach((r, i) => {
-        const first = firstIndexByGroup.get(r.groupIndex);
-        if (first === i) {
-            result[i] = countByGroup.get(r.groupIndex) ?? 1;
-        } else {
-            result[i] = 0;
-        }
-    });
-    return result;
+    }
+    return '';
 }
 
 async function copyText(text: string) {
@@ -246,12 +198,12 @@ async function copyText(text: string) {
     }
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, className = '' }: { text: string; className?: string }) {
     if (!text || text === '—') return null;
     return (
         <button
             type="button"
-            className="inline-flex shrink-0 items-center justify-center rounded p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            className={`inline-flex shrink-0 translate-y-[1px] items-center justify-center rounded p-0.5 align-middle text-blue-600 hover:bg-blue-50 hover:text-blue-700 ${className}`}
             aria-label="复制"
             title="复制"
             onClick={() => void copyText(text)}
@@ -261,62 +213,80 @@ function CopyButton({ text }: { text: string }) {
     );
 }
 
+function NameCell({ record }: { record: DramaRow }) {
+    const title = record.title || '—';
+    return (
+        <p className="m-0 text-[13px] font-medium leading-snug text-slate-800 break-words">
+            {title}
+            <CopyButton text={record.title} className="ml-0.5" />
+        </p>
+    );
+}
+
 function CoverCell({
     record,
     onPreview,
 }: {
-    record: EpisodeRow;
+    record: DramaRow;
     onPreview: (url: string) => void;
 }) {
     const url = record.coverUrl?.trim();
-    const idLine = record.dramaId ? `id: ${record.dramaId}` : 'id: —';
-    const canDownload = Boolean(url && record.dramaId && record.coverImageFile);
+    const canDownload = Boolean(url && record.id && record.coverImageFile);
     const downloadFilename =
-        record.dramaId && record.coverImageFile ? `${record.dramaId}_${record.coverImageFile}` : '';
+        record.id && record.coverImageFile ? `${record.id}_${record.coverImageFile}` : '';
     const downloadTip = !url
         ? '无封面可下载'
         : canDownload
           ? `下载 ${downloadFilename}`
-          : !record.dramaId
-            ? '缺少剧目 id，无法按规范命名下载'
-            : '缺少封面文件名';
+          : '缺少封面文件名';
 
     return (
-        <div className="flex flex-col items-center justify-center gap-1 py-0.5">
-            <div className="flex w-full min-w-0 items-center justify-between gap-1">
-                <span className="min-w-0 flex-1 break-all text-left text-[11px] leading-tight text-slate-500">{idLine}</span>
-                <button
-                    type="button"
-                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-500 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-35"
-                    aria-label="下载封面"
-                    title={downloadTip}
-                    disabled={!canDownload}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (canDownload && url) {
-                            void downloadImageAsFile(url, downloadFilename);
-                        }
-                    }}
-                >
-                    <Download size={13} />
-                </button>
-            </div>
+        <div className="relative inline-flex shrink-0">
             {url ? (
                 <img
                     src={url}
                     alt=""
-                    className="h-[148px] w-[112px] shrink-0 cursor-zoom-in rounded border border-slate-200 object-cover"
-                    onClick={() => onPreview(url)}
-                    title="查看大图"
+                    className="h-[96px] w-[72px] rounded border border-slate-200/80 object-cover bg-slate-50"
                 />
             ) : (
-                <span className="text-[11px] text-slate-300">—</span>
+                <span className="flex h-[96px] w-[72px] items-center justify-center rounded border border-dashed border-slate-200 bg-slate-50 text-[10px] text-slate-300">
+                    无封面
+                </span>
             )}
+            {url ? (
+                <button
+                    type="button"
+                    className="absolute -bottom-1 -left-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-[#b3d8ff] hover:text-[#409eff]"
+                    aria-label="查看大图"
+                    title="查看大图"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onPreview(url);
+                    }}
+                >
+                    <Eye size={12} />
+                </button>
+            ) : null}
+            <button
+                type="button"
+                className="absolute -right-1 -top-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-[#b3d8ff] hover:text-[#409eff] disabled:pointer-events-none disabled:opacity-0"
+                aria-label="下载封面"
+                title={downloadTip}
+                disabled={!canDownload}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (canDownload && url) {
+                        void downloadImageAsFile(url, downloadFilename);
+                    }
+                }}
+            >
+                <Download size={12} />
+            </button>
         </div>
     );
 }
 
-function AddressLine({ addr }: { addr: string }) {
+function AddressLine({ label, addr }: { label: string; addr: string }) {
     const a = String(addr ?? '');
     const display = a || '—';
     const isHttp = /^https?:\/\//.test(a);
@@ -341,29 +311,186 @@ function AddressLine({ addr }: { addr: string }) {
         );
 
     return (
-        <div className="flex min-w-0 flex-1 items-center gap-1">
-            <div className="min-w-0 flex-1 truncate" title={a && a !== '—' ? a : undefined}>
-                {body}
-            </div>
-            <CopyButton text={a} />
+        <div className="flex min-w-0 items-center gap-1">
+            <span className="shrink-0 text-[11px] text-slate-500">{label}</span>
+            <span className="inline-flex min-w-0 max-w-full items-center gap-0.5">
+                <span className="min-w-0 truncate" title={a && a !== '—' ? a : undefined}>
+                    {body}
+                </span>
+                <CopyButton text={a} />
+            </span>
         </div>
     );
 }
 
-function AddressCell({ videoAddr, audioAddr }: { videoAddr: string; audioAddr: string }) {
-    const hasAudio = Boolean(String(audioAddr ?? '').trim());
+function ActionCell({
+    record,
+    onDetail,
+}: {
+    record: DramaRow;
+    onDetail: (row: DramaRow) => void;
+}) {
+    const canAct = Boolean(record.id);
+    if (!canAct) {
+        return <span className="text-slate-300">—</span>;
+    }
     return (
-        <div className="flex min-w-0 flex-col gap-0.5">
-            <div className="flex min-w-0 items-center gap-1">
-                <span className="shrink-0 text-[11px] text-slate-500">视频：</span>
-                <AddressLine addr={videoAddr} />
-            </div>
-            {hasAudio ? (
-                <div className="flex min-w-0 items-center gap-1">
-                    <span className="shrink-0 text-[11px] text-slate-500">字幕：</span>
-                    <AddressLine addr={audioAddr} />
+        <button
+            type="button"
+            className="rounded border border-[#b3d8ff] bg-white px-2.5 py-1 text-xs font-medium text-[#409eff] shadow-sm transition-colors hover:border-[#409eff] hover:bg-[#ecf5ff]"
+            onClick={() => onDetail(record)}
+        >
+            详情
+        </button>
+    );
+}
+
+function DetailModal({
+    open,
+    movieId,
+    movieTitle,
+    staticBase,
+    onClose,
+}: {
+    open: boolean;
+    movieId: number | null;
+    movieTitle: string;
+    staticBase: string;
+    onClose: () => void;
+}) {
+    const [loading, setLoading] = useState(false);
+    const [episodes, setEpisodes] = useState<MovieEpisodeRow[]>([]);
+
+    useEffect(() => {
+        if (!open || movieId == null) {
+            setEpisodes([]);
+            return;
+        }
+        let cancelled = false;
+        setLoading(true);
+        void (async () => {
+            try {
+                const res = await api<MovieDetailPayload>('movie/detail', {
+                    loading: false,
+                    data: { movieid: movieId },
+                });
+                if (cancelled) return;
+                if (res.c !== 0) {
+                    toast.error(res.m || '加载集数失败');
+                    setEpisodes([]);
+                    return;
+                }
+                setEpisodes(episodesFromDetailPayload(res.d));
+            } catch {
+                if (!cancelled) {
+                    toast.error('网络异常');
+                    setEpisodes([]);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [open, movieId]);
+
+    const rows = useMemo<EpisodeDisplayRow[]>(() => {
+        return episodes.map((item, index) => {
+            const episodeValue = item.episode;
+            const videoRaw = String(item.video ?? '').trim();
+            const videoUrl = videoRaw ? joinUrl(staticBase, videoRaw) : '';
+            const subtitleRaw = subtitleUrlFromEpisode(item);
+            const subtitleUrl = subtitleRaw ? joinUrl(staticBase, subtitleRaw) : '';
+            const normalizedEpisode = Number(episodeValue);
+            return {
+                key: String(item.id ?? `ep-${index}`),
+                episode:
+                    Number.isFinite(normalizedEpisode) && normalizedEpisode > 0
+                        ? String(normalizedEpisode)
+                        : String(index + 1),
+                videoUrl,
+                subtitleUrl,
+            };
+        });
+    }, [episodes, staticBase]);
+
+    if (!open) return null;
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            role="presentation"
+            onClick={onClose}
+            onKeyDown={(e) => {
+                if (e.key === 'Escape') onClose();
+            }}
+        >
+            <div
+                className="flex max-h-[min(90vh,720px)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="week-data-detail-title"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
+                    <div className="min-w-0">
+                        <h2 id="week-data-detail-title" className="m-0 truncate text-sm font-semibold text-slate-900">
+                            {movieTitle ? `${movieTitle} · 集数详情` : '集数详情'}
+                        </h2>
+                    </div>
+                    <button
+                        type="button"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        aria-label="关闭"
+                        onClick={onClose}
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
-            ) : null}
+
+                <div className="min-h-0 flex-1 overflow-auto">
+                    {loading ? (
+                        <div className="flex min-h-[200px] items-center justify-center">
+                            <Loader />
+                        </div>
+                    ) : rows.length === 0 ? (
+                        <div className="px-4 py-10 text-center text-sm text-slate-400">暂无集数</div>
+                    ) : (
+                        <table className="w-full min-w-[640px] table-fixed text-xs">
+                            <thead className="sticky top-0 z-10 bg-[#ecf5ff] text-[#303133]">
+                                <tr>
+                                    <th className="w-[72px] border-b border-slate-200 px-3 py-2 text-center text-xs font-semibold">
+                                        集数
+                                    </th>
+                                    <th className="border-b border-slate-200 px-3 py-2 text-left text-xs font-semibold">
+                                        链接
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((row, idx) => (
+                                    <tr key={row.key} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#fafbfc]'}>
+                                        <td className="border-b border-slate-100 px-3 py-2 text-center align-top text-slate-700">
+                                            {row.episode}
+                                        </td>
+                                        <td className="border-b border-slate-100 px-3 py-2 align-top">
+                                            <div className="flex flex-col gap-1">
+                                                <AddressLine label="视频：" addr={row.videoUrl} />
+                                                {row.subtitleUrl.trim() ? (
+                                                    <AddressLine label="字幕：" addr={row.subtitleUrl} />
+                                                ) : null}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
@@ -372,25 +499,29 @@ export default function Component() {
     const configStore = useConfigStore();
     const staticBase = String(configStore.config['static'] ?? '').trim();
 
-    const [dateRange, setDateRange] = useState<[string, string]>(() => defaultDateRange());
     const [titleKeyword, setTitleKeyword] = useState('');
     const [appliedTitle, setAppliedTitle] = useState('');
     const [apiList, setApiList] = useState<TData[]>([]);
     const [total, setTotal] = useState(0);
+    const [listPerPage, setListPerPage] = useState(LIST_DEFAULT_PER_PAGE);
+    const [serverPage, setServerPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [hasFetched, setHasFetched] = useState(false);
-    const [clientPage, setClientPage] = useState(1);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [detailMovieId, setDetailMovieId] = useState<number | null>(null);
+    const [detailMovieTitle, setDetailMovieTitle] = useState('');
 
-    const fetchByDateRange = useCallback(async (): Promise<boolean> => {
+    const openDetail = useCallback((row: DramaRow) => {
+        setDetailMovieId(row.movieId);
+        setDetailMovieTitle(row.title);
+    }, []);
+
+    const fetchPage = useCallback(async (page: number): Promise<boolean> => {
         setLoading(true);
         try {
-            const [s, e] = rangeToApiStrings(dateRange);
             const res = await api<IPagination>('movie/listnew', {
                 loading: false,
-                data: {
-                    daterange: JSON.stringify([s, e]),
-                },
+                data: { page },
             });
             if (res.c !== 0) {
                 toast.error(res.m || '加载失败');
@@ -399,8 +530,12 @@ export default function Component() {
                 setHasFetched(false);
                 return false;
             }
-            setApiList(res.d.data);
-            setTotal(res.d.count ?? 0);
+            const d = res.d;
+            const data = Array.isArray(d?.data) ? d.data : [];
+            setApiList(data);
+            setTotal(Number(d?.count) || data.length);
+            setListPerPage(Number(d?.per_page) || LIST_DEFAULT_PER_PAGE);
+            setServerPage(Number(d?.current_page) || page);
             setHasFetched(true);
             return true;
         } catch {
@@ -412,30 +547,26 @@ export default function Component() {
         } finally {
             setLoading(false);
         }
-    }, [dateRange]);
+    }, []);
 
-    const handleSearch = useCallback(async () => {
-        const ok = await fetchByDateRange();
+    const handleRefresh = useCallback(async () => {
+        const ok = await fetchPage(serverPage);
         if (ok) {
             setAppliedTitle(titleKeyword.trim());
-            setClientPage(1);
             window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
         }
-    }, [fetchByDateRange, titleKeyword]);
+    }, [fetchPage, serverPage, titleKeyword]);
 
     useEffect(() => {
-        void handleSearch();
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅挂载一次
-    }, []);
+        void fetchPage(serverPage);
+    }, [fetchPage, serverPage]);
 
     const handleFilterTitle = useCallback(() => {
         if (!hasFetched) {
-            toast.warning('请先点击「更新列表」拉取时间范围内的数据');
+            toast.warning('请先点击「更新列表」拉取数据');
             return;
         }
         setAppliedTitle(titleKeyword.trim());
-        setClientPage(1);
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }, [hasFetched, titleKeyword]);
 
     const filteredApiList = useMemo(() => {
@@ -444,145 +575,100 @@ export default function Component() {
         return apiList.filter((row) => rowTitle(row).toLowerCase().includes(kw));
     }, [apiList, appliedTitle]);
 
-    const rows = useMemo<EpisodeRow[]>(() => {
-        return filteredApiList.flatMap((row, groupIndex) => {
-            const title = rowTitle(row);
-            const outerTime = pickText(
-                row,
-                ['updated_at', 'update_time', 'time', 'created_at', 'publish_time', 'publish_at'],
-                '',
-            );
-            const raw = row['list'];
-            const rowId = row['id'] != null ? String(row['id']) : String(groupIndex);
+    const rows = useMemo<DramaRow[]>(() => {
+        return filteredApiList.flatMap((row) => {
+            const movieId = movieIdFromRow(row);
+            if (movieId == null) return [];
+            const id = String(movieId);
             const coverPath = pickText(row, ['image', 'poster', 'cover', 'thumb', 'cover_image'], '');
-            const coverUrl = coverPath ? joinUrl(staticBase, coverPath) : '';
-            const dramaId = row['id'] != null ? String(row['id']) : '';
-            const coverImageFile = coverPath ? imageBasename(coverPath) : '';
-
-            if (!Array.isArray(raw) || raw.length === 0) {
-                return [
-                    {
-                        key: `g${rowId}-0`,
-                        title,
-                        coverUrl,
-                        dramaId,
-                        coverImageFile,
-                        time: formatDisplayTime(outerTime || '—'),
-                        episode: pickText(row, ['episode', 'episodes', 'currentEp', 'current_ep', 'videos']),
-                        videoAddress: toFallbackAddress(row),
-                        audioAddress: '',
-                        groupIndex,
-                    },
-                ];
-            }
-            return raw.map((item, index) => {
-                const record = item as Record<string, unknown>;
-                const episodeValue = record['episode'];
-                const video = String(record['video'] ?? '').trim();
-                const audio = String(record['url'] ?? '').trim();
-                const videoAddress = video ? joinUrl(staticBase, video) : toFallbackAddress(row);
-                const audioAddress = audio ? joinUrl(staticBase, audio) : '';
-                const normalizedEpisode = Number(episodeValue);
-                const innerTime = pickText(
-                    record as TData,
-                    ['updated_at', 'update_time', 'time', 'created_at', 'publish_time', 'publish_at'],
-                    '',
-                );
-                return {
-                    key: `g${rowId}-${index}`,
-                    title,
-                    coverUrl,
-                    dramaId,
-                    coverImageFile,
-                    time: formatDisplayTime(outerTime || innerTime || '—'),
-                    episode:
-                        Number.isFinite(normalizedEpisode) && normalizedEpisode > 0
-                            ? String(normalizedEpisode)
-                            : String(index + 1),
-                    videoAddress,
-                    audioAddress,
-                    groupIndex,
-                };
-            });
+            return [
+                {
+                    key: id,
+                    id,
+                    movieId,
+                    title: rowTitle(row),
+                    coverUrl: coverPath ? joinUrl(staticBase, coverPath) : '',
+                    coverImageFile: coverPath ? imageBasename(coverPath) : '',
+                },
+            ];
         });
     }, [filteredApiList, staticBase]);
 
-    const clientTotalPage = Math.max(1, Math.ceil(rows.length / CLIENT_PAGE_SIZE));
-    const pagedRows = useMemo(() => {
-        const start = (clientPage - 1) * CLIENT_PAGE_SIZE;
-        return rows.slice(start, start + CLIENT_PAGE_SIZE);
-    }, [clientPage, rows]);
-
-    const titleRowSpans = useMemo(() => computeTitleRowSpans(pagedRows), [pagedRows]);
-
-    useEffect(() => {
-        setClientPage(1);
-    }, [rows.length]);
-
-    function goPage(next: number) {
-        const target = Math.min(Math.max(1, next), clientTotalPage);
-        setClientPage(target);
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    }
-
+    const serverTotalPage = Math.max(1, Math.ceil(total / listPerPage));
     const emptyText = loading ? '加载中…' : hasFetched ? '暂无数据' : '请点击「更新列表」拉取数据';
 
     return (
-        <div className="week-data-page flex h-full min-h-0 flex-col gap-1 bg-[#f5f7fa] p-[16px] text-xs text-slate-900">
+        <div className="week-data-page flex h-full min-h-0 flex-col gap-4 bg-[#f0f2f5] p-5 text-xs text-slate-900 md:p-8">
             <style>{`
                 .week-data-page .week-data-scroll {
                     overflow: auto !important;
-                    scrollbar-width: auto !important;
-                    scrollbar-color: #94a3b8 #e2e8f0 !important;
+                    scrollbar-width: thin;
+                    scrollbar-color: #cbd5e1 transparent;
                 }
                 .week-data-page .week-data-scroll::-webkit-scrollbar {
-                    width: 16px !important;
-                    height: 16px !important;
-                    display: block !important;
-                }
-                .week-data-page .week-data-scroll::-webkit-scrollbar-track {
-                    background: #e2e8f0 !important;
+                    width: 8px;
+                    height: 8px;
                 }
                 .week-data-page .week-data-scroll::-webkit-scrollbar-thumb {
-                    background: #94a3b8 !important;
-                    border-radius: 9999px !important;
-                    border: 4px solid #e2e8f0 !important;
+                    background: #cbd5e1;
+                    border-radius: 4px;
                 }
-                .week-data-page .week-data-scroll::-webkit-scrollbar-thumb:hover {
-                    background: #64748b !important;
+                .week-data-page .week-data-list-head {
+                    position: sticky;
+                    top: 0;
+                    z-index: 20;
+                }
+                .week-data-page .week-data-name-sticky {
+                    position: sticky;
+                    left: 0;
+                    z-index: 5;
+                    flex: 1 1 240px;
+                    min-width: 200px;
+                    max-width: 420px;
+                    padding-right: 12px;
+                    background: inherit;
+                }
+                .week-data-page .week-data-list-head .week-data-name-sticky {
+                    z-index: 25;
+                    background: #ecf5ff;
+                }
+                .week-data-page .week-data-row:nth-child(odd) {
+                    background: #fff;
+                }
+                .week-data-page .week-data-row:nth-child(even) {
+                    background: #fafbfc;
+                }
+                .week-data-page .week-data-row:nth-child(odd) .week-data-name-sticky {
+                    background: #fff;
+                }
+                .week-data-page .week-data-row:nth-child(even) .week-data-name-sticky {
+                    background: #fafbfc;
+                }
+                .week-data-page .week-data-row:hover,
+                .week-data-page .week-data-row:hover .week-data-name-sticky {
+                    background: #f5f9ff !important;
                 }
             `}</style>
 
-            <h1 className="m-0 text-sm font-semibold text-[#303133]">最新更新</h1>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <h1 className="m-0 text-base font-semibold text-[#303133]">最新更新</h1>
+                {hasFetched ? (
+                    <span className="text-xs text-slate-500">共 {total} 部 · 匹配 {filteredApiList.length} 部</span>
+                ) : null}
+            </div>
 
-            <div className="relative border-b border-slate-300 pb-1.5">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <div className="flex flex-wrap items-center gap-1">
-                        <span className="shrink-0 text-xs text-slate-600">时间范围：</span>
-                        <input
-                            type="date"
-                            className="h-6 rounded border border-slate-300 bg-white px-1 text-xs"
-                            value={dateRange[0]}
-                            onChange={(e) => setDateRange([e.target.value, dateRange[1]])}
-                        />
-                        <span className="text-xs text-slate-400">至</span>
-                        <input
-                            type="date"
-                            className="h-6 rounded border border-slate-300 bg-white px-1 text-xs"
-                            value={dateRange[1]}
-                            onChange={(e) => setDateRange([dateRange[0], e.target.value])}
-                        />
-                        <button
-                            type="button"
-                            className="h-6 rounded border border-[#409eff] bg-[#409eff] px-2 text-xs font-medium text-white disabled:opacity-50"
-                            disabled={loading}
-                            onClick={() => void handleSearch()}
-                        >
-                            {loading ? '加载中…' : '更新列表'}
-                        </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1">
-                        <span className="shrink-0 text-xs text-slate-600">名称：</span>
+            <div className="rounded-lg border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        className="h-7 rounded-md border border-[#409eff] bg-[#409eff] px-3 text-xs font-medium text-white shadow-sm disabled:opacity-50"
+                        disabled={loading}
+                        onClick={() => void handleRefresh()}
+                    >
+                        {loading ? '加载中…' : '更新列表'}
+                    </button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="shrink-0 text-xs font-medium text-slate-600">名称：</span>
                         <input
                             type="text"
                             className="h-6 w-[160px] max-w-full rounded border border-slate-300 bg-white px-1.5 text-xs disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
@@ -591,10 +677,13 @@ export default function Component() {
                             value={titleKeyword}
                             maxLength={128}
                             onChange={(e) => setTitleKeyword(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleFilterTitle();
+                            }}
                         />
                         <button
                             type="button"
-                            className="h-6 rounded border border-slate-300 bg-white px-2 text-xs disabled:opacity-50"
+                            className="h-7 rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm disabled:opacity-50"
                             disabled={!hasFetched || loading}
                             onClick={handleFilterTitle}
                         >
@@ -604,101 +693,76 @@ export default function Component() {
                 </div>
             </div>
 
-            <p className="m-0 text-[11px] leading-4 text-slate-500">
-                进入页面已按默认时间自动请求；修改时间后请点「更新列表」。名称在数据返回后可填，点「更新列表」会重新请求并带上名称筛选，点「查询」只筛当前结果。
-            </p>
-
-            <div className="week-data-scroll min-h-0 flex-1 rounded border border-slate-200 bg-white">
+            <div className="week-data-scroll min-h-0 flex-1 overflow-auto rounded-lg border border-slate-200/80 bg-white shadow-sm">
                 {loading && !hasFetched ? (
-                    <div className="flex h-full min-h-[120px] items-center justify-center">
+                    <div className="flex min-h-[200px] items-center justify-center p-8">
                         <Loader />
                     </div>
+                ) : rows.length === 0 ? (
+                    <div className="px-6 py-16 text-center text-sm text-slate-400">{emptyText}</div>
                 ) : (
-                    <table className="w-full min-w-[760px] table-fixed text-xs leading-5">
-                        <thead className="sticky top-0 z-20 bg-[#ecf5ff] text-[#303133]">
-                            <tr>
-                                <th className="w-[18%] border-b border-slate-300 px-2 py-1 text-left text-xs font-semibold">名称</th>
-                                <th className="w-[12%] border-b border-slate-300 px-2 py-1 text-left text-xs font-semibold">封面</th>
-                                <th className="w-[14%] border-b border-slate-300 px-2 py-1 text-left text-xs font-semibold">时间</th>
-                                <th className="w-[5%] border-b border-slate-300 px-2 py-1 text-left text-xs font-semibold">集数</th>
-                                <th className="border-b border-slate-300 px-2 py-1 text-left text-xs font-semibold">地址</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {pagedRows.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-2 py-6 text-center text-xs text-slate-400">
-                                        {emptyText}
-                                    </td>
-                                </tr>
-                            ) : (
-                                pagedRows.map((row, idx) => {
-                                    const span = titleRowSpans[idx] ?? 1;
-                                    const groupClass = row.groupIndex % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]';
-                                    return (
-                                        <tr key={row.key} className={groupClass}>
-                                            {span > 0 ? (
-                                                <td
-                                                    rowSpan={span}
-                                                    className="border-b border-slate-200 px-2 py-1 align-middle"
-                                                >
-                                                    <div className="flex min-w-0 items-start gap-0.5">
-                                                        <span className="min-w-0 flex-1 break-words text-xs font-medium leading-5 text-slate-900">
-                                                            {row.title}
-                                                        </span>
-                                                        <CopyButton text={row.title} />
-                                                    </div>
-                                                </td>
-                                            ) : null}
-                                            {span > 0 ? (
-                                                <td rowSpan={span} className="border-b border-slate-200 px-2 py-1 align-middle">
-                                                    <CoverCell record={row} onPreview={setPreviewUrl} />
-                                                </td>
-                                            ) : null}
-                                            <td className="whitespace-nowrap border-b border-slate-200 px-2 py-1 align-top text-slate-700">
-                                                {row.time}
-                                            </td>
-                                            <td className="whitespace-nowrap border-b border-slate-200 px-2 py-1 align-top text-slate-700">
-                                                {row.episode}
-                                            </td>
-                                            <td className="border-b border-slate-200 px-2 py-1 align-top">
-                                                <AddressCell videoAddr={row.videoAddress} audioAddr={row.audioAddress} />
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                    <div className="min-w-[520px]">
+                        <div className="week-data-list-head flex items-center gap-4 border-b border-slate-200 bg-[#ecf5ff] px-4 py-2.5 text-xs font-semibold text-[#303133]">
+                            <div className="week-data-name-sticky">名称</div>
+                            <div className="w-[72px] shrink-0 text-center">封面</div>
+                            <div className="w-[64px] shrink-0 text-center">操作</div>
+                        </div>
+                        <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+                            {rows.map((row) => (
+                                <li key={row.key} className="week-data-row flex items-center gap-4 px-4 py-2.5">
+                                    <div className="week-data-name-sticky">
+                                        <NameCell record={row} />
+                                    </div>
+                                    <div className="flex w-[72px] shrink-0 justify-center">
+                                        <CoverCell record={row} onPreview={setPreviewUrl} />
+                                    </div>
+                                    <div className="flex w-[64px] shrink-0 justify-center">
+                                        <ActionCell record={row} onDetail={openDetail} />
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded border border-[#d9ecff] bg-[#ecf5ff] px-2 py-1.5">
-                <div className="text-xs font-medium text-[#303133]">
-                    接口影剧数: {total} | 当前匹配剧: {filteredApiList.length} | 展示行数: {rows.length}
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-[#d9ecff] bg-[#ecf5ff] px-4 py-2.5">
+                <div className="text-xs text-[#606266]">
+                    匹配 {rows.length} 部{appliedTitle ? '（已筛选）' : ''}
                 </div>
                 <div className="flex items-center gap-1.5">
                     <button
                         type="button"
                         className="rounded border border-[#b3d8ff] bg-white px-2 py-0.5 text-xs font-medium text-[#409eff] disabled:opacity-40"
-                        disabled={clientPage <= 1}
-                        onClick={() => goPage(clientPage - 1)}
+                        disabled={serverPage <= 1 || loading}
+                        onClick={() => setServerPage((p) => p - 1)}
                     >
                         上一页
                     </button>
                     <div className="text-xs font-medium text-[#303133]">
-                        第 {clientPage} / {clientTotalPage} 页（每页 {CLIENT_PAGE_SIZE} 条）
+                        第 {serverPage} / {serverTotalPage} 页
                     </div>
                     <button
                         type="button"
                         className="rounded border border-[#b3d8ff] bg-white px-2 py-0.5 text-xs font-medium text-[#409eff] disabled:opacity-40"
-                        disabled={clientPage >= clientTotalPage}
-                        onClick={() => goPage(clientPage + 1)}
+                        disabled={serverPage >= serverTotalPage || loading}
+                        onClick={() => setServerPage((p) => p + 1)}
                     >
                         下一页
                     </button>
                 </div>
             </div>
+
+            <DetailModal
+                open={detailMovieId != null}
+                movieId={detailMovieId}
+                movieTitle={detailMovieTitle}
+                staticBase={staticBase}
+                onClose={() => {
+                    setDetailMovieId(null);
+                    setDetailMovieTitle('');
+                }}
+            />
 
             {previewUrl ? (
                 <div
