@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { FormattedMessage } from 'react-intl';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { offlinePlayerData } from '@/mocks/videoOffline';
 import type { IPlayerData } from '@/types/videoPlayer';
 import Loader from '@/components/Loader';
+import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
-import { useConfigStore } from '@/stores/config';
 import { VideoPlayer } from './VideoPlayer';
 import {
     createVerticalFiniteSlideState,
@@ -26,8 +25,20 @@ import { clearEpisodeDetailCache, prewarmEpisodeDetail } from './episodeDetailCa
 import { clearEpisodePeekFrameCache } from './episodeFrameQueueStore';
 import { getEpisodeIdsToPrewarm } from './episodePrewarm';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
-import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { canNavigateBack, isPerformanceNavigationReload } from './videoPlayerUtils';
+import { VideoPlayerPcNeighborSlideShell } from './views/VideoPlayerPcNeighborSlideShell';
+import { cn } from '@/lib/utils';
+
+/**
+ * PC 竖向切集总开关（滚轮累加切集 + list 上 pointer 竖滑切集）。
+ *
+ * 【当前产品要求：关闭。后续可能恢复为 `true`。】
+ * 【保留要求：请勿删除本常量；恢复 PC 上下滑时改为 `true`，并同步取消下方
+ * 「PC 滚轮切集」注释块、确认 pointer 竖滑未单独禁用。】
+ *
+ * 其它 Agent：不要「清理」本开关或注释掉的实现代码。
+ */
+const PC_VERTICAL_EPISODE_NAV_ENABLED = false;
 
 /** 非会员：邻格不挂播放器，避免邻格 `VideoPlayer` 再打一遍详情；主格/预拉仍会请求 `movie/episode`（含 auto_unlock） */
 function shouldMountNeighborPeekPlayer(
@@ -38,10 +49,6 @@ function shouldMountNeighborPeekPlayer(
         return true;
     }
     return row.vip === 0;
-}
-
-function isVipLockedEpisodeRow(row: { vip: number; locked: number }): boolean {
-    return row.vip !== 0 && row.locked === 1;
 }
 
 export default function VideoVerticalSwiper() {
@@ -75,8 +82,6 @@ export default function VideoVerticalSwiper() {
     const didInitialLayoutRef = useRef(false);
     const neighborLegacyAutoplayRef = useRef(false);
     const isDesktop = useMinWidth768();
-    const configStore = useConfigStore();
-    const staticBase = useMemo(() => String(configStore.config['static'] ?? ''), [configStore.config['static']]);
     const viewerIsVip = useUserStore((s) => Boolean(s.signed && s.info?.['is_vip']));
     const navigateRef = useRef(navigate);
     navigateRef.current = navigate;
@@ -193,6 +198,10 @@ export default function VideoVerticalSwiper() {
         if (!el || !data) {
             return;
         }
+        /** PC 竖滑切集：与 `PC_VERTICAL_EPISODE_NAV_ENABLED` 成对；关闭时 PC 仅能用右侧箭头/分集列表切集 */
+        if (isDesktop && !PC_VERTICAL_EPISODE_NAV_ENABLED) {
+            return;
+        }
         const onPointerDown = (e: PointerEvent) => {
             if ((e.target as Element | null)?.closest('[data-pc-episode-aside]')) {
                 return;
@@ -242,7 +251,7 @@ export default function VideoVerticalSwiper() {
             el.removeEventListener('pointerup', onPointerUp, opts);
             el.removeEventListener('pointercancel', onPointerUp, opts);
         };
-    }, [data, syncNavigateForIndex, markFullscreenTransition]);
+    }, [data, syncNavigateForIndex, markFullscreenTransition, isDesktop]);
 
     const handleSetEpisode = useCallback(
         (index: number) => {
@@ -270,15 +279,14 @@ export default function VideoVerticalSwiper() {
         [data, markFullscreenTransition, syncNavigateForIndex],
     );
 
-    /** PC 邻格占位：与 H5 邻格「有画面」一致，用剧封面打底（不挂整页 VideoPlayer，避免桌面侧栏重复） */
-    const dramaPosterUrl = useMemo(
-        () => (data ? resolveVideoPosterUrl(staticBase, data.info.image).trim() : ''),
-        [data, staticBase],
-    );
-
-    /** PC：滚轮仅在剧集竖滑列表 `listRef` 上响应（与 douyin 全幅竖滑区一致），不经过管理浮层；阈值略大减少误切 */
+    /*
+     * =========================================================================
+     * PC 滚轮切集（暂时关闭 — 勿删本段）
+     * 与文件顶部 `PC_VERTICAL_EPISODE_NAV_ENABLED` 成对恢复。
+     * 恢复步骤：常量改 `true` + 取消本块注释。
+     * =========================================================================
     useEffect(() => {
-        if (!isDesktop || !data || !initialized) {
+        if (!PC_VERTICAL_EPISODE_NAV_ENABLED || !isDesktop || !data || !initialized) {
             return;
         }
         const list = listRef.current;
@@ -328,6 +336,7 @@ export default function VideoVerticalSwiper() {
             }
         };
     }, [isDesktop, data, initialized, current, handleSetEpisode]);
+    */
 
     async function loadData() {
         if (skipRemoteApi) {
@@ -362,11 +371,11 @@ export default function VideoVerticalSwiper() {
         }
         /** 勿用 `current`：首屏 `data` 先到时常仍为 0，会与 URL 集数不一致，导致多预拉一整段再预拉正确段 */
         const center = resolveVideoListIndexFromUrlSegment(data.episodes, params['episode']);
-        const ids = getEpisodeIdsToPrewarm(data.episodes, center, viewerIsVip, !isDesktop);
+        const ids = getEpisodeIdsToPrewarm(data.episodes, center, viewerIsVip);
         for (const episodeId of ids) {
             void prewarmEpisodeDetail(episodeId, { viewerIsVip });
         }
-    }, [data, params['episode'], viewerIsVip, isDesktop]);
+    }, [data, params['episode'], viewerIsVip]);
 
     useEffect(() => {
         if (!sessionBootstrapReady) {
@@ -440,12 +449,29 @@ export default function VideoVerticalSwiper() {
 
     const slideH = viewportH > 0 ? viewportH : undefined;
 
-    return loading ? (
-        <div className="w-full h-full flex justify-center items-center">
-            <Loader color="light" />
+    const pcTopNav = isDesktop ? (
+        <div className="video-vertical-pc-topnav">
+            <ReelShortTopNav leftAction="none" showSearch />
         </div>
+    ) : null;
+
+    return loading ? (
+        isDesktop ? (
+            <div className="video-vertical-pc-shell">
+                {pcTopNav}
+                <div className="flex min-h-0 flex-1 items-center justify-center">
+                    <Loader color="light" />
+                </div>
+            </div>
+        ) : (
+            <div className="flex h-full w-full items-center justify-center">
+                <Loader color="light" />
+            </div>
+        )
     ) : (
-        <div ref={fullscreenTargetRef} className="video-fullscreen-target h-full w-full">
+        <div className={isDesktop ? 'video-vertical-pc-shell' : 'h-full w-full'}>
+            {pcTopNav}
+            <div ref={fullscreenTargetRef} className="video-fullscreen-target h-full min-h-0 w-full flex-1">
             <div
                 ref={outerRef}
                 className="video-vertical-swiper relative h-full w-full touch-none overflow-hidden bg-black select-none"
@@ -462,20 +488,15 @@ export default function VideoVerticalSwiper() {
                             initialized && !isDesktop && (k === current - 1 || k === current + 1);
                         const isDesktopNeighborSlide =
                             initialized && isDesktop && (k === current - 1 || k === current + 1);
-                        const lockedForViewer = isVipLockedEpisodeRow(v) && !viewerIsVip;
-                        const slideBgStyle: { backgroundImage?: string } =
-                            isDesktopNeighborSlide && dramaPosterUrl && !lockedForViewer
-                                ? {
-                                      backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.58) 100%), url(${JSON.stringify(dramaPosterUrl)})`,
-                                  }
-                                : {};
                         return (
                             <div
                                 key={v.id}
-                                className="relative w-full shrink-0 bg-center bg-cover"
+                                className={cn(
+                                    'relative w-full shrink-0 bg-black',
+                                    !isDesktopNeighborSlide && 'bg-center bg-cover',
+                                )}
                                 style={{
                                     ...(slideH !== undefined ? { height: slideH } : { height: '100%' }),
-                                    ...slideBgStyle,
                                 }}
                             >
                                 {isNeighbor && shouldMountNeighborPeekPlayer(v, viewerIsVip) && (
@@ -515,19 +536,18 @@ export default function VideoVerticalSwiper() {
                                         />
                                     </div>
                                 )}
-                                {isDesktop && (current - 1 === k || current + 1 === k) && (
-                                    <div className="video-vertical-slide-label flex h-full w-full items-center justify-center text-2xl text-white">
-                                        <div>
-                                            <FormattedMessage id="episode" /> {v.episode} /{' '}
-                                            {data.episodes.length}
-                                        </div>
-                                    </div>
-                                )}
+                                {isDesktopNeighborSlide ? (
+                                    <VideoPlayerPcNeighborSlideShell
+                                        data={data}
+                                        viewerIsVip={viewerIsVip}
+                                    />
+                                ) : null}
                             </div>
                         );
                         })
                         : null}
                 </div>
+            </div>
             </div>
         </div>
     );

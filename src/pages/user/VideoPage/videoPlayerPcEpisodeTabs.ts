@@ -1,5 +1,7 @@
+export type EpisodeTabRange = { start: number; end: number };
+
 /** PC 侧栏分集：每页最多 50 集 */
-export function buildPcEpisodeTabRanges(maxEpisode: number): { start: number; end: number }[] {
+export function buildPcEpisodeTabRanges(maxEpisode: number): EpisodeTabRange[] {
     if (maxEpisode < 1) {
         return [{ start: 1, end: 1 }];
     }
@@ -12,7 +14,7 @@ export function buildPcEpisodeTabRanges(maxEpisode: number): { start: number; en
 
 export function pcEpisodeTabIndexForEpisodeNo(
     episodeNo: number,
-    ranges: { start: number; end: number }[],
+    ranges: EpisodeTabRange[],
 ): number {
     const i = ranges.findIndex((r) => episodeNo >= r.start && episodeNo <= r.end);
     return i >= 0 ? i : 0;

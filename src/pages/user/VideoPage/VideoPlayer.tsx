@@ -12,7 +12,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type RefObject } from 'react';
 import fullscreenIcon from '@/assets/video/icon_full@2x.png';
 import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
-import pcBackIcon from '@/assets/icons/video-pc-back.svg';
 import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import iconPlay1 from '@/assets/video/icon_play1@2x.webp';
@@ -46,29 +45,21 @@ import {
     VideoPlayerEpisodeSpeedIntroDrawers,
     VideoPlayerH5CommerceDrawers,
     VideoPlayerPcCommerceDialogs,
-    VideoPlayerPcEpisodeAside,
+    VideoPlayerPcEpisodeDrawer,
+    VideoPlayerPcIntroDrawer,
+    VideoPlayerPcEpisodeNav,
+    VideoPlayerPcBackBar,
     useVideoPlayerShare,
 } from './videoPlayerOverlays';
-
-/** PC 侧栏分集：每页最多 50 集（与下述 tab 文案一致） */
-function buildPcEpisodeTabRanges(maxEpisode: number): { start: number; end: number }[] {
-    if (maxEpisode < 1) {
-        return [{ start: 1, end: 1 }];
-    }
-    return Array.from({ length: Math.ceil(maxEpisode / 50) }, (_, i) => {
-        const start = i * 50 + 1;
-        const end = Math.min(start + 49, maxEpisode);
-        return { start, end };
-    });
-}
-
-function pcEpisodeTabIndexForEpisodeNo(
-    episodeNo: number,
-    ranges: { start: number; end: number }[],
-): number {
-    const i = ranges.findIndex((r) => episodeNo >= r.start && episodeNo <= r.end);
-    return i >= 0 ? i : 0;
-}
+import {
+    buildPcEpisodeTabRanges,
+    pcEpisodeTabIndexForEpisodeNo,
+} from './videoPlayerPcEpisodeTabs';
+import { measurePcStageShiftPx } from './videoPlayerPcDrawerStageShift';
+import {
+    PC_DRAWER_DURATION_MS,
+    schedulePcDrawerEnterFrame,
+} from './videoPlayerPcDrawerMotion';
 
 export function VideoPlayer({
     id,
@@ -107,6 +98,9 @@ export function VideoPlayer({
     const wasPlayingBeforeScrubRef = useRef(false);
     const controllerRef = useRef<HTMLDivElement>(null);
     const subtitleRef = useRef<HTMLDivElement>(null);
+    const pcShellRef = useRef<HTMLDivElement>(null);
+    const pcStageClusterRef = useRef<HTMLDivElement>(null);
+    const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
     const episodeRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const intl = useIntl();
@@ -134,6 +128,10 @@ export function VideoPlayer({
     const [speedOpen, setSpeedOpen] = useState(false);
     const [speed, setSpeed] = useState(parseInt(localStorage.getItem('playback_speed') || '1', 10));
     const [introduction, setIntroduction] = useState(false);
+    /** PC：右侧滑出抽屉，仅 List → 分集；底部简介 → 简介（VIP/收藏不走抽屉） */
+    const [pcDrawerPanel, setPcDrawerPanel] = useState<null | 'episodes' | 'intro'>(null);
+    const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
+    const pcDrawerClosingRef = useRef(false);
     const isDesktop = useMinWidth768();
     const staticBase = useMemo(() => String(configStore.config['static'] ?? ''), [configStore.config['static']]);
     const {
@@ -302,7 +300,7 @@ export function VideoPlayer({
         const target = e.target as HTMLElement;
         if (
             target.closest(
-                '.video-player-h5-bottom, .video-player-pc-close-btn, .video-player-progress-scrub, .xgplayer-unmute',
+                '.video-player-h5-bottom, .video-player-pc-back-bar, .video-player-progress-scrub, .video-player-pc-side-actions, .video-player-pc-right-rail, .video-pc-right-drawer, .xgplayer-unmute',
             )
         ) {
             return;
@@ -369,8 +367,23 @@ export function VideoPlayer({
         onSetEpisode(index);
     }
 
+    function hasPrevEpisode() {
+        return props.index > 0;
+    }
+
     function hasNextEpisode() {
         return props.index < data.episodes.length - 1;
+    }
+
+    function handleJumpPrevEpisode(ev?: MouseEvent | React.MouseEvent<HTMLElement>) {
+        ev?.preventDefault();
+        ev?.stopPropagation();
+        if (!hasPrevEpisode()) {
+            return;
+        }
+        legacyEpisodeAutoplayRef.current = true;
+        showController();
+        handleSetEpisode(props.index - 1);
     }
 
     function handleJumpNextEpisode(ev?: MouseEvent | React.MouseEvent<HTMLElement>) {
@@ -398,6 +411,45 @@ export function VideoPlayer({
                     });
             }, 300);
         }
+    }
+
+    function beginClosePcDrawer() {
+        if (!pcDrawerPanel) {
+            return;
+        }
+        pcDrawerClosingRef.current = true;
+        setPcDrawerEntered(false);
+        setPcStageShiftPx(0);
+    }
+
+    function closePcDrawer() {
+        beginClosePcDrawer();
+    }
+
+    function handlePcEpisodeListClick(ev?: MouseEvent) {
+        ev?.stopPropagation();
+        if (pcFullscreen) {
+            void handleExitPcFullscreen();
+        }
+        if (pcDrawerPanel === 'episodes') {
+            beginClosePcDrawer();
+            return;
+        }
+        pcDrawerClosingRef.current = false;
+        setPcDrawerPanel('episodes');
+    }
+
+    function handlePcIntroDrawerClick(ev?: MouseEvent) {
+        ev?.stopPropagation();
+        if (pcFullscreen) {
+            void handleExitPcFullscreen();
+        }
+        if (pcDrawerPanel === 'intro') {
+            beginClosePcDrawer();
+            return;
+        }
+        pcDrawerClosingRef.current = false;
+        setPcDrawerPanel('intro');
     }
 
     function handleToggleFavorite() {
@@ -774,6 +826,88 @@ export function VideoPlayer({
         const nextTab = pcEpisodeTabIndexForEpisodeNo(epNo, ranges);
         setDesktopEpisodeTab((prev) => (prev === nextTab ? prev : nextTab));
     }, [isDesktop, data, id, episode?.episode]);
+
+    useEffect(() => {
+        if (!isDesktop) {
+            return;
+        }
+        pcDrawerClosingRef.current = false;
+        setPcDrawerPanel(null);
+        setPcDrawerEntered(false);
+        setPcStageShiftPx(0);
+    }, [isDesktop, props.index]);
+
+    /** PC：先挂载起始态，下一帧 entered + 左移，才能触发 CSS transition */
+    useEffect(() => {
+        if (!isDesktop || pcDrawerPanel == null) {
+            setPcDrawerEntered(false);
+            setPcStageShiftPx(0);
+            return;
+        }
+        if (pcDrawerClosingRef.current) {
+            return;
+        }
+
+        setPcDrawerEntered(false);
+        setPcStageShiftPx(0);
+        return schedulePcDrawerEnterFrame(() => {
+            setPcDrawerEntered(true);
+            const shell = pcShellRef.current;
+            const cluster = pcStageClusterRef.current;
+            if (shell && cluster) {
+                setPcStageShiftPx(measurePcStageShiftPx(shell, cluster));
+            }
+        });
+    }, [isDesktop, pcDrawerPanel]);
+
+    /** PC：关闭时等面板滑出后再卸载 */
+    useEffect(() => {
+        if (!pcDrawerClosingRef.current || pcDrawerPanel == null || pcDrawerEntered) {
+            return;
+        }
+
+        const finish = () => {
+            pcDrawerClosingRef.current = false;
+            setPcDrawerPanel(null);
+            setPcStageShiftPx(0);
+        };
+
+        const panel = pcShellRef.current?.querySelector<HTMLElement>(
+            '.video-pc-right-drawer--open .video-pc-right-drawer__panel',
+        );
+        if (!panel) {
+            finish();
+            return;
+        }
+
+        const onEnd = (e: TransitionEvent) => {
+            if (e.target === panel && e.propertyName === 'transform') {
+                finish();
+            }
+        };
+        panel.addEventListener('transitionend', onEnd);
+        const fallback = window.setTimeout(finish, PC_DRAWER_DURATION_MS + 80);
+        return () => {
+            panel.removeEventListener('transitionend', onEnd);
+            window.clearTimeout(fallback);
+        };
+    }, [pcDrawerPanel, pcDrawerEntered]);
+
+    useEffect(() => {
+        if (!isDesktop || !pcDrawerPanel || !pcDrawerEntered) {
+            return;
+        }
+        const sync = () => {
+            const shell = pcShellRef.current;
+            const cluster = pcStageClusterRef.current;
+            if (!shell || !cluster) {
+                return;
+            }
+            setPcStageShiftPx(measurePcStageShiftPx(shell, cluster));
+        };
+        window.addEventListener('resize', sync);
+        return () => window.removeEventListener('resize', sync);
+    }, [isDesktop, pcDrawerPanel, pcDrawerEntered]);
 
     useEffect(() => {
         if (loading || !episode || episode.lock || playbackSources.length === 0) {
@@ -1174,7 +1308,23 @@ export function VideoPlayer({
             <div className="video-player-root h-full w-full relative" ref={wrapRef}>
                 <div className="h-full w-full relative opacity-100 transition-opacity duration-500">
                     <div className="absolute inset-0 flex bg-black">
-                        <div className="relative flex-1 flex justify-center items-center bg-black">
+                        <div
+                            ref={pcShellRef}
+                            className={cn(
+                                'video-player-pc-shell relative flex h-full w-full items-center justify-center overflow-hidden bg-black',
+                                pcDrawerPanel != null && 'video-player-pc-shell--drawer-open',
+                            )}
+                        >
+                            <div
+                                ref={pcStageClusterRef}
+                                className="video-player-pc-stage-cluster flex h-full max-h-full flex-row items-center justify-center"
+                                style={{
+                                    transform:
+                                        pcStageShiftPx > 0
+                                            ? `translate3d(-${pcStageShiftPx}px, 0, 0)`
+                                            : undefined,
+                                }}
+                            >
                             <div
                                 className={videoStageClassName}
                                 onClick={handleDesktopPlayerClick}
@@ -1286,6 +1436,13 @@ export function VideoPlayer({
                                         ref={progressWrapRef}
                                         onClick={(e) => e.stopPropagation()}
                                     >
+                                        {!isFullscreenUi && (
+                                            <VideoPlayerBottomInfo
+                                                data={data}
+                                                episode={episode}
+                                                onOpenIntroduction={handlePcIntroDrawerClick}
+                                            />
+                                        )}
                                         <div className="video-player-h5-progress-row">
                                         <div
                                             className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
@@ -1370,28 +1527,100 @@ export function VideoPlayer({
                                 )}
                             </div>
                             </div>
-                            {!pcFullscreen && (
-                                <div className="video-player-pc-close-btn" onClick={handleBack}>
-                                    <img src={pcBackIcon} alt="back" className="w-6 h-6" />
+                            <div
+                                className="video-player-pc-side-actions flex shrink-0 flex-col gap-4"
+                                data-vertical-swipe-ignore
+                            >
+                                {!userStore.isVIP() && (
+                                    <div
+                                        className="flex cursor-pointer flex-col items-center gap-1"
+                                        onClick={(e) => handleToggleVip(e)}
+                                    >
+                                        <Crown className="h-8 w-8 fill-[#ffd000] text-[#ffd000]" />
+                                        <div className="h-4 text-center text-xs leading-4 text-[#ffd000]">
+                                            <FormattedMessage id="shopping_vip_fab_label" />
+                                        </div>
+                                    </div>
+                                )}
+                                <div
+                                    className="flex cursor-pointer flex-col items-center gap-1"
+                                    onClick={handleToggleFavorite}
+                                >
+                                    <Star
+                                        className={cn(
+                                            'h-8 w-8 fill-white text-white',
+                                            favorite && 'fill-[#ffd000] stroke-[#ffd000]',
+                                        )}
+                                    />
+                                    <div className="h-4 text-center text-xs leading-4 text-white">
+                                        {data.info.favorite}K
+                                    </div>
                                 </div>
+                                <div
+                                    className="flex cursor-pointer flex-col items-center gap-1"
+                                    onClick={handlePcEpisodeListClick}
+                                >
+                                    <LayoutGrid className="h-8 w-8 fill-white text-white" />
+                                    <div className="h-4 text-center text-xs leading-4 text-white">
+                                        <FormattedMessage id="episode_list" />
+                                    </div>
+                                </div>
+                                <div
+                                    className="flex cursor-pointer flex-col items-center gap-1"
+                                    onClick={() => setShareOpen(true)}
+                                >
+                                    <img src={shareEntryIcon} alt="" className="h-8 w-8" />
+                                    <div className="h-4 text-center text-xs leading-4 text-white">
+                                        {intl.formatMessage({ id: 'share' })}
+                                    </div>
+                                </div>
+                                </div>
+                            </div>
+                            <div
+                                className={cn(
+                                    'video-player-pc-right-rail',
+                                    pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
+                                )}
+                            >
+                                <VideoPlayerPcEpisodeDrawer
+                                    open={pcDrawerPanel === 'episodes'}
+                                    entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
+                                    onClose={closePcDrawer}
+                                    anchorRef={pcShellRef}
+                                    currentEpisodeNo={currentEpisodeNo}
+                                    data={data}
+                                    viewerIsVip={userStore.isVIP()}
+                                    tabRanges={tabRanges}
+                                    activeTab={activeTab}
+                                    onSelectEpisodeTab={setDesktopEpisodeTab}
+                                    filteredEpisodes={filteredEpisodes}
+                                    onSelectEpisodeByListIndex={handleSetEpisode}
+                                />
+                                <VideoPlayerPcIntroDrawer
+                                    open={pcDrawerPanel === 'intro'}
+                                    entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
+                                    onClose={closePcDrawer}
+                                    anchorRef={pcShellRef}
+                                    data={data}
+                                    episode={episode}
+                                    staticBase={staticBase}
+                                />
+                                {!pcFullscreen && (
+                                    <VideoPlayerPcEpisodeNav
+                                        hasPrev={hasPrevEpisode()}
+                                        hasNext={hasNextEpisode()}
+                                        onPrev={handleJumpPrevEpisode}
+                                        onNext={handleJumpNextEpisode}
+                                    />
+                                )}
+                            </div>
+                            {!pcFullscreen && (
+                                <VideoPlayerPcBackBar
+                                    episodeNo={currentEpisodeNo}
+                                    onBack={handleBack}
+                                />
                             )}
                         </div>
-                        <VideoPlayerPcEpisodeAside
-                            pcFullscreen={pcFullscreen}
-                            onExitPcFullscreen={handleExitPcFullscreen}
-                            currentEpisodeNo={currentEpisodeNo}
-                            data={data}
-                            viewerIsVip={userStore.isVIP()}
-                            favorite={favorite}
-                            onToggleFavorite={handleToggleFavorite}
-                            onToggleVip={handleToggleVip}
-                            onOpenShare={() => setShareOpen(true)}
-                            tabRanges={tabRanges}
-                            activeTab={activeTab}
-                            onSelectEpisodeTab={setDesktopEpisodeTab}
-                            filteredEpisodes={filteredEpisodes}
-                            onSelectEpisodeByListIndex={handleSetEpisode}
-                        />
                     </div>
                     <VideoPlayerEpisodeSpeedIntroDrawers
                         data={data}
@@ -1410,6 +1639,8 @@ export function VideoPlayer({
                         introduction={introduction}
                         onIntroductionOpenChange={handleIntroduction}
                         onCloseIntroductionLinks={() => setIntroduction(false)}
+                        hideEpisodeDrawer
+                        hideIntroDrawer
                     />
                     <VideoPlayerPcCommerceDialogs
                         vip={vip}

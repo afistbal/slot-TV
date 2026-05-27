@@ -28,6 +28,9 @@ type Props = {
     introduction: boolean;
     onIntroductionOpenChange: () => void;
     onCloseIntroductionLinks: () => void;
+    /** PC 使用独立右侧抽屉，不渲染 H5 分集/简介底栏 */
+    hideEpisodeDrawer?: boolean;
+    hideIntroDrawer?: boolean;
 };
 
 export function VideoPlayerEpisodeSpeedIntroDrawers({
@@ -47,9 +50,12 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     introduction,
     onIntroductionOpenChange,
     onCloseIntroductionLinks,
+    hideEpisodeDrawer = false,
+    hideIntroDrawer = false,
 }: Props) {
     return (
         <>
+            {!hideEpisodeDrawer ? (
             <Drawer open={episodeStatus} onOpenChange={() => onToggleEpisodeDrawer()}>
                 <DrawerContent className="bg-slate-800" aria-describedby="Episode">
                     <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
@@ -92,6 +98,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                     <div className="h-4" />
                 </DrawerContent>
             </Drawer>
+            ) : null}
             <Drawer open={speedOpen} onOpenChange={onSpeedDrawerOpenChange}>
                 <DrawerContent className="bg-slate-800" aria-describedby="PlaybackSpeed">
                     <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
@@ -125,6 +132,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                     <div className="h-4" />
                 </DrawerContent>
             </Drawer>
+            {!hideIntroDrawer ? (
             <Drawer open={introduction} onOpenChange={onIntroductionOpenChange}>
                 <DrawerContent className="bg-slate-800 video-intro-drawer" aria-describedby="Introduction">
                     <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
@@ -172,6 +180,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                     <div className="h-4" />
                 </DrawerContent>
             </Drawer>
+            ) : null}
         </>
     );
 }

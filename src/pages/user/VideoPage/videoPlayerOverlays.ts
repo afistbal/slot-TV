@@ -3,4 +3,7 @@ export { VideoPlayerBottomInfo } from './views/VideoPlayerBottomInfo';
 export { VideoPlayerEpisodeSpeedIntroDrawers } from './views/VideoPlayerEpisodeSpeedIntroDrawers';
 export { VideoPlayerH5CommerceDrawers } from './views/VideoPlayerH5CommerceDrawers';
 export { VideoPlayerPcCommerceDialogs } from './views/VideoPlayerPcCommerceDialogs';
-export { VideoPlayerPcEpisodeAside } from './views/VideoPlayerPcEpisodeAside';
+export { VideoPlayerPcEpisodeDrawer } from './views/VideoPlayerPcEpisodeDrawer';
+export { VideoPlayerPcIntroDrawer } from './views/VideoPlayerPcIntroDrawer';
+export { VideoPlayerPcEpisodeNav } from './views/VideoPlayerPcEpisodeNav';
+export { VideoPlayerPcBackBar } from './views/VideoPlayerPcBackBar';

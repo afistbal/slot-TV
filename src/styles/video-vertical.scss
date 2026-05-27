@@ -1,3 +1,27 @@
+/** PC 播放页：顶栏 + 下方竖滑区（H5 不渲染此壳，保持全屏） */
+@media (min-width: 768px) {
+    .video-vertical-pc-shell,
+    .video-player-pc-shell {
+        /** 版心左右留白；左与 Logo（inner 8px）、右与 __right（24px）一致 */
+        --pc-topnav-inner-inset: max(8px, calc((100% - min(88%, 1600px)) / 2));
+        --pc-topnav-anchor-left: calc(var(--pc-topnav-inner-inset) + 8px);
+        --pc-topnav-anchor-right: calc(var(--pc-topnav-inner-inset) + 24px);
+    }
+
+    .video-vertical-pc-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+        background: #000;
+    }
+
+    .video-vertical-pc-topnav {
+        flex-shrink: 0;
+        z-index: 100;
+    }
+}
+
 /**
  * 竖屏 Video：Swiper 对 slide 使用 transform 合成层，白字叠在视频上容易边缘发糊。
  * 用子像素抗锯齿 + 独立合成层改善（对标 ReelShort 等 H5 观感）。
@@ -38,29 +62,48 @@
     -webkit-font-smoothing: subpixel-antialiased;
 }
 
-.video-player-pc-close-btn {
-    width: 64px;
-    height: 64px;
-    border-radius: 9999px;
-    position: absolute;
-    top: 30px;
-    left: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /** 高于静音蒙层(z-index:40)及竖滑容器内其它调试浮层，保证可点 */
-    z-index: 60;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.26);
-    transition: background-color 0.15s ease;
-}
+/** PC 播放页左上返回 + 集数：与顶栏左列同 x，在播放区顶部（勿 fixed，避免被顶栏 z-index 盖住） */
+@media (min-width: 768px) {
+    .video-player-pc-back-bar {
+        position: absolute;
+        top: 16px;
+        /** 默认近似 Logo 列；精确值由 VideoPlayerPcBackBar 按顶栏 Logo 测量 */
+        left: max(8px, calc((100% - min(88%, 1600px)) / 2 + 8px));
+        z-index: 60;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.95);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity 0.15s ease;
+    }
 
-.video-player-pc-close-btn:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
+    .video-player-pc-back-bar:hover {
+        opacity: 0.82;
+    }
 
-.video-player-pc-close-btn:active {
-    background: rgba(255, 255, 255, 0.1);
+    .video-player-pc-back-bar:active {
+        opacity: 0.65;
+    }
+
+    .video-player-pc-back-bar__chevron {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    .video-player-pc-back-bar__ep {
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1.25;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+    }
 }
 
 .video-pc-episode-btn--active {
@@ -624,10 +667,11 @@
     box-shadow: none !important;
 }
 
-/** 相邻集占位：避免多重 text-shadow 在合成层上糊成一团 */
-.video-vertical-slide-label {
-    -webkit-font-smoothing: subpixel-antialiased;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.88);
+/** PC 竖滑邻格：整页壳（左 9:16 黑底 + 右操作栏），与当前集 VideoPlayer 静止态一致 */
+.video-vertical-pc-neighbor-shell {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
 }
 
 /** 字幕：用方向性阴影替代大范围 glow，笔画更利落 */
@@ -732,6 +776,17 @@
 
     .video-player-root .video-player-center-play--pc-decor {
         pointer-events: none !important;
+    }
+
+    .video-player-pc-stage-cluster {
+        gap: 24px;
+    }
+
+    .video-player-pc-side-actions {
+        z-index: 25;
+        position: relative;
+        width: 40px;
+        pointer-events: auto;
     }
 
     .video-player-root .video-player-ui--chrome-hidden {
@@ -1064,5 +1119,281 @@
     .video-player-h5-fullscreen svg {
         width: 20px;
         height: 20px;
+    }
+
+    .video-player-root .video-player-h5-info {
+        padding-right: 0;
+    }
+}
+
+/** PC 右侧抽屉：transform 滑入（对标 YouTube 侧栏），与舞台左移共用时长/曲线 */
+@media (min-width: 768px) {
+    .video-player-pc-shell {
+        position: relative;
+        --pc-drawer-duration: 480ms;
+        --pc-drawer-ease: cubic-bezier(0.22, 1, 0.36, 1);
+        min-width: 0;
+    }
+
+    .video-player-pc-shell--drawer-open .video-player-pc-stage-cluster,
+    .video-player-pc-shell--drawer-open .video-pc-right-drawer__panel {
+        will-change: transform;
+    }
+
+    .video-player-pc-stage-cluster {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        max-width: 100%;
+        transition: transform var(--pc-drawer-duration) var(--pc-drawer-ease);
+    }
+
+    .video-player-pc-stage-cluster > .aspect-\[9\/16\] {
+        flex-shrink: 0;
+    }
+
+    /** 右侧：抽屉 + 上下集列（抽屉在左，按钮在右，与顶栏头像列对齐） */
+    .video-player-pc-right-rail {
+        position: absolute;
+        top: 0;
+        right: max(8px, calc((100% - min(88%, 1600px)) / 2 + 24px));
+        z-index: 50;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+        height: 100%;
+        max-height: 100%;
+        pointer-events: none;
+    }
+
+    .video-player-pc-right-rail .video-player-pc-episode-nav,
+    .video-player-pc-right-rail .video-pc-right-drawer--open {
+        pointer-events: auto;
+    }
+
+    .video-pc-right-drawer {
+        position: relative;
+        top: auto;
+        right: auto;
+        flex: 0 0 0;
+        width: 0;
+        min-width: 0;
+        max-width: none;
+        height: 100%;
+        overflow: hidden;
+        pointer-events: none;
+        transition:
+            flex-basis var(--pc-drawer-duration) var(--pc-drawer-ease),
+            width var(--pc-drawer-duration) var(--pc-drawer-ease);
+    }
+
+    .video-pc-right-drawer--open {
+        flex: 0 0 min(420px, 38vw);
+        width: min(420px, 38vw);
+        max-width: 420px;
+        pointer-events: auto;
+    }
+
+    .video-pc-right-drawer__panel {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #222;
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+        transform: translate3d(100%, 0, 0);
+        transition: transform var(--pc-drawer-duration) var(--pc-drawer-ease);
+        backface-visibility: hidden;
+    }
+
+    .video-pc-right-drawer--open.video-pc-right-drawer--entered .video-pc-right-drawer__panel {
+        transform: translate3d(0, 0, 0);
+    }
+
+    .video-pc-right-drawer__close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: 9999px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.82);
+        cursor: pointer;
+        transition:
+            color 0.15s ease,
+            background-color 0.15s ease;
+    }
+
+    .video-pc-right-drawer__close:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .video-player-pc-right-rail .video-player-pc-episode-nav {
+        position: relative;
+        top: auto;
+        right: auto;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transform: none;
+        pointer-events: auto;
+    }
+
+    .video-player-pc-episode-nav__btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity 0.15s ease;
+    }
+
+    .video-player-pc-episode-nav__btn:not(:disabled):hover {
+        opacity: 0.88;
+    }
+
+    .video-player-pc-episode-nav__btn:disabled {
+        cursor: default;
+        pointer-events: none;
+    }
+
+    .video-player-pc-episode-nav__icon {
+        display: block;
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    .video-pc-episode-drawer__scroll,
+    .video-pc-intro-drawer__scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 24px 30px 30px;
+    }
+
+    .video-pc-right-drawer__close--inline {
+        position: static;
+        top: auto;
+        right: auto;
+        flex-shrink: 0;
+        margin: 0;
+    }
+
+    .video-pc-episode-drawer__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 23px;
+    }
+
+    .video-pc-episode-drawer__tabs {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .video-pc-intro-drawer__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .video-pc-intro-drawer__poster {
+        width: 96px;
+        flex-shrink: 0;
+        overflow: hidden;
+        border-radius: 6px;
+    }
+
+    .video-pc-intro-drawer__title-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+        margin-bottom: 16px;
+    }
+
+    .video-pc-intro-drawer__title {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .video-pc-intro-drawer__desc {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .video-pc-intro-drawer__ep,
+    .video-pc-intro-drawer__desc-sep {
+        flex-shrink: 0;
+    }
+
+    .video-pc-intro-drawer__text {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.55);
+        font-size: 14px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .video-pc-intro-drawer__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .video-pc-intro-drawer__tag {
+        display: inline-flex;
+        max-width: 152px;
+        max-height: 27px;
+        align-items: center;
+        padding: 0 8px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 12px;
+        line-height: 27px;
+        text-decoration: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .video-pc-intro-drawer__tag:hover {
+        background: rgba(255, 255, 255, 0.15);
     }
 }
