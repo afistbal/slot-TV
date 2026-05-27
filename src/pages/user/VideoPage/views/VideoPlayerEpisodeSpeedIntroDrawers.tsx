@@ -8,6 +8,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/compone
 import { formatVideoIntroTagLabel, videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
 import { cn } from '@/lib/utils';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
+import { resolveVideoPosterUrl } from '../videoPlayerShareUrl';
 import { SPEED } from '../videoPlayerConstants';
 
 type Props = {
@@ -141,7 +142,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                             <div className="w-28 shrink-0">
                                 <Image
                                     height={1.3325}
-                                    src={`${staticBase}/${data.info.image}`}
+                                    src={resolveVideoPosterUrl(staticBase, data.info, data.info.id)}
                                     alt={data.info.title}
                                 />
                             </div>

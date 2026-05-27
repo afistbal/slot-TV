@@ -21,6 +21,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 /** 搜索分页合并时接口可能返回重复 id，去重避免 React key 冲突与重复卡片 */
 function dedupeSearchRowsById(rows: TData[]): TData[] {
@@ -213,20 +214,11 @@ function formatTagLabel(uniqueId: string): string {
         .join('');
 }
 
-function resolveImageSrc(staticBase: string, image: string) {
-    if (!image) {
-        return '';
-    }
-    if (image.startsWith('http://') || image.startsWith('https://')) {
-        return image;
-    }
-    return `${staticBase}/${image}`;
-}
-
 type SearchRowItem = {
     id: number;
     title: string;
     image: string;
+    is_rename?: number | string;
     views?: string;
     favorite?: string;
     desc?: string;
@@ -277,6 +269,7 @@ function toSearchRowItem(v: TData): SearchRowItem | null {
         id,
         title,
         image,
+        is_rename: v['is_rename'] as number | string | undefined,
         views: views ? String(views) : undefined,
         favorite: favorite ? String(favorite) : undefined,
         desc: desc || undefined,
@@ -293,7 +286,7 @@ const SCROLL_TOP_FAB_FADE_OUT_MS = 220;
 function SearchPcBookItem({ item }: { item: SearchRowItem }) {
     const intl = useIntl();
     const configStore = useConfigStore();
-    const imgSrc = resolveImageSrc(String(configStore.config['static'] ?? ''), item.image);
+    const imgSrc = movieCoverUrl(item, String(configStore.config['static'] ?? '')) ?? '';
 
     return (
         <div className="rs-bi-bookItem rs-dc-bookItem" data-id={item.id}>
@@ -1092,7 +1085,7 @@ export default function Component() {
                                                     height={1.3325}
                                                     width="100%"
                                                     alt={v['title'] as string}
-                                                    src={`${configStore.config['static']}/${v['image']}`}
+                                                    src={movieCoverUrl(v, configStore.config['static'] as string) ?? ''}
                                                     className="rs-search-page__poster"
                                                 />
                                                 <div className="rs-search-page__title">{`${v['title']}`}</div>

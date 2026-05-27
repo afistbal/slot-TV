@@ -4,6 +4,7 @@ import { useConfigStore } from '@/stores/config';
 import { Copy, Download, Eye, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { movieCoverImagePath, movieCoverUrl } from '@/lib/movieCoverUrl';
 
 const COS_FALLBACK_BASE = 'https://cos.yogoshort.com';
 const LIST_DEFAULT_PER_PAGE = 200;
@@ -580,14 +581,14 @@ export default function Component() {
             const movieId = movieIdFromRow(row);
             if (movieId == null) return [];
             const id = String(movieId);
-            const coverPath = pickText(row, ['image', 'poster', 'cover', 'thumb', 'cover_image'], '');
+            const coverPath = movieCoverImagePath(row, { fallbackId: movieId });
             return [
                 {
                     key: id,
                     id,
                     movieId,
                     title: rowTitle(row),
-                    coverUrl: coverPath ? joinUrl(staticBase, coverPath) : '',
+                    coverUrl: movieCoverUrl(row, staticBase, { fallbackId: movieId }) ?? '',
                     coverImageFile: coverPath ? imageBasename(coverPath) : '',
                 },
             ];

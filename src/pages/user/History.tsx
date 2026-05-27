@@ -17,6 +17,7 @@ import { useConfigStore } from "@/stores/config";
 import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 type HistoryProps = {
     variant?: 'row' | 'cabinet';
@@ -200,7 +201,11 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                                         </Skeleton>
                                         <LazyLoadImage
                                             alt=""
-                                            src={`${configStore.config['static']}/${v['image'] as number}`}
+                                            src={
+                                                movieCoverUrl(v, configStore.config['static'] as string, {
+                                                    fallbackId: Number(v['movie_id']),
+                                                }) ?? ''
+                                            }
                                             onLoad={(e) => {
                                                 e.currentTarget.style.opacity = '1';
                                             }}
@@ -308,7 +313,11 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                         </Skeleton>
                         <LazyLoadImage
                             alt=""
-                            src={`${configStore.config['static']}/${v['image'] as number}`}
+                            src={
+                                movieCoverUrl(v, configStore.config['static'] as string, {
+                                    fallbackId: Number(v['movie_id']),
+                                }) ?? ''
+                            }
                             onLoad={(e) => {
                                 e.currentTarget.style.opacity = '1';
                             }}

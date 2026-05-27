@@ -148,8 +148,8 @@ export function VideoPlayer({
     const videoPosterAttr = unlockVisualOnly ? undefined : frameTrim.length > 0 ? frameTrim : undefined;
     /** 仅分享弹窗预览卡：用剧封 `info.image`（与播放器 poster 截帧分离） */
     const shareCardPosterUrl = useMemo(
-        () => resolveVideoPosterUrl(staticBase, data.info.image),
-        [staticBase, data.info.image],
+        () => resolveVideoPosterUrl(staticBase, data.info, data.info.id),
+        [staticBase, data.info],
     );
     const [desktopEpisodeTab, setDesktopEpisodeTab] = useState(0);
     const [pcFullscreen, setPcFullscreen] = useState(false);

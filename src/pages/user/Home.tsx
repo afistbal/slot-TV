@@ -21,6 +21,7 @@ import { ScrollTopArrowUp } from '@/components/icons/ScrollTopArrowUp';
 import { scrollElementToTop } from '@/lib/scrollToTop';
 import { useRootStore } from '@/stores/root';
 import { applyHomeHeroPreloadLinks } from '@/lib/homeHeroPreloads';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 const HERO_FADE_MS = 600;
 /** 首页内层滚动超过此值后显示「回顶」浮动按钮（与 antd BackTop 默认 visibilityHeight=400 对齐） */
@@ -28,17 +29,6 @@ const SCROLL_TOP_FAB_THRESHOLD_PX = 400;
 /** 低于阈值后淡出再卸载，须与按钮 `transition-opacity duration-200` 一致并略留余量 */
 const SCROLL_TOP_FAB_FADE_OUT_MS = 220;
 const HERO_AUTOPLAY_MS = 5000;
-
-function heroImageUrl(staticBase: string, imagePath: string | null | undefined) {
-    if (imagePath == null || imagePath === '') {
-        return '';
-    }
-    const p = String(imagePath);
-    if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) {
-        return p;
-    }
-    return `${staticBase}/${p}`;
-}
 
 function itemsFromHomeRail(
     items: {
@@ -59,12 +49,14 @@ function itemsFromHomeRail(
         progressPercent?: number;
         showPlayMask?: boolean;
         showExpo?: boolean;
+        is_rename?: number | string;
     }[],
 ): HomeBookItemData[] {
     return items.map((v) => ({
         id: v.id,
         title: v.title,
         image: String(v.image ?? ''),
+        is_rename: v.is_rename,
         episodeSlug: normalizeEpisodeSlug(
             v.episodeSlug ??
                 v.episode_slug ??
@@ -95,6 +87,7 @@ function itemsFromMovieList(list: { [key: string]: unknown }[]): HomeBookItemDat
                 id,
                 title,
                 image,
+                is_rename: v['is_rename'] as number | string | undefined,
                 views: views ? String(views) : undefined,
             } satisfies HomeBookItemData;
         })
@@ -522,10 +515,8 @@ export default function Component() {
                         <div className="absolute inset-0 z-0 bg-black" aria-hidden />
                         {topList.map((v, i) => {
                             const active = i === homeStore.current;
-                            const coverSrc = heroImageUrl(
-                                configStore.config['static'] as string,
-                                v.image as string | null | undefined,
-                            );
+                            const coverSrc =
+                                movieCoverUrl(v, configStore.config['static'] as string) ?? '';
                             return (
                                 <div
                                     key={v.id}

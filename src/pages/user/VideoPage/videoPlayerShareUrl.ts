@@ -1,4 +1,5 @@
 import { shareOrigin } from '@/env';
+import { movieCoverUrlFromInfo } from '@/lib/movieCoverUrl';
 
 /** 当前播放页可被分享的 canonical URL（与原先 VideoPlayer#getCurrentShareUrl 一致） */
 export function resolveVideoSharePageUrl(): string {
@@ -16,14 +17,13 @@ export function resolveVideoSharePageUrl(): string {
     return window.location.href;
 }
 
-export function resolveVideoPosterUrl(staticBase: string, imagePath: string | undefined): string {
-    if (!imagePath) {
-        return '';
-    }
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
-    }
-    return `${staticBase}/${imagePath}`;
+/** `movie/info` 剧封：`d.info` + `is_rename` */
+export function resolveVideoPosterUrl(
+    staticBase: string,
+    info: { id?: number; image?: string; is_rename?: unknown } | undefined,
+    fallbackMovieId?: number,
+): string {
+    return movieCoverUrlFromInfo(staticBase, info as Record<string, unknown>, fallbackMovieId) ?? '';
 }
 
 export function buildVideoShareEmbedCode(pageUrl: string, showControls: boolean): string {

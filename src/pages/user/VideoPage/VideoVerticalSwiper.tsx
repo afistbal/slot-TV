@@ -277,7 +277,7 @@ export default function VideoVerticalSwiper() {
 
     /** PC 邻格占位：与 H5 邻格「有画面」一致，用剧封面打底（不挂整页 VideoPlayer，避免桌面侧栏重复） */
     const dramaPosterUrl = useMemo(
-        () => (data ? resolveVideoPosterUrl(staticBase, data.info.image).trim() : ''),
+        () => (data ? resolveVideoPosterUrl(staticBase, data.info, data.info.id).trim() : ''),
         [data, staticBase],
     );
 
