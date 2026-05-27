@@ -43,6 +43,7 @@ function itemsFromHomeRail(items: IData['recommend']): HomeBookItemData[] {
     id: v.id,
     title: v.title,
     image: String(v.image ?? ''),
+    is_rename: v.is_rename,
     episodeSlug: normalizeEpisodeSlug(
       // @ts-expect-error - keep compatibility with snake_case payloads
       v.episodeSlug ?? v.episode_slug ?? v.episodeHref ?? v.episode_href ?? v.episodeUrl ?? v.episode_url,

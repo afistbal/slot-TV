@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { VideoCoverPlaceholder } from '@/components/VideoCoverPlaceholder';
 import { cn } from '@/lib/utils';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 export interface HomeBookItemData {
     id: number;
     title: string;
     image: string;
+    is_rename?: number | string;
     /**
      * 新 episodes 详情页 slug（优先级最高）。
      * 形如：`episode-2-田園情緣-694507047c33a39ff605a96d-r7jxhoxjsb`
@@ -42,11 +44,7 @@ export function HomeBookItem({
     /** 首页进入播放页时传入，用于 PC 直链/刷新 vs 站内点击 的自动播放策略 */
     linkState?: Record<string, unknown>;
 }) {
-    const raw = item.image ?? '';
-    const src =
-        raw.startsWith('http://') || raw.startsWith('https://')
-            ? raw
-            : `${staticBase}/${raw}`;
+    const src = movieCoverUrl(item, staticBase) ?? '';
     const [coverLoaded, setCoverLoaded] = useState(false);
 
     useEffect(() => {

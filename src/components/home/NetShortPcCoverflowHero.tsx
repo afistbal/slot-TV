@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import { useHomeStore, type IItem, filterRenderableTopBannerItems } from '@/stores/home';
 import { cn } from '@/lib/utils';
 import { coverflowTrackMaxWidthPx, RESPONSIVE_SAFE_GUTTER_PX } from '@/lib/pcHeroArrowInsets';
@@ -28,17 +29,6 @@ const COVER_CARD_H = Math.round(410 * NS_HERO_BANNER_SCALE);
 const ARROW_CIRCLE_PX = Math.round(68 * NS_HERO_BANNER_SCALE);
 const HERO_CIRCLE_OFFSET_PX = Math.round(60 * NS_HERO_BANNER_SCALE);
 const HERO_CIRCLE_PX: [number, number] = [Math.round(1390 * NS_HERO_BANNER_SCALE), Math.round(116 * NS_HERO_BANNER_SCALE)];
-
-const heroImageUrl = (staticBase: string, imagePath: string | null | undefined) => {
-    if (imagePath == null || imagePath === '') {
-        return '';
-    }
-    const p = String(imagePath);
-    if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) {
-        return p;
-    }
-    return `${staticBase}/${p}`;
-};
 
 function normalizeEpisodeSlug(raw?: string) {
     if (!raw) return undefined;
@@ -227,7 +217,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
 
     // 预加载封面
     useEffect(() => {
-        const urls = topList.map((it) => heroImageUrl(staticBase, it.image));
+        const urls = topList.map((it) => movieCoverUrl(it, staticBase) ?? '');
         const keep: HTMLImageElement[] = [];
         for (const u of urls) {
             if (!u) continue;
@@ -296,7 +286,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                             const isSide = Math.abs(rel) === 1;
                             const coverOp = coverOpacityForRel(rel);
                             const href = toEpisodeOrVideoHref(item);
-                            const src = heroImageUrl(staticBase, item.image);
+                            const src = movieCoverUrl(item, staticBase) ?? '';
                             const imgTrans = noTransition
                                 ? 'none'
                                 : `opacity ${IMG_OPACITY_MS}ms ease`;

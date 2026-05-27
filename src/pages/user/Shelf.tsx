@@ -7,6 +7,7 @@ import { useRootStore } from '@/stores/root';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 function parseShelfSlug(rawSlug: string) {
     const decoded = decodeURIComponent(rawSlug);
@@ -17,16 +18,11 @@ function parseShelfSlug(rawSlug: string) {
     return { decoded, shelfId, shelfName: shelfName || decoded };
 }
 
-function resolveImageSrc(staticBase: string, image: string | null | undefined) {
-    if (!image) return '';
-    if (image.startsWith('http://') || image.startsWith('https://')) return image;
-    return `${staticBase}/${image}`;
-}
-
 type ShelfItemData = {
     id: number;
     title: string;
     image: string;
+    is_rename?: number | string;
     views?: string;
     favorite?: string;
     desc?: string;
@@ -46,6 +42,7 @@ function toShelfItemData(v: TData): ShelfItemData | null {
         id,
         title,
         image,
+        is_rename: v['is_rename'] as number | string | undefined,
         views: views ? String(views) : undefined,
         favorite: favorite ? String(favorite) : undefined,
         desc: desc || undefined,
@@ -229,10 +226,8 @@ export default function Component() {
 
                             <div className="rs-shelf__grid">
                                 {items.map((item) => {
-                                    const imgSrc = resolveImageSrc(
-                                        configStore.config['static'] as string,
-                                        item.image,
-                                    );
+                                    const imgSrc =
+                                        movieCoverUrl(item, configStore.config['static'] as string) ?? '';
                                     return (
                                         <div key={item.id} className="rs-shelf__card">
                                             <div className="rs-shelf__cover">

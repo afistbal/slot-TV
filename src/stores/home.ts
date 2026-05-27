@@ -6,6 +6,8 @@ export interface IItem {
     id: number,
     title: string,
     image: string,
+    /** 剧表：无水印标记，`1` 时封面为 `movie_images/{id}.webp` */
+    is_rename?: number | string,
     /** 新版 episodes 详情页 slug（优先用于跳转） */
     episodeSlug?: string,
     /** 播放量展示，对标镜像 `BookItem_playCount__klKNX` */

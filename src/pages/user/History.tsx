@@ -16,6 +16,7 @@ import { useConfigStore } from "@/stores/config";
 import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 type HistoryProps = {
     variant?: 'row' | 'cabinet';
@@ -193,7 +194,11 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                                 <div className="rs-bi-poster">
                                     <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
                                         <VideoPosterLazyCover
-                                            src={`${configStore.config['static']}/${v['image'] as number}`}
+                                            src={
+                                                movieCoverUrl(v, configStore.config['static'] as string, {
+                                                    fallbackId: Number(v['movie_id']),
+                                                }) ?? ''
+                                            }
                                         />
                                     </Link>
                                     <div className="rs-bi-playMask">
@@ -291,7 +296,11 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                 <div key={v['id'] as number} className="rs-my-list__row" data-id={v['id']} {...gesture()}>
                     <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-my-list__cover block">
                         <VideoPosterLazyCover
-                            src={`${configStore.config['static']}/${v['image'] as number}`}
+                            src={
+                                movieCoverUrl(v, configStore.config['static'] as string, {
+                                    fallbackId: Number(v['movie_id']),
+                                }) ?? ''
+                            }
                             skeletonClassName="rs-my-list__coverSkeleton"
                             placeholderInnerClassName="rs-my-list__coverSkeletonInner"
                         />
