@@ -30,7 +30,7 @@ export function normalizeMovieCoverSource(
         return null;
     }
     const r = record as Record<string, unknown>;
-    const idRaw = r.id ?? r.movie_id ?? fallbackId;
+    const idRaw = r.movie_id ?? r.id ?? fallbackId;
     const id = Number(idRaw);
     const resolvedId = Number.isFinite(id) && id > 0 ? id : fallbackId;
     if (resolvedId == null || !Number.isFinite(resolvedId) || resolvedId <= 0) {
