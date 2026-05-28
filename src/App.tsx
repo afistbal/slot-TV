@@ -55,7 +55,7 @@ import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
 import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
-import DemoDouyinHome from './pages/demo/index';
+import ForYouPage from './pages/user/ForYouPage';
 import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
 
 import LayoutAdmin from './layouts/admin';
@@ -233,8 +233,12 @@ const router = createBrowserRouter([
                 element: <UserTest />,
             },
             {
+                path: 'foryou',
+                element: <ForYouPage />,
+            },
+            {
                 path: 'for-you',
-                element: <DemoDouyinHome />,
+                element: <Navigate to="/foryou" replace />,
             },
         ],
     },
@@ -730,7 +734,9 @@ function App() {
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     /** 全屏竖滑播放：勿挡底部控制条（与 `layouts/user` 中隐藏 iOS 胶囊条一致） */
     const isImmersivePlayerPath =
-        matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null;
+        matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null ||
+        matchPath({ path: '/foryou', end: true }, pathname) != null ||
+        matchPath({ path: '/for-you', end: true }, pathname) != null;
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =
         install > 0 && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;

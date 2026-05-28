@@ -4,6 +4,7 @@ import { FormattedMessage } from 'react-intl';
 import { NavLink, useLocation, useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
 import { bottomTabAddDesktopIcon, bottomTabIcons } from '@/constants/bottomTabAssets';
+import { FORYOU_PATH, isForYouPathname } from '@/constants/foryouRoute';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useRootStore } from '@/stores/root';
@@ -73,9 +74,8 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
     const showIosAddHome = shouldShowIosAddHomeFab();
     const sourceform = `${location.pathname}${location.search}`;
 
-    const showTabs = showBottomTabBar && !isDesktop && !hidden;
-    const isForYouPage =
-        location.pathname === '/for-you' || location.pathname.startsWith('/for-you/');
+    const isForYouPage = isForYouPathname(location.pathname);
+    const showTabs = showBottomTabBar && !isDesktop && !hidden && !isForYouPage;
     const addVariant: 'ios' | 'android' | null = showIosAddHome ? 'ios' : showInstallPrompt ? 'android' : null;
     const showAddDesktop = addVariant !== null && !isForYouPage;
 
@@ -125,7 +125,7 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                         )}
                     </NavLink>
                     <NavLink
-                        to="/for-you"
+                        to={FORYOU_PATH}
                         className={({ isActive }) =>
                             cn('reelshort-bottom-nav__tab', isActive && 'reelshort-bottom-nav__tab--active')
                         }

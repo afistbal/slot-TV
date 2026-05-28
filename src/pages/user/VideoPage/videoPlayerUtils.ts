@@ -21,6 +21,15 @@ export function getTagDisplayText(tag: { name: string; unique_id: string }) {
     return name || uid || '-';
 }
 
+/** 侧栏收藏数展示：`0` 显示为 `1K`，避免 `0K` */
+export function formatFavoriteCountK(favorite: number | undefined): string {
+    const n = Number(favorite ?? 0);
+    if (!Number.isFinite(n) || n <= 0) {
+        return '1K';
+    }
+    return `${n}K`;
+}
+
 export function canNavigateBack() {
     if (typeof window === 'undefined') {
         return false;

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import { VideoPlayerPcBackBar } from './VideoPlayerPcBackBar';
 import type { IPlayerData } from '@/types/videoPlayer';
+import { formatFavoriteCountK } from '../videoPlayerUtils';
 import { canNavigateBack } from '../videoPlayerUtils';
 
 export type VideoPlayerPcNeighborSlideShellProps = {
@@ -44,7 +45,7 @@ export function VideoPlayerPcNeighborSlideShell({ data, viewerIsVip }: VideoPlay
                         <div className="flex flex-col items-center gap-1">
                             <Star className="h-8 w-8 fill-white text-white" />
                             <div className="h-4 text-center text-xs leading-4 text-white">
-                                {data.info.favorite}K
+                                {formatFavoriteCountK(data.info.favorite)}
                             </div>
                         </div>
                         <div className="flex flex-col items-center gap-1">

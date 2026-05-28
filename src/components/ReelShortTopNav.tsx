@@ -22,6 +22,7 @@ import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { FORYOU_PATH } from '@/constants/foryouRoute';
 import { useConfigStore } from '@/stores/config';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
@@ -1005,7 +1006,7 @@ export function ReelShortTopNav({
                   <FormattedMessage id="nav_categories" />
                 </NavLink>
                 <NavLink
-                  to="/for-you"
+                  to={FORYOU_PATH}
                   className={({ isActive }) =>
                     cn(
                       'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',

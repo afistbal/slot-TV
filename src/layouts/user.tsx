@@ -9,6 +9,7 @@ import UserHome from "@/pages/user/Home";
 import UserSearch from "@/pages/user/Search";
 import usePixel from "@/hooks/usePixel";
 import { matchSearchFamilyPath } from "@/lib/searchRoutes";
+import { isForYouPathname } from "@/constants/foryouRoute";
 
 /** �?App �?`/`、`/search`、`/:locale/search` 占位路由一致；仅这两页�?DOM �?keep-alive，避免反复卸载导致图�?LazyLoad 重跑 */
 function usePrimaryTabKeepAlive() {
@@ -59,6 +60,7 @@ export default function Component() {
     const hideBottomNav = useMemo(() => {
         const { pathname } = location;
         if (isShoppingRoute) return true;
+        if (isForYouPathname(pathname)) return true;
         return matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null;
     }, [location.pathname, isShoppingRoute]);
 

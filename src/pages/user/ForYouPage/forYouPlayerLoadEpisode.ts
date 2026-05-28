@@ -1,12 +1,11 @@
 import { WebVTT } from 'videojs-vtt.js';
 import type { RefObject } from 'react';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
-import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from './episodeDetailCache';
-import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
-import { SPEED } from './videoPlayerConstants';
-import { hasVideoSessionUserUnmuted } from './videoSessionMute';
-import { isPerformanceNavigationReload } from './videoPlayerUtils';
-import { applyVideoResumeTime } from './applyVideoResumeTime';
+import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from '@/pages/user/VideoPage/episodeDetailCache';
+import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
+import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
+import { hasVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
+import { isPerformanceNavigationReload } from '@/pages/user/VideoPage/videoPlayerUtils';
 
 export type LoadEpisodeRuntime = {
     videoRef: RefObject<HTMLVideoElement | null>;
@@ -16,7 +15,7 @@ export type LoadEpisodeRuntime = {
     speed: number;
     fromHomeVideoPlayback: boolean;
     legacyEpisodeAutoplayRef: RefObject<boolean>;
-    /** 竖滑邻居格：挂片与 UI，不自动播放 */
+    /** ????????????????????UI??????????????? */
     suppressPlayback?: boolean;
     setLoading: (v: boolean) => void;
     setEpisode: (d: IPlayerEpisode) => void;
@@ -28,18 +27,20 @@ export type LoadEpisodeRuntime = {
     showController: (autoClose?: boolean) => void;
     hideController: () => void;
     controllerTimerRef: RefObject<number>;
-    /** 传给 `fetchEpisodeDetailOrNull`：用于 `movie/episode` 的 `auto_unlock` */
+    /** ??? `fetchEpisodeDetailOrNull`???????`movie/episode` ???`auto_unlock` */
     episodeFetchOpts?: EpisodeFetchOpts;
-    /** For You → video：续播进度（秒） */
+    isForYouFeed?: boolean;
+    onVideoMutedUiSync?: (muted: boolean) => void;
+    /** For You ??????????????? */
     resumeTimeSec?: number;
 };
 
-export async function runLoadEpisodeForPlayer(
+export async function runLoadEpisodeForForYouPlayer(
     rt: LoadEpisodeRuntime,
     id: number,
     loading: boolean,
 ): Promise<void> {
-    /** 换集 / 重拉详情前清掉上一集的自动隐藏定时器，避免对已切到「付费锁页」仍用旧 closure 执行 hide */
+    /** ???? / ?????????????????????????????????????????????????????????????????????????????????? closure ????? hide */
     window.clearTimeout(rt.controllerTimerRef.current);
 
     const applyEpisode = async (d: IPlayerEpisode) => {
@@ -48,7 +49,7 @@ export async function runLoadEpisodeForPlayer(
         rt.setEpisode(d);
         rt.setShowTapToUnmute(false);
 
-        /** 锁定集（如 VIP 非会员）：只展示锁页，不拉字幕、不挂片源、不 play（滑到该集时再走本分支一次即可） */
+        /** ????????????VIP ???????????????????????????????????????????? play?????????????????????????????????? */
         if (d.lock === true) {
             rt.setPlaybackSources([]);
             rt.subtitlesRef.current = [];
@@ -70,7 +71,7 @@ export async function runLoadEpisodeForPlayer(
             rt.setPlaying(false);
             rt.setCanPlay(false);
             rt.setShowTapToUnmute(false);
-            /** 锁页必须常驻：`showController(true)` 会起 10s 定时器，此时 React 尚未提交 lock，`hideController` 仍读到旧 `episode.lock` 会把整块 UI 透明掉 */
+            /** ???????????`showController(true)` ??? 10s ?????????????? React ??????? lock??`hideController` ???????? `episode.lock` ?????????? UI ?????????*/
             rt.showController(false);
             return;
         }
@@ -131,8 +132,33 @@ export async function runLoadEpisodeForPlayer(
         } catch {
             // ignore
         }
-        if (rt.resumeTimeSec != null && rt.resumeTimeSec > 0) {
-            applyVideoResumeTime(el, rt.resumeTimeSec);
+
+        const resumeSec =
+            rt.isForYouFeed && rt.resumeTimeSec != null && rt.resumeTimeSec > 0
+                ? rt.resumeTimeSec
+                : 0;
+        if (resumeSec > 0) {
+            const applyResume = () => {
+                const v = rt.videoRef.current;
+                if (!v) {
+                    return;
+                }
+                const d = v.duration;
+                const t =
+                    Number.isFinite(d) && d > 0
+                        ? Math.min(resumeSec, Math.max(0, d - 0.25))
+                        : resumeSec;
+                try {
+                    v.currentTime = t;
+                } catch {
+                    // ignore seek before ready
+                }
+            };
+            if (el.readyState >= 1) {
+                applyResume();
+            } else {
+                el.addEventListener('loadedmetadata', applyResume, { once: true });
+            }
         } else {
             el.currentTime = 0;
         }
@@ -151,22 +177,25 @@ export async function runLoadEpisodeForPlayer(
         const isPcViewport =
             typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
         const isReload = isPerformanceNavigationReload();
-        /** 带推广/归因等 query（如 `?A100C100`）且未显式禁止自动播：与「无 query 的站内进播放页」一样先试有声，失败再静音并允许展示「取消静音」 */
+        /** ?????????????query???? `?A100C100`???????????????????????????????? query ???????????????????????????????????????????????????????????????????*/
         const marketingSoundQuery =
             typeof location !== 'undefined' &&
             location.search.length > 1 &&
             location.search.indexOf('auto_play=0') === -1;
         const sessionUnmuted = hasVideoSessionUserUnmuted();
-        /** PC：整页刷新、带归因 query、或站内冷链（可结合 session 少打蒙层） */
+        /** PC????????????????????? query???????????????????????? session ????????????*/
         const showTapToUnmutePc =
             isPcViewport &&
             (isReload ||
                 marketingSoundQuery ||
                 (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
-        /** PC 全屏点按开声蒙层（H5 改由 `VideoPlayer` 按 `video.muted` + 底栏音量是否点过控制） */
+        /** PC ????????????????????H5 ?????? `VideoPlayer` ???`video.muted` + ??????????????????????????*/
         const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
-        const allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport || marketingSoundQuery;
-        const isColdVideoAutoplay = !allowSoundAutoplay;
+        const isH5 = !isPcViewport;
+        const allowSoundAutoplay = rt.fromHomeVideoPlayback || isH5 || marketingSoundQuery;
+        const preferSoundAutoplay =
+            allowSoundAutoplay || (Boolean(rt.isForYouFeed) && isH5 && sessionUnmuted);
+        const isColdVideoAutoplay = !preferSoundAutoplay;
 
         const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
         rt.legacyEpisodeAutoplayRef.current = false;
@@ -179,16 +208,18 @@ export async function runLoadEpisodeForPlayer(
                         rt.setPlaying(true);
                     })
                     .catch(() => {
-                        console.log('自动播放失败');
+                        console.log('??????????????');
                         rt.showController(false);
                         rt.setWaiting(false);
                         rt.setCanPlay(true);
                     });
             } else {
-                if (allowSoundAutoplay) {
+                if (preferSoundAutoplay) {
                     el.muted = false;
+                    rt.onVideoMutedUiSync?.(false);
                 } else {
                     el.muted = true;
+                    rt.onVideoMutedUiSync?.(true);
                     rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
                 }
                 const runPlay = () => {
@@ -197,23 +228,31 @@ export async function runLoadEpisodeForPlayer(
                         return;
                     }
                     const onPlayFail = () => {
-                        console.log('自动播放失败');
+                        console.log('autoplay failed');
                         rt.showController(false);
                         rt.setWaiting(false);
                         rt.setCanPlay(true);
                         rt.setShowTapToUnmute(false);
+                    };
+                    const fallbackMutedAutoplay = () => {
+                        if (rt.isForYouFeed && isH5 && sessionUnmuted) {
+                            onPlayFail();
+                            return;
+                        }
+                        v.muted = true;
+                        rt.onVideoMutedUiSync?.(true);
+                        rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
+                        v.play()
+                            .then(() => rt.setPlaying(true))
+                            .catch(onPlayFail);
                     };
                     v.play()
                         .then(() => {
                             rt.setPlaying(true);
                         })
                         .catch(() => {
-                            if (allowSoundAutoplay && !v.muted) {
-                                v.muted = true;
-                                rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
-                                v.play()
-                                    .then(() => rt.setPlaying(true))
-                                    .catch(onPlayFail);
+                            if (preferSoundAutoplay && !v.muted) {
+                                fallbackMutedAutoplay();
                                 return;
                             }
                             onPlayFail();

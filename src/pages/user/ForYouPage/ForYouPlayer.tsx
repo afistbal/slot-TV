@@ -14,12 +14,14 @@ import fullscreenIcon from '@/assets/video/icon_full@2x.png';
 import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
 import paidEpisodeLockIcon from '@/assets/images/7f47ede0-ef83-11f0-84ad-6b5693b490dc.png';
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
-import iconPlay1 from '@/assets/video/icon_play1@2x.webp';
 import iconStop from '@/assets/video/icon_stop@2x.webp';
 import { cn } from '@/lib/utils';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import type { IForYouFeedItem } from '@/types/foryouFeed';
+import { buildEpisodeFromFeedItem } from './foryouFeedUtils';
+import iconPlay1 from '@/assets/video/icon_play1@2x.webp';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
@@ -29,41 +31,44 @@ import { useRootStore } from '@/stores/root';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 // import UnlockEpisode from '@/widgets/UnlockEpisode';
 // import { useLoadingStore } from "@/stores/loading";
-import { SPEED } from './videoPlayerConstants';
-import { canNavigateBack, formatFavoriteCountK } from './videoPlayerUtils';
-import { getFullscreenElement } from './videoPlayerFullscreen';
-import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
-import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
-import { getEpisodePeekFrame, setEpisodePeekFrame } from './episodeFrameQueueStore';
-import { consumeForyouResumeTimeSec } from '@/constants/foryouRoute';
-import { runLoadEpisodeForPlayer } from './videoPlayerLoadEpisode';
-import { markVideoSessionUserUnmuted } from './videoSessionMute';
-import { formatVideoClock } from './videoPlayerTimeFormat';
-import { putEpisodeDetailCache } from './episodeDetailCache';
-import { readVideoOrientation, type VideoOrientation } from './videoOrientation';
+import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
+import { canNavigateBack, formatFavoriteCountK } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { getFullscreenElement } from '@/pages/user/VideoPage/videoPlayerFullscreen';
+import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
+import { captureVideoFrameDataUrlWithSeekRetry } from '@/pages/user/VideoPage/videoFramePoster';
+import { getEpisodePeekFrame, setEpisodePeekFrame } from '@/pages/user/VideoPage/episodeFrameQueueStore';
+import { runLoadEpisodeForForYouPlayer } from './forYouPlayerLoadEpisode';
 import {
-    VideoPlayerBottomInfo,
-    VideoPlayerEpisodeSpeedIntroDrawers,
-    VideoPlayerH5CommerceDrawers,
-    VideoPlayerPcCommerceDialogs,
-    VideoPlayerPcEpisodeDrawer,
-    VideoPlayerPcIntroDrawer,
-    VideoPlayerPcEpisodeNav,
-    VideoPlayerPcBackBar,
-    useVideoPlayerShare,
-} from './videoPlayerOverlays';
+    hasVideoSessionUserUnmuted,
+    markVideoSessionUserUnmuted,
+} from '@/pages/user/VideoPage/videoSessionMute';
+import { formatVideoClock } from '@/pages/user/VideoPage/videoPlayerTimeFormat';
+import { putEpisodeDetailCache } from '@/pages/user/VideoPage/episodeDetailCache';
+import { readVideoOrientation, type VideoOrientation } from '@/pages/user/VideoPage/videoOrientation';
+import {
+    ForYouPlayerBottomInfo,
+    ForYouWatchFullSeriesButton,
+    ForYouPlayerEpisodeSpeedIntroDrawers,
+    ForYouPlayerH5CommerceDrawers,
+    ForYouPlayerPcCommerceDialogs,
+    ForYouPlayerPcEpisodeDrawer,
+    ForYouPlayerPcIntroDrawer,
+    ForYouPlayerPcEpisodeNav,
+    ForYouPlayerPcBackBar,
+    useForYouPlayerShare,
+} from './forYouPlayerOverlays';
 import {
     buildPcEpisodeTabRanges,
     pcEpisodeTabIndexForEpisodeNo,
-} from './videoPlayerPcEpisodeTabs';
-import { measurePcStageShiftPx } from './videoPlayerPcDrawerStageShift';
+} from '@/pages/user/VideoPage/videoPlayerPcEpisodeTabs';
+import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
 import {
     PC_DRAWER_DURATION_MS,
     type PcDrawerPanel,
     schedulePcDrawerEnterFrame,
-} from './videoPlayerPcDrawerMotion';
+} from '@/pages/user/VideoPage/videoPlayerPcDrawerMotion';
 
-export function VideoPlayer({
+export function ForYouPlayer({
     id,
     data,
     onSetEpisode,
@@ -75,24 +80,58 @@ export function VideoPlayer({
     pcDrawerEntered,
     onPcDrawerEnteredChange,
     pcDrawerClosingRef,
+    feedItem,
+    isForYouFeed = false,
+    feedEpisodeCurrent = 1,
+    feedEpisodeTotal = 0,
+    onWatchFullSeries,
+    onVideoElementReady,
+    coverPosterUrl,
+    onPlaybackStarted,
+    onVideoCanPlay,
+    hideCenterPlayUntilFirstPlay = false,
+    feedResumeTimeSec = 0,
+    onFeedPlaybackProgress,
+    feedHasPrev = false,
+    feedHasNext = false,
+    onFeedPrev,
+    onFeedNext,
     ...props
 }: {
     id: number;
     index: number;
     data: IPlayerData;
+    feedItem?: IForYouFeedItem;
+    isForYouFeed?: boolean;
+    feedEpisodeCurrent?: number;
+    feedEpisodeTotal?: number;
+    onWatchFullSeries?: () => void;
+    onVideoElementReady?: (el: HTMLVideoElement | null) => void;
+    coverPosterUrl?: string;
+    onPlaybackStarted?: () => void;
+    onVideoCanPlay?: () => void;
+    hideCenterPlayUntilFirstPlay?: boolean;
+    /** For You????? feed ???????? */
+    feedResumeTimeSec?: number;
+    onFeedPlaybackProgress?: (currentTimeSec: number, durationSec: number) => void;
+    /** For You???/????????? feed? */
+    feedHasPrev?: boolean;
+    feedHasNext?: boolean;
+    onFeedPrev?: () => void;
+    onFeedNext?: () => void;
     onSetEpisode: (index: number) => void;
     fullscreenTargetRef: RefObject<HTMLDivElement | null>;
     shouldKeepFullscreen: boolean;
     onFullscreenPrefChange: (value: boolean) => void;
     onEpisodeFullscreenReady: () => void;
     shouldIgnoreFullscreenExit: () => boolean;
-    /** 站内带 `VIDEO_FROM_HOME_STATE` 或路由栈上一页（非整页刷新）：PC 可走有声；直链/刷新仍走静音冷启动 */
+    /** ???????`VIDEO_FROM_HOME_STATE` ????????????????????????????????PC ??????????????????????????????????*/
     fromHomeVideoPlayback: boolean;
-    /** 换集走 video-old 式播放（无声优静音策略） */
+    /** ??????video-old ??????????????????????????? */
     legacyEpisodeAutoplayRef: RefObject<boolean>;
-    /** 当前集正常播；竖滑相邻格仅挂片+控件，不自动播放 */
+    /** ????????????????????????????????????????????????????? */
     playbackPolicy?: 'autoplay' | 'paused';
-    /** PC 右侧抽屉状态（由 VideoVerticalSwiper 持有，换集时不关闭） */
+    /** PC ??????????????????VideoVerticalSwiper ???????????????????????? */
     pcDrawerPanel: PcDrawerPanel;
     onPcDrawerPanelChange: (panel: PcDrawerPanel) => void;
     pcDrawerEntered: boolean;
@@ -122,8 +161,11 @@ export function VideoPlayer({
     const controllerIsShow = useRef(true);
     const subtitlesRef = useRef<VTTCue[]>([]);
     const [playing, setPlaying] = useState(false);
-    /** 用户曾点开播放浮层后，播放态才显示居中暂停 icon */
+    /** ??????????????????????????????????????????????????? icon */
     const [centerPlayUiEngaged, setCenterPlayUiEngaged] = useState(false);
+    const [playbackStarted, setPlaybackStarted] = useState(false);
+    const [videoFrameReady, setVideoFrameReady] = useState(false);
+    const didReportPlaybackStartRef = useRef(false);
     const [controllerVisible, setControllerVisible] = useState(true);
     const [canPlay, setCanPlay] = useState(false);
     const setWaiting = useCallback((..._args: unknown[]) => {}, []);
@@ -152,12 +194,12 @@ export function VideoPlayer({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useVideoPlayerShare(data, staticBase, episode?.episode);
-    /** 未解锁：无 poster；已解锁：仅用截帧 data URL，失败则黑底（不用 `info.image`） */
+    } = useForYouPlayerShare(data, staticBase, episode?.episode);
+    /** ????????????poster???????????????????data URL?????????????????`info.image`??*/
     const unlockVisualOnly = episode?.lock === true;
     const frameTrim = framePosterDataUrl.trim();
     const videoPosterAttr = unlockVisualOnly ? undefined : frameTrim.length > 0 ? frameTrim : undefined;
-    /** 仅分享弹窗预览卡：用剧封 `info.image`（与播放器 poster 截帧分离） */
+    /** ??????????????????????? `info.image`?????????????poster ??????????*/
     const shareCardPosterUrl = useMemo(
         () => resolveVideoPosterUrl(staticBase, data.info, data.info.id),
         [staticBase, data.info],
@@ -166,19 +208,19 @@ export function VideoPlayer({
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const [progressHover, setProgressHover] = useState(false);
     const [progressDragging, setProgressDragging] = useState(false);
-    /** 冷启动/刷新：静音自动播时展示（PC 用 `.xgplayer-unmute-bt`，H5 用底部按钮层） */
+    /** ?????????????????????????????????????PC ???`.xgplayer-unmute-bt`??H5 ??????????????????*/
     const [showTapToUnmute, setShowTapToUnmute] = useState(false);
-    /** 与 `<video>.muted` 同步，用于底部音量图标（对标 douyin BaseMusic 入口） */
-    const [videoMutedUi, setVideoMutedUi] = useState(true);
-    /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
+    /** ??`<video>.muted` ??????????????????????????????? douyin BaseMusic ??????*/
+    const [videoMutedUi, setVideoMutedUi] = useState(() => !hasVideoSessionUserUnmuted());
+    /** H5??????????????????????????????????????????????????????????????????????????????????? `id` ???? */
     const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
-    /** `loadedmetadata`：videoWidth > videoHeight 为横屏，否则竖屏 */
+    /** `loadedmetadata`??videoWidth > videoHeight ???????????? */
     const [videoOrientation, setVideoOrientation] = useState<VideoOrientation | null>(null);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const progressSeekRatioRef = useRef(0);
     const fullscreenRestoreInFlightRef = useRef(false);
     const isLandscapeVideo = videoOrientation === 'landscape';
-    /** PC：9:16 舞台；H5：铺满视口，避免左右黑边像「边框」 */
+    /** PC?9:16 ???H5????????????????? */
     const videoStageClassName = cn(
         'video-player-h5-video-stage relative overflow-hidden bg-black cursor-pointer',
         isDesktop ? 'h-full max-h-full w-auto max-w-full aspect-[9/16]' : 'h-full w-full',
@@ -188,9 +230,9 @@ export function VideoPlayer({
         isLandscapeVideo ? 'object-contain' : 'object-cover',
     );
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
-    /** 因页签/窗口不可见而自动暂停时置 true，回到前台仅在此情况下自动续播 */
+    /** ???????????????????????????????true????????????????????????????????????*/
     const pausedByDocumentVisibilityRef = useRef(false);
-    /** 对标 NetShort `playWithDelay(300)`：直链/刷新 PC 静音自动播前稍迟再 play，且切换 md 断点前需清掉 */
+    /** ??? NetShort `playWithDelay(300)`?????????????? PC ???????????????????????play???????? md ????????????????? */
     const autoplayKickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const {
         fullscreenTargetRef,
@@ -200,10 +242,16 @@ export function VideoPlayer({
         shouldIgnoreFullscreenExit,
     } = props;
     const isFullscreenUi = shouldKeepFullscreen || pcFullscreen;
-    /** 主格与邻格均用 metadata，便于邻格在拖拽时尽快出首帧占位（比 none 少黑屏） */
-    const videoPreload: 'none' | 'metadata' = 'metadata';
+    /** ?????????????metadata??????????????????????????????????? none ??????? */
+    const videoPreload: 'none' | 'metadata' | 'auto' =
+        isForYouFeed && playbackPolicy !== 'paused' ? 'auto' : 'metadata';
+    const feedCoverPoster =
+        coverPosterUrl != null && coverPosterUrl.length > 0 ? coverPosterUrl : undefined;
+    const h5VideoPosterAttr = unlockVisualOnly
+        ? undefined
+        : feedCoverPoster ?? (frameTrim.length > 0 ? frameTrim : undefined);
 
-    /** H5：与 `<video>.muted` 一致且正在播时出全屏点按开声蒙层；用户点过底栏音量后不再出 */
+    /** H5???? `<video>.muted` ????????????????????????????????????????????????????????????????????? */
     const showH5FullscreenUnmuteOverlay =
         !isDesktop &&
         videoMutedUi &&
@@ -215,11 +263,11 @@ export function VideoPlayer({
     async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
         const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
-        // 必须先退出浏览器全屏再改 React 布局；否则 PC 会在 fullscreen 内先插入侧栏，exitFullscreen 易失败或需点两次。
+        // ???????????????????????????? React ??????????PC ????? fullscreen ???????????????exitFullscreen ???????????????????
         if (document.fullscreenElement) {
             await document.exitFullscreen().catch(() => {});
         }
-        // webkitendfullscreen 时系统已退出，再调一次易导致播放被停掉。
+        // webkitendfullscreen ?????????????????????????????????????????????
         if (!options?.skipVideoWebKitExit && video?.webkitExitFullscreen) {
             try {
                 video.webkitExitFullscreen();
@@ -227,7 +275,7 @@ export function VideoPlayer({
                 // ignore
             }
         }
-        // 与 video 一致：从 iOS 系统视频全屏回调里进来时勿再调，避免干扰内联续播。
+        // ??video ?????????iOS ???????????????????????????????????????????????????????
         if (!options?.skipVideoWebKitExit && doc.webkitExitFullscreen) {
             await Promise.resolve(doc.webkitExitFullscreen()).catch(() => {});
         }
@@ -278,7 +326,7 @@ export function VideoPlayer({
             return;
         }
         window.clearTimeout(controllerTimerRef.current);
-        /** PC 暂停态：底栏与居中 icon 始终展示（移出鼠标也不收） */
+        /** PC ???????????????????icon ????????????????????????*/
         if (isDesktop && videoRef.current != null && videoRef.current.paused) {
             controllerIsShow.current = true;
             setControllerVisible(true);
@@ -335,8 +383,7 @@ export function VideoPlayer({
     async function loadData(episodeId: number, showLoading = false) {
         const suppressPlayback = playbackPolicy === 'paused';
         setCanPlay(false);
-        const resumeTimeSec = consumeForyouResumeTimeSec(data.info.id, episodeId);
-        await runLoadEpisodeForPlayer(
+        await runLoadEpisodeForForYouPlayer(
             {
                 videoRef,
                 subtitlesRef,
@@ -359,7 +406,9 @@ export function VideoPlayer({
                 episodeFetchOpts: {
                     viewerIsVip: userStore.isVIP(),
                 },
-                resumeTimeSec,
+                isForYouFeed,
+                onVideoMutedUiSync: setVideoMutedUi,
+                resumeTimeSec: isForYouFeed ? feedResumeTimeSec : undefined,
             },
             episodeId,
             showLoading,
@@ -370,7 +419,7 @@ export function VideoPlayer({
         setVip(false);
     }
 
-    /** 充值/VIP 支付成功：RadixRc 已拉最新 `movie/episode`，写入缓存并走同一套 `loadData` 更新播放 */
+    /** ??????VIP ?????????????RadixRc ??????????`movie/episode`????????????????????`loadData` ???????????? */
     function handleEmbedPaySuccessEpisodeDetail(d: IPlayerEpisode) {
         putEpisodeDetailCache(Number(d.id) || id, d);
         void loadData(id, false);
@@ -388,9 +437,25 @@ export function VideoPlayer({
         return props.index < data.episodes.length - 1;
     }
 
+    function hasPrevDrama() {
+        return isForYouFeed ? feedHasPrev : hasPrevEpisode();
+    }
+
+    function hasNextDrama() {
+        return isForYouFeed ? feedHasNext : hasNextEpisode();
+    }
+
     function handleJumpPrevEpisode(ev?: MouseEvent | React.MouseEvent<HTMLElement>) {
         ev?.preventDefault();
         ev?.stopPropagation();
+        if (isForYouFeed) {
+            if (!feedHasPrev) {
+                return;
+            }
+            showController();
+            onFeedPrev?.();
+            return;
+        }
         if (!hasPrevEpisode()) {
             return;
         }
@@ -402,6 +467,14 @@ export function VideoPlayer({
     function handleJumpNextEpisode(ev?: MouseEvent | React.MouseEvent<HTMLElement>) {
         ev?.preventDefault();
         ev?.stopPropagation();
+        if (isForYouFeed) {
+            if (!feedHasNext) {
+                return;
+            }
+            showController();
+            onFeedNext?.();
+            return;
+        }
         if (!hasNextEpisode()) {
             return;
         }
@@ -466,7 +539,7 @@ export function VideoPlayer({
     }
 
     function handleToggleFavorite() {
-        // PC 侧栏收藏不在 controllerRef 内；勿与 H5 内层控制条共用「控制器显隐」门禁，否则自动隐层后侧栏星标无法点击。
+        // PC ???????????? controllerRef ?????????? H5 ???????????????????????????????????????????????????????????????????????????????????
         if (!isDesktop && !controllerIsShow.current) {
             return;
         }
@@ -570,7 +643,7 @@ export function VideoPlayer({
         const v = videoRef.current;
         if (v.paused) {
             void v.play().catch(() => {
-                console.log('点击播放失败');
+                console.log('??????????????');
             });
             if (!isDesktop) {
                 showController();
@@ -589,6 +662,7 @@ export function VideoPlayer({
     const showCenterPlayControl =
         canPlay &&
         episode?.lock === false &&
+        (!hideCenterPlayUntilFirstPlay || playbackStarted || videoFrameReady) &&
         (!playing || (centerPlayUiEngaged && controllerVisible && playing));
 
     const videoPlayerUiClassName = cn(
@@ -605,7 +679,7 @@ export function VideoPlayer({
         return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     }
 
-    /** 拖进度只改 UI，结束时再 seek（对齐 douyin BaseVideo touchmove/touchend） */
+    /** ??????????UI????????????seek?????douyin BaseVideo touchmove/touchend??*/
     function applyProgressPreview(ratio: number) {
         progressSeekRatioRef.current = ratio;
         if (progressCurrentRef.current) {
@@ -768,11 +842,11 @@ export function VideoPlayer({
         }
         await toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
             preferContainer: true,
-            // 桌面保留容器全屏 + 侧栏；移动端容器全屏在 iOS 常失败，需回退 webkitEnterFullscreen。
+            // ??????????????? + ????????????????????iOS ?????????????? webkitEnterFullscreen???
             disableNativeVideoFullscreen: isDesktop,
         });
         const nowFullscreen = Boolean(getFullscreenElement());
-        // 桌面仅在实际进入 document 全屏时记偏好；iOS 原生 video 全屏常无 fullscreenElement，仍走意图兜底。
+        // ?????????????????? document ????????????iOS ?????? video ???????? fullscreenElement??????????????????
         if (nowFullscreen || !isDesktop) {
             onFullscreenPrefChange(true);
         }
@@ -790,14 +864,134 @@ export function VideoPlayer({
         setH5UserDismissedUnmuteOverlay(false);
         setVideoOrientation(null);
         setCenterPlayUiEngaged(false);
-    }, [id]);
+        setPlaybackStarted(false);
+        setVideoFrameReady(false);
+        didReportPlaybackStartRef.current = false;
+        if (isForYouFeed && hasVideoSessionUserUnmuted()) {
+            setVideoMutedUi(false);
+        }
+    }, [id, isForYouFeed]);
+
+    /** ? /video ??? remount?????????????? load ??? muted ?? true? */
+    useEffect(() => {
+        if (!isForYouFeed || !hasVideoSessionUserUnmuted() || episode?.lock === true) {
+            return;
+        }
+        if (playbackPolicy === 'paused') {
+            return;
+        }
+        const v = videoRef.current;
+        if (!v || playbackSources.length === 0) {
+            return;
+        }
+        v.muted = false;
+        setVideoMutedUi(false);
+        if (v.paused) {
+            void v.play()
+                .then(() => setPlaying(true))
+                .catch(() => {});
+        }
+    }, [isForYouFeed, episode?.id, playbackSources.length, playbackPolicy, episode?.lock]);
+
+    /** For You H5?pending ?? video opacity:0?canplay ? React ?? visible ???? play */
+    useEffect(() => {
+        if (!isForYouFeed || isDesktop) {
+            return;
+        }
+        if (!videoFrameReady || playbackPolicy === 'paused' || episode?.lock === true) {
+            return;
+        }
+        const v = videoRef.current;
+        if (!v || playbackSources.length === 0 || !v.paused) {
+            return;
+        }
+        if (location.search.indexOf('auto_play=0') !== -1) {
+            return;
+        }
+        const kickAutoplay = () => {
+            const el = videoRef.current;
+            if (!el || !el.paused) {
+                return;
+            }
+            void el
+                .play()
+                .then(() => setPlaying(true))
+                .catch(() => {
+                    if (!el.muted) {
+                        el.muted = true;
+                        setVideoMutedUi(true);
+                        void el.play().then(() => setPlaying(true)).catch(() => {});
+                    }
+                });
+        };
+        requestAnimationFrame(kickAutoplay);
+    }, [
+        isForYouFeed,
+        isDesktop,
+        videoFrameReady,
+        playbackPolicy,
+        episode?.id,
+        episode?.lock,
+        playbackSources.length,
+    ]);
 
     useEffect(() => {
         if (!sessionBootstrapReady) {
             return;
         }
+        if (isForYouFeed && feedItem) {
+            putEpisodeDetailCache(feedItem.ep_id, buildEpisodeFromFeedItem(feedItem));
+            setFavorite(Boolean(feedItem.is_favor) || data.info.is_favorite === 1);
+            void loadData(feedItem.ep_id);
+            return;
+        }
         void loadData(id);
-    }, [id, isDesktop, sessionBootstrapReady, playbackPolicy, fromHomeVideoPlayback]);
+    }, [
+        id,
+        feedItem,
+        isForYouFeed,
+        isDesktop,
+        sessionBootstrapReady,
+        playbackPolicy,
+        fromHomeVideoPlayback,
+        data.info.is_favorite,
+    ]);
+
+    useEffect(() => {
+        const el = videoRef.current;
+        if (!el) {
+            onVideoElementReady?.(null);
+            return;
+        }
+        onVideoElementReady?.(el);
+        const onMeta = () => onVideoElementReady?.(videoRef.current);
+        el.addEventListener('loadedmetadata', onMeta);
+        return () => {
+            el.removeEventListener('loadedmetadata', onMeta);
+            onVideoElementReady?.(null);
+        };
+    }, [episode?.id, onVideoElementReady, playbackSources.length]);
+
+    useEffect(() => {
+        if (!isForYouFeed || !onFeedPlaybackProgress) {
+            return;
+        }
+        const v = videoRef.current;
+        if (!v) {
+            return;
+        }
+        let lastReportAt = 0;
+        const report = () => {
+            const now = Date.now();
+            if (now - lastReportAt < 400) {
+                return;
+            }
+            lastReportAt = now;
+            onFeedPlaybackProgress(v.currentTime, v.duration);
+        };
+        v.addEventListener('timeupdate', report);
+        return () => v.removeEventListener('timeupdate', report);
+    }, [isForYouFeed, onFeedPlaybackProgress, episode?.id, playbackSources.length]);
 
     useEffect(() => {
         if (playbackPolicy !== 'paused' || controllerRef.current === null) {
@@ -825,7 +1019,7 @@ export function VideoPlayer({
         setFramePosterDataUrl(getEpisodePeekFrame(id) ?? '');
     }, [id]);
 
-    /** 换集后组件会 remount 或 episode 更新；tab 须落在「当前集」所在区间，否则会停在默认 1-50 */
+    /** ??????????? remount ???episode ????????tab ????????????????????????????????????????????????1-50 */
     useEffect(() => {
         if (!isDesktop || !data) {
             return;
@@ -840,7 +1034,7 @@ export function VideoPlayer({
         setDesktopEpisodeTab((prev) => (prev === nextTab ? prev : nextTab));
     }, [isDesktop, data, id, episode?.episode]);
 
-    /** PC：先挂载起始态，下一帧 entered + 左移，才能触发 CSS transition */
+    /** PC???????????????????????entered + ?????????????CSS transition */
     useEffect(() => {
         if (!isDesktop || pcDrawerPanel == null) {
             onPcDrawerEnteredChange(false);
@@ -851,7 +1045,7 @@ export function VideoPlayer({
             return;
         }
 
-        /** 换集 remount：抽屉已在父级保持打开，跳过滑入动画 */
+        /** ???? remount????????????????????????????????????????*/
         if (pcDrawerEntered) {
             return schedulePcDrawerEnterFrame(() => {
                 const shell = pcShellRef.current;
@@ -874,7 +1068,7 @@ export function VideoPlayer({
         });
     }, [isDesktop, pcDrawerPanel]);
 
-    /** PC：关闭时等面板滑出后再卸载 */
+    /** PC????????????????????????????*/
     useEffect(() => {
         if (!pcDrawerClosingRef.current || pcDrawerPanel == null || pcDrawerEntered) {
             return;
@@ -1030,12 +1224,22 @@ export function VideoPlayer({
             setWaiting(false);
             syncUiFromVideoTime();
             onEpisodeFullscreenReady();
+            if (isForYouFeed) {
+                setVideoFrameReady(true);
+                onVideoCanPlay?.();
+            }
         };
 
         v.addEventListener('canplay', videoCanPlay);
 
         const videoPlaying = () => {
             setWaiting(false);
+            setPlaying(true);
+            if (!didReportPlaybackStartRef.current) {
+                didReportPlaybackStartRef.current = true;
+                setPlaybackStarted(true);
+                onPlaybackStarted?.();
+            }
         };
         v.addEventListener('playing', videoPlaying);
 
@@ -1180,7 +1384,7 @@ export function VideoPlayer({
             if (!v || episode?.lock || location.search.indexOf('auto_play=0') !== -1) {
                 return;
             }
-            /** iOS 系统全屏常在非手势链路上触发，浏览器会静音；在回调栈内尝试恢复有声 */
+            /** iOS ????????????????????????????????????????????????????????????????????*/
             if (v.muted) {
                 v.muted = false;
                 markVideoSessionUserUnmuted();
@@ -1189,7 +1393,7 @@ export function VideoPlayer({
                 void v.play().then(() => setPlaying(true)).catch(() => {});
             }
         };
-        /** iOS 退出系统全屏后常会处于 paused；单次 play 常失败，需同步先试一次再短时多次重试。 */
+        /** iOS ?????????????????????? paused??????play ???????????????????????????????????????*/
         const resumeInlineAfterNativeFullscreenExit = () => {
             const attempt = () => {
                 const v = videoRef.current;
@@ -1215,7 +1419,7 @@ export function VideoPlayer({
             if (shouldIgnoreFullscreenExit()) {
                 return;
             }
-            // 在 webkit 回调栈内先试 play，再恢复 UI；部分 iOS 版本离开回调后 play 会被策略拦。
+            // ???webkit ??????????????? play??????? UI????????iOS ????????????????play ??????????????
             {
                 const v = videoRef.current;
                 if (
@@ -1319,7 +1523,13 @@ export function VideoPlayer({
         );
 
         return (
-            <div className="video-player-root h-full w-full relative" ref={wrapRef}>
+            <div
+                className={cn(
+                    'video-player-root h-full w-full relative',
+                    isForYouFeed && 'foryou-feed-player',
+                )}
+                ref={wrapRef}
+            >
                 <div className="h-full w-full relative opacity-100 transition-opacity duration-500">
                     <div className="absolute inset-0 flex bg-black">
                         <div
@@ -1405,11 +1615,24 @@ export function VideoPlayer({
                             <div
                                 className={cn(
                                     videoPlayerUiClassName,
-                                    /** 静音蒙层在 DOM 序在前；全屏控制器含 translateZ(0) 时会盖住蒙层并吞点击，需让事件穿透到 .xgplayer-unmute */
+                                    /** ?????????????DOM ??????????????????????? translateZ(0) ??????????????????????????????????????? .xgplayer-unmute */
                                     showTapToUnmute && 'pointer-events-none',
                                 )}
                                 ref={controllerRef}
                             >
+                                {!isFullscreenUi && isForYouFeed ? (
+                                    <div
+                                        className="foryou-player-h5-topbar video-player-h5-topbar absolute top-0 left-0 right-0 z-10 w-full transition-opacity ease-linear"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div
+                                            onClick={handleBack}
+                                            className="video-player-h5-topbar-back text-white flex justify-center items-center shrink-0"
+                                        >
+                                            <ChevronLeft className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                ) : null}
                                 {showCenterPlayControl && !showTapToUnmute && (
                                     <button
                                         type="button"
@@ -1446,17 +1669,27 @@ export function VideoPlayer({
                                         className={cn(
                                             'video-player-h5-bottom absolute bottom-0 left-0 right-0 w-full z-10',
                                             isFullscreenUi && 'video-player-h5-bottom--fullscreen',
+                                            isForYouFeed && 'swiper-no-swiping',
                                         )}
                                         ref={progressWrapRef}
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         {!isFullscreenUi && (
-                                            <VideoPlayerBottomInfo
+                                            <ForYouPlayerBottomInfo
                                                 data={data}
                                                 episode={episode}
+                                                episodeNo={
+                                                    isForYouFeed ? feedEpisodeCurrent : undefined
+                                                }
                                                 onOpenIntroduction={handlePcIntroDrawerClick}
                                             />
                                         )}
+                                        {!isFullscreenUi && isForYouFeed && onWatchFullSeries ? (
+                                            <ForYouWatchFullSeriesButton
+                                                feedEpisodeTotal={feedEpisodeTotal}
+                                                onClick={onWatchFullSeries}
+                                            />
+                                        ) : null}
                                         <div className="video-player-h5-progress-row">
                                         <div
                                             className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
@@ -1513,7 +1746,7 @@ export function VideoPlayer({
                                                         <Volume2 className="w-5 h-5" aria-hidden />
                                                     )}
                                                 </button>
-                                                {hasNextEpisode() && (
+                                                {hasNextDrama() && (
                                                     <div
                                                         className="video-player-next-episode-trigger video-player-h5-next text-white flex items-center justify-center cursor-pointer"
                                                         onClick={(e) => void handleJumpNextEpisode(e)}
@@ -1571,15 +1804,17 @@ export function VideoPlayer({
                                             {formatFavoriteCountK(data.info.favorite)}
                                         </div>
                                     </div>
-                                    <div
-                                        className="flex cursor-pointer flex-col items-center gap-1"
-                                        onClick={handlePcEpisodeListClick}
-                                    >
-                                        <LayoutGrid className="h-8 w-8 fill-white text-white" />
-                                        <div className="h-4 text-center text-xs leading-4 text-white">
-                                            <FormattedMessage id="episode_list" />
+                                    {!isForYouFeed ? (
+                                        <div
+                                            className="flex cursor-pointer flex-col items-center gap-1"
+                                            onClick={handlePcEpisodeListClick}
+                                        >
+                                            <LayoutGrid className="h-8 w-8 fill-white text-white" />
+                                            <div className="h-4 text-center text-xs leading-4 text-white">
+                                                <FormattedMessage id="episode_list" />
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : null}
                                     <div
                                         className="flex cursor-pointer flex-col items-center gap-1"
                                         onClick={() => setShareOpen(true)}
@@ -1598,21 +1833,23 @@ export function VideoPlayer({
                                     pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
                                 )}
                             >
-                                <VideoPlayerPcEpisodeDrawer
-                                    open={pcDrawerPanel === 'episodes'}
-                                    entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
-                                    onClose={closePcDrawer}
-                                    anchorRef={pcShellRef}
-                                    currentEpisodeNo={currentEpisodeNo}
-                                    data={data}
-                                    viewerIsVip={userStore.isVIP()}
-                                    tabRanges={tabRanges}
-                                    activeTab={activeTab}
-                                    onSelectEpisodeTab={setDesktopEpisodeTab}
-                                    filteredEpisodes={filteredEpisodes}
-                                    onSelectEpisodeByListIndex={handleSetEpisode}
-                                />
-                                <VideoPlayerPcIntroDrawer
+                                {!isForYouFeed ? (
+                                    <ForYouPlayerPcEpisodeDrawer
+                                        open={pcDrawerPanel === 'episodes'}
+                                        entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
+                                        onClose={closePcDrawer}
+                                        anchorRef={pcShellRef}
+                                        currentEpisodeNo={currentEpisodeNo}
+                                        data={data}
+                                        viewerIsVip={userStore.isVIP()}
+                                        tabRanges={tabRanges}
+                                        activeTab={activeTab}
+                                        onSelectEpisodeTab={setDesktopEpisodeTab}
+                                        filteredEpisodes={filteredEpisodes}
+                                        onSelectEpisodeByListIndex={handleSetEpisode}
+                                    />
+                                ) : null}
+                                <ForYouPlayerPcIntroDrawer
                                     open={pcDrawerPanel === 'intro'}
                                     entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
                                     onClose={closePcDrawer}
@@ -1622,23 +1859,23 @@ export function VideoPlayer({
                                     staticBase={staticBase}
                                 />
                                 {!pcFullscreen && (
-                                    <VideoPlayerPcEpisodeNav
-                                        hasPrev={hasPrevEpisode()}
-                                        hasNext={hasNextEpisode()}
+                                    <ForYouPlayerPcEpisodeNav
+                                        hasPrev={hasPrevDrama()}
+                                        hasNext={hasNextDrama()}
                                         onPrev={handleJumpPrevEpisode}
                                         onNext={handleJumpNextEpisode}
                                     />
                                 )}
                             </div>
-                            {!pcFullscreen && (
-                                <VideoPlayerPcBackBar
+                            {!pcFullscreen && !isForYouFeed ? (
+                                <ForYouPlayerPcBackBar
                                     episodeNo={currentEpisodeNo}
                                     onBack={handleBack}
                                 />
-                            )}
+                            ) : null}
                         </div>
                     </div>
-                    <VideoPlayerEpisodeSpeedIntroDrawers
+                    <ForYouPlayerEpisodeSpeedIntroDrawers
                         data={data}
                         episodeIndex={props.index}
                         staticBase={staticBase}
@@ -1658,7 +1895,7 @@ export function VideoPlayer({
                         hideEpisodeDrawer
                         hideIntroDrawer
                     />
-                    <VideoPlayerPcCommerceDialogs
+                    <ForYouPlayerPcCommerceDialogs
                         vip={vip}
                         onVipOpenChange={setVip}
                         onVipEmbedClose={handleVipEmbedClose}
@@ -1682,7 +1919,13 @@ export function VideoPlayer({
     }
 
     return (
-        <div className="video-player-root h-full w-full relative" ref={wrapRef}>
+        <div
+            className={cn(
+                'video-player-root h-full w-full relative',
+                isForYouFeed && 'foryou-feed-player',
+            )}
+            ref={wrapRef}
+        >
             <div className="h-full w-full relative bg-black opacity-100 transition-opacity duration-500">
                 <div
                     className={cn(
@@ -1691,7 +1934,13 @@ export function VideoPlayer({
                     )}
                 >
                     <div
-                        className={videoStageClassName}
+                        className={cn(
+                            videoStageClassName,
+                            isForYouFeed &&
+                                (playbackStarted || videoFrameReady
+                                    ? 'foryou-player-video-stage--visible'
+                                    : 'foryou-player-video-stage--pending'),
+                        )}
                         onClick={(e) => {
                             if (!controllerVisible && !progressDragging) {
                                 e.stopPropagation();
@@ -1704,7 +1953,7 @@ export function VideoPlayer({
                             ref={videoRef}
                             className={videoElementClassName}
                             playsInline
-                            poster={videoPosterAttr}
+                            poster={h5VideoPosterAttr}
                             preload={videoPreload}
                             {...({
                                 fetchPriority: playbackPolicy === 'paused' ? 'low' : 'high',
@@ -1762,13 +2011,27 @@ export function VideoPlayer({
                 <div
                     className={cn(
                         videoPlayerUiClassName,
-                        /** 与 PC 一致：静音蒙层出现时勿让全屏控制层挡在「取消静音」之上 */
+                        /** ??PC ???????????????????????????????????????????????????????????????????*/
                         showH5FullscreenUnmuteOverlay && 'pointer-events-none',
                     )}
                     ref={controllerRef}
                     onClick={handleControllerTouchStart}
                 >
-                    {!isFullscreenUi && (
+                    {!isFullscreenUi && isForYouFeed ? (
+                        <div
+                            className="foryou-player-h5-topbar video-player-h5-topbar absolute top-0 left-0 right-0 z-10 w-full transition-opacity ease-linear"
+                            onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                        >
+                            <div
+                                onClick={handleBack}
+                                className="video-player-h5-topbar-back text-white flex justify-center items-center shrink-0"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </div>
+                        </div>
+                    ) : null}
+                    {!isFullscreenUi && !isForYouFeed ? (
                         <div
                             className="video-player-h5-topbar absolute top-0 left-0 right-0 w-full transition-opacity ease-linear"
                             onClick={(e) => e.stopPropagation()}
@@ -1791,7 +2054,7 @@ export function VideoPlayer({
                                 />
                             </div>
                         </div>
-                    )}
+                    ) : null}
                     {showCenterPlayControl && !showH5FullscreenUnmuteOverlay && (
                         <button
                             type="button"
@@ -1859,15 +2122,17 @@ export function VideoPlayer({
                                     {formatFavoriteCountK(data.info.favorite)}
                                 </div>
                             </div>
-                            <div
-                                className="flex flex-col gap-1 items-center"
-                                onClick={handleToggleEpisode}
-                            >
-                                <LayoutGrid className="w-8 h-8 text-white fill-white" />
-                                <div className="h-4 leading-4 text-white text-xs text-center">
-                                    <FormattedMessage id="episode_list" />
+                            {!isForYouFeed ? (
+                                <div
+                                    className="flex flex-col gap-1 items-center"
+                                    onClick={handleToggleEpisode}
+                                >
+                                    <LayoutGrid className="w-8 h-8 text-white fill-white" />
+                                    <div className="h-4 leading-4 text-white text-xs text-center">
+                                        <FormattedMessage id="episode_list" />
+                                    </div>
                                 </div>
-                            </div>
+                            ) : null}
                             <div className="flex flex-col gap-1 items-center" onClick={() => setShareOpen(true)}>
                                 <img src={shareEntryIcon} alt="" className="w-8 h-8" />
                                 <div className="h-4 leading-4 text-white text-xs text-center">
@@ -1881,17 +2146,25 @@ export function VideoPlayer({
                             className={cn(
                                 'video-player-h5-bottom absolute bottom-0 left-0 right-0 w-full',
                                 isFullscreenUi && 'video-player-h5-bottom--fullscreen',
+                                isForYouFeed && 'swiper-no-swiping',
                             )}
                             ref={progressWrapRef}
                             onClick={(e) => e.stopPropagation()}
                         >
                             {!isFullscreenUi && (
-                                <VideoPlayerBottomInfo
+                                <ForYouPlayerBottomInfo
                                     data={data}
                                     episode={episode}
+                                    episodeNo={isForYouFeed ? feedEpisodeCurrent : undefined}
                                     onOpenIntroduction={handleIntroduction}
                                 />
                             )}
+                            {!isFullscreenUi && isForYouFeed && onWatchFullSeries ? (
+                                <ForYouWatchFullSeriesButton
+                                    feedEpisodeTotal={feedEpisodeTotal}
+                                    onClick={onWatchFullSeries}
+                                />
+                            ) : null}
                             <div className="video-player-h5-progress-row">
                                 <div
                                     className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
@@ -1951,7 +2224,7 @@ export function VideoPlayer({
                                             <Volume2 className="w-5 h-5" aria-hidden />
                                         )}
                                     </button>
-                                    {hasNextEpisode() && (
+                                    {hasNextDrama() ? (
                                         <div
                                             className="video-player-next-episode-trigger video-player-h5-next text-white flex items-center justify-center cursor-pointer"
                                             onClick={(e) => void handleJumpNextEpisode(e)}
@@ -1962,7 +2235,7 @@ export function VideoPlayer({
                                                 className="video-player-next-episode-icon"
                                             />
                                         </div>
-                                    )}
+                                    ) : null}
                                     <div
                                         className="video-player-h5-fullscreen text-white flex shrink-0 items-center justify-center cursor-pointer"
                                         onClick={(e) => void handleToggleFullscreen(e)}
@@ -1978,7 +2251,7 @@ export function VideoPlayer({
                         </div>
                     )}
                 </div>
-                <VideoPlayerEpisodeSpeedIntroDrawers
+                <ForYouPlayerEpisodeSpeedIntroDrawers
                     data={data}
                     episodeIndex={props.index}
                     staticBase={staticBase}
@@ -1996,7 +2269,7 @@ export function VideoPlayer({
                     onIntroductionOpenChange={handleIntroduction}
                     onCloseIntroductionLinks={() => setIntroduction(false)}
                 />
-                <VideoPlayerH5CommerceDrawers
+                <ForYouPlayerH5CommerceDrawers
                     vip={vip}
                     onVipOpenChange={setVip}
                     onVipEmbedClose={handleVipEmbedClose}

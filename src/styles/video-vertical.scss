@@ -736,6 +736,13 @@
     opacity: 0;
 }
 
+/** 沉浸态顶栏/侧栏一并隐藏，避免露出后视频未铺满区域 */
+.video-player-ui--chrome-hidden .video-player-h5-topbar,
+.video-player-ui--chrome-hidden .video-player-h5-side-actions {
+    opacity: 0;
+    visibility: hidden;
+}
+
 /** 沉浸态仍保留居中播放/暂停按钮可点（H5 收起底栏后续播） */
 .video-player-ui--chrome-hidden:not(.video-player-ui--scrubbing) .video-player-center-play {
     pointer-events: auto !important;
@@ -929,16 +936,21 @@
 
 .video-player-root .video-player-h5-tags {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 6px;
     margin-bottom: 4px;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .video-player-root .video-player-h5-tag {
     display: inline-flex;
+    flex-shrink: 0;
+    max-width: 100%;
     padding: 2px 8px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.3);
     color: rgba(255, 255, 255, 0.92);
     font-size: 11px;
     line-height: 18px;
@@ -998,9 +1010,10 @@
         line-height: 1.2;
     }
 
+    /** 单侧一项约 52px；整体上移半项（26px） */
     .video-player-h5-side-actions {
         z-index: 10;
-        bottom: 210px;
+        bottom: calc(210px + 26px);
         width: 40px;
         pointer-events: auto;
     }
@@ -1102,6 +1115,41 @@
 
     .video-player-root .video-player-h5-info {
         padding-right: 0;
+    }
+
+    /**
+     * H5：视频全屏铺满。
+     * 不用 transform: scale（易触发 GPU 合成缝，肉眼像 2px 黑边、截图又消失）；
+     * 用尺寸外扩 + translate 居中盖住子像素缝。
+     */
+    .video-player-root .video-player-h5-media-layer {
+        inset: -2px;
+        overflow: hidden;
+        background: #000;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+    }
+
+    .video-player-root .video-player-h5-video-stage {
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        max-height: none;
+        overflow: hidden;
+    }
+
+    .video-player-root .video-player-h5-video-stage video {
+        object-position: center;
+    }
+
+    .video-player-root .video-player-h5-video-stage video.object-cover {
+        inset: -2px;
+        width: calc(100% + 4px);
+        height: calc(100% + 4px);
+        min-width: calc(100% + 4px);
+        min-height: calc(100% + 4px);
+        object-fit: cover;
+        object-position: center;
     }
 }
 
