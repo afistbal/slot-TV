@@ -6,13 +6,16 @@ import { buildVideoShareEmbedCode, resolveVideoSharePageUrl } from './videoPlaye
 import type { ShareAction } from './videoPlayerConstants';
 
 /** 分享链接/嵌入码；弹窗预览图由 `VideoPlayer` 传入剧封 `info.image`（拼接 static） */
-export function useVideoPlayerShare(data: IPlayerData, _staticBase: string) {
+export function useVideoPlayerShare(data: IPlayerData, _staticBase: string, currentEpisode?: number) {
     const intl = useIntl();
     const [shareOpen, setShareOpen] = useState(false);
     const [shareEmbedCode, setShareEmbedCode] = useState('');
     const [shareShowControls, setShareShowControls] = useState(true);
 
-    const getCurrentShareUrl = useCallback(() => resolveVideoSharePageUrl(), []);
+    const getCurrentShareUrl = useCallback(
+        () => resolveVideoSharePageUrl(data.info.id, currentEpisode),
+        [currentEpisode, data.info.id],
+    );
 
     const buildEmbedCode = useCallback(() => {
         return buildVideoShareEmbedCode(getCurrentShareUrl(), shareShowControls);
