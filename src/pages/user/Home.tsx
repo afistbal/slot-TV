@@ -28,6 +28,8 @@ const HERO_FADE_MS = 600;
 const SCROLL_TOP_FAB_THRESHOLD_PX = 400;
 /** 低于阈值后淡出再卸载，须与按钮 `transition-opacity duration-200` 一致并略留余量 */
 const SCROLL_TOP_FAB_FADE_OUT_MS = 220;
+/** 最近更新：距列表底部约此距离时预取下一页（无 loading UI，提前加载） */
+const HOME_LATEST_PREFETCH_ROOT_MARGIN_PX = 720;
 const HERO_AUTOPLAY_MS = 5000;
 
 function itemsFromHomeRail(
@@ -170,6 +172,7 @@ export default function Component() {
     const configStore = useConfigStore();
     const homeStore = useHomeStore();
     const scrollRef = useRef<HTMLDivElement>(null);
+    const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
     /** H5 首页顶栏：仅 Logo + Home/Categories + 搜索；PC 保留汉堡/语言/头像 */
     const homeTopNavProps = useMemo(
         () => ({
@@ -234,12 +237,28 @@ export default function Component() {
         }
     }, [scrollTopForFab]);
 
-    function handleManualLoadMore() {
-        loadLatest(homeStore.page + 1);
+    function requestLoadMorePage() {
+        const state = useHomeStore.getState();
+        if (requesting.current || !state.more) {
+            return;
+        }
+        void loadLatest(state.page + 1);
+    }
+
+    function tryLoadMoreIfNearBottom(el: HTMLElement) {
+        if (requesting.current || !useHomeStore.getState().more) {
+            return;
+        }
+        const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        if (distanceToBottom < 480) {
+            requestLoadMorePage();
+        }
     }
 
     function handleScroll(e: React.UIEvent<HTMLDivElement>) {
-        homeStore.setScrollTop(e.currentTarget.scrollTop);
+        const el = e.currentTarget;
+        homeStore.setScrollTop(el.scrollTop);
+        tryLoadMoreIfNearBottom(el);
     }
 
     async function loadLatest(p = 1) {
@@ -250,18 +269,34 @@ export default function Component() {
             return;
         }
         requesting.current = true;
-        const result = await api<IPagination>('movie', {
-            loading: false,
-            data: {
-                page: p,
-            },
-        }).finally(() => {
+        try {
+            const result = await api<IPagination>('movie', {
+                loading: false,
+                data: {
+                    page: p,
+                },
+            });
+            const d = result.d;
+            const rows = d.data ?? [];
+            const perPage = d.per_page > 0 ? d.per_page : 24;
+            const cur = typeof d.current_page === 'number' ? d.current_page : p;
+            const total = typeof d.count === 'number' ? d.count : 0;
+            const hasMore = total > 0 ? cur * perPage < total : rows.length === perPage;
+
+            state.setPage(cur);
+            state.setList(p === 1 ? rows : [...state.list, ...rows]);
+            state.setMore(hasMore);
+
+            requestAnimationFrame(() => {
+                const root = scrollRef.current;
+                if (root) {
+                    tryLoadMoreIfNearBottom(root);
+                }
+            });
+        } finally {
             requesting.current = false;
             searching.current = false;
-        });
-        state.setPage(p);
-        state.setList([...state.list, ...result.d.data]);
-        state.setMore(result.d.per_page === result.d.data.length);
+        }
     }
 
     useEffect(() => {
@@ -278,6 +313,32 @@ export default function Component() {
         }
         loadLatest();
     }, [homeStore.list.length, sessionBootstrapReady]);
+
+    useEffect(() => {
+        const root = scrollRef.current;
+        const target = loadMoreSentinelRef.current;
+        if (!sessionBootstrapReady || !root || !target) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (!entries.some((e) => e.isIntersecting)) {
+                    return;
+                }
+                requestLoadMorePage();
+            },
+            {
+                root,
+                rootMargin: `0px 0px ${HOME_LATEST_PREFETCH_ROOT_MARGIN_PX}px 0px`,
+                threshold: 0,
+            },
+        );
+
+        observer.observe(target);
+        requestAnimationFrame(() => tryLoadMoreIfNearBottom(root));
+        return () => observer.disconnect();
+    }, [sessionBootstrapReady, homeStore.list.length, homeStore.more]);
 
     const topList = useMemo(
         () => filterRenderableTopBannerItems(homeStore.data?.top ?? []),
@@ -691,7 +752,7 @@ export default function Component() {
                     items={itemsFromHomeRail(homeStore.data?.recommend ?? [])}
                 />
 
-                {/* 最近更新：来自 movie 列表分页（More Movies 追加到同一栏） */}
+                {/* 最近更新：movie 分页静默预加载（隐形哨兵，无 loading / 无更多文案） */}
                 {homeStore.list.length ? (
                     <HomeBookShelf
                         titleMessageId="latest_updates"
@@ -700,12 +761,18 @@ export default function Component() {
                         staticBase={configStore.config['static'] as string}
                         items={itemsFromMovieList(homeStore.list as { [key: string]: unknown }[])}
                         type="type_5"
-                        showMoreMoviesButton={homeStore.more}
-                        onMoreMoviesClick={handleManualLoadMore}
+                        pcHideIncompleteRow={homeStore.more}
                     />
                 ) : null}
             </div>
             <ReelShortFooter />
+            {homeStore.list.length > 0 && homeStore.more ? (
+                <div
+                    ref={loadMoreSentinelRef}
+                    className="home-latest-updates-sentinel"
+                    aria-hidden
+                />
+            ) : null}
         </div>
             {scrollTopFabMounted ? (
                 <Button

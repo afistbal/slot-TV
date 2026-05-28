@@ -32,7 +32,7 @@ function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
     return slug ? `/episodes/${slug}` : `/video/${item.id}`;
 }
 
-/** 与 `home-reelshort.scss` 中 PC `.HomePage_type_5--pc` / type_1 宫格列断点一致 */
+/** 与 `home-reelshort.scss` 中 PC `.HomePage_type_5--pc` 宫格列断点一致 */
 function pcHomeShelfGridColumns(width: number): number {
     if (width >= 1700) {
         return 7;
@@ -72,8 +72,8 @@ export function HomeBookShelf({
     items,
     staticBase,
     type = 'type_1',
-    showMoreMoviesButton,
-    onMoreMoviesClick,
+    /** PC type_5：尚有分页时裁掉末行未满格，避免半截行；全部加载完则展示最后一行 */
+    pcHideIncompleteRow = false,
 }: {
     titleMessageId: string;
     titleHref: string;
@@ -81,8 +81,7 @@ export function HomeBookShelf({
     items: HomeBookItemData[];
     staticBase: string;
     type?: 'type_1' | 'type_5';
-    showMoreMoviesButton?: boolean;
-    onMoreMoviesClick?: () => void;
+    pcHideIncompleteRow?: boolean;
 }) {
     /** 非 H5 时 type_1 为 CSS 网格、无横滑，不挂载拖拽/滚轮与 ref */
     const notH5 = useMinWidth768();
@@ -91,7 +90,7 @@ export function HomeBookShelf({
     const pcType5Cols = usePcType5GridColumns(type === 'type_5' && notH5);
 
     const type5PcVisibleItems = useMemo(() => {
-        if (type !== 'type_5' || !notH5 || !showMoreMoviesButton) {
+        if (type !== 'type_5' || !notH5 || !pcHideIncompleteRow) {
             return items;
         }
         const c = pcType5Cols;
@@ -104,7 +103,7 @@ export function HomeBookShelf({
         }
         const kept = items.length - remainder;
         return kept <= 0 ? items : items.slice(0, kept);
-    }, [type, notH5, showMoreMoviesButton, items, pcType5Cols]);
+    }, [type, notH5, pcHideIncompleteRow, items, pcType5Cols]);
 
     if (items.length === 0) {
         return null;
@@ -168,18 +167,6 @@ export function HomeBookShelf({
                             </div>
                         </div>
                     )}
-                    {showMoreMoviesButton ? (
-                        <div className="flex w-full min-w-0 justify-center px-1">
-                            <button
-                                type="button"
-                                className="HomePage_more_movies_btn__z0biE shrink-0"
-                                onClick={onMoreMoviesClick}
-                                disabled={!onMoreMoviesClick}
-                            >
-                                <FormattedMessage id="home_more_movies" />
-                            </button>
-                        </div>
-                    ) : null}
                 </div>
             ) : (
                 <div

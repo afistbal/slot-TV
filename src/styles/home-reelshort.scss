@@ -369,33 +369,15 @@
     }
 }
 
-/* type_5 书架底部按钮（镜像：More Movies） */
-.HomePage_more_movies_btn__z0biE {
-    border-radius: calc(1.6 * var(--app-vw) / 100);
-    border: 1px solid hsla(0, 0%, 100%, 0.2);
-    background: hsla(0, 0%, 100%, 0.06);
-    margin: calc(2.66667 * var(--app-vw) / 100) auto 0;
-    width: calc(57.6 * var(--app-vw) / 100);
-    height: calc(11.2 * var(--app-vw) / 100);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #fff;
-    font-size: calc(4.8 * var(--app-vw) / 100);
-    font-style: normal;
-    font-weight: 400;
-    cursor: pointer;
-}
-
-// --- 底部加载 / 无更多（可选，对齐镜像字号）---
-.HomePage_listLoader__rs {
-    margin-top: calc(2.66667 * var(--app-vw) / 100);
-    text-align: center;
-    color: hsla(0, 0%, 100%, 0.5);
-    min-height: calc(11.2 * var(--app-vw) / 100);
-    line-height: calc(11.2 * var(--app-vw) / 100);
-    font-size: calc(3.2 * var(--app-vw) / 100);
-    cursor: pointer;
+/* 最近更新：触底哨兵（页脚之后，不占视觉空间） */
+.home-latest-updates-sentinel {
+    width: 100%;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* 排名/为您推荐：ReelShort 镜像 `fb8bb5c8…css` 中 Slider 分页 + 行内一屏（`www.reelshort.com` 离线图） */
@@ -767,20 +749,6 @@
         height: 14px;
     }
 
-    .HomePage_main__BzEnK .HomePage_more_movies_btn__z0biE {
-        /* 对站 .home_more_movies_btn: 216x42, 18px, radius 6 */
-        border-radius: 6px;
-        margin: 18px auto 0;
-        width: 216px;
-        height: 42px;
-        font-size: 18px;
-    }
-
-    .HomePage_listLoader__rs {
-        font-size: 14px;
-        min-height: 42px;
-        line-height: 42px;
-    }
 }
 
 /* PC 首屏大幕布 `home-bg.png` 上叠层（`Home.tsx` z-0 容器内，在轮播/顶栏之下），与 H5 同套压暗逻辑 */

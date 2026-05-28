@@ -74,7 +74,10 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
     const sourceform = `${location.pathname}${location.search}`;
 
     const showTabs = showBottomTabBar && !isDesktop && !hidden;
+    const isForYouPage =
+        location.pathname === '/for-you' || location.pathname.startsWith('/for-you/');
     const addVariant: 'ios' | 'android' | null = showIosAddHome ? 'ios' : showInstallPrompt ? 'android' : null;
+    const showAddDesktop = addVariant !== null && !isForYouPage;
 
     useEffect(() => {
         setBottomNavDocumentFlags(showTabs);
@@ -91,7 +94,7 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
 
     return createPortal(
         <Fragment>
-            {addVariant ? (
+            {showAddDesktop ? (
                 <div className="reelshort-bottom-nav-add">
                     <BottomNavAddDesktopH5
                         variant={addVariant}
