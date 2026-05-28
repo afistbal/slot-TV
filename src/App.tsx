@@ -30,6 +30,7 @@ import enMessages from './locales/en.json';
 import zhMessages from './locales/zh.json';
 
 import LayoutUser from './layouts/user';
+import ShareToVideoRedirect from './pages/user/ShareToVideoRedirect';
 import UserMyList from './pages/user/MyList';
 import UserFavorite from './pages/user/Favorite';
 import UserHistory from './pages/user/History';
@@ -218,6 +219,10 @@ const router = createBrowserRouter([
             {
                 path: 'video/:id/:episode?',
                 element: <UserVideo />,
+            },
+            {
+                path: 'share/:id',
+                element: <ShareToVideoRedirect />,
             },
             {
                 path: 'airwallex/:id',

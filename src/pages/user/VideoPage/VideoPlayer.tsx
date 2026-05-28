@@ -143,7 +143,7 @@ export function VideoPlayer({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useVideoPlayerShare(data, staticBase);
+    } = useVideoPlayerShare(data, staticBase, episode?.episode);
     /** 未解锁：无 poster；已解锁：仅用截帧 data URL，失败则黑底（不用 `info.image`） */
     const unlockVisualOnly = episode?.lock === true;
     const frameTrim = framePosterDataUrl.trim();

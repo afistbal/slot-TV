@@ -1,20 +1,42 @@
+import { matchPath } from 'react-router';
 import { shareOrigin } from '@/env';
 import { movieCoverUrlFromInfo } from '@/lib/movieCoverUrl';
 
-/** 当前播放页可被分享的 canonical URL（与原先 VideoPlayer#getCurrentShareUrl 一致） */
-export function resolveVideoSharePageUrl(): string {
+const SHARE_EPISODE_QUERY_KEY = 'v';
+
+function resolveShareSiteOrigin(): string {
+    return (shareOrigin || 'https://yogoshort.com').replace(/\/+$/, '');
+}
+
+function parseEpisodeFromVideoUrl(): { movieId?: string; episode?: string } {
+    if (typeof window === 'undefined') {
+        return {};
+    }
+    const videoMatch = matchPath({ path: '/video/:id/:episode?', end: true }, window.location.pathname);
+    if (videoMatch?.params?.id == null) {
+        return {};
+    }
+    const ep = videoMatch.params.episode?.trim();
+    return {
+        movieId: String(videoMatch.params.id),
+        episode: ep || undefined,
+    };
+}
+
+/** 分享链接：`https://yogoshort.com/share/{剧id}?v={集数}` */
+export function resolveVideoSharePageUrl(movieId?: string | number, episode?: string | number): string {
     if (typeof window === 'undefined') {
         return '';
     }
-    const path = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    const isLocalhost =
-        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const fallbackDevShareOrigin = 'https://testwww.yogoshort.com';
-    const baseOrigin = (shareOrigin || (isLocalhost ? fallbackDevShareOrigin : '')).replace(/\/+$/, '');
-    if (baseOrigin) {
-        return `${baseOrigin}${path}`;
+    const fromUrl = parseEpisodeFromVideoUrl();
+    const id = movieId ?? fromUrl.movieId;
+    const ep = episode != null ? String(episode).trim() : fromUrl.episode;
+    if (id == null || !ep) {
+        return '';
     }
-    return window.location.href;
+    const params = new URLSearchParams();
+    params.set(SHARE_EPISODE_QUERY_KEY, ep);
+    return `${resolveShareSiteOrigin()}/share/${id}?${params.toString()}`;
 }
 
 /** `movie/info` 剧封：`d.info` + `is_rename` */

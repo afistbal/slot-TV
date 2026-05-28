@@ -55,9 +55,9 @@ function injectApiOriginPreconnect(apiOrigin: string): Plugin {
   }
 }
 
-/** 打包时把根目录分享相关 HTML 复制到 outDir，与 index.html 同级 */
+/** 打包时把根目录分享相关静态文件复制到 outDir，与 index.html 同级 */
 function copyShareHtmlFiles(outDir: string): Plugin {
-  const names = ['share.template.html', 'share-test.html', 'og-share.html']
+  const names = ['share.template.html', 'share.blade.php', 'share-test.html', 'og-share.html']
   return {
     name: 'copy-share-html-files',
     closeBundle() {
