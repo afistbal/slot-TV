@@ -442,5 +442,14 @@
     "wallet_page_title": "Details",
     "wallet_tab_recharge": "Recharge",
     "wallet_tab_consumption": "Consumption",
+    "wallet_pc_tab_recharge": "Transaction History",
+    "wallet_pc_tab_consumption": "Episodes Unlocked",
+    "wallet_pc_col_amount": "Amount",
+    "wallet_pc_col_trading_hours": "Trading Hours",
+    "wallet_pc_col_episode_name": "Episode Name",
+    "wallet_pc_col_episode": "Episode",
+    "wallet_pc_col_unlock_time": "Unlock Time",
+    "wallet_pc_bonus_coins": "+{n} coins",
+    "wallet_pc_deduct_coins": "-{n} coins",
     "wallet_episode_short": "Ep.{n}"
 }

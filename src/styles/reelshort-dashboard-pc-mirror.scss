@@ -47,7 +47,7 @@
     display: -webkit-box;
     display: -webkit-flex;
     display: flex;
-    background: #141414;
+    background: #212121;
     padding: 12px 16px;
     margin-bottom: 12px;
     border-radius: 4px;
@@ -193,25 +193,28 @@
  */
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK {
     list-style: none;
-    margin: 30px 0 0;
+    margin: 0;
     padding: 0;
     width: 100%;
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY {
     width: 100%;
-    padding-left: 0;
-    margin: 0;
-    color: #fff;
+    padding-left: 16px;
+    margin: 0 0 4px;
+    color: rgba(255, 255, 255, 0.92);
     display: flex;
     align-items: center;
-    height: 48px;
+    height: 44px;
     cursor: pointer;
-    /* 侧栏最大 260px：略收字号与行高，避免与长文案菜单项挤压 */
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 500;
     line-height: 1.2;
     box-sizing: border-box;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY:last-child {
+    margin-bottom: 0;
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY .rs-profile__pc-menuHit {
@@ -219,8 +222,8 @@
     align-items: center;
     width: 100%;
     height: 100%;
-    min-height: 48px;
-    padding: 0 0 0 12px;
+    min-height: 44px;
+    padding: 0 8px 0 0;
     margin: 0;
     border: 0;
     background: transparent;
@@ -237,7 +240,7 @@
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY span {
-    margin-left: 10px;
+    margin-left: 12px;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -245,27 +248,43 @@
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY i {
-    font-size: 24px !important;
+    font-size: 20px !important;
     font-style: normal;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     line-height: 0;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
     color: inherit;
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY i .lucide {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
+}
+
+.rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY .rs-profile__pc-menuImg {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask-image: var(--rs-pc-menu-icon);
+    mask-image: var(--rs-pc-menu-icon);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY:hover,
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item__GBkNY:hover .rs-profile__pc-menuHit {
-    color: #e52e2e;
+    color: #ff3d5d;
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item_active__H7KVg,
@@ -282,12 +301,12 @@
     .dashboard_pc_menu_item_active__H7KVg
     span,
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item_active__H7KVg .rs-profile__pc-menuSvg {
-    color: #e52e2e !important;
+    color: #ff3d5d !important;
 }
 
 .rs-profile__pc-aside .dashboard_pc_menu__5uzfK .dashboard_pc_menu_item_active__H7KVg {
-    background-color: #141414;
-    border-radius: 4px;
+    background-color: #212121;
+    border-radius: 8px;
 }
 
 /**
@@ -373,11 +392,11 @@
     white-space: nowrap;
 }
 
-/** PC 侧栏：用户信息块下方、主导航菜单上方 — 深色卡内含餘額、金幣與儲值 */
+/** PC 侧栏：用户信息块下方、主导航菜单上方 — 我的帳戶卡（设计稿：标题 + 分隔线 + 金幣/儲值横排） */
 .rs-profile__pc-aside .rs-profile__pc-accountBalance {
     box-sizing: border-box;
     width: 100%;
-    margin-bottom: 8px;
+    margin-bottom: 24px;
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__panel {
@@ -386,84 +405,87 @@
     display: flex;
     flex-direction: column;
     border-radius: 8px;
-    background-color: #141414;
-    padding: 12px 12px 12px;
+    background-color: #212121;
+    padding: 12px 16px;
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__title {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.3;
     color: rgba(255, 255, 255, 0.92);
 }
 
-.rs-profile__pc-aside .rs-profile__pc-accountBalance__row {
-    position: relative;
-    display: flex;
-    width: 100%;
-    margin-top: 12px;
-    align-items: flex-start;
-    justify-content: center;
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__divider {
+    height: 1px;
+    margin: 12px 0;
+    background: rgba(255, 255, 255, 0.08);
 }
 
-.rs-profile__pc-aside .rs-profile__pc-accountBalance__col {
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__body {
     display: flex;
-    flex: 0 1 auto;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    flex-direction: column;
     align-items: center;
-    text-align: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__coins {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.rs-profile__pc-aside .rs-profile__pc-accountBalance__label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__valueRow {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 2px;
-    margin-bottom: 1px;
+    justify-content: flex-start;
+    gap: 4px;
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__valueRow img {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
+    object-fit: contain;
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__valueRow span {
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 500;
     line-height: 1.2;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.rs-profile__pc-aside .rs-profile__pc-accountBalance__label {
-    font-size: 12px;
-    line-height: 1.25;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.92);
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__topUp {
-    display: flex;
-    width: 100%;
+    display: inline-flex;
+    flex-shrink: 0;
     box-sizing: border-box;
-    margin-top: 12px;
     align-items: center;
     justify-content: center;
-    padding: 10px 12px;
-    border-radius: 4px;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.2;
+    min-width: 72px;
+    height: 32px;
+    padding: 0 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 500;
+    /* 与顶栏充值钮一致：收紧行高，避免 flex 居中时默认 line-height 让字视觉偏下 */
+    line-height: 1;
+    font-family: inherit;
     color: #fff;
     text-decoration: none;
-    background-color: #e52e2e;
+    background-color: #ff3d5d;
     transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__topUp:hover {
-    background-color: #c92828;
+    background-color: #e83554;
     color: #fff;
 }
 

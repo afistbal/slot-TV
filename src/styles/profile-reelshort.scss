@@ -714,17 +714,26 @@
 /* PC 侧栏个人信息：已迁至 `reelshort-dashboard-pc-mirror.scss`（ReelShort dashboard_pc_* 同源类名） */
 
 .rs-profile__pc-aside .rs-profile__menu {
-    margin: 30px 0 0;
+    margin: 0;
     border-radius: 0;
     overflow: visible;
 }
 
-/* ReelShort dashboard_pc 同源 PC 菜单矢量（内联 SVG，继承侧栏 color；布局见 reelshort-dashboard-pc-mirror.scss） */
-.rs-profile__pc-menuSvg {
-    width: 24px;
-    height: 24px;
+/* PC 侧栏菜单图标（webp 作 mask，颜色随菜单项 color / currentColor） */
+.rs-profile__pc-menuImg {
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
     display: block;
+    background-color: currentColor;
+    -webkit-mask-image: var(--rs-pc-menu-icon);
+    mask-image: var(--rs-pc-menu-icon);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
 }
 
 .rs-profile__pc-aside .rs-profile__menuChevronIcon {
@@ -787,6 +796,64 @@
         flex: 1 1 auto;
         height: unset;
         min-height: 0;
+    }
+
+    /**
+     * PC `/profile?tab=topup`：复用视频 VIP 弹窗 Top UP 设计（Membership / Coins / Tips），
+     * 顶栏展示 Balance + Transaction History，与 `web_我的_充值.png` 一致。
+     */
+    .rs-profile__pc-main-scroll .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--profilePlain:has(.rs-shopping--profilePcTopUp) {
+        background: #000;
+        border-radius: 0;
+        padding: 0;
+
+        .rs-shopping__pageWalletBar {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0 0 20px;
+            padding: 0 0 16px;
+            border-radius: 0;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rs-shopping__pageWalletBar__history {
+            display: flex;
+        }
+
+        .rs-shopping__intro {
+            position: static;
+            padding-right: 0;
+            margin-bottom: 12px;
+        }
+
+        .rs-shopping__introEmbedExtras {
+            display: none;
+        }
+
+        .rs-shopping__plans {
+            padding-top: 0;
+        }
+
+        .rs-shopping__coinSection > .grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        }
+
+        .rs-shopping__coinSkuAmount {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .rs-shopping__coinSkuAmount .rs-shopping__coinSkuBonus {
+            margin: 0;
+            flex-shrink: 0;
+        }
     }
 }
 

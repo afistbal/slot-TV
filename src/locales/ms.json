@@ -216,6 +216,9 @@
     "today_uploaded": "Jumlah {total} filem; {today} dimuat naik hari ini.",
     "episode_repeated": "Episod Berulang",
     "episode_invalid": "Episod Tidak Sah",
+    "pagination": "Halaman",
+    "previous_page": "Halaman sebelumnya",
+    "next_page": "Halaman seterusnya",
     "pv": "Paparan Halaman",
     "uv": "Pelawat Unik",
     "area": "Wilayah",
@@ -404,5 +407,14 @@
     "wallet_page_title": "Butiran",
     "wallet_tab_recharge": "Tambah nilai",
     "wallet_tab_consumption": "Penggunaan",
-    "wallet_episode_short": "Ep.{n}"
+    "wallet_pc_tab_recharge": "Sejarah transaksi",
+    "wallet_pc_tab_consumption": "Episod dibuka",
+    "wallet_pc_col_amount": "Jumlah",
+    "wallet_pc_col_trading_hours": "Masa transaksi",
+    "wallet_pc_col_episode_name": "Nama episod",
+    "wallet_pc_col_episode": "Episod",
+    "wallet_pc_col_unlock_time": "Masa buka kunci",
+    "wallet_pc_bonus_coins": "+{n} syiling",
+    "wallet_pc_deduct_coins": "-{n} syiling",
+    "wallet_episode_short": "Episod {n}"
 }

@@ -116,10 +116,10 @@
     flex: 1 1 0;
     min-width: 0;
     margin: 0;
-    padding: calc(12 / 375 * var(--app-vw)) calc(8 / 375 * var(--app-vw)) calc(14 / 375 * var(--app-vw));
+    padding: 12px 8px 14px;
     border: 0;
     background: transparent;
-    font-size: calc(15 / 375 * var(--app-vw));
+    font-size: 16px;
     font-weight: 400;
     line-height: 1.35;
     text-align: center;
@@ -266,58 +266,83 @@
     color: rgba(255, 255, 255, 0.45);
 }
 
-/* PC Profile 嵌入 */
+/* PC Profile 嵌入 — 对齐 web_我的_充值记录 / web_我的_消费记录 */
 .rs-profile__pc-wallet {
     flex: 1 1 0%;
+    font-family: Roboto, Roboto;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    background: var(--app-canvas);
-    border-radius: 4px;
+    background: #000;
+    border-radius: 0;
     box-sizing: border-box;
 }
 
 .rs-wallet-tx--pc {
+    --rs-wallet-pc-tab-gap: 32px;
+    --rs-wallet-pc-tab-pad-b: 14px;
+    --rs-wallet-pc-tab-size: 16px;
+    --rs-wallet-pc-tab-line: 3px;
+    --rs-wallet-pc-accent: #ff3d5d;
+    --rs-wallet-pc-row-bg: #1c1c1c;
+    --rs-wallet-pc-row-radius: 8px;
+    --rs-wallet-pc-row-gap: 10px;
+    --rs-wallet-pc-row-pad-x: 20px;
+    --rs-wallet-pc-row-pad-y: 16px;
+    --rs-wallet-pc-row-min-h: 52px;
+    --rs-wallet-pc-head-pad-b: 12px;
+    --rs-wallet-pc-table-pad-top: 24px;
+    --rs-wallet-pc-muted: rgba(255, 255, 255, 0.45);
+    --rs-wallet-pc-recharge-cols: minmax(0, 0.88fr) minmax(0, 1.12fr) minmax(0, 1.28fr);
+    --rs-wallet-pc-consumption-cols: minmax(0, 1.48fr) minmax(0, 0.68fr) minmax(0, 1.12fr) minmax(0, 0.82fr);
+
     flex: 1 1 auto;
     min-height: 0;
+    background: #000;
 
     .rs-wallet-tx__tabs {
-        gap: 0;
+        gap: var(--rs-wallet-pc-tab-gap);
         padding: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: #000;
+        justify-content: flex-start;
     }
 
     .rs-wallet-tx__tab {
-        flex: 1 1 0;
-        padding: 12px 8px 14px;
-        font-size: 14px;
+        flex: 0 0 auto;
+        min-width: 0;
+        padding: 0 0 var(--rs-wallet-pc-tab-pad-b);
+        border: 0;
+        background: transparent;
+        font-size: var(--rs-wallet-pc-tab-size);
+        font-weight: 400;
+        line-height: 1.25;
+        text-align: left;
+        color: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
     }
 
-    .rs-wallet-tx__tab--active::after {
-        bottom: 0;
-        width: 40px;
-        height: 3px;
+    .rs-wallet-tx__tab--active {
+        color: var(--rs-wallet-pc-accent);
+        font-weight: 500;
+
+        /* 设计稿：短圆角条居中于文案下方，非通栏底边 */
+        &::after {
+            left: 50%;
+            bottom: 0;
+            width: 32px;
+            height: var(--rs-wallet-pc-tab-line);
+            transform: translateX(-50%);
+            border-radius: 999px;
+            background-color: var(--rs-wallet-pc-accent);
+        }
     }
 
-    .rs-wallet-tx__tableWrap {
-        padding: 8px 0 24px;
-    }
-
-    .rs-wallet-tx__head {
-        padding: 14px 0;
-        font-size: 13px;
-    }
-
-    .rs-wallet-tx__row {
-        padding: 16px 0;
-        font-size: 14px;
-    }
-
-    .rs-wallet-tx__cell--qty {
-        font-size: 15px;
-    }
-
-    .rs-wallet-tx__cell--time {
-        font-size: 13px;
+    .rs-wallet-tx__panel {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
     }
 
     .rs-wallet-tx__empty {
@@ -331,6 +356,268 @@
 
     .rs-wallet-tx__emptyText {
         font-size: 14px;
+        line-height: 1.35;
+        color: var(--rs-wallet-pc-muted);
+    }
+}
+
+/** PC 交易记录：设计稿 card 行 + 分页 */
+.rs-wallet-pcTable {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: var(--rs-wallet-pc-table-pad-top, 24px) 0 0;
+    box-sizing: border-box;
+}
+
+.rs-wallet-pcTable__head {
+    display: grid;
+    column-gap: 16px;
+    padding: 0 var(--rs-wallet-pc-row-pad-x, 20px) var(--rs-wallet-pc-head-pad-b, 12px);
+    font-family: Roboto, Roboto;
+    font-weight: 400;
+    font-size: 16px;
+    color: #FFFFFF;
+    text-align: center;
+
+    >span {
+        justify-self: center;
+        text-align: center;
+    }
+}
+
+.rs-wallet-pcTable__head--recharge {
+    grid-template-columns: var(--rs-wallet-pc-recharge-cols, minmax(0, 0.88fr) minmax(0, 1.12fr) minmax(0, 1.28fr));
+}
+
+.rs-wallet-pcTable__head--consumption {
+    grid-template-columns: var(--rs-wallet-pc-consumption-cols,
+            minmax(0, 1.48fr) minmax(0, 0.68fr) minmax(0, 1.12fr) minmax(0, 0.82fr));
+}
+
+.rs-wallet-pcTable__body {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rs-wallet-pc-row-gap, 10px);
+}
+
+.rs-wallet-pcRow {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-radius: var(--rs-wallet-pc-row-radius, 8px);
+    background: var(--rs-wallet-pc-row-bg, #1c1c1c);
+    overflow: hidden;
+}
+
+.rs-wallet-pcRow--recharge {
+    display: grid;
+    grid-template-columns: var(--rs-wallet-pc-recharge-cols, minmax(0, 0.88fr) minmax(0, 1.12fr) minmax(0, 1.28fr));
+    column-gap: 16px;
+    align-items: center;
+    justify-items: center;
+    min-height: var(--rs-wallet-pc-row-min-h, 52px);
+    padding: var(--rs-wallet-pc-row-pad-y, 16px) var(--rs-wallet-pc-row-pad-x, 20px);
+    box-sizing: border-box;
+    text-align: center;
+
+    >* {
+        justify-self: center;
+        text-align: center;
+    }
+}
+
+.rs-wallet-pcRow--consumption {
+    min-height: var(--rs-wallet-pc-row-min-h, 52px);
+}
+
+.rs-wallet-pcRow__grid {
+    display: grid;
+    grid-template-columns: var(--rs-wallet-pc-consumption-cols,
+            minmax(0, 1.48fr) minmax(0, 0.68fr) minmax(0, 1.12fr) minmax(0, 0.82fr));
+    column-gap: 16px;
+    align-items: center;
+    justify-items: center;
+    width: 100%;
+    min-height: var(--rs-wallet-pc-row-min-h, 52px);
+    padding: var(--rs-wallet-pc-row-pad-y, 16px) var(--rs-wallet-pc-row-pad-x, 20px);
+    box-sizing: border-box;
+    text-align: center;
+
+    >* {
+        justify-self: center;
+        text-align: center;
+        min-width: 0;
+        max-width: 100%;
+    }
+}
+
+.rs-wallet-pcRow__link {
+    text-decoration: none;
+    color: inherit;
+
+    &:hover .rs-wallet-pcRow__episodeName,
+    &:hover .rs-wallet-pcRow__episodeNo {
+        color: #fff;
+    }
+}
+
+.rs-wallet-pcRow__amount {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+    color: #fff;
+}
+
+.rs-wallet-pcRow__coins {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    min-width: 0;
+}
+
+.rs-wallet-pcRow__coinIcon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.rs-wallet-pcRow__coinBase {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+    color: #fff;
+}
+
+.rs-wallet-pcRow__coinBonus {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #999999;
+}
+
+.rs-wallet-pcRow__episodeName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 400;
+    font-size: 16px;
+    color: #fff;
+}
+
+.rs-wallet-pcRow__episodeNo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+}
+
+.rs-wallet-pcRow__episodeChev {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    stroke-width: 2px;
+    opacity: 0.85;
+}
+
+.rs-wallet-pcRow__time {
+    font-size: 16px;
+    font-weight: 400;
+    color: #999999;
+    white-space: nowrap;
+}
+
+.rs-wallet-pcRow__deduct {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+    color: #fff;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.rs-wallet-pcPagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: auto;
+    padding: 32px 0 8px;
+}
+
+.rs-wallet-pcPagination__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--rs-wallet-pc-row-radius, 8px);
+    background: var(--rs-wallet-pc-row-bg, #1c1c1c);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.35;
+    }
+
+    &:not(:disabled):hover {
+        border-color: rgba(255, 61, 93, 0.45);
+        color: var(--rs-wallet-pc-accent, #ff3d5d);
+    }
+}
+
+.rs-wallet-pcPagination__pages {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rs-wallet-pcPagination__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--rs-wallet-pc-row-radius, 8px);
+    background: var(--rs-wallet-pc-row-bg, #1c1c1c);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        color 0.15s ease,
+        background-color 0.15s ease;
+
+    &--active {
+        border-color: var(--rs-wallet-pc-accent, #ff3d5d);
+        color: var(--rs-wallet-pc-accent, #ff3d5d);
+        background: rgba(255, 61, 93, 0.08);
+    }
+
+    &:not(.rs-wallet-pcPagination__num--active):hover {
+        border-color: rgba(255, 255, 255, 0.22);
+        color: #fff;
     }
 }
 

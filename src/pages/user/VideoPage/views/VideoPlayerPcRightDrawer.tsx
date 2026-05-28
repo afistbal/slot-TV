@@ -1,6 +1,15 @@
 import { X } from 'lucide-react';
-import { useLayoutEffect, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import {
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type CSSProperties,
+    type ReactNode,
+    type RefObject,
+} from 'react';
 import { cn } from '@/lib/utils';
+import { PC_DRAWER_DURATION_MS } from '../videoPlayerPcDrawerMotion';
 
 export type VideoPlayerPcRightDrawerProps = {
     open: boolean;
@@ -17,6 +26,7 @@ export type VideoPlayerPcRightDrawerProps = {
 
 /**
  * PC 右侧抽屉：面板 translate3d 滑入（与舞台共用 --pc-drawer-duration / --pc-drawer-ease）。
+ * 滑入结束后移除 transform 合成层（--settled），减轻文字发糊。
  */
 export function VideoPlayerPcRightDrawer({
     open,
@@ -29,6 +39,8 @@ export function VideoPlayerPcRightDrawer({
     showPanelClose = true,
 }: VideoPlayerPcRightDrawerProps) {
     const [frame, setFrame] = useState<Pick<CSSProperties, 'height' | 'minHeight'>>({});
+    const [panelSettled, setPanelSettled] = useState(false);
+    const panelRef = useRef<HTMLDivElement>(null);
 
     useLayoutEffect(() => {
         const sync = () => {
@@ -36,7 +48,7 @@ export function VideoPlayerPcRightDrawer({
             if (!anchor) {
                 return;
             }
-            const h = anchor.getBoundingClientRect().height;
+            const h = Math.round(anchor.getBoundingClientRect().height);
             setFrame({ height: h, minHeight: h });
         };
 
@@ -53,6 +65,34 @@ export function VideoPlayerPcRightDrawer({
         };
     }, [anchorRef, open]);
 
+    useEffect(() => {
+        if (!open || !entered) {
+            setPanelSettled(false);
+        }
+    }, [open, entered]);
+
+    useEffect(() => {
+        const panel = panelRef.current;
+        if (!panel || !open || !entered) {
+            return;
+        }
+
+        const settle = () => setPanelSettled(true);
+
+        const onEnd = (e: TransitionEvent) => {
+            if (e.target === panel && e.propertyName === 'transform') {
+                settle();
+            }
+        };
+
+        panel.addEventListener('transitionend', onEnd);
+        const fallback = window.setTimeout(settle, PC_DRAWER_DURATION_MS + 80);
+        return () => {
+            panel.removeEventListener('transitionend', onEnd);
+            window.clearTimeout(fallback);
+        };
+    }, [open, entered]);
+
     return (
         <aside
             className={cn(
@@ -67,7 +107,13 @@ export function VideoPlayerPcRightDrawer({
             aria-label={ariaLabel}
             aria-hidden={!open}
         >
-            <div className="video-pc-right-drawer__panel">
+            <div
+                ref={panelRef}
+                className={cn(
+                    'video-pc-right-drawer__panel',
+                    panelSettled && 'video-pc-right-drawer__panel--settled',
+                )}
+            >
                 {showPanelClose ? (
                     <button
                         type="button"

@@ -26,6 +26,7 @@ import './styles/legal-doc-reelshort.scss'
 import './styles/legal-doc-reelshort-pc.scss'
 import './styles/checkout-reelshort.scss'
 import './styles/video-vertical.scss'
+import './styles/video-player-h5-drawers.scss'
 import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 

@@ -28,6 +28,7 @@ import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFrom
 import { canNavigateBack, isPerformanceNavigationReload } from './videoPlayerUtils';
 import { VideoPlayerPcNeighborSlideShell } from './views/VideoPlayerPcNeighborSlideShell';
 import { cn } from '@/lib/utils';
+import type { PcDrawerPanel } from './videoPlayerPcDrawerMotion';
 
 /**
  * PC 竖向切集总开关（滚轮累加切集 + list 上 pointer 竖滑切集）。
@@ -81,6 +82,9 @@ export default function VideoVerticalSwiper() {
     const skipLayoutUrlSyncRef = useRef(false);
     const didInitialLayoutRef = useRef(false);
     const neighborLegacyAutoplayRef = useRef(false);
+    const pcDrawerClosingRef = useRef(false);
+    const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
+    const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
     const isDesktop = useMinWidth768();
     const viewerIsVip = useUserStore((s) => Boolean(s.signed && s.info?.['is_vip']));
     const navigateRef = useRef(navigate);
@@ -91,6 +95,20 @@ export default function VideoVerticalSwiper() {
     locationRef.current = location;
     const dataRef = useRef(data);
     dataRef.current = data;
+
+    const pcDrawerProps = {
+        pcDrawerPanel,
+        onPcDrawerPanelChange: setPcDrawerPanel,
+        pcDrawerEntered,
+        onPcDrawerEnteredChange: setPcDrawerEntered,
+        pcDrawerClosingRef,
+    };
+
+    useEffect(() => {
+        pcDrawerClosingRef.current = false;
+        setPcDrawerPanel(null);
+        setPcDrawerEntered(false);
+    }, [params['id']]);
 
     const markFullscreenTransition = useCallback(() => {
         if (!keepFullscreen) {
@@ -515,6 +533,7 @@ export default function VideoVerticalSwiper() {
                                             fromHomeVideoPlayback={false}
                                             legacyEpisodeAutoplayRef={neighborLegacyAutoplayRef}
                                             playbackPolicy="paused"
+                                            {...pcDrawerProps}
                                         />
                                     </div>
                                 )}
@@ -533,6 +552,7 @@ export default function VideoVerticalSwiper() {
                                             shouldIgnoreFullscreenExit={shouldIgnoreFullscreenExit}
                                             fromHomeVideoPlayback={fromHomeVideoPlayback}
                                             legacyEpisodeAutoplayRef={legacyEpisodeAutoplayRef}
+                                            {...pcDrawerProps}
                                         />
                                     </div>
                                 )}

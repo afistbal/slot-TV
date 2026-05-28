@@ -216,6 +216,9 @@
     "today_uploaded": "Total de {total} filmes; {today} carregados hoje.",
     "episode_repeated": "Episódio Repetido",
     "episode_invalid": "Episódio Inválido",
+    "pagination": "Paginação",
+    "previous_page": "Página anterior",
+    "next_page": "Próxima página",
     "pv": "Visualização de Página",
     "uv": "Visitante Único",
     "area": "Região",
@@ -404,5 +407,14 @@
     "wallet_page_title": "Detalhes",
     "wallet_tab_recharge": "Recarga",
     "wallet_tab_consumption": "Consumo",
-    "wallet_episode_short": "Ep.{n}"
+    "wallet_pc_tab_recharge": "Histórico de transações",
+    "wallet_pc_tab_consumption": "Episódios desbloqueados",
+    "wallet_pc_col_amount": "Valor",
+    "wallet_pc_col_trading_hours": "Hora da transação",
+    "wallet_pc_col_episode_name": "Nome do episódio",
+    "wallet_pc_col_episode": "Episódio",
+    "wallet_pc_col_unlock_time": "Hora do desbloqueio",
+    "wallet_pc_bonus_coins": "+{n} moedas",
+    "wallet_pc_deduct_coins": "-{n} moedas",
+    "wallet_episode_short": "Ep. {n}"
 }

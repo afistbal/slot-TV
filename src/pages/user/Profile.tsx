@@ -1,16 +1,10 @@
 import { CircleUser } from 'lucide-react';
-import {
-    RsPcHelpMenuIcon,
-    RsPcHistoryMenuIcon,
-    RsPcMyListMenuIcon,
-    RsPcWalletMenuIcon,
-} from '@/components/icons/reelshortDashboardPcMenuIcons';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import coinIcon from '@/assets/profile/icon_coin@2x.png';
-import { profileH5Assets } from '@/constants/profileAssets';
+import { profileH5Assets, profilePcMenuAssets } from '@/constants/profileAssets';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import Vip from '@/widgets/Vip';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useUserStore } from '@/stores/user';
@@ -34,6 +28,17 @@ import UserDetailPanel from '@/pages/user/UserDetail';
 import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
 import { PcLoginDialog } from '@/pages/user/Login';
 type ProfilePcTab = 'topup' | 'wallet' | 'profile' | 'mylist' | 'feedback';
+
+/** PC 侧栏 webp 图标：mask + currentColor，active/hover 时与菜单文字同色 */
+function PcMenuIcon({ src }: { src: string }) {
+    return (
+        <span
+            className="rs-profile__pc-menuImg"
+            style={{ '--rs-pc-menu-icon': `url(${src})` } as CSSProperties}
+            aria-hidden
+        />
+    );
+}
 
 export default function Component() {
     const intl = useIntl();
@@ -634,24 +639,25 @@ export default function Component() {
         <div className="rs-profile__pc-accountBalance">
             <div className="rs-profile__pc-accountBalance__panel">
                 <div className="rs-profile__pc-accountBalance__title">
-                    <FormattedMessage id="shopping_bar_account_balance" />
+                    <FormattedMessage id="profile_h5_my_account" />
                 </div>
-                <div className="rs-profile__pc-accountBalance__row">
-                    <div className="rs-profile__pc-accountBalance__col">
+                <div className="rs-profile__pc-accountBalance__divider" aria-hidden />
+                <div className="rs-profile__pc-accountBalance__body">
+                    <div className="rs-profile__pc-accountBalance__coins">
+                        <span className="rs-profile__pc-accountBalance__label">
+                            <FormattedMessage id="shopping_bar_coins" />
+                        </span>
                         <div className="rs-profile__pc-accountBalance__valueRow">
                             <img src={coinIcon} alt="" aria-hidden />
                             <span className="tabular-nums">
                                 {formatPcWalletStat(pcWalletDisplay.total, pcWalletDisplay.pending)}
                             </span>
                         </div>
-                        <div className="rs-profile__pc-accountBalance__label">
-                            <FormattedMessage id="shopping_bar_coins" />
-                        </div>
                     </div>
+                    <Link to="/profile?tab=topup" className="rs-profile__pc-accountBalance__topUp">
+                        <FormattedMessage id="top_up" />
+                    </Link>
                 </div>
-                <Link to="/profile?tab=topup" className="rs-profile__pc-accountBalance__topUp">
-                    <FormattedMessage id="top_up" />
-                </Link>
             </div>
         </div>
     );
@@ -699,7 +705,7 @@ export default function Component() {
                                                     className="rs-profile__pc-menuHit"
                                                 >
                                                     <i>
-                                                        <RsPcMyListMenuIcon />
+                                                        <PcMenuIcon src={profilePcMenuAssets.myList} />
                                                     </i>
                                                     <span>
                                                         <FormattedMessage id="profile_admin_product_list" />
@@ -734,10 +740,10 @@ export default function Component() {
                                             onClick={() => setProfileTabQuery('wallet')}
                                         >
                                             <i>
-                                                <RsPcWalletMenuIcon />
+                                                <PcMenuIcon src={profilePcMenuAssets.wallet} />
                                             </i>
                                             <span>
-                                                <FormattedMessage id="profile_wallet" />
+                                                <FormattedMessage id="shopping_bar_history" />
                                             </span>
                                         </button>
                                     </li>
@@ -748,7 +754,7 @@ export default function Component() {
                                             onClick={() => setProfileTabQuery('mylist')}
                                         >
                                             <i>
-                                                <RsPcMyListMenuIcon />
+                                                <PcMenuIcon src={profilePcMenuAssets.myList} />
                                             </i>
                                             <span>
                                                 <FormattedMessage id="my_list" />
@@ -762,7 +768,7 @@ export default function Component() {
                                             onClick={() => setProfileTabQuery('history')}
                                         >
                                             <i>
-                                                <RsPcHistoryMenuIcon />
+                                                <PcMenuIcon src={profilePcMenuAssets.watchHistory} />
                                             </i>
                                             <span>
                                                 <FormattedMessage id="nav_watch_history" />
@@ -776,7 +782,7 @@ export default function Component() {
                                             onClick={() => setProfileTabQuery('feedback')}
                                         >
                                             <i>
-                                                <RsPcHelpMenuIcon />
+                                                <PcMenuIcon src={profilePcMenuAssets.help} />
                                             </i>
                                             <span>
                                                 <FormattedMessage id="feedback_help" />

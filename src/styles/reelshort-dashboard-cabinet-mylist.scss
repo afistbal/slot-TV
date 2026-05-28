@@ -310,7 +310,7 @@
 
 .rs-profile__pc-cabinet .rs-bi-title {
     /* vw 过小时 min(2.6vw,20px) 会过小；clamp 保最小可读、最大 20px */
-    font-size: clamp(13px, 2.2vw, 18px);
+    font-size: 16px;
     width: 100%;
     font-weight: 500;
     color: #fff;

@@ -58,6 +58,7 @@ import {
 import { measurePcStageShiftPx } from './videoPlayerPcDrawerStageShift';
 import {
     PC_DRAWER_DURATION_MS,
+    type PcDrawerPanel,
     schedulePcDrawerEnterFrame,
 } from './videoPlayerPcDrawerMotion';
 
@@ -68,6 +69,11 @@ export function VideoPlayer({
     fromHomeVideoPlayback,
     legacyEpisodeAutoplayRef,
     playbackPolicy = 'autoplay',
+    pcDrawerPanel,
+    onPcDrawerPanelChange,
+    pcDrawerEntered,
+    onPcDrawerEnteredChange,
+    pcDrawerClosingRef,
     ...props
 }: {
     id: number;
@@ -85,6 +91,12 @@ export function VideoPlayer({
     legacyEpisodeAutoplayRef: RefObject<boolean>;
     /** 当前集正常播；竖滑相邻格仅挂片+控件，不自动播放 */
     playbackPolicy?: 'autoplay' | 'paused';
+    /** PC 右侧抽屉状态（由 VideoVerticalSwiper 持有，换集时不关闭） */
+    pcDrawerPanel: PcDrawerPanel;
+    onPcDrawerPanelChange: (panel: PcDrawerPanel) => void;
+    pcDrawerEntered: boolean;
+    onPcDrawerEnteredChange: (entered: boolean) => void;
+    pcDrawerClosingRef: RefObject<boolean>;
 }) {
     // const loadingStore = useLoadingStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
@@ -128,10 +140,6 @@ export function VideoPlayer({
     const [speedOpen, setSpeedOpen] = useState(false);
     const [speed, setSpeed] = useState(parseInt(localStorage.getItem('playback_speed') || '1', 10));
     const [introduction, setIntroduction] = useState(false);
-    /** PC：右侧滑出抽屉，仅 List → 分集；底部简介 → 简介（VIP/收藏不走抽屉） */
-    const [pcDrawerPanel, setPcDrawerPanel] = useState<null | 'episodes' | 'intro'>(null);
-    const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
-    const pcDrawerClosingRef = useRef(false);
     const isDesktop = useMinWidth768();
     const staticBase = useMemo(() => String(configStore.config['static'] ?? ''), [configStore.config['static']]);
     const {
@@ -418,7 +426,7 @@ export function VideoPlayer({
             return;
         }
         pcDrawerClosingRef.current = true;
-        setPcDrawerEntered(false);
+        onPcDrawerEnteredChange(false);
         setPcStageShiftPx(0);
     }
 
@@ -436,7 +444,7 @@ export function VideoPlayer({
             return;
         }
         pcDrawerClosingRef.current = false;
-        setPcDrawerPanel('episodes');
+        onPcDrawerPanelChange('episodes');
     }
 
     function handlePcIntroDrawerClick(ev?: MouseEvent) {
@@ -449,7 +457,7 @@ export function VideoPlayer({
             return;
         }
         pcDrawerClosingRef.current = false;
-        setPcDrawerPanel('intro');
+        onPcDrawerPanelChange('intro');
     }
 
     function handleToggleFavorite() {
@@ -827,20 +835,10 @@ export function VideoPlayer({
         setDesktopEpisodeTab((prev) => (prev === nextTab ? prev : nextTab));
     }, [isDesktop, data, id, episode?.episode]);
 
-    useEffect(() => {
-        if (!isDesktop) {
-            return;
-        }
-        pcDrawerClosingRef.current = false;
-        setPcDrawerPanel(null);
-        setPcDrawerEntered(false);
-        setPcStageShiftPx(0);
-    }, [isDesktop, props.index]);
-
     /** PC：先挂载起始态，下一帧 entered + 左移，才能触发 CSS transition */
     useEffect(() => {
         if (!isDesktop || pcDrawerPanel == null) {
-            setPcDrawerEntered(false);
+            onPcDrawerEnteredChange(false);
             setPcStageShiftPx(0);
             return;
         }
@@ -848,10 +846,21 @@ export function VideoPlayer({
             return;
         }
 
-        setPcDrawerEntered(false);
+        /** 换集 remount：抽屉已在父级保持打开，跳过滑入动画 */
+        if (pcDrawerEntered) {
+            return schedulePcDrawerEnterFrame(() => {
+                const shell = pcShellRef.current;
+                const cluster = pcStageClusterRef.current;
+                if (shell && cluster) {
+                    setPcStageShiftPx(measurePcStageShiftPx(shell, cluster));
+                }
+            });
+        }
+
+        onPcDrawerEnteredChange(false);
         setPcStageShiftPx(0);
         return schedulePcDrawerEnterFrame(() => {
-            setPcDrawerEntered(true);
+            onPcDrawerEnteredChange(true);
             const shell = pcShellRef.current;
             const cluster = pcStageClusterRef.current;
             if (shell && cluster) {
@@ -868,7 +877,7 @@ export function VideoPlayer({
 
         const finish = () => {
             pcDrawerClosingRef.current = false;
-            setPcDrawerPanel(null);
+            onPcDrawerPanelChange(null);
             setPcStageShiftPx(0);
         };
 
@@ -1527,54 +1536,56 @@ export function VideoPlayer({
                                 )}
                             </div>
                             </div>
-                            <div
-                                className="video-player-pc-side-actions flex shrink-0 flex-col gap-4"
-                                data-vertical-swipe-ignore
-                            >
-                                {!userStore.isVIP() && (
+                            {!pcFullscreen && (
+                                <div
+                                    className="video-player-pc-side-actions flex shrink-0 flex-col gap-4"
+                                    data-vertical-swipe-ignore
+                                >
+                                    {!userStore.isVIP() && (
+                                        <div
+                                            className="flex cursor-pointer flex-col items-center gap-1"
+                                            onClick={(e) => handleToggleVip(e)}
+                                        >
+                                            <Crown className="h-8 w-8 fill-[#ffd000] text-[#ffd000]" />
+                                            <div className="h-4 text-center text-xs leading-4 text-[#ffd000]">
+                                                <FormattedMessage id="shopping_vip_fab_label" />
+                                            </div>
+                                        </div>
+                                    )}
                                     <div
                                         className="flex cursor-pointer flex-col items-center gap-1"
-                                        onClick={(e) => handleToggleVip(e)}
+                                        onClick={handleToggleFavorite}
                                     >
-                                        <Crown className="h-8 w-8 fill-[#ffd000] text-[#ffd000]" />
-                                        <div className="h-4 text-center text-xs leading-4 text-[#ffd000]">
-                                            <FormattedMessage id="shopping_vip_fab_label" />
+                                        <Star
+                                            className={cn(
+                                                'h-8 w-8 fill-white text-white',
+                                                favorite && 'fill-[#ffd000] stroke-[#ffd000]',
+                                            )}
+                                        />
+                                        <div className="h-4 text-center text-xs leading-4 text-white">
+                                            {data.info.favorite}K
                                         </div>
                                     </div>
-                                )}
-                                <div
-                                    className="flex cursor-pointer flex-col items-center gap-1"
-                                    onClick={handleToggleFavorite}
-                                >
-                                    <Star
-                                        className={cn(
-                                            'h-8 w-8 fill-white text-white',
-                                            favorite && 'fill-[#ffd000] stroke-[#ffd000]',
-                                        )}
-                                    />
-                                    <div className="h-4 text-center text-xs leading-4 text-white">
-                                        {data.info.favorite}K
+                                    <div
+                                        className="flex cursor-pointer flex-col items-center gap-1"
+                                        onClick={handlePcEpisodeListClick}
+                                    >
+                                        <LayoutGrid className="h-8 w-8 fill-white text-white" />
+                                        <div className="h-4 text-center text-xs leading-4 text-white">
+                                            <FormattedMessage id="episode_list" />
+                                        </div>
+                                    </div>
+                                    <div
+                                        className="flex cursor-pointer flex-col items-center gap-1"
+                                        onClick={() => setShareOpen(true)}
+                                    >
+                                        <img src={shareEntryIcon} alt="" className="h-8 w-8" />
+                                        <div className="h-4 text-center text-xs leading-4 text-white">
+                                            {intl.formatMessage({ id: 'share' })}
+                                        </div>
                                     </div>
                                 </div>
-                                <div
-                                    className="flex cursor-pointer flex-col items-center gap-1"
-                                    onClick={handlePcEpisodeListClick}
-                                >
-                                    <LayoutGrid className="h-8 w-8 fill-white text-white" />
-                                    <div className="h-4 text-center text-xs leading-4 text-white">
-                                        <FormattedMessage id="episode_list" />
-                                    </div>
-                                </div>
-                                <div
-                                    className="flex cursor-pointer flex-col items-center gap-1"
-                                    onClick={() => setShareOpen(true)}
-                                >
-                                    <img src={shareEntryIcon} alt="" className="h-8 w-8" />
-                                    <div className="h-4 text-center text-xs leading-4 text-white">
-                                        {intl.formatMessage({ id: 'share' })}
-                                    </div>
-                                </div>
-                                </div>
+                            )}
                             </div>
                             <div
                                 className={cn(

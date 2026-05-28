@@ -1,15 +1,28 @@
-import { Check, X } from 'lucide-react';
-import type { RefObject } from 'react';
+import { X } from 'lucide-react';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
-import lockIcon from '@/assets/lock.svg';
+import episodeLockBadgeIcon from '@/assets/icons/episode-lock-badge.svg';
+import activeEpisodeBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
 import Image from '@/components/Image';
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { formatVideoIntroTagLabel, videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
 import { cn } from '@/lib/utils';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import { resolveVideoPosterUrl } from '../videoPlayerShareUrl';
 import { SPEED } from '../videoPlayerConstants';
+import {
+    buildEpisodeTabRanges,
+    episodeTabIndexForEpisodeNo,
+    H5_EPISODE_TAB_PAGE_SIZE,
+} from '../videoPlayerPcEpisodeTabs';
+
+function formatPlaybackSpeedLabel(rate: number) {
+    if (Number.isInteger(rate)) {
+        return `${rate.toFixed(1)}x`;
+    }
+    return `${rate.toFixed(2).replace(/(\.\d)0$/, '$1')}x`;
+}
 
 type Props = {
     data: IPlayerData;
@@ -54,133 +67,228 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     hideEpisodeDrawer = false,
     hideIntroDrawer = false,
 }: Props) {
+    const episodeCount = data.episodes.length;
+    const currentEpisodeNo = episode?.episode ?? episodeIndex + 1;
+    const episodeTabRanges = useMemo(
+        () => buildEpisodeTabRanges(episodeCount, H5_EPISODE_TAB_PAGE_SIZE),
+        [episodeCount],
+    );
+    const [activeEpisodeTab, setActiveEpisodeTab] = useState(0);
+
+    useEffect(() => {
+        if (!episodeStatus) {
+            return;
+        }
+        const nextTab = episodeTabIndexForEpisodeNo(currentEpisodeNo, episodeTabRanges);
+        setActiveEpisodeTab((prev) => (prev === nextTab ? prev : nextTab));
+    }, [episodeStatus, currentEpisodeNo, episodeTabRanges]);
+
+    const visibleEpisodes = useMemo(() => {
+        const range = episodeTabRanges[activeEpisodeTab];
+        if (!range) {
+            return data.episodes;
+        }
+        return data.episodes.filter((e) => e.episode >= range.start && e.episode <= range.end);
+    }, [data.episodes, episodeTabRanges, activeEpisodeTab]);
+
     return (
         <>
             {!hideEpisodeDrawer ? (
-            <Drawer open={episodeStatus} onOpenChange={() => onToggleEpisodeDrawer()}>
-                <DrawerContent className="bg-slate-800" aria-describedby="Episode">
-                    <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
-                        <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
-                            {data.info.title}
-                        </div>
-                        <div onClick={onToggleEpisodeDrawer}>
-                            <X />
-                        </div>
-                    </DrawerTitle>
-                    <DrawerDescription className="text-slate-300 px-4 text-sm pt-1 line-clamp-2 overflow-hidden text-ellipsis">
-                        <FormattedMessage id="episode" /> {episode?.episode} / {data.episodes.length}
-                    </DrawerDescription>
-                    <div className="border-t border-slate-700 mt-4" />
-                    <div
-                        className="gap-2 p-4 text-white h-[45vh] overflow-auto grid grid-cols-6"
-                        ref={episodeRef}
+                <Drawer open={episodeStatus} onOpenChange={() => onToggleEpisodeDrawer()}>
+                    <DrawerContent
+                        className="video-h5-drawer video-h5-drawer--episode"
+                        aria-describedby="video-h5-episode-grid"
                     >
-                        {data.episodes.map((v, k) => (
-                            <div
-                                data-episode={v.episode}
-                                onClick={() => onSelectEpisodeIndex(k)}
-                                key={v.id}
-                                className={cn(
-                                    'bg-slate-600 rounded-md relative pb-[100%]',
-                                    v.episode === episode?.episode && 'bg-red-400',
-                                )}
-                            >
-                                <div className="font-bold absolute w-full h-full flex justify-center items-center">
-                                    {k + 1}
-                                </div>
-                                {v.vip !== 0 && v.locked === 1 && !viewerIsVip && (
-                                    <div className="absolute text-white top-1 right-1">
-                                        <img src={lockIcon} alt="" className="w-3 h-3" />
-                                    </div>
-                                )}
+                        <DrawerTitle className="video-h5-drawer__title video-h5-drawer__title--episode">
+                            <div className="video-h5-drawer__titleText">
+                                <FormattedMessage id="episode" />
                             </div>
-                        ))}
-                    </div>
-                    <div className="h-4" />
-                </DrawerContent>
-            </Drawer>
+                            <div
+                                className="video-h5-drawer__close"
+                                role="button"
+                                tabIndex={0}
+                                onClick={onToggleEpisodeDrawer}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        onToggleEpisodeDrawer();
+                                    }
+                                }}
+                            >
+                                <X aria-hidden />
+                            </div>
+                        </DrawerTitle>
+                        {episodeTabRanges.length > 1 ? (
+                            <div className="video-h5-drawer__episodeTabs" role="tablist">
+                                {episodeTabRanges.map((r, idx) => (
+                                    <button
+                                        key={`${r.start}-${r.end}`}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={idx === activeEpisodeTab}
+                                        className={cn(
+                                            'video-h5-drawer__episodeTab',
+                                            idx === activeEpisodeTab &&
+                                                'video-h5-drawer__episodeTab--active',
+                                        )}
+                                        onClick={() => setActiveEpisodeTab(idx)}
+                                    >
+                                        {r.start}-{r.end}
+                                        {idx === activeEpisodeTab ? (
+                                            <span
+                                                className="video-h5-drawer__episodeTabIndicator"
+                                                aria-hidden
+                                            />
+                                        ) : null}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : null}
+                        <div
+                            id="video-h5-episode-grid"
+                            className="video-h5-drawer__episodeGrid"
+                            ref={episodeRef}
+                        >
+                            {visibleEpisodes.map((v) => {
+                                const listIndex = data.episodes.findIndex((e) => e.id === v.id);
+                                const isCurrent = v.episode === currentEpisodeNo;
+                                const locked =
+                                    !viewerIsVip && v.vip !== 0 && v.locked === 1;
+                                return (
+                                    <div
+                                        data-episode={v.episode}
+                                        onClick={() => onSelectEpisodeIndex(listIndex)}
+                                        key={v.id}
+                                        className={cn(
+                                            'video-h5-drawer__episodeCell',
+                                            isCurrent && 'video-h5-drawer__episodeCell--active',
+                                        )}
+                                    >
+                                        <div className="video-h5-drawer__episodeNum">
+                                            {v.episode}
+                                        </div>
+                                        {isCurrent ? (
+                                            <div className="video-h5-drawer__episodePlaying">
+                                                <img src={activeEpisodeBadgeGif} alt="" />
+                                            </div>
+                                        ) : null}
+                                        {locked ? (
+                                            <div className="video-h5-drawer__episodeLock">
+                                                <img src={episodeLockBadgeIcon} alt="" />
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div
+                            className="video-h5-drawer__footer video-h5-drawer__footer--episode"
+                            aria-hidden
+                        />
+                    </DrawerContent>
+                </Drawer>
             ) : null}
             <Drawer open={speedOpen} onOpenChange={onSpeedDrawerOpenChange}>
-                <DrawerContent className="bg-slate-800" aria-describedby="PlaybackSpeed">
-                    <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
-                        <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
+                <DrawerContent
+                    className="video-h5-drawer video-h5-drawer--speed"
+                    aria-describedby="PlaybackSpeed"
+                >
+                    <DrawerTitle className="video-h5-drawer__title">
+                        <div className="video-h5-drawer__titleText">
                             <FormattedMessage id="playback_speed" />
                         </div>
-                        <div onClick={() => onSpeedDrawerOpenChange()}>
-                            <X />
+                        <div
+                            className="video-h5-drawer__close"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onSpeedDrawerOpenChange()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    onSpeedDrawerOpenChange();
+                                }
+                            }}
+                        >
+                            <X aria-hidden />
                         </div>
                     </DrawerTitle>
-                    <div className="border-t border-slate-700 mt-4" />
-                    <div className="flex flex-col gap-2 p-4 text-white">
+                    <div className="video-h5-drawer__speedList">
                         {SPEED.map((v, k) => (
-                            <div
+                            <button
                                 key={k}
-                                className="py-2 flex justify-between"
+                                type="button"
+                                className={cn(
+                                    'video-h5-drawer__speedRow',
+                                    speed === k && 'video-h5-drawer__speedRow--active',
+                                )}
                                 onClick={() => onSelectSpeed(k)}
                             >
-                                <div>{v.toFixed(2)} x</div>
-                                <div
-                                    className={cn(
-                                        'rounded-full w-6 h-6 flex justify-center items-center',
-                                        speed === k ? 'bg-red-400' : 'bg-slate-50/10',
-                                    )}
-                                >
-                                    {speed === k && <Check className="w-4 h-4" />}
-                                </div>
-                            </div>
+                                {formatPlaybackSpeedLabel(v)}
+                            </button>
                         ))}
                     </div>
-                    <div className="h-4" />
+                    <div className="video-h5-drawer__footer video-h5-drawer__footer--speed" aria-hidden />
                 </DrawerContent>
             </Drawer>
             {!hideIntroDrawer ? (
-            <Drawer open={introduction} onOpenChange={onIntroductionOpenChange}>
-                <DrawerContent className="bg-slate-800 video-intro-drawer" aria-describedby="Introduction">
-                    <DrawerTitle className="flex items-center gap-4 text-white px-4 pt-4">
-                        <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
+                <Drawer open={introduction} onOpenChange={onIntroductionOpenChange}>
+                    <DrawerContent
+                        className="video-h5-drawer video-h5-drawer--intro video-intro-drawer"
+                        aria-describedby="video-h5-intro-desc"
+                    >
+                        <DrawerTitle className="sr-only">
                             <FormattedMessage id="introduction" />
-                        </div>
-                        <div onClick={onIntroductionOpenChange}>
-                            <X />
-                        </div>
-                    </DrawerTitle>
-                    <div className="border-t border-slate-700 mt-4" />
-                    <div className="flex flex-col gap-4 p-4 text-white">
-                        <div className="flex gap-4">
-                            <div className="w-28 shrink-0">
-                                <Image
-                                    height={1.3325}
-                                    src={resolveVideoPosterUrl(staticBase, data.info, data.info.id)}
-                                    alt={data.info.title}
-                                />
+                        </DrawerTitle>
+                        <div className="video-h5-drawer__introBody">
+                            <div className="video-h5-drawer__introTop">
+                                <div className="video-h5-drawer__introPoster">
+                                    <Image
+                                        height={1.3325}
+                                        src={resolveVideoPosterUrl(staticBase, data.info, data.info.id)}
+                                        alt={data.info.title}
+                                    />
+                                </div>
+                                <div
+                                    className="video-h5-drawer__close"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={onIntroductionOpenChange}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            onIntroductionOpenChange();
+                                        }
+                                    }}
+                                >
+                                    <X aria-hidden />
+                                </div>
                             </div>
-                            <div className="flex-1 flex flex-col gap-2">
-                                <div className="font-bold line-clamp-2 overflow-ellipsis text-slate-300">
-                                    {data.info.title}
-                                </div>
-                                <div className="text-sm text-slate-400 mb-1">
-                                    <FormattedMessage id="episode" />: {episodeIndex + 1} /{' '}
-                                    {data.episodes.length}
-                                </div>
-                                <div className="flex gap-1 flex-wrap text-sm ">
+                            <h3 className="video-h5-drawer__introTitle">{data.info.title}</h3>
+                            <p id="video-h5-intro-desc" className="video-h5-drawer__introText">
+                                {data.info.introduction ? (
+                                    data.info.introduction
+                                ) : (
+                                    <FormattedMessage id="no_introduction_available" />
+                                )}
+                            </p>
+                            {data.tags.length > 0 ? (
+                                <div className="video-h5-drawer__introTags">
                                     {data.tags.map((v) => (
                                         <Link
                                             key={v.name}
                                             to={videoIntroTagSearchPath(v)}
                                             onClick={() => onCloseIntroductionLinks()}
-                                            className="bg-slate-600 px-2 py-1 rounded-sm text-slate-300 active:opacity-80"
+                                            className="video-h5-drawer__introTag"
                                         >
                                             {formatVideoIntroTagLabel(v.unique_id)}
                                         </Link>
                                     ))}
                                 </div>
-                            </div>
+                            ) : null}
                         </div>
-                        <div className="text-md text-slate-300">{data.info.introduction}</div>
-                    </div>
-                    <div className="h-4" />
-                </DrawerContent>
-            </Drawer>
+                        <div
+                            className="video-h5-drawer__footer video-h5-drawer__footer--intro"
+                            aria-hidden
+                        />
+                    </DrawerContent>
+                </Drawer>
             ) : null}
         </>
     );

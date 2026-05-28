@@ -190,11 +190,19 @@ export default function RadixRc({
     const isTopUpShoppingPage = layout === 'page' && productFrom === 'shopping';
     const isTopUpH5Layout = isTopUpShoppingPage && !isPc;
     const isEmbedDrawer = layout === 'embed' && embedPresentation === 'drawer';
+    /** PC `/profile?tab=topup` 右栏：与视频页 VIP 弹窗共用 Top UP 设计稿 */
+    const isProfilePcTopUpEmbed =
+        isPc &&
+        layout === 'embed' &&
+        embedPresentation === 'plain' &&
+        productFrom === 'shopping';
     const isPcVideoVipEmbed = isPc && layout === 'embed' && productFrom === 'video';
-    /** H5????`/shopping` ???????? Top UP ??/??/Tips ?? */
+    const isPcTopUpInlineBonus = isPcVideoVipEmbed || isProfilePcTopUpEmbed;
+    /** H5 `/shopping`、视频 embed、PC profile 充值：Membership / Coins / Tips 设计稿 */
     const isReelshortH5StoreUi =
         (!isPc && (isTopUpShoppingPage || isEmbedDrawer)) ||
-        (isEmbedDrawer && productFrom === 'video');
+        (isEmbedDrawer && productFrom === 'video') ||
+        isProfilePcTopUpEmbed;
     /** H5 ?? Top UP ??????/ ????????????????*/
     const showH5StoreSectionTitles = isReelshortH5StoreUi && !isEmbedDrawer;
     const [searchParams] = useSearchParams();
@@ -420,10 +428,11 @@ export default function RadixRc({
 
     const showIntroWalletAndCountdown =
         layout === 'embed' || (layout === 'page' && productFrom === 'shopping');
-    /** ?? `/shopping`????????????H5 ?????????????????*/
-    const showShoppingPageWalletBar = layout === 'page' && productFrom === 'shopping';
 
-    /** ?? `/shopping` ??????????????? PC ?????????????/???*/
+    const showShoppingPageWalletBar = layout === 'page' && productFrom === 'shopping';
+    const showProfilePcTopUpWalletBar = isProfilePcTopUpEmbed;
+
+    /** `/shopping` 与 PC profile 充值顶栏：余额 + 交易记录 */
     const shoppingPageWalletDisplay = useMemo(() => {
         if (!userStore.signed || userStore.balance < 0) {
             return { total: 0, pending: userStore.signed && userStore.balance === -1 };
@@ -474,13 +483,19 @@ export default function RadixRc({
         <div className="rs-shopping__main">
             {!(isEmbedDrawer && isReelshortH5StoreUi) ? (
             <div className="rs-shopping__intro">
-                {showShoppingPageWalletBar ? (
+                {showShoppingPageWalletBar || showProfilePcTopUpWalletBar ? (
                     <div className="rs-shopping__pageWalletBar">
                         <div className="rs-shopping__pageWalletBar__row rs-shopping__pageWalletBar__row--singleCoins">
                             <div className="rs-shopping__pageWalletBar__stat">
                                 <span className="rs-shopping__pageWalletBar__statInner">
                                     <span className="rs-shopping__pageWalletBar__muted">
-                                        <FormattedMessage id="shopping_bar_coins" />
+                                        <FormattedMessage
+                                            id={
+                                                showProfilePcTopUpWalletBar
+                                                    ? 'balance'
+                                                    : 'shopping_bar_coins'
+                                            }
+                                        />
                                     </span>
                                     <span className="rs-shopping__pageWalletBar__colon">:</span>
                                     <span className="rs-shopping__pageWalletBar__statValue tabular-nums">
@@ -492,7 +507,10 @@ export default function RadixRc({
                                     </span>
                                 </span>
                             </div>
-                            <Link to="/wallet" className="rs-shopping__pageWalletBar__history">
+                            <Link
+                                to={showProfilePcTopUpWalletBar ? '/profile?tab=wallet' : '/wallet'}
+                                className="rs-shopping__pageWalletBar__history"
+                            >
                                 <span className="rs-shopping__pageWalletBar__historyLabel">
                                     <FormattedMessage id="shopping_bar_history" />
                                 </span>
@@ -747,13 +765,13 @@ export default function RadixRc({
                                                     <span className="tabular-nums">
                                                         {intl.formatNumber(baseCoin)}
                                                     </span>
-                                                    {bonusCoins > 0 && isPcVideoVipEmbed ? (
+                                                    {bonusCoins > 0 && isPcTopUpInlineBonus ? (
                                                         <p className="rs-shopping__coinSkuBonus tabular-nums">
                                                             +{intl.formatNumber(bonusCoins)}
                                                         </p>
                                                     ) : null}
                                                 </div>
-                                                {bonusCoins > 0 && !isPcVideoVipEmbed ? (
+                                                {bonusCoins > 0 && !isPcTopUpInlineBonus ? (
                                                     <p className="rs-shopping__coinSkuBonus tabular-nums">
                                                         +{intl.formatNumber(bonusCoins)}
                                                     </p>
@@ -1145,6 +1163,7 @@ export default function RadixRc({
                     'rs-shopping',
                     'rs-shopping--drawerEmbed',
                     isReelshortH5StoreUi && 'rs-shopping--topUpH5',
+                    isProfilePcTopUpEmbed && 'rs-shopping--profilePcTopUp',
                 )}>
                     {showDrawerChrome ? (
                         <>

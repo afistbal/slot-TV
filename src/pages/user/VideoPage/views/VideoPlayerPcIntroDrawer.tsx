@@ -51,20 +51,10 @@ export function VideoPlayerPcIntroDrawer({
                 </div>
                 <div className="video-pc-intro-drawer__title-row">
                     <h2 className="video-pc-intro-drawer__title">{data.info.title}</h2>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-white/80" aria-hidden />
                 </div>
                 <div className="video-pc-intro-drawer__body">
                     {data.info.introduction ? (
                         <p className="video-pc-intro-drawer__desc">
-                            <span className="video-pc-intro-drawer__ep">
-                                <FormattedMessage
-                                    id="wallet_episode_short"
-                                    values={{ n: episode?.episode ?? '..' }}
-                                />
-                            </span>
-                            <span className="video-pc-intro-drawer__desc-sep" aria-hidden="true">
-                                {' | '}
-                            </span>
                             <span>{data.info.introduction}</span>
                         </p>
                     ) : (

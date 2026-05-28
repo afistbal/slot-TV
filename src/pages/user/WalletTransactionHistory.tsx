@@ -1,14 +1,15 @@
 import { api } from '@/api';
 import Loader from '@/components/Loader';
 import NoMore from '@/components/NoMore';
+import { enrichBalanceHistoryRows } from '@/lib/enrichBalanceHistoryRows';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
-import { FormattedDate, FormattedMessage, useIntl } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import coinIcon from '@/assets/profile/icon_coin@2x.png';
 import emptyImg from '@/assets/images/empty.webp';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router';
 
 export interface IBalanceHistoryRow {
@@ -23,6 +24,8 @@ export interface IBalanceHistoryRow {
     movie_title?: string | null;
     price?: string | number | null;
     bonus?: number | null;
+    /** 部分接口字段拼写为 bouns */
+    bouns?: number | string | null;
     coin?: number | null;
 }
 
@@ -33,18 +36,23 @@ type WalletTransactionHistoryProps = {
     className?: string;
 };
 
-function formatHistoryTime(intl: ReturnType<typeof useIntl>, iso: string) {
+const PC_PAGE_SIZE = 10;
+
+const walletTimeUsFormatter = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+});
+
+/** 钱包交易时间：美国格式，如 `05/18/2026, 01:57:24 PM` */
+function formatWalletTime(iso: string) {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    return intl.formatDate(d, {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-    });
+    return walletTimeUsFormatter.format(d);
 }
 
 function formatPriceLabel(price: IBalanceHistoryRow['price']) {
@@ -57,31 +65,20 @@ function formatPriceLabel(price: IBalanceHistoryRow['price']) {
     return s.startsWith('$') ? s : `$${s}`;
 }
 
-function EpisodeNavigateLink({
-    movieId,
-    episodeIndex,
-}: {
-    movieId: number;
-    episodeIndex?: number | null;
-}) {
-    return (
-        <Link
-            to={`/video/${movieId}/${episodeIndex ?? 0}`}
-            state={VIDEO_FROM_HOME_STATE}
-            className="rs-wallet-tx__episodeLink"
-        >
-            <span className="sr-only">
-                <FormattedMessage id="view" />
-            </span>
-            <ChevronRight className="rs-wallet-tx__episodeLinkIcon" aria-hidden />
-        </Link>
-    );
+function rechargeBaseAndBonus(row: IBalanceHistoryRow) {
+    const totalCoins = Math.abs(row.change);
+    const baseCoin =
+        row.coin != null && row.coin > 0 ? row.coin : totalCoins;
+    let bonus = row.bonus ?? 0;
+    if (bonus <= 0 && row.coin != null && row.coin > 0 && row.coin < totalCoins) {
+        bonus = totalCoins - row.coin;
+    }
+    return { baseCoin, bonus };
 }
 
 function RechargeCardRow({ row }: { row: IBalanceHistoryRow }) {
     const intl = useIntl();
-    const baseCoin = row.coin ?? Math.abs(row.change);
-    const bonus = row.bonus ?? 0;
+    const { baseCoin, bonus } = rechargeBaseAndBonus(row);
     const priceLabel = formatPriceLabel(row.price);
 
     return (
@@ -99,7 +96,7 @@ function RechargeCardRow({ row }: { row: IBalanceHistoryRow }) {
                     ) : null}
                 </div>
                 <time className="rs-wallet-card__time" dateTime={row.created_at}>
-                    {formatHistoryTime(intl, row.created_at)}
+                    {formatWalletTime(row.created_at)}
                 </time>
             </div>
             {priceLabel ? (
@@ -137,7 +134,7 @@ function ConsumptionCardRow({ row }: { row: IBalanceHistoryRow }) {
                     </p>
                 ) : null}
                 <time className="rs-wallet-card__time" dateTime={row.created_at}>
-                    {formatHistoryTime(intl, row.created_at)}
+                    {formatWalletTime(row.created_at)}
                 </time>
             </div>
             <div className="rs-wallet-card__cost">
@@ -164,7 +161,146 @@ function ConsumptionCardRow({ row }: { row: IBalanceHistoryRow }) {
     return <li className="rs-wallet-card rs-wallet-card--consumption">{body}</li>;
 }
 
-/** PC：ReelShort 表格；H5：充值 / 消费 Tab + 设计稿卡片 */
+function PcRechargeRow({ row }: { row: IBalanceHistoryRow }) {
+    const intl = useIntl();
+    const { baseCoin, bonus } = rechargeBaseAndBonus(row);
+    const priceLabel = formatPriceLabel(row.price);
+
+    return (
+        <li className="rs-wallet-pcRow rs-wallet-pcRow--recharge">
+            <span className="rs-wallet-pcRow__amount tabular-nums">{priceLabel ?? '—'}</span>
+            <span className="rs-wallet-pcRow__coins">
+                <span className="rs-wallet-pcRow__coinBase tabular-nums">
+                    {intl.formatNumber(baseCoin)}
+                </span>
+                {bonus > 0 ? (
+                    <span className="rs-wallet-pcRow__coinBonus tabular-nums">
+                        <FormattedMessage
+                            id="wallet_pc_bonus_coins"
+                            values={{ n: intl.formatNumber(bonus) }}
+                        />
+                    </span>
+                ) : null}
+            </span>
+            <time className="rs-wallet-pcRow__time tabular-nums" dateTime={row.created_at}>
+                {formatWalletTime(row.created_at)}
+            </time>
+        </li>
+    );
+}
+
+function PcConsumptionRow({ row }: { row: IBalanceHistoryRow }) {
+    const intl = useIntl();
+    const title =
+        row.movie_name?.trim() ||
+        row.movie_title?.trim() ||
+        intl.formatMessage({ id: 'unlock_episodes' });
+    const episodeNo =
+        row.episode_index != null && row.episode_index > 0
+            ? row.episode_index
+            : null;
+    const cost = Math.abs(row.change);
+
+    const content = (
+        <>
+            <span className="rs-wallet-pcRow__episodeName">{title}</span>
+            <span className="rs-wallet-pcRow__episodeNo">
+                {episodeNo != null ? (
+                    <>
+                        <FormattedMessage id="wallet_episode_short" values={{ n: episodeNo }} />
+                        <ChevronRight className="rs-wallet-pcRow__episodeChev" aria-hidden />
+                    </>
+                ) : (
+                    '—'
+                )}
+            </span>
+            <time className="rs-wallet-pcRow__time tabular-nums" dateTime={row.created_at}>
+                {formatWalletTime(row.created_at)}
+            </time>
+            <span className="rs-wallet-pcRow__deduct tabular-nums">
+                <FormattedMessage
+                    id="wallet_pc_deduct_coins"
+                    values={{ n: intl.formatNumber(cost) }}
+                />
+            </span>
+        </>
+    );
+
+    return (
+        <li className="rs-wallet-pcRow rs-wallet-pcRow--consumption">
+            {row.movie_id != null ? (
+                <Link
+                    to={`/video/${row.movie_id}/${row.episode_index ?? 0}`}
+                    state={VIDEO_FROM_HOME_STATE}
+                    className="rs-wallet-pcRow__grid rs-wallet-pcRow__link"
+                >
+                    {content}
+                </Link>
+            ) : (
+                <div className="rs-wallet-pcRow__grid">{content}</div>
+            )}
+        </li>
+    );
+}
+
+function WalletPcPagination({
+    page,
+    totalPages,
+    onPageChange,
+}: {
+    page: number;
+    totalPages: number;
+    onPageChange: (next: number) => void;
+}) {
+    const intl = useIntl();
+    if (totalPages <= 1) return null;
+
+    const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+    return (
+        <nav
+            className="rs-wallet-pcPagination"
+            aria-label={intl.formatMessage({ id: 'pagination' })}
+        >
+            <button
+                type="button"
+                className="rs-wallet-pcPagination__btn rs-wallet-pcPagination__btn--nav"
+                disabled={page <= 1}
+                onClick={() => onPageChange(page - 1)}
+                aria-label={intl.formatMessage({ id: 'previous_page' })}
+            >
+                <ChevronLeft size={18} aria-hidden />
+            </button>
+            <div className="rs-wallet-pcPagination__pages">
+                {pages.map((p) => (
+                    <button
+                        key={p}
+                        type="button"
+                        className={cn(
+                            'rs-wallet-pcPagination__num',
+                            p === page && 'rs-wallet-pcPagination__num--active',
+                        )}
+                        onClick={() => onPageChange(p)}
+                        aria-current={p === page ? 'page' : undefined}
+                    >
+                        {p}
+                    </button>
+                ))}
+            </div>
+            <button
+                type="button"
+                className="rs-wallet-pcPagination__btn rs-wallet-pcPagination__btn--nav"
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(page + 1)}
+                aria-label={intl.formatMessage({ id: 'next_page' })}
+            >
+                <ChevronRight size={18} aria-hidden />
+            </button>
+        </nav>
+    );
+}
+
+/** PC：ReelShort 设计稿表格；H5：充值 / 消费 Tab + 卡片 */
 export function WalletTransactionHistory({
     variant = 'h5',
     className,
@@ -173,21 +309,43 @@ export function WalletTransactionHistory({
     const [rows, setRows] = useState<IBalanceHistoryRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<WalletTab>('recharge');
+    const [page, setPage] = useState(1);
     const isPc = variant === 'pc';
 
     useEffect(() => {
+        let alive = true;
         api<IBalanceHistoryRow[]>('user/balance/history', {
             loading: false,
-        }).then((res) => {
-            setLoading(false);
-            const list = res.c === 0 && Array.isArray(res.d) ? res.d : [];
-            setRows(list);
-        });
+        })
+            .then(async (res) => {
+                const list = res.c === 0 && Array.isArray(res.d) ? res.d : [];
+                const enriched = await enrichBalanceHistoryRows(list);
+                if (!alive) return;
+                setRows(enriched);
+            })
+            .finally(() => {
+                if (alive) {
+                    setLoading(false);
+                }
+            });
+        return () => {
+            alive = false;
+        };
     }, []);
 
+    useEffect(() => {
+        setPage(1);
+    }, [activeTab]);
+
     const rechargeRows = useMemo(() => rows.filter((r) => r.type === 1), [rows]);
-    const consumptionRows = useMemo(() => rows.filter((r) => r.type !== 1), [rows]);
+    const consumptionRows = useMemo(() => rows.filter((r) => r.type === 2), [rows]);
     const visibleRows = activeTab === 'recharge' ? rechargeRows : consumptionRows;
+
+    const totalPages = Math.max(1, Math.ceil(visibleRows.length / PC_PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const paginatedRows = isPc
+        ? visibleRows.slice((safePage - 1) * PC_PAGE_SIZE, safePage * PC_PAGE_SIZE)
+        : visibleRows;
 
     return (
         <div className={cn('rs-wallet-tx', isPc && 'rs-wallet-tx--pc', className)}>
@@ -206,7 +364,9 @@ export function WalletTransactionHistory({
                     )}
                     onClick={() => setActiveTab('recharge')}
                 >
-                    <FormattedMessage id="wallet_tab_recharge" />
+                    <FormattedMessage
+                        id={isPc ? 'wallet_pc_tab_recharge' : 'wallet_tab_recharge'}
+                    />
                 </button>
                 <button
                     type="button"
@@ -218,7 +378,9 @@ export function WalletTransactionHistory({
                     )}
                     onClick={() => setActiveTab('consumption')}
                 >
-                    <FormattedMessage id="wallet_tab_consumption" />
+                    <FormattedMessage
+                        id={isPc ? 'wallet_pc_tab_consumption' : 'wallet_tab_consumption'}
+                    />
                 </button>
             </div>
 
@@ -235,70 +397,70 @@ export function WalletTransactionHistory({
                         </p>
                     </div>
                 ) : isPc ? (
-                    <div className="rs-wallet-tx__tableWrap">
-                        <div className="rs-wallet-tx__head" aria-hidden>
-                            <span>
-                                <FormattedMessage id="wallet_col_quantity" />
-                            </span>
-                            <span>
-                                <FormattedMessage id="wallet_col_coins" />
-                            </span>
-                            <span>
-                                <FormattedMessage id="wallet_col_transaction" />
-                            </span>
-                            <span>
-                                <FormattedMessage id="wallet_col_time" />
-                            </span>
+                    <div
+                        className={cn(
+                            'rs-wallet-pcTable',
+                            activeTab === 'recharge' && 'rs-wallet-pcTable--recharge',
+                            activeTab === 'consumption' && 'rs-wallet-pcTable--consumption',
+                        )}
+                    >
+                        <div
+                            className={cn(
+                                'rs-wallet-pcTable__head',
+                                activeTab === 'consumption' && 'rs-wallet-pcTable__head--consumption',
+                                activeTab === 'recharge' && 'rs-wallet-pcTable__head--recharge',
+                            )}
+                            aria-hidden
+                        >
+                            {activeTab === 'recharge' ? (
+                                <>
+                                    <span>
+                                        <FormattedMessage id="wallet_pc_col_amount" />
+                                    </span>
+                                    <span>
+                                        <FormattedMessage id="wallet_col_coins" />
+                                    </span>
+                                    <span>
+                                        <FormattedMessage id="wallet_pc_col_trading_hours" />
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>
+                                        <FormattedMessage id="wallet_pc_col_episode_name" />
+                                    </span>
+                                    <span>
+                                        <FormattedMessage id="wallet_pc_col_episode" />
+                                    </span>
+                                    <span>
+                                        <FormattedMessage id="wallet_pc_col_unlock_time" />
+                                    </span>
+                                    <span>
+                                        <FormattedMessage id="wallet_col_coins" />
+                                    </span>
+                                </>
+                            )}
                         </div>
-                        <ul className="rs-wallet-tx__body">
-                            {visibleRows.map((row, index) => (
-                                <li
-                                    key={`${row.created_at}-${row.target}-${index}`}
-                                    className="rs-wallet-tx__row"
-                                >
-                                    <span
-                                        className={cn(
-                                            'rs-wallet-tx__cell rs-wallet-tx__cell--qty tabular-nums',
-                                            row.change > 0
-                                                ? 'rs-wallet-tx__change--plus'
-                                                : 'rs-wallet-tx__change--minus',
-                                        )}
-                                    >
-                                        {row.change > 0 ? '+' : ''}
-                                        {row.change}
-                                    </span>
-                                    <span className="rs-wallet-tx__cell rs-wallet-tx__cell--coins">
-                                        <img src={coinIcon} width={16} height={16} alt="" aria-hidden />
-                                        <span className="tabular-nums">{row.amount}</span>
-                                    </span>
-                                    <span className="rs-wallet-tx__cell rs-wallet-tx__cell--type">
-                                        <FormattedMessage
-                                            id={row.type === 1 ? 'top_up' : 'unlock_episodes'}
-                                        />
-                                        {row.movie_id != null ? (
-                                            <EpisodeNavigateLink
-                                                movieId={row.movie_id}
-                                                episodeIndex={row.episode_index}
-                                            />
-                                        ) : null}
-                                    </span>
-                                    <time
-                                        className="rs-wallet-tx__cell rs-wallet-tx__cell--time"
-                                        dateTime={row.created_at}
-                                    >
-                                        <FormattedDate
-                                            year="numeric"
-                                            month="2-digit"
-                                            day="2-digit"
-                                            hour="2-digit"
-                                            minute="2-digit"
-                                            second="2-digit"
-                                            value={row.created_at}
-                                        />
-                                    </time>
-                                </li>
-                            ))}
+                        <ul className="rs-wallet-pcTable__body">
+                            {paginatedRows.map((row, index) =>
+                                activeTab === 'recharge' ? (
+                                    <PcRechargeRow
+                                        key={`${row.created_at}-${row.target}-${index}`}
+                                        row={row}
+                                    />
+                                ) : (
+                                    <PcConsumptionRow
+                                        key={`${row.created_at}-${row.target}-${index}`}
+                                        row={row}
+                                    />
+                                ),
+                            )}
                         </ul>
+                        <WalletPcPagination
+                            page={safePage}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                        />
                     </div>
                 ) : (
                     <div className="rs-wallet-tx__listWrap">

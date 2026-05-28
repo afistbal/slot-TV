@@ -7,6 +7,10 @@ import iconMore from '@/assets/profile/icon_more@2x.png';
 import iconWatchHistory from '@/assets/profile/icon_watchhistory@2x.png';
 import iconLanguage from '@/assets/profile/icon_language@2x.png';
 import iconHelp from '@/assets/profile/icon_help@2x.png';
+import iconHelpPc from '@/assets/profile/icon_help.webp';
+import iconHistoryPc from '@/assets/profile/icon_history.webp';
+import iconListPc from '@/assets/profile/icon_list.webp';
+import iconWatchHistoryPc from '@/assets/profile/icon_watchhistory.webp';
 
 /** H5 /profile 页图标（`src/assets/profile`） */
 export const profileH5Assets = {
@@ -19,4 +23,12 @@ export const profileH5Assets = {
     menuHistory: iconWatchHistory,
     menuLanguage: iconLanguage,
     menuHelp: iconHelp,
+} as const;
+
+/** PC /profile 侧栏菜单图标（设计稿 webp） */
+export const profilePcMenuAssets = {
+    wallet: iconHistoryPc,
+    myList: iconListPc,
+    watchHistory: iconWatchHistoryPc,
+    help: iconHelpPc,
 } as const;

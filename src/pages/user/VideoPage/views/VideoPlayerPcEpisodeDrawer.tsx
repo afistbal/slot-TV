@@ -48,28 +48,27 @@ export function VideoPlayerPcEpisodeDrawer({
         >
             <div className="video-pc-episode-drawer__scroll">
                 <div className="video-pc-episode-drawer__header">
-                    <div className="video-pc-episode-drawer__tabs flex text-[16px] text-white/50">
+                    <div className="video-pc-episode-drawer__tabs">
                     {tabRanges.map((r, idx) => (
                         <button
                             type="button"
                             key={`${r.start}-${r.end}`}
                             className={cn(
-                                'min-w-[35px] cursor-pointer border-0 bg-transparent p-0 text-center',
-                                idx === 0 ? '' : 'ml-[25px]',
-                                idx === activeTab ? 'relative text-[#E52E2E]' : 'text-white/50',
+                                'video-pc-episode-drawer__tab',
+                                idx === activeTab && 'video-pc-episode-drawer__tab--active',
                             )}
                             onClick={() => onSelectEpisodeTab(idx)}
                         >
                             {r.start} - {r.end}
                             {idx === activeTab && (
-                                <span className="absolute -bottom-[8px] left-1/2 -ml-[10px] h-[3px] w-[20px] rounded-[2px] bg-[#E52E2E]" />
+                                <span className="video-pc-episode-drawer__tab-indicator" />
                             )}
                         </button>
                     ))}
                     </div>
                     <VideoPlayerPcDrawerCloseButton onClose={onClose} tabIndex={open ? 0 : -1} />
                 </div>
-                <div className="grid grid-cols-6 gap-[8px]">
+                <div className="video-pc-episode-drawer__grid">
                     {filteredEpisodes.map((v) => {
                         const rawIndex = data.episodes.findIndex((e) => e.id === v.id);
                         const locked = !viewerIsVip && v.vip !== 0 && v.locked === 1;
@@ -77,29 +76,21 @@ export function VideoPlayerPcEpisodeDrawer({
                             <button
                                 type="button"
                                 key={v.id}
-                                onClick={() => {
-                                    onSelectEpisodeByListIndex(rawIndex);
-                                    onClose();
-                                }}
+                                onClick={() => onSelectEpisodeByListIndex(rawIndex)}
                                 className={cn(
-                                    'video-pc-episode-btn relative flex h-[46px] w-full cursor-pointer items-center justify-center rounded-[4px] border-0 bg-white/10 text-[16px] text-white/90',
-                                    v.episode === currentEpisodeNo &&
-                                        'video-pc-episode-btn--active text-[14px] font-medium text-white/50',
+                                    'video-pc-episode-btn',
+                                    v.episode === currentEpisodeNo && 'video-pc-episode-btn--active',
                                 )}
                             >
                                 {v.episode}
                                 {v.episode === currentEpisodeNo && (
-                                    <div className="absolute bottom-[2px] right-[2px] flex h-[12px] w-[12px]">
-                                        <img
-                                            alt=""
-                                            src={activeEpisodeBadgeGif}
-                                            className="h-full w-full object-cover"
-                                        />
+                                    <div className="video-pc-episode-btn__playing-badge">
+                                        <img alt="" src={activeEpisodeBadgeGif} />
                                     </div>
                                 )}
                                 {locked && (
-                                    <div className="absolute right-0 top-0 flex h-3 w-4 items-center justify-center rounded-[0_6px_0_6px] bg-[#e52e2e]">
-                                        <img src={episodeLockBadgeIcon} alt="" className="h-2.5 w-2.5" />
+                                    <div className="video-pc-episode-btn__lock-badge">
+                                        <img src={episodeLockBadgeIcon} alt="" />
                                     </div>
                                 )}
                             </button>

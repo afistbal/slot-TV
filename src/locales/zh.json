@@ -443,5 +443,14 @@
     "wallet_page_title": "詳情",
     "wallet_tab_recharge": "充值",
     "wallet_tab_consumption": "消費",
+    "wallet_pc_tab_recharge": "交易紀錄",
+    "wallet_pc_tab_consumption": "解鎖劇集",
+    "wallet_pc_col_amount": "金額",
+    "wallet_pc_col_trading_hours": "交易時間",
+    "wallet_pc_col_episode_name": "劇集名稱",
+    "wallet_pc_col_episode": "集數",
+    "wallet_pc_col_unlock_time": "解鎖時間",
+    "wallet_pc_bonus_coins": "+{n} 金幣",
+    "wallet_pc_deduct_coins": "-{n} 金幣",
     "wallet_episode_short": "第{n}集"
 }
