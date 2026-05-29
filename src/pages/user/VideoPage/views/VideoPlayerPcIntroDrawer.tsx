@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react';
 import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import Image from '@/components/Image';
@@ -29,7 +28,6 @@ export function VideoPlayerPcIntroDrawer({
     onClose,
     anchorRef,
     data,
-    episode,
     staticBase,
     tagsFromBackendOnly = false,
 }: VideoPlayerPcIntroDrawerProps) {

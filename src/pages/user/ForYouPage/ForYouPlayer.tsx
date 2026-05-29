@@ -18,7 +18,7 @@ import iconStop from '@/assets/video/icon_stop@2x.webp';
 import { cn } from '@/lib/utils';
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 import { buildEpisodeFromFeedItem } from './foryouFeedUtils';
 import iconPlay1 from '@/assets/video/icon_play1@2x.webp';
@@ -612,9 +612,6 @@ export function ForYouPlayer({
         }
         setIntroduction((v) => !v);
     }
-
-    /** 兼容旧引用 / 热更新残留 */
-    const handleIntroduction = handleIntroductionOpenChange;
 
     function handlePcEpisodeListClick(ev?: MouseEvent) {
         ev?.stopPropagation();
