@@ -401,6 +401,8 @@
     "shopping_section_tips": "Petua :",
     "shopping_vip_weekly_special_title": "Harga Istimewa VIP Mingguan",
     "shopping_vip_weekly_subtitle": "Minggu pertama {price1}, kemudian {price2}/minggu",
+    "shopping_vip_monthly_subtitle": "Bulan pertama {price1}, kemudian {price2}/bulan",
+    "shopping_vip_yearly_subtitle": "Tahun pertama {price1}, kemudian {price2}/tahun",
     "shopping_benefit_ad_free": "Tanpa Iklan",
     "shopping_benefit_hd": "Kualiti HD",
     "shopping_tips_item_1": "1. Semasa tempoh langganan, anda boleh menonton episod {site} tanpa had.",

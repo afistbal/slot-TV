@@ -1,3 +1,5 @@
+import { resolveMovieTagLocalLabel } from '@/lib/movieTagLabels';
+
 function isOpaqueTagId(value: string) {
     return /^[a-f0-9]{10,}$/i.test(value);
 }
@@ -9,14 +11,22 @@ function formatTagText(value: string) {
         .replace(/\b\w/g, (s) => s.toUpperCase());
 }
 
-export function getTagDisplayText(tag: { name: string; unique_id: string }) {
-    const name = String(tag.name ?? '').trim();
-    const uid = String(tag.unique_id ?? '').trim();
-    if (name && !isOpaqueTagId(name)) {
-        return name;
+export function getTagDisplayText(tag: {
+    name: string;
+    unique_id: string;
+    local_label?: string;
+}) {
+    const localized = resolveMovieTagLocalLabel(tag);
+    if (localized) {
+        return localized;
     }
+    const uid = String(tag.unique_id ?? '').trim();
     if (uid && !isOpaqueTagId(uid)) {
         return formatTagText(uid);
+    }
+    const name = String(tag.name ?? '').trim();
+    if (name && !isOpaqueTagId(name)) {
+        return name;
     }
     return name || uid || '-';
 }

@@ -96,8 +96,6 @@ export default function ForYouVerticalSwiper() {
 
     useForyouVideoPreload(list, activeIndex, staticBase);
 
-
-
     useEffect(() => {
 
         useRootStore.getState().setTheme('dark');

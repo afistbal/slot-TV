@@ -401,6 +401,8 @@
     "shopping_section_tips": "İpuçları :",
     "shopping_vip_weekly_special_title": "Haftalık VIP Özel Fiyat",
     "shopping_vip_weekly_subtitle": "İlk hafta {price1}, sonra {price2}/hafta",
+    "shopping_vip_monthly_subtitle": "İlk ay {price1}, sonra {price2}/ay",
+    "shopping_vip_yearly_subtitle": "İlk yıl {price1}, sonra {price2}/yıl",
     "shopping_benefit_ad_free": "Reklamsız",
     "shopping_benefit_hd": "HD Kalite",
     "shopping_tips_item_1": "1. Abonelik süresince {site} bölümlerini sınırsız izleyebilirsiniz.",

@@ -2,7 +2,7 @@ import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import Forward from '@/components/Forward';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
-import { getTagDisplayText } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { getBackendTagDisplayText } from '@/lib/normalizePlayerTags';
 import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
 
 type Props = {
@@ -57,7 +57,7 @@ export function ForYouPlayerBottomInfo({ data, episode, episodeNo, onOpenIntrodu
                             className="video-player-h5-tag"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {getTagDisplayText(v)}
+                            {getBackendTagDisplayText(v)}
                         </Link>
                     ))}
                 </div>

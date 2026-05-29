@@ -401,6 +401,8 @@
     "shopping_section_tips": "안내 :",
     "shopping_vip_weekly_special_title": "주간 VIP 특가",
     "shopping_vip_weekly_subtitle": "첫 주 {price1}, 이후 {price2}/주",
+    "shopping_vip_monthly_subtitle": "첫 달 {price1}, 이후 {price2}/월",
+    "shopping_vip_yearly_subtitle": "첫 해 {price1}, 이후 {price2}/년",
     "shopping_benefit_ad_free": "광고 없음",
     "shopping_benefit_hd": "HD 화질",
     "shopping_tips_item_1": "1. 구독 기간 동안 {site} 에피소드를 무제한으로 시청할 수 있습니다.",

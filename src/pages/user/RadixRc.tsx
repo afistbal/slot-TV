@@ -21,6 +21,7 @@ import iconSuccessful from '@/assets/icons/shopping-pay/icon_successful.png';
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import Countdown from '@/widgets/Countdown';
 import coinIcon from '@/assets/profile/icon_coin@2x.png';
+import { formatSubscriptionPlanRenewText } from '@/lib/subscriptionPlanRenewText';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
 import { MembershipInlinePanel } from '@/pages/user/Membership';
@@ -649,15 +650,11 @@ export default function RadixRc({
                                             <div className="rs-shopping__planPrice">${p.price}</div>
                                         </div>
                                         <div className="rs-shopping__planRenew">
-                                            {isReelshortH5StoreUi && isFirstPlan
-                                                ? intl.formatMessage(
-                                                      { id: 'shopping_vip_weekly_subtitle' },
-                                                      {
-                                                          price1: `$${p.price}`,
-                                                          price2: `$${p.renewal_price}`,
-                                                      },
-                                                  )
-                                                : intl.formatMessage({ id: 'shopping_auto_renew_short' })}
+                                            {formatSubscriptionPlanRenewText(intl, {
+                                                price: p.price,
+                                                renewal_price: p.renewal_price,
+                                                planName: p.name,
+                                            })}
                                         </div>
                                     </div>
                                 </div>

@@ -6,10 +6,13 @@ import episodeLockBadgeIcon from '@/assets/icons/episode-lock-badge.svg';
 import activeEpisodeBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
 import Image from '@/components/Image';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
-import { formatVideoIntroTagLabel, videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
+import { getBackendTagDisplayText } from '@/lib/normalizePlayerTags';
+import { useMovieTagLabelsReady } from '@/lib/movieTagLabels';
+import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
 import { cn } from '@/lib/utils';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import { resolveVideoPosterUrl } from '../videoPlayerShareUrl';
+import { getTagDisplayText } from '../videoPlayerUtils';
 import { SPEED } from '../videoPlayerConstants';
 import {
     buildEpisodeTabRanges,
@@ -40,11 +43,13 @@ type Props = {
     speed: number;
     onSelectSpeed: (k: number) => void;
     introduction: boolean;
-    onIntroductionOpenChange: () => void;
+    onIntroductionOpenChange: (open?: boolean) => void;
     onCloseIntroductionLinks: () => void;
     /** PC 使用独立右侧抽屉，不渲染 H5 分集/简介底栏 */
     hideEpisodeDrawer?: boolean;
     hideIntroDrawer?: boolean;
+    /** For You：仅用接口 tags 字段，不走 tag-labels */
+    tagsFromBackendOnly?: boolean;
 };
 
 export function VideoPlayerEpisodeSpeedIntroDrawers({
@@ -66,7 +71,10 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     onCloseIntroductionLinks,
     hideEpisodeDrawer = false,
     hideIntroDrawer = false,
+    tagsFromBackendOnly = false,
 }: Props) {
+    const tagLabel = tagsFromBackendOnly ? getBackendTagDisplayText : getTagDisplayText;
+    useMovieTagLabelsReady();
     const episodeCount = data.episodes.length;
     const currentEpisodeNo = episode?.episode ?? episodeIndex + 1;
     const episodeTabRanges = useMemo(
@@ -250,10 +258,15 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                                     className="video-h5-drawer__close"
                                     role="button"
                                     tabIndex={0}
-                                    onClick={onIntroductionOpenChange}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onIntroductionOpenChange(false);
+                                    }}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' || e.key === ' ') {
-                                            onIntroductionOpenChange();
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onIntroductionOpenChange(false);
                                         }
                                     }}
                                 >
@@ -272,12 +285,12 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                                 <div className="video-h5-drawer__introTags">
                                     {data.tags.map((v) => (
                                         <Link
-                                            key={v.name}
+                                            key={v.unique_id}
                                             to={videoIntroTagSearchPath(v)}
                                             onClick={() => onCloseIntroductionLinks()}
                                             className="video-h5-drawer__introTag"
                                         >
-                                            {formatVideoIntroTagLabel(v.unique_id)}
+                                            {tagLabel(v)}
                                         </Link>
                                     ))}
                                 </div>

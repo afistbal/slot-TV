@@ -28,6 +28,11 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
+import {
+    ensureMovieTagLabels,
+    resolveTagDisplayLabel,
+    tagRowDisplayLabel,
+} from '@/lib/movieTagLabels';
 import iconTag from '@/assets/images/icon_tag@2x.png';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
@@ -44,24 +49,6 @@ function dedupeSearchRowsById(rows: TData[]): TData[] {
     });
 }
 
-/** 会话内 tags 只拉一次；并发挂载共用同一 Promise，减轻 Strict Mode / 快速重挂载下的双请求 */
-let movieTagsInflight: Promise<void> | null = null;
-
-async function ensureMovieTags(): Promise<void> {
-    const s = useSearchStore.getState();
-    if (s.tags.length > 0) return;
-    if (!movieTagsInflight) {
-        movieTagsInflight = api<TData[]>('movie/tags', { loading: false })
-            .then((res) => {
-                useSearchStore.getState().setTags(res.d);
-            })
-            .finally(() => {
-                movieTagsInflight = null;
-            });
-    }
-    await movieTagsInflight;
-}
-
 /** 最新一次 `movie` 请求生效；较早返回的结果丢弃（导航/Strict Mode 叠请求） */
 let searchMovieLoadId = 0;
 
@@ -74,7 +61,7 @@ function searchUrlMatchesStore(search: string): boolean {
     const decodedTag = urlTag ? decodeURIComponent(urlTag.replace(/\+/g, ' ')).trim() : '';
     const s = useSearchStore.getState();
     const kwOk = urlQ ? s.keyword.trim() === decodedQ : s.keyword.trim() === '';
-    const tagOk = urlTag ? s.tag === decodedTag : true;
+    const tagOk = urlTag ? s.tag === decodedTag : s.tag === '';
     return kwOk && tagOk;
 }
 
@@ -118,7 +105,7 @@ function measureTagsTwoRowSplit(
     widthPx: number,
     tags: TData[],
     collapsedMaxPx: number,
-    labelFor: (uniqueId: string) => string,
+    labelFor: (tag: TData) => string,
     mountParent: HTMLElement,
     classes: TagsRowMeasureClasses,
     leadingButtonLabels: string[] = [],
@@ -148,7 +135,7 @@ function measureTagsTwoRowSplit(
         const b = document.createElement('button');
         b.type = 'button';
         b.className = classes.tagClass;
-        b.textContent = labelFor(String(t['unique_id'] ?? ''));
+        b.textContent = labelFor(t);
         ghost.appendChild(b);
     }
     const tagsOnlyH = ghost.offsetHeight;
@@ -180,7 +167,7 @@ function measureTagsTwoRowSplit(
             const b = document.createElement('button');
             b.type = 'button';
             b.className = classes.tagClass;
-            b.textContent = labelFor(String(tags[i]['unique_id'] ?? ''));
+            b.textContent = labelFor(tags[i]);
             ghost.appendChild(b);
         }
         ghost.appendChild(makeToggle());
@@ -203,7 +190,7 @@ function measurePcTagsTwoRowSplit(
     widthPx: number,
     tags: TData[],
     collapsedMaxPx: number,
-    labelFor: (uniqueId: string) => string,
+    labelFor: (tag: TData) => string,
     mountParent: HTMLElement,
 ): { needsExpand: boolean; visibleCount: number } {
     return measureTagsTwoRowSplit(
@@ -270,39 +257,6 @@ function buildSearchPageItems(
     }
     out.push(totalPages);
     return out;
-}
-
-function formatTagLabel(uniqueId: string): string {
-    return uniqueId
-        .split('')
-        .map((ch, k) => {
-            if (k === 0) {
-                return ch.toUpperCase();
-            }
-            if (ch === '_') {
-                return ' ';
-            }
-            return ch;
-        })
-        .join('');
-}
-
-function resolveTagDisplayLabel(
-    tagName: string,
-    tags: TData[],
-    fallbackTagMessage: string,
-): string {
-    if (!tagName) {
-        return '';
-    }
-    const row = tags.find((t) => (t['name'] as string) === tagName);
-    if (row) {
-        return formatTagLabel(String(row['unique_id'] ?? ''));
-    }
-    if (isOpaqueTagId(tagName)) {
-        return fallbackTagMessage;
-    }
-    return tagName;
 }
 
 type SearchRowItem = {
@@ -629,7 +583,21 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     function handleTagClick(name: string) {
         setTagOpen(false);
         if (searchStore.tag === name) {
+            if (isCategoriesPage) {
+                searchStore.setTag('');
+                searchStore.setKeyword('');
+                searchStore.setPage(1);
+                void loadData();
+                return;
+            }
             navigate('/categories');
+            return;
+        }
+        if (isCategoriesPage) {
+            searchStore.setTag(name);
+            searchStore.setKeyword('');
+            searchStore.setPage(1);
+            void loadData();
             return;
         }
         navigate(`/tagSearch?${new URLSearchParams({ movie_tag: name }).toString()}`);
@@ -655,7 +623,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         if (searchStore.tag) {
             const row = searchStore.tags.find((t) => (t['name'] as string) === searchStore.tag);
             if (row) {
-                return formatTagLabel(String(row['unique_id'] ?? ''));
+                return tagRowDisplayLabel(row);
             }
             if (isOpaqueTagId(searchStore.tag)) {
                 return intl.formatMessage({ id: 'nav_categories' });
@@ -673,7 +641,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         if (searchStore.tag) {
             const row = searchStore.tags.find((t) => (t['name'] as string) === searchStore.tag);
             if (row) {
-                const tagLabel = formatTagLabel(String(row['unique_id'] ?? ''));
+                const tagLabel = tagRowDisplayLabel(row);
                 return intl.formatMessage({ id: 'search_movies_with_tag' }, { tag: tagLabel });
             }
             if (isOpaqueTagId(searchStore.tag)) {
@@ -781,7 +749,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
         let cancelled = false;
         void (async () => {
-            await ensureMovieTags();
+            await ensureMovieTagLabels();
             if (cancelled) return;
 
             const state = useSearchStore.getState();
@@ -804,7 +772,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         return () => {
             cancelled = true;
         };
-    }, [sessionBootstrapReady, location.pathname, location.search]);
+    }, [sessionBootstrapReady, location.pathname, location.search, intl.locale]);
 
     /** PC：兩行高度上限 + 離屏二分測量，决定折疊時展示多少個 tag（展開鈕跟在末尾 tag 後） */
     useLayoutEffect(() => {
@@ -836,7 +804,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 w,
                 searchStore.tags,
                 collapsedMax,
-                (u) => formatTagLabel(u),
+                tagRowDisplayLabel,
                 shell,
             );
             setPcTagsNeedsExpand(needsExpand);
@@ -882,7 +850,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 w,
                 searchStore.tags,
                 collapsedMax,
-                (u) => formatTagLabel(u),
+                tagRowDisplayLabel,
                 shell,
                 H5_CATEGORIES_TAGS_ROW_MEASURE,
                 [intl.formatMessage({ id: 'categories_all_plots' })],
@@ -1052,7 +1020,10 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                     )}
                                     onClick={() => {
                                         if (searchStore.tag) {
-                                            navigate('/categories');
+                                            searchStore.setTag('');
+                                            searchStore.setKeyword('');
+                                            searchStore.setPage(1);
+                                            void loadData();
                                         }
                                     }}
                                 >
@@ -1070,7 +1041,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                             )}
                                             onClick={() => handleTagClick(name)}
                                         >
-                                            {formatTagLabel(String(v['unique_id'] ?? ''))}
+                                            {tagRowDisplayLabel(v)}
                                         </button>
                                     );
                                 })}
@@ -1116,18 +1087,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                             'rs-search-page__tag--active',
                                     )}
                                 >
-                                    {(v['unique_id'] as string)
-                                        .split('')
-                                        .map((ch, k) => {
-                                            if (k === 0) {
-                                                return ch.toUpperCase();
-                                            }
-                                            if (ch === '_') {
-                                                return ' ';
-                                            }
-                                            return ch;
-                                        })
-                                        .join('')}
+                                    {tagRowDisplayLabel(v)}
                                 </div>
                             ))}
                             {searchStore.tag &&
@@ -1139,22 +1099,11 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                         key={searchStore.tag}
                                         className="rs-search-page__tag rs-search-page__tag--active"
                                     >
-                                        {(
+                                        {tagRowDisplayLabel(
                                             searchStore.tags.find(
                                                 (w) => (w['name'] as string) === searchStore.tag,
-                                            )!['unique_id'] as string
-                                        )
-                                            .split('')
-                                            .map((ch, k) => {
-                                                if (k === 0) {
-                                                    return ch.toUpperCase();
-                                                }
-                                                if (ch === '_') {
-                                                    return ' ';
-                                                }
-                                                return ch;
-                                            })
-                                            .join('')}
+                                            )!,
+                                        )}
                                     </div>
                                 )}
                             <div
@@ -1198,9 +1147,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                             >
                                                 {pcTagsForRender.map((v) => {
                                                     const name = v['name'] as string;
-                                                    const label = formatTagLabel(
-                                                        String(v['unique_id'] ?? ''),
-                                                    );
+                                                    const label = tagRowDisplayLabel(v);
                                                     const active = name === searchStore.tag;
                                                     return (
                                                         <button
@@ -1438,7 +1385,8 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                     }
                                     const uid = String(w['unique_id'] ?? '').toLowerCase();
                                     const name = String(w['name'] ?? '').toLowerCase();
-                                    return uid.includes(kw) || name.includes(kw);
+                                    const local = String(w['local_label'] ?? '').toLowerCase();
+                                    return uid.includes(kw) || name.includes(kw) || local.includes(kw);
                                 })
                                 .map((w) => (
                                     <div
@@ -1450,18 +1398,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 'rs-search-page__drawerTag--active',
                                         )}
                                     >
-                                        {(w['unique_id'] as string)
-                                            .split('')
-                                            .map((ch, k) => {
-                                                if (k === 0) {
-                                                    return ch.toUpperCase();
-                                                }
-                                                if (ch === '_') {
-                                                    return ' ';
-                                                }
-                                                return ch;
-                                            })
-                                            .join('')}
+                                        {tagRowDisplayLabel(w)}
                                     </div>
                                 ))}
                         </div>

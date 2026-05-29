@@ -401,6 +401,8 @@
     "shopping_section_tips": "Mẹo :",
     "shopping_vip_weekly_special_title": "Giá VIP tuần đặc biệt",
     "shopping_vip_weekly_subtitle": "Tuần đầu {price1}, sau đó {price2}/tuần",
+    "shopping_vip_monthly_subtitle": "Tháng đầu {price1}, sau đó {price2}/tháng",
+    "shopping_vip_yearly_subtitle": "Năm đầu {price1}, sau đó {price2}/năm",
     "shopping_benefit_ad_free": "Không quảng cáo",
     "shopping_benefit_hd": "Chất lượng HD",
     "shopping_tips_item_1": "1. Trong thời gian đăng ký, bạn có thể xem tập phim {site} không giới hạn.",

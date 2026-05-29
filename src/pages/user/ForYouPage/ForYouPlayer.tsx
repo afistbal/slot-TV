@@ -1,4 +1,4 @@
-import {
+﻿import {
     ChevronLeft,
     Crown,
     Home,
@@ -111,10 +111,10 @@ export function ForYouPlayer({
     onPlaybackStarted?: () => void;
     onVideoCanPlay?: () => void;
     hideCenterPlayUntilFirstPlay?: boolean;
-    /** For You????? feed ???????? */
+    /** For You：从 feed 恢复播放进度（秒） */
     feedResumeTimeSec?: number;
     onFeedPlaybackProgress?: (currentTimeSec: number, durationSec: number) => void;
-    /** For You???/????????? feed? */
+    /** For You：上/下一条 feed 切换（非同剧切集） */
     feedHasPrev?: boolean;
     feedHasNext?: boolean;
     onFeedPrev?: () => void;
@@ -125,13 +125,13 @@ export function ForYouPlayer({
     onFullscreenPrefChange: (value: boolean) => void;
     onEpisodeFullscreenReady: () => void;
     shouldIgnoreFullscreenExit: () => boolean;
-    /** ???????`VIDEO_FROM_HOME_STATE` ????????????????????????????????PC ??????????????????????????????????*/
+    /** 站内带 `VIDEO_FROM_HOME_STATE` 或路由栈上一页（非整页刷新）：PC 可走有声；直链/刷新仍走静音冷启动 */
     fromHomeVideoPlayback: boolean;
-    /** ??????video-old ??????????????????????????? */
+    /** 换集走 video-old 式播放（无声优静音策略） */
     legacyEpisodeAutoplayRef: RefObject<boolean>;
-    /** ????????????????????????????????????????????????????? */
+    /** 当前集正常播；竖滑相邻格仅挂片+控件，不自动播放 */
     playbackPolicy?: 'autoplay' | 'paused';
-    /** PC ??????????????????VideoVerticalSwiper ???????????????????????? */
+    /** PC 右侧抽屉状态（由 VideoVerticalSwiper 持有，换集时不关闭） */
     pcDrawerPanel: PcDrawerPanel;
     onPcDrawerPanelChange: (panel: PcDrawerPanel) => void;
     pcDrawerEntered: boolean;
@@ -161,7 +161,7 @@ export function ForYouPlayer({
     const controllerIsShow = useRef(true);
     const subtitlesRef = useRef<VTTCue[]>([]);
     const [playing, setPlaying] = useState(false);
-    /** ??????????????????????????????????????????????????? icon */
+    /** 用户曾点开播放浮层后，播放态才显示居中暂停 icon */
     const [centerPlayUiEngaged, setCenterPlayUiEngaged] = useState(false);
     const [playbackStarted, setPlaybackStarted] = useState(false);
     const [videoFrameReady, setVideoFrameReady] = useState(false);
@@ -183,6 +183,20 @@ export function ForYouPlayer({
     const [speedOpen, setSpeedOpen] = useState(false);
     const [speed, setSpeed] = useState(parseInt(localStorage.getItem('playback_speed') || '1', 10));
     const [introduction, setIntroduction] = useState(false);
+    /** For You 打开 info 时 `movie/info` 拉到的完整剧详情 */
+    const [feedInfoData, setFeedInfoData] = useState<IPlayerData | null>(null);
+    /** For You PC 自管 drawer 状态（不依赖父级 VideoVerticalSwiper） */
+    const [feedPcDrawerPanel, setFeedPcDrawerPanel] = useState<PcDrawerPanel>(null);
+    const [feedPcDrawerEntered, setFeedPcDrawerEntered] = useState(false);
+    const feedPcDrawerClosingRef = useRef(false);
+    /** 递增以取消进行中的 For You 简介打开/请求 */
+    const forYouInfoOpenSeqRef = useRef(0);
+    const activePcDrawerPanel = isForYouFeed ? feedPcDrawerPanel : pcDrawerPanel;
+    const setActivePcDrawerPanel = isForYouFeed ? setFeedPcDrawerPanel : onPcDrawerPanelChange;
+    const activePcDrawerEntered = isForYouFeed ? feedPcDrawerEntered : pcDrawerEntered;
+    const setActivePcDrawerEntered = isForYouFeed ? setFeedPcDrawerEntered : onPcDrawerEnteredChange;
+    const activePcDrawerClosingRef = isForYouFeed ? feedPcDrawerClosingRef : pcDrawerClosingRef;
+    const displayData = feedInfoData ?? data;
     const isDesktop = useMinWidth768();
     const staticBase = useMemo(() => String(configStore.config['static'] ?? ''), [configStore.config['static']]);
     const {
@@ -195,11 +209,11 @@ export function ForYouPlayer({
         handleShareAction,
         handleCopyEmbedCode,
     } = useForYouPlayerShare(data, staticBase, episode?.episode);
-    /** ????????????poster???????????????????data URL?????????????????`info.image`??*/
+    /** 未解锁：无 poster；已解锁：仅用截帧 data URL，失败则黑底（不用 `info.image`） */
     const unlockVisualOnly = episode?.lock === true;
     const frameTrim = framePosterDataUrl.trim();
     const videoPosterAttr = unlockVisualOnly ? undefined : frameTrim.length > 0 ? frameTrim : undefined;
-    /** ??????????????????????? `info.image`?????????????poster ??????????*/
+    /** 仅分享弹窗预览卡：用剧封 `info.image`（与播放器 poster 截帧分离） */
     const shareCardPosterUrl = useMemo(
         () => resolveVideoPosterUrl(staticBase, data.info, data.info.id),
         [staticBase, data.info],
@@ -208,19 +222,19 @@ export function ForYouPlayer({
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const [progressHover, setProgressHover] = useState(false);
     const [progressDragging, setProgressDragging] = useState(false);
-    /** ?????????????????????????????????????PC ???`.xgplayer-unmute-bt`??H5 ??????????????????*/
+    /** 冷启动/刷新：静音自动播时展示（PC 用 `.xgplayer-unmute-bt`，H5 用底部按钮层） */
     const [showTapToUnmute, setShowTapToUnmute] = useState(false);
-    /** ??`<video>.muted` ??????????????????????????????? douyin BaseMusic ??????*/
+    /** 与 `<video>.muted` 同步，用于底部音量图标（对标 douyin BaseMusic 入口） */
     const [videoMutedUi, setVideoMutedUi] = useState(() => !hasVideoSessionUserUnmuted());
-    /** H5??????????????????????????????????????????????????????????????????????????????????? `id` ???? */
+    /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
     const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
-    /** `loadedmetadata`??videoWidth > videoHeight ???????????? */
+    /** `loadedmetadata`：videoWidth > videoHeight 为横屏，否则竖屏 */
     const [videoOrientation, setVideoOrientation] = useState<VideoOrientation | null>(null);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
     const progressSeekRatioRef = useRef(0);
     const fullscreenRestoreInFlightRef = useRef(false);
     const isLandscapeVideo = videoOrientation === 'landscape';
-    /** PC?9:16 ???H5????????????????? */
+    /** PC：9:16 舞台；H5：铺满视口，避免左右黑边像「边框」 */
     const videoStageClassName = cn(
         'video-player-h5-video-stage relative overflow-hidden bg-black cursor-pointer',
         isDesktop ? 'h-full max-h-full w-auto max-w-full aspect-[9/16]' : 'h-full w-full',
@@ -230,9 +244,9 @@ export function ForYouPlayer({
         isLandscapeVideo ? 'object-contain' : 'object-cover',
     );
     const fullscreenRestoreEpisodeRef = useRef<number | null>(null);
-    /** ???????????????????????????????true????????????????????????????????????*/
+    /** 因页签/窗口不可见而自动暂停时置 true，回到前台仅在此情况下自动续播 */
     const pausedByDocumentVisibilityRef = useRef(false);
-    /** ??? NetShort `playWithDelay(300)`?????????????? PC ???????????????????????play???????? md ????????????????? */
+    /** 对标 NetShort `playWithDelay(300)`：直链/刷新 PC 静音自动播前稍迟再 play，且切换 md 断点前需清掉 */
     const autoplayKickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const {
         fullscreenTargetRef,
@@ -242,7 +256,7 @@ export function ForYouPlayer({
         shouldIgnoreFullscreenExit,
     } = props;
     const isFullscreenUi = shouldKeepFullscreen || pcFullscreen;
-    /** ?????????????metadata??????????????????????????????????? none ??????? */
+    /** For You 主格用 auto 预加载；其余与 /video 一致用 metadata */
     const videoPreload: 'none' | 'metadata' | 'auto' =
         isForYouFeed && playbackPolicy !== 'paused' ? 'auto' : 'metadata';
     const feedCoverPoster =
@@ -251,7 +265,7 @@ export function ForYouPlayer({
         ? undefined
         : feedCoverPoster ?? (frameTrim.length > 0 ? frameTrim : undefined);
 
-    /** H5???? `<video>.muted` ????????????????????????????????????????????????????????????????????? */
+    /** H5：与 `<video>.muted` 一致且正在播时出全屏点按开声蒙层；用户点过底栏音量后不再出 */
     const showH5FullscreenUnmuteOverlay =
         !isDesktop &&
         videoMutedUi &&
@@ -263,11 +277,11 @@ export function ForYouPlayer({
     async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
         const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
-        // ???????????????????????????? React ??????????PC ????? fullscreen ???????????????exitFullscreen ???????????????????
+        // 必须先退出浏览器全屏再改 React 布局；否则 PC 会在 fullscreen 内先插入侧栏，exitFullscreen 易失败或需点两次。
         if (document.fullscreenElement) {
             await document.exitFullscreen().catch(() => {});
         }
-        // webkitendfullscreen ?????????????????????????????????????????????
+        // webkitendfullscreen 时系统已退出，再调一次易导致播放被停掉。
         if (!options?.skipVideoWebKitExit && video?.webkitExitFullscreen) {
             try {
                 video.webkitExitFullscreen();
@@ -275,7 +289,7 @@ export function ForYouPlayer({
                 // ignore
             }
         }
-        // ??video ?????????iOS ???????????????????????????????????????????????????????
+        // 与 video 一致：从 iOS 系统视频全屏回调里进来时勿再调，避免干扰内联续播。
         if (!options?.skipVideoWebKitExit && doc.webkitExitFullscreen) {
             await Promise.resolve(doc.webkitExitFullscreen()).catch(() => {});
         }
@@ -326,7 +340,7 @@ export function ForYouPlayer({
             return;
         }
         window.clearTimeout(controllerTimerRef.current);
-        /** PC ???????????????????icon ????????????????????????*/
+        /** PC 暂停态：底栏与居中 icon 始终展示（移出鼠标也不收） */
         if (isDesktop && videoRef.current != null && videoRef.current.paused) {
             controllerIsShow.current = true;
             setControllerVisible(true);
@@ -419,7 +433,7 @@ export function ForYouPlayer({
         setVip(false);
     }
 
-    /** ??????VIP ?????????????RadixRc ??????????`movie/episode`????????????????????`loadData` ???????????? */
+    /** 充值/VIP 支付成功：RadixRc 已拉最新 `movie/episode`，写入缓存并走同一套 `loadData` 更新播放 */
     function handleEmbedPaySuccessEpisodeDetail(d: IPlayerEpisode) {
         putEpisodeDetailCache(Number(d.id) || id, d);
         void loadData(id, false);
@@ -499,47 +513,132 @@ export function ForYouPlayer({
         }
     }
 
+    function cancelForYouInfoOpen() {
+        forYouInfoOpenSeqRef.current += 1;
+    }
+
     function beginClosePcDrawer() {
-        if (!pcDrawerPanel) {
+        if (!activePcDrawerPanel) {
             return;
         }
-        pcDrawerClosingRef.current = true;
-        onPcDrawerEnteredChange(false);
+        if (isForYouFeed) {
+            cancelForYouInfoOpen();
+        }
+        activePcDrawerClosingRef.current = true;
+        setActivePcDrawerEntered(false);
         setPcStageShiftPx(0);
     }
 
-    function closePcDrawer() {
+    function closePcDrawer(ev?: MouseEvent) {
+        ev?.stopPropagation();
         beginClosePcDrawer();
     }
+
+    function openPcIntroDrawer(ev?: MouseEvent) {
+        ev?.stopPropagation();
+        if (pcFullscreen) {
+            void handleExitPcFullscreen();
+        }
+        if (activePcDrawerPanel === 'intro') {
+            beginClosePcDrawer();
+            return;
+        }
+        activePcDrawerClosingRef.current = false;
+        setActivePcDrawerPanel('intro');
+    }
+
+    async function handleForYouOpenInfo(ev?: MouseEvent) {
+        ev?.stopPropagation();
+        if (!isForYouFeed) {
+            return;
+        }
+
+        const infoOpen = isDesktop ? activePcDrawerPanel === 'intro' : introduction;
+        if (infoOpen) {
+            cancelForYouInfoOpen();
+            if (isDesktop) {
+                beginClosePcDrawer();
+            } else {
+                setIntroduction(false);
+            }
+            return;
+        }
+
+        const openSeq = ++forYouInfoOpenSeqRef.current;
+
+        if (!skipRemoteApi && feedInfoData == null) {
+            const result = await api<IPlayerData>('movie/info', {
+                data: { id: data.info.id },
+                loading: false,
+            });
+            if (openSeq !== forYouInfoOpenSeqRef.current) {
+                return;
+            }
+            if (result.c === 0 && result.d) {
+                setFeedInfoData({
+                    ...result.d,
+                    episodes: data.episodes,
+                    /** For You：标签以 foryou feed 为准（name=source_tag_name、unique_id），避免 movie/info 混入展示名 */
+                    tags: data.tags.length > 0 ? data.tags : result.d.tags,
+                });
+                setFavorite(result.d.info.is_favorite === 1);
+            }
+        }
+
+        if (openSeq !== forYouInfoOpenSeqRef.current) {
+            return;
+        }
+
+        if (isDesktop) {
+            activePcDrawerClosingRef.current = false;
+            setActivePcDrawerPanel('intro');
+        } else {
+            setIntroduction(true);
+        }
+    }
+
+    /** H5 简介抽屉：vaul 传 boolean；关闭钮 onClick 会传入 MouseEvent，需用 open !== true 判断 */
+    function handleIntroductionOpenChange(open?: boolean) {
+        if (isForYouFeed) {
+            if (open !== true) {
+                cancelForYouInfoOpen();
+                setIntroduction(false);
+            }
+            return;
+        }
+        if (typeof open === 'boolean') {
+            setIntroduction(open);
+            return;
+        }
+        setIntroduction((v) => !v);
+    }
+
+    /** 兼容旧引用 / 热更新残留 */
+    const handleIntroduction = handleIntroductionOpenChange;
 
     function handlePcEpisodeListClick(ev?: MouseEvent) {
         ev?.stopPropagation();
         if (pcFullscreen) {
             void handleExitPcFullscreen();
         }
-        if (pcDrawerPanel === 'episodes') {
+        if (activePcDrawerPanel === 'episodes') {
             beginClosePcDrawer();
             return;
         }
-        pcDrawerClosingRef.current = false;
-        onPcDrawerPanelChange('episodes');
+        activePcDrawerClosingRef.current = false;
+        setActivePcDrawerPanel('episodes');
     }
 
     function handlePcIntroDrawerClick(ev?: MouseEvent) {
-        ev?.stopPropagation();
-        if (pcFullscreen) {
-            void handleExitPcFullscreen();
-        }
-        if (pcDrawerPanel === 'intro') {
-            beginClosePcDrawer();
+        if (isForYouFeed) {
+            void handleForYouOpenInfo(ev);
             return;
         }
-        pcDrawerClosingRef.current = false;
-        onPcDrawerPanelChange('intro');
+        openPcIntroDrawer(ev);
     }
 
     function handleToggleFavorite() {
-        // PC ???????????? controllerRef ?????????? H5 ???????????????????????????????????????????????????????????????????????????????????
+        // PC 侧栏收藏不在 controllerRef 内；勿与 H5 内层控制条共用「控制器显隐」门禁，否则自动隐层后侧栏星标无法点击。
         if (!isDesktop && !controllerIsShow.current) {
             return;
         }
@@ -643,7 +742,7 @@ export function ForYouPlayer({
         const v = videoRef.current;
         if (v.paused) {
             void v.play().catch(() => {
-                console.log('??????????????');
+                console.log('点击播放失败');
             });
             if (!isDesktop) {
                 showController();
@@ -679,7 +778,7 @@ export function ForYouPlayer({
         return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     }
 
-    /** ??????????UI????????????seek?????douyin BaseVideo touchmove/touchend??*/
+    /** 拖进度只改 UI，结束时再 seek（对齐 douyin BaseVideo touchmove/touchend） */
     function applyProgressPreview(ratio: number) {
         progressSeekRatioRef.current = ratio;
         if (progressCurrentRef.current) {
@@ -797,11 +896,6 @@ export function ForYouPlayer({
         }
         handleSpeedOpen();
     }
-
-    function handleIntroduction() {
-        setIntroduction(!introduction);
-    }
-
     function handleTapToUnmute() {
         const v = videoRef.current;
         if (!v) {
@@ -842,11 +936,11 @@ export function ForYouPlayer({
         }
         await toggleVideoFullscreen(videoRef, fullscreenTargetRef, {
             preferContainer: true,
-            // ??????????????? + ????????????????????iOS ?????????????? webkitEnterFullscreen???
+            // 桌面保留容器全屏 + 侧栏；移动端容器全屏在 iOS 常失败，需回退 webkitEnterFullscreen。
             disableNativeVideoFullscreen: isDesktop,
         });
         const nowFullscreen = Boolean(getFullscreenElement());
-        // ?????????????????? document ????????????iOS ?????? video ???????? fullscreenElement??????????????????
+        // 桌面仅在实际进入 document 全屏时记偏好；iOS 原生 video 全屏常无 fullscreenElement，仍走意图兜底。
         if (nowFullscreen || !isDesktop) {
             onFullscreenPrefChange(true);
         }
@@ -867,12 +961,17 @@ export function ForYouPlayer({
         setPlaybackStarted(false);
         setVideoFrameReady(false);
         didReportPlaybackStartRef.current = false;
+        setFeedInfoData(null);
+        setFeedPcDrawerPanel(null);
+        setFeedPcDrawerEntered(false);
+        feedPcDrawerClosingRef.current = false;
+        setIntroduction(false);
         if (isForYouFeed && hasVideoSessionUserUnmuted()) {
             setVideoMutedUi(false);
         }
     }, [id, isForYouFeed]);
 
-    /** ? /video ??? remount?????????????? load ??? muted ?? true? */
+    /** 与 /video 一致：remount 后若会话已开声，load 完不应再把 muted 设 true */
     useEffect(() => {
         if (!isForYouFeed || !hasVideoSessionUserUnmuted() || episode?.lock === true) {
             return;
@@ -893,7 +992,7 @@ export function ForYouPlayer({
         }
     }, [isForYouFeed, episode?.id, playbackSources.length, playbackPolicy, episode?.lock]);
 
-    /** For You H5?pending ?? video opacity:0?canplay ? React ?? visible ???? play */
+    /** For You H5：pending 态 video opacity:0；canplay 后 React 切 visible 再补 play */
     useEffect(() => {
         if (!isForYouFeed || isDesktop) {
             return;
@@ -1019,7 +1118,7 @@ export function ForYouPlayer({
         setFramePosterDataUrl(getEpisodePeekFrame(id) ?? '');
     }, [id]);
 
-    /** ??????????? remount ???episode ????????tab ????????????????????????????????????????????????1-50 */
+    /** 换集后组件会 remount 或 episode 更新；tab 须落在「当前集」所在区间，否则会停在默认 1-50 */
     useEffect(() => {
         if (!isDesktop || !data) {
             return;
@@ -1034,19 +1133,19 @@ export function ForYouPlayer({
         setDesktopEpisodeTab((prev) => (prev === nextTab ? prev : nextTab));
     }, [isDesktop, data, id, episode?.episode]);
 
-    /** PC???????????????????????entered + ?????????????CSS transition */
+    /** PC：先挂载起始态，下一帧 entered + 左移，才能触发 CSS transition */
     useEffect(() => {
-        if (!isDesktop || pcDrawerPanel == null) {
-            onPcDrawerEnteredChange(false);
+        if (!isDesktop || activePcDrawerPanel == null) {
+            setActivePcDrawerEntered(false);
             setPcStageShiftPx(0);
             return;
         }
-        if (pcDrawerClosingRef.current) {
+        if (activePcDrawerClosingRef.current) {
             return;
         }
 
-        /** ???? remount????????????????????????????????????????*/
-        if (pcDrawerEntered) {
+        /** 换集 remount：抽屉已在父级保持打开，跳过滑入动画 */
+        if (activePcDrawerEntered) {
             return schedulePcDrawerEnterFrame(() => {
                 const shell = pcShellRef.current;
                 const cluster = pcStageClusterRef.current;
@@ -1056,27 +1155,27 @@ export function ForYouPlayer({
             });
         }
 
-        onPcDrawerEnteredChange(false);
+        setActivePcDrawerEntered(false);
         setPcStageShiftPx(0);
         return schedulePcDrawerEnterFrame(() => {
-            onPcDrawerEnteredChange(true);
+            setActivePcDrawerEntered(true);
             const shell = pcShellRef.current;
             const cluster = pcStageClusterRef.current;
             if (shell && cluster) {
                 setPcStageShiftPx(measurePcStageShiftPx(shell, cluster));
             }
         });
-    }, [isDesktop, pcDrawerPanel]);
+    }, [isDesktop, activePcDrawerPanel]);
 
-    /** PC????????????????????????????*/
+    /** PC：关闭时等面板滑出后再卸载 */
     useEffect(() => {
-        if (!pcDrawerClosingRef.current || pcDrawerPanel == null || pcDrawerEntered) {
+        if (!activePcDrawerClosingRef.current || activePcDrawerPanel == null || activePcDrawerEntered) {
             return;
         }
 
         const finish = () => {
-            pcDrawerClosingRef.current = false;
-            onPcDrawerPanelChange(null);
+            activePcDrawerClosingRef.current = false;
+            setActivePcDrawerPanel(null);
             setPcStageShiftPx(0);
         };
 
@@ -1099,10 +1198,10 @@ export function ForYouPlayer({
             panel.removeEventListener('transitionend', onEnd);
             window.clearTimeout(fallback);
         };
-    }, [pcDrawerPanel, pcDrawerEntered]);
+    }, [activePcDrawerPanel, activePcDrawerEntered]);
 
     useEffect(() => {
-        if (!isDesktop || !pcDrawerPanel || !pcDrawerEntered) {
+        if (!isDesktop || !activePcDrawerPanel || !activePcDrawerEntered) {
             return;
         }
         const sync = () => {
@@ -1115,7 +1214,7 @@ export function ForYouPlayer({
         };
         window.addEventListener('resize', sync);
         return () => window.removeEventListener('resize', sync);
-    }, [isDesktop, pcDrawerPanel, pcDrawerEntered]);
+    }, [isDesktop, activePcDrawerPanel, activePcDrawerEntered]);
 
     useEffect(() => {
         if (loading || !episode || episode.lock || playbackSources.length === 0) {
@@ -1213,6 +1312,13 @@ export function ForYouPlayer({
 
         const videoEnded = () => {
             setPlaying(false);
+            if (isForYouFeed) {
+                if (feedHasNext) {
+                    legacyEpisodeAutoplayRef.current = true;
+                    onFeedNext?.();
+                }
+                return;
+            }
             legacyEpisodeAutoplayRef.current = true;
             onSetEpisode(props.index + 1);
         };
@@ -1302,7 +1408,17 @@ export function ForYouPlayer({
             window.removeEventListener('touchend', touchEnd);
             window.removeEventListener('touchcancel', touchEnd);
         };
-    }, [loading, id, episode?.lock, endProgressScrub]);
+    }, [
+        loading,
+        id,
+        episode?.lock,
+        endProgressScrub,
+        isForYouFeed,
+        feedHasNext,
+        onFeedNext,
+        onSetEpisode,
+        props.index,
+    ]);
 
     useEffect(() => {
         const onVisibilityChange = () => {
@@ -1384,7 +1500,7 @@ export function ForYouPlayer({
             if (!v || episode?.lock || location.search.indexOf('auto_play=0') !== -1) {
                 return;
             }
-            /** iOS ????????????????????????????????????????????????????????????????????*/
+            /** iOS 系统全屏常在非手势链路上触发，浏览器会静音；在回调栈内尝试恢复有声 */
             if (v.muted) {
                 v.muted = false;
                 markVideoSessionUserUnmuted();
@@ -1393,7 +1509,7 @@ export function ForYouPlayer({
                 void v.play().then(() => setPlaying(true)).catch(() => {});
             }
         };
-        /** iOS ?????????????????????? paused??????play ???????????????????????????????????????*/
+        /** iOS 退出系统全屏后常会处于 paused；单次 play 常失败，需同步先试一次再短时多次重试。 */
         const resumeInlineAfterNativeFullscreenExit = () => {
             const attempt = () => {
                 const v = videoRef.current;
@@ -1419,7 +1535,7 @@ export function ForYouPlayer({
             if (shouldIgnoreFullscreenExit()) {
                 return;
             }
-            // ???webkit ??????????????? play??????? UI????????iOS ????????????????play ??????????????
+            // 在 webkit 回调栈内先试 play，再恢复 UI；部分 iOS 版本离开回调后 play 会被策略拦。
             {
                 const v = videoRef.current;
                 if (
@@ -1536,7 +1652,7 @@ export function ForYouPlayer({
                             ref={pcShellRef}
                             className={cn(
                                 'video-player-pc-shell relative flex h-full w-full items-center justify-center overflow-hidden bg-black',
-                                pcDrawerPanel != null && 'video-player-pc-shell--drawer-open',
+                                activePcDrawerPanel != null && 'video-player-pc-shell--drawer-open',
                             )}
                         >
                             <div
@@ -1615,7 +1731,7 @@ export function ForYouPlayer({
                             <div
                                 className={cn(
                                     videoPlayerUiClassName,
-                                    /** ?????????????DOM ??????????????????????? translateZ(0) ??????????????????????????????????????? .xgplayer-unmute */
+                                    /** 静音蒙层在 DOM 序在前；全屏控制器含 translateZ(0) 时会盖住蒙层并吞点击，需让事件穿透到 .xgplayer-unmute */
                                     showTapToUnmute && 'pointer-events-none',
                                 )}
                                 ref={controllerRef}
@@ -1676,12 +1792,16 @@ export function ForYouPlayer({
                                     >
                                         {!isFullscreenUi && (
                                             <ForYouPlayerBottomInfo
-                                                data={data}
+                                                data={displayData}
                                                 episode={episode}
                                                 episodeNo={
                                                     isForYouFeed ? feedEpisodeCurrent : undefined
                                                 }
-                                                onOpenIntroduction={handlePcIntroDrawerClick}
+                                                onOpenIntroduction={
+                                                    isForYouFeed
+                                                        ? handleForYouOpenInfo
+                                                        : handlePcIntroDrawerClick
+                                                }
                                             />
                                         )}
                                         {!isFullscreenUi && isForYouFeed && onWatchFullSeries ? (
@@ -1830,13 +1950,13 @@ export function ForYouPlayer({
                             <div
                                 className={cn(
                                     'video-player-pc-right-rail',
-                                    pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
+                                    activePcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
                                 )}
                             >
                                 {!isForYouFeed ? (
                                     <ForYouPlayerPcEpisodeDrawer
-                                        open={pcDrawerPanel === 'episodes'}
-                                        entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
+                                        open={activePcDrawerPanel === 'episodes'}
+                                        entered={activePcDrawerEntered && activePcDrawerPanel === 'episodes'}
                                         onClose={closePcDrawer}
                                         anchorRef={pcShellRef}
                                         currentEpisodeNo={currentEpisodeNo}
@@ -1850,13 +1970,14 @@ export function ForYouPlayer({
                                     />
                                 ) : null}
                                 <ForYouPlayerPcIntroDrawer
-                                    open={pcDrawerPanel === 'intro'}
-                                    entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
+                                    open={activePcDrawerPanel === 'intro'}
+                                    entered={activePcDrawerEntered && activePcDrawerPanel === 'intro'}
                                     onClose={closePcDrawer}
                                     anchorRef={pcShellRef}
-                                    data={data}
+                                    data={displayData}
                                     episode={episode}
                                     staticBase={staticBase}
+                                    tagsFromBackendOnly={isForYouFeed}
                                 />
                                 {!pcFullscreen && (
                                     <ForYouPlayerPcEpisodeNav
@@ -1876,7 +1997,7 @@ export function ForYouPlayer({
                         </div>
                     </div>
                     <ForYouPlayerEpisodeSpeedIntroDrawers
-                        data={data}
+                        data={displayData}
                         episodeIndex={props.index}
                         staticBase={staticBase}
                         viewerIsVip={userStore.isVIP()}
@@ -1890,10 +2011,11 @@ export function ForYouPlayer({
                         speed={speed}
                         onSelectSpeed={handleSelectSpeed}
                         introduction={introduction}
-                        onIntroductionOpenChange={handleIntroduction}
+                        onIntroductionOpenChange={handleIntroductionOpenChange}
                         onCloseIntroductionLinks={() => setIntroduction(false)}
                         hideEpisodeDrawer
                         hideIntroDrawer
+                        tagsFromBackendOnly={isForYouFeed}
                     />
                     <ForYouPlayerPcCommerceDialogs
                         vip={vip}
@@ -2011,7 +2133,7 @@ export function ForYouPlayer({
                 <div
                     className={cn(
                         videoPlayerUiClassName,
-                        /** ??PC ???????????????????????????????????????????????????????????????????*/
+                        /** 与 PC 一致：静音蒙层出现时勿让全屏控制层挡在「取消静音」之上 */
                         showH5FullscreenUnmuteOverlay && 'pointer-events-none',
                     )}
                     ref={controllerRef}
@@ -2153,10 +2275,12 @@ export function ForYouPlayer({
                         >
                             {!isFullscreenUi && (
                                 <ForYouPlayerBottomInfo
-                                    data={data}
+                                    data={displayData}
                                     episode={episode}
                                     episodeNo={isForYouFeed ? feedEpisodeCurrent : undefined}
-                                    onOpenIntroduction={handleIntroduction}
+                                    onOpenIntroduction={
+                                        isForYouFeed ? handleForYouOpenInfo : handleIntroductionOpenChange
+                                    }
                                 />
                             )}
                             {!isFullscreenUi && isForYouFeed && onWatchFullSeries ? (
@@ -2252,7 +2376,7 @@ export function ForYouPlayer({
                     )}
                 </div>
                 <ForYouPlayerEpisodeSpeedIntroDrawers
-                    data={data}
+                    data={displayData}
                     episodeIndex={props.index}
                     staticBase={staticBase}
                     viewerIsVip={userStore.isVIP()}
@@ -2266,8 +2390,9 @@ export function ForYouPlayer({
                     speed={speed}
                     onSelectSpeed={handleSelectSpeed}
                     introduction={introduction}
-                    onIntroductionOpenChange={handleIntroduction}
+                    onIntroductionOpenChange={handleIntroductionOpenChange}
                     onCloseIntroductionLinks={() => setIntroduction(false)}
+                    tagsFromBackendOnly={isForYouFeed}
                 />
                 <ForYouPlayerH5CommerceDrawers
                     vip={vip}

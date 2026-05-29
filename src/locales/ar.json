@@ -401,6 +401,8 @@
     "shopping_section_tips": "نصائح :",
     "shopping_vip_weekly_special_title": "سعر VIP الأسبوعي الخاص",
     "shopping_vip_weekly_subtitle": "الأسبوع الأول {price1}، ثم {price2}/أسبوع",
+    "shopping_vip_monthly_subtitle": "الشهر الأول {price1}، ثم {price2}/شهر",
+    "shopping_vip_yearly_subtitle": "السنة الأولى {price1}، ثم {price2}/سنة",
     "shopping_benefit_ad_free": "بدون إعلانات",
     "shopping_benefit_hd": "جودة HD",
     "shopping_tips_item_1": "1. خلال فترة الاشتراك، يمكنك مشاهدة حلقات {site} بلا حدود.",

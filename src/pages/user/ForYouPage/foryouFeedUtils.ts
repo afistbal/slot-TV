@@ -14,9 +14,9 @@ export function buildPlayerDataFromFeedItem(item: IForYouFeedItem): IPlayerData 
             is_favorite: isFavor ? 1 : 0,
             introduction: item.introduction ?? '',
         },
-        tags: item.tags.map((unique_id) => ({
-            name: unique_id.replace(/^tag_/, ''),
-            unique_id,
+        tags: item.tags.map((t) => ({
+            name: t.name,
+            unique_id: t.unique_id,
         })),
         episodes: [
             {

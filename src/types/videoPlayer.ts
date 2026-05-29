@@ -10,6 +10,7 @@ export interface IPlayerData {
     tags: {
         name: string;
         unique_id: string;
+        local_label?: string;
     }[];
     episodes: {
         id: number;

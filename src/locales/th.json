@@ -401,6 +401,8 @@
     "shopping_section_tips": "คำแนะนำ :",
     "shopping_vip_weekly_special_title": "ราคาพิเศษ VIP รายสัปดาห์",
     "shopping_vip_weekly_subtitle": "สัปดาห์แรก {price1} จากนั้น {price2}/สัปดาห์",
+    "shopping_vip_monthly_subtitle": "เดือนแรก {price1} จากนั้น {price2}/เดือน",
+    "shopping_vip_yearly_subtitle": "ปีแรก {price1} จากนั้น {price2}/ปี",
     "shopping_benefit_ad_free": "ไม่มีโฆษณา",
     "shopping_benefit_hd": "คุณภาพ HD",
     "shopping_tips_item_1": "1. ในช่วงสมัครสมาชิก คุณดูตอนของ {site} ได้ไม่จำกัด",

@@ -4,6 +4,7 @@ import Forward from '@/components/Forward';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import { getTagDisplayText } from '../videoPlayerUtils';
 import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
+import { useMovieTagLabelsReady } from '@/lib/movieTagLabels';
 
 type Props = {
     data: IPlayerData;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function VideoPlayerBottomInfo({ data, episode, onOpenIntroduction }: Props) {
+    useMovieTagLabelsReady();
     return (
         <div
             className="video-player-h5-info"

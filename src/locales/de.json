@@ -401,6 +401,8 @@
     "shopping_section_tips": "Tipps :",
     "shopping_vip_weekly_special_title": "Wöchentlicher VIP-Sonderpreis",
     "shopping_vip_weekly_subtitle": "Erste Woche {price1}, danach {price2}/Woche",
+    "shopping_vip_monthly_subtitle": "Erster Monat {price1}, danach {price2}/Monat",
+    "shopping_vip_yearly_subtitle": "Erstes Jahr {price1}, danach {price2}/Jahr",
     "shopping_benefit_ad_free": "Werbefrei",
     "shopping_benefit_hd": "HD-Qualität",
     "shopping_tips_item_1": "1. Während des Abonnements können Sie {site}-Episoden ohne Limit ansehen.",

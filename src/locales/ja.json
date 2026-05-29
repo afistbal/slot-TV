@@ -404,6 +404,8 @@
     "shopping_section_tips": "ヒント：",
     "shopping_vip_weekly_special_title": "週間 VIP 特別価格",
     "shopping_vip_weekly_subtitle": "初週 {price1}、以降 {price2}/週",
+    "shopping_vip_monthly_subtitle": "初月 {price1}、以降 {price2}/月",
+    "shopping_vip_yearly_subtitle": "初年 {price1}、以降 {price2}/年",
     "shopping_benefit_ad_free": "広告なし",
     "shopping_benefit_hd": "HD画質",
     "shopping_tips_item_1": "1. サブスクリプション期間中、{site} のエピソードを無制限に視聴できます。",

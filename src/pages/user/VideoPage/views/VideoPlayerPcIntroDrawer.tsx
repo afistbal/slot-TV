@@ -3,6 +3,8 @@ import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import Image from '@/components/Image';
 import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
+import { getBackendTagDisplayText } from '@/lib/normalizePlayerTags';
+import { useMovieTagLabelsReady } from '@/lib/movieTagLabels';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import type { RefObject } from 'react';
 import { getTagDisplayText } from '../videoPlayerUtils';
@@ -17,6 +19,8 @@ export type VideoPlayerPcIntroDrawerProps = {
     data: IPlayerData;
     episode: IPlayerEpisode | undefined;
     staticBase: string;
+    /** For You：仅用接口 tags 字段，不走 tag-labels */
+    tagsFromBackendOnly?: boolean;
 };
 
 export function VideoPlayerPcIntroDrawer({
@@ -27,7 +31,10 @@ export function VideoPlayerPcIntroDrawer({
     data,
     episode,
     staticBase,
+    tagsFromBackendOnly = false,
 }: VideoPlayerPcIntroDrawerProps) {
+    const tagLabel = tagsFromBackendOnly ? getBackendTagDisplayText : getTagDisplayText;
+    useMovieTagLabelsReady();
     return (
         <VideoPlayerPcRightDrawer
             open={open}
@@ -67,12 +74,12 @@ export function VideoPlayerPcIntroDrawer({
                     <div className="video-pc-intro-drawer__tags">
                         {data.tags.map((v) => (
                             <Link
-                                key={v.name}
+                                key={v.unique_id}
                                 to={videoIntroTagSearchPath(v)}
                                 className="video-pc-intro-drawer__tag"
                                 onClick={onClose}
                             >
-                                {getTagDisplayText(v)}
+                                {tagLabel(v)}
                             </Link>
                         ))}
                     </div>
