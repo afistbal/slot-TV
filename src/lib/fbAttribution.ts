@@ -63,7 +63,7 @@ export function getStoredFbc(): string {
     return localStorage.getItem(FBC_STORAGE_KEY) ?? readCookie('_fbc') ?? '';
 }
 
-/** `pay/create` 请求体：Facebook 且有值才附带 `_fbp` / `_fbc` */
+/** `pay/create` 请求体：Facebook 且有值才附带 `fbp` / `fbc` */
 export function fbAttributionForPayCreate(): Record<string, string> {
     if (!isFacebookAnalytics()) {
         return {};
@@ -73,10 +73,10 @@ export function fbAttributionForPayCreate(): Record<string, string> {
     const fbp = getStoredFbp();
     const fbc = getStoredFbc();
     if (fbp) {
-        payload._fbp = fbp;
+        payload.fbp = fbp;
     }
     if (fbc) {
-        payload._fbc = fbc;
+        payload.fbc = fbc;
     }
     return payload;
 }
