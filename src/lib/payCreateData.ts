@@ -1,4 +1,5 @@
-import { fbAttributionForPayCreate, reportFbLog } from '@/lib/fbAttribution';
+import { fbAttributionForPayCreate } from '@/lib/fbAttribution';
+import { reportPayLog } from '@/lib/payLog';
 
 export type PayCreateRequest = {
     payment: number;
@@ -14,11 +15,13 @@ export function buildPayCreateData(data: PayCreateRequest): Record<string, unkno
     };
 }
 
-/** `pay/create` 成功后：log `InitiateCheckout` */
-export function reportPayCreateFbLog(sn: string | undefined | null) {
-    const eventId = typeof sn === 'string' ? sn.trim() : '';
+/** `pay/create` 成功后仅调用 1 次 log（不带 request 三要素） */
+export function reportPayCreateSessionLog(eventId?: string) {
     if (!eventId) {
         return;
     }
-    void reportFbLog('InitiateCheckout', eventId);
+    void reportPayLog({
+        event: 'InitiateCheckout',
+        eventId,
+    });
 }

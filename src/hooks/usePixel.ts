@@ -1,7 +1,7 @@
 
 import { useRef } from 'react';
 import { FacebookPixel, type EventData, type TrackableEventName } from 'react-use-facebook-pixel';
-import { reportFbLog, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
+import { setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
 
 interface TiktokPixel {
     init(pixelId: string, advancedMatching?: {}, options?: {
@@ -152,18 +152,18 @@ function trackFbStandardEvent(
     );
 }
 
-export function trackFbInitiateCheckout(data: Record<string, unknown>, eventId?: string) {
+export function trackFbInitiateCheckout(
+    data: Record<string, unknown>,
+    eventId?: string,
+) {
     trackFbStandardEvent('InitiateCheckout', data, eventId);
-    if (eventId) {
-        void reportFbLog('InitiateCheckout', eventId);
-    }
 }
 
-export function trackFbPurchase(data: Record<string, unknown>, eventId?: string) {
+export function trackFbPurchase(
+    data: Record<string, unknown>,
+    eventId?: string,
+) {
     trackFbStandardEvent('Purchase', data, eventId);
-    if (eventId) {
-        void reportFbLog('Purchase', eventId);
-    }
 }
 
 export default usePixel;

@@ -16,7 +16,8 @@ import payAmex from '@/assets/icons/shopping-pay/amex.svg';
 import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
 import { trackFbInitiateCheckout, trackFbPurchase } from '@/hooks/usePixel';
-import { buildPayCreateData, reportPayCreateFbLog } from '@/lib/payCreateData';
+import { buildPayCreateData, reportPayCreateSessionLog } from '@/lib/payCreateData';
+import { reportPayLog, type PayLogStatus } from '@/lib/payLog';
 
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
@@ -358,16 +359,18 @@ export default function RadixRcShoppingPaySection({
         if (!targetProductId) return;
 
         void (async () => {
+            const payCreateParams = buildPayCreateData({
+                payment: defaultPayMethodFromUa(),
+                product_id: targetProductId,
+                redirect: window.location.href,
+            });
+
             let payCreate: Awaited<ReturnType<typeof api<PayCreateResp>>>;
             try {
                 payCreate = await api<PayCreateResp>('pay/create', {
                     method: 'post',
                     loading: false,
-                    data: buildPayCreateData({
-                        payment: defaultPayMethodFromUa(),
-                        product_id: targetProductId,
-                        redirect: window.location.href,
-                    }),
+                    data: payCreateParams,
                 });
             } catch (e) {
                 console.error('[shopping] pay/create failed', e);
@@ -379,7 +382,6 @@ export default function RadixRcShoppingPaySection({
                 onPayStateChange?.('failed');
                 return;
             }
-            reportPayCreateFbLog(payCreate.d.sn);
 
             const initEnv = (payCreate.d.env as 'prod' | 'demo' | undefined) ?? 'demo';
             try {
@@ -427,6 +429,7 @@ export default function RadixRcShoppingPaySection({
             if (!initiateCheckoutTrackedRef.current) {
                 initiateCheckoutTrackedRef.current = true;
                 trackFbInitiateCheckout(addToCartData, orderSn || undefined);
+                reportPayCreateSessionLog(orderSn || undefined);
             }
             
             setSessionReady(true);
@@ -456,22 +459,48 @@ export default function RadixRcShoppingPaySection({
             const targetProductId = walletProductId ?? checkoutTargetProductId ?? 0;
             const subscribePayload = buildCheckoutPayload(targetProductId, currency, amountValue);
             const orderSn = sessionRef.current?.sn ?? '';
-            const fireInitiateCheckout = () => {
+            const reportButtonPayLog = (
+                status: PayLogStatus,
+                paymentMethod: string,
+                response?: unknown,
+            ) => {
+                void reportPayLog({
+                    event: 'Purchase',
+                    status,
+                    eventId: orderSn || undefined,
+                    request: {
+                        url: 'airwallex',
+                        params: {
+                            payment_method: paymentMethod,
+                            intent_id,
+                            product_id: targetProductId,
+                            ...subscribePayload,
+                        },
+                        response,
+                    },
+                });
+            };
+            const fireInitiateCheckout = (paymentMethod: string) => {
                 trackFbInitiateCheckout(
                     buildCheckoutPayload(targetProductId, currency, amountValue),
                     orderSn || undefined,
                 );
+                reportButtonPayLog('padding', paymentMethod);
             };
-            const bindCommon = (element: any) => {
+            const bindCommon = (element: any, paymentMethod: string) => {
                 element.on('success', () => {
                     if (purchaseTrackedRef.current) {
                         return;
                     }
                     purchaseTrackedRef.current = true;
+                    reportButtonPayLog('success', paymentMethod);
                     trackFbPurchase(subscribePayload, orderSn || undefined);
                     onPayStateChange?.('success');
                 });
-                element.on('error', () => onPayStateChange?.('failed'));
+                element.on('error', (ev: { detail?: unknown }) => {
+                    reportButtonPayLog('error', paymentMethod, ev?.detail);
+                    onPayStateChange?.('failed');
+                });
                 element.on('cancel', () => onPayStateChange?.('idle'));
             };
 
@@ -491,10 +520,10 @@ export default function RadixRcShoppingPaySection({
                     if (!apple || cancelled) return;
                     apple.mount(appleHost);
                     apple.on('click', () => {
-                        fireInitiateCheckout();
+                        fireInitiateCheckout('apple_pay');
                         onPayStateChange?.('processing');
                     });
-                    bindCommon(apple);
+                    bindCommon(apple, 'apple_pay');
                     instancesRef.current.push(apple);
                     setWalletState((prev) => ({ ...prev, apple: 'ready' }));
                 } catch {
@@ -529,10 +558,10 @@ export default function RadixRcShoppingPaySection({
                 google.mount(googleHost);
                 google.on('click', () => {
                     dismissSoftKeyboard();
-                    fireInitiateCheckout();
+                    fireInitiateCheckout('google_pay');
                     onPayStateChange?.('processing');
                 });
-                bindCommon(google);
+                bindCommon(google, 'google_pay');
                 instancesRef.current.push(google);
                 setWalletState((prev) => ({ ...prev, google: 'ready' }));
             } catch {
@@ -583,10 +612,10 @@ export default function RadixRcShoppingPaySection({
                     }
                 });
                 dropIn.on('clickConfirmButton', () => {
-                    fireInitiateCheckout();
+                    fireInitiateCheckout('card');
                     onPayStateChange?.('processing');
                 });
-                bindCommon(dropIn);
+                bindCommon(dropIn, 'card');
                 instancesRef.current.push(dropIn);
                 if (paymentRef.current === 2) {
                     dismissSoftKeyboard();

@@ -1,5 +1,3 @@
-import { api } from '@/api';
-
 const FBP_STORAGE_KEY = 'fbp';
 const FBC_STORAGE_KEY = 'fbc';
 
@@ -84,32 +82,3 @@ export function fbAttributionForPayCreate(): Record<string, string> {
 }
 
 export type FbLogEventName = 'InitiateCheckout' | 'Purchase';
-
-/** 上报 `log`：`event` + `eventId` + `fbp` + `fbc`（仅 Facebook 配置） */
-export async function reportFbLog(event: FbLogEventName, eventId: string): Promise<void> {
-    if (!isFacebookAnalytics() || !eventId) {
-        return;
-    }
-    syncFbAttributionCache();
-    try {
-        await api('log', {
-            method: 'post',
-            loading: false,
-            toastOnError: false,
-            data: {
-                fb: {
-                    event,
-                    eventId,
-                    fbp: getStoredFbp(),
-                    fbc: getStoredFbc(),
-                },
-            },
-        });
-    } catch {
-        // 日志失败不阻塞主流程
-    }
-}
-
-export async function reportFbPayLog(eventId: string): Promise<void> {
-    return reportFbLog('Purchase', eventId);
-}
