@@ -172,7 +172,7 @@ export default function RadixRc({
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
     const [payModalStatus, setPayModalStatus] = useState<PayModalStatus>('idle');
     const [paySessionSeed, setPaySessionSeed] = useState(0);
-    /** 视频页父组件因 timeupdate 等高频重渲染，回调勿放进 success 定时 effect 依赖，否则 2.5s 关闭计时器会被反复清掉 */
+    /** 视频页父组件因 timeupdate 等高频重渲染，回调勿放进 success 定时 effect 依赖，否则 2s 关闭计时器会被反复清掉 */
     const onEmbedCloseRef = useRef(onEmbedClose);
     onEmbedCloseRef.current = onEmbedClose;
     const onEmbedPaySuccessEpisodeDetailRef = useRef(onEmbedPaySuccessEpisodeDetail);
@@ -267,7 +267,7 @@ export default function RadixRc({
                     onEmbedCloseRef.current?.();
                 }
             })();
-        }, 100);
+        }, 2000);
         return () => window.clearTimeout(timer);
     }, [payModalStatus, showPayModal, layout, productFrom, embedVideoEpisodeRowId]);
 

@@ -15,7 +15,8 @@ import payMastercard from '@/assets/icons/shopping-pay/mastercard.svg';
 import payAmex from '@/assets/icons/shopping-pay/amex.svg';
 import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
-import usePixel from '@/hooks/usePixel';
+import { trackFbInitiateCheckout, trackFbPurchase } from '@/hooks/usePixel';
+import { buildPayCreateData, reportPayCreateFbLog } from '@/lib/payCreateData';
 
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
@@ -24,6 +25,7 @@ function defaultPayMethodFromUa(): 1 | 2 {
 
 type PayCreateResp = {
     pi: string;
+    sn?: string;
     client_secret: string;
     customer_id: string;
     currency?: string;
@@ -283,7 +285,6 @@ export default function RadixRcShoppingPaySection({
     onPayStateChange,
 }: RadixRcShoppingPaySectionProps) {
     const intl = useIntl();
-    const pixel = usePixel();
     const canPickApple = isApplePlatform();
 
     const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
@@ -304,6 +305,7 @@ export default function RadixRcShoppingPaySection({
     >([]);
     const sessionRef = useRef<{
         intent_id: string;
+        sn: string;
         client_secret: string;
         customer_id: string;
         currency: string;
@@ -311,6 +313,8 @@ export default function RadixRcShoppingPaySection({
     } | null>(null);
     const paymentRef = useRef(payment);
     paymentRef.current = payment;
+    const purchaseTrackedRef = useRef(false);
+    const initiateCheckoutTrackedRef = useRef(false);
 
     function buildCheckoutPayload(targetProductId: number, fallbackCurrency = 'USD', fallbackAmount = 0) {
         return {
@@ -348,6 +352,8 @@ export default function RadixRcShoppingPaySection({
         setSessionReady(false);
         setWalletState({ apple: 'pending', google: 'pending' });
         sessionRef.current = null;
+        purchaseTrackedRef.current = false;
+        initiateCheckoutTrackedRef.current = false;
         cleanupElements();
         if (!targetProductId) return;
 
@@ -357,11 +363,11 @@ export default function RadixRcShoppingPaySection({
                 payCreate = await api<PayCreateResp>('pay/create', {
                     method: 'post',
                     loading: false,
-                    data: {
+                    data: buildPayCreateData({
                         payment: defaultPayMethodFromUa(),
                         product_id: targetProductId,
                         redirect: window.location.href,
-                    },
+                    }),
                 });
             } catch (e) {
                 console.error('[shopping] pay/create failed', e);
@@ -373,6 +379,7 @@ export default function RadixRcShoppingPaySection({
                 onPayStateChange?.('failed');
                 return;
             }
+            reportPayCreateFbLog(payCreate.d.sn);
 
             const initEnv = (payCreate.d.env as 'prod' | 'demo' | undefined) ?? 'demo';
             try {
@@ -389,6 +396,7 @@ export default function RadixRcShoppingPaySection({
 
             sessionRef.current = {
                 intent_id: payCreate.d.pi,
+                sn: payCreate.d.sn ?? '',
                 client_secret: payCreate.d.client_secret,
                 customer_id: payCreate.d.customer_id,
                 currency: payCreate.d.currency || 'USD',
@@ -399,6 +407,7 @@ export default function RadixRcShoppingPaySection({
                         payCreate.d.price,
                 ),
             };
+            const orderSn = payCreate.d.sn ?? '';
             const addToCartData = {
                 content_type: 'product',
                 quantity: 1,
@@ -415,7 +424,10 @@ export default function RadixRcShoppingPaySection({
                     ),
                 ),
             };
-            pixel.track('InitiateCheckout', addToCartData);
+            if (!initiateCheckoutTrackedRef.current) {
+                initiateCheckoutTrackedRef.current = true;
+                trackFbInitiateCheckout(addToCartData, orderSn || undefined);
+            }
             
             setSessionReady(true);
         })();
@@ -443,9 +455,20 @@ export default function RadixRcShoppingPaySection({
             const { intent_id, client_secret, customer_id, currency, amountValue } = sessionRef.current!;
             const targetProductId = walletProductId ?? checkoutTargetProductId ?? 0;
             const subscribePayload = buildCheckoutPayload(targetProductId, currency, amountValue);
+            const orderSn = sessionRef.current?.sn ?? '';
+            const fireInitiateCheckout = () => {
+                trackFbInitiateCheckout(
+                    buildCheckoutPayload(targetProductId, currency, amountValue),
+                    orderSn || undefined,
+                );
+            };
             const bindCommon = (element: any) => {
                 element.on('success', () => {
-                    pixel.track('Purchase', subscribePayload);
+                    if (purchaseTrackedRef.current) {
+                        return;
+                    }
+                    purchaseTrackedRef.current = true;
+                    trackFbPurchase(subscribePayload, orderSn || undefined);
                     onPayStateChange?.('success');
                 });
                 element.on('error', () => onPayStateChange?.('failed'));
@@ -468,7 +491,7 @@ export default function RadixRcShoppingPaySection({
                     if (!apple || cancelled) return;
                     apple.mount(appleHost);
                     apple.on('click', () => {
-                        pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
+                        fireInitiateCheckout();
                         onPayStateChange?.('processing');
                     });
                     bindCommon(apple);
@@ -506,7 +529,7 @@ export default function RadixRcShoppingPaySection({
                 google.mount(googleHost);
                 google.on('click', () => {
                     dismissSoftKeyboard();
-                    pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
+                    fireInitiateCheckout();
                     onPayStateChange?.('processing');
                 });
                 bindCommon(google);
@@ -560,7 +583,7 @@ export default function RadixRcShoppingPaySection({
                     }
                 });
                 dropIn.on('clickConfirmButton', () => {
-                    pixel.track('InitiateCheckout', buildCheckoutPayload(targetProductId, currency, amountValue));
+                    fireInitiateCheckout();
                     onPayStateChange?.('processing');
                 });
                 bindCommon(dropIn);

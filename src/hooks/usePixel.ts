@@ -1,6 +1,7 @@
 
 import { useRef } from 'react';
 import { FacebookPixel, type EventData, type TrackableEventName } from 'react-use-facebook-pixel';
+import { reportFbLog, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
 
 interface TiktokPixel {
     init(pixelId: string, advancedMatching?: {}, options?: {
@@ -72,6 +73,7 @@ function markPixelReady() {
 
 export async function init(config: { [key: string]: unknown }) {
     if (!config['analyzation']) {
+        setAnalyticsType('');
         markPixelReady();
         return;
     }
@@ -101,7 +103,8 @@ export async function init(config: { [key: string]: unknown }) {
         singleton.addInstance(tiktok);
     }
 
-    const analyzation = config['analyzation'] as { type: 'facebook' | 'tiktok' | '', id: string };
+    const analyzation = config['analyzation'] as { type: AnalyticsType, id: string };
+    setAnalyticsType(analyzation.type);
     if (analyzation.type === '') {
         initialized = true;
         markPixelReady();
@@ -125,5 +128,42 @@ const usePixel = () => {
     const pixel = useRef<Pixel>(singleton);
     return pixel.current;
 };
+
+type FbqFn = (...args: unknown[]) => void;
+
+type FbStandardEvent = 'InitiateCheckout' | 'Purchase';
+
+/** fbq 第 4 参数传 `eventID`（对应请求里的 `eid`），与 CAPI / 后端 `sn` 去重 */
+function trackFbStandardEvent(
+    eventName: FbStandardEvent,
+    data: Record<string, unknown>,
+    eventId?: string,
+) {
+    if (eventId && typeof window !== 'undefined') {
+        const fbq = (window as unknown as { fbq?: FbqFn }).fbq;
+        if (typeof fbq === 'function') {
+            fbq('track', eventName, data, { eventID: eventId });
+            return;
+        }
+    }
+    singleton.track(
+        eventName,
+        eventId ? { ...data, eventID: eventId } : data,
+    );
+}
+
+export function trackFbInitiateCheckout(data: Record<string, unknown>, eventId?: string) {
+    trackFbStandardEvent('InitiateCheckout', data, eventId);
+    if (eventId) {
+        void reportFbLog('InitiateCheckout', eventId);
+    }
+}
+
+export function trackFbPurchase(data: Record<string, unknown>, eventId?: string) {
+    trackFbStandardEvent('Purchase', data, eventId);
+    if (eventId) {
+        void reportFbLog('Purchase', eventId);
+    }
+}
 
 export default usePixel;

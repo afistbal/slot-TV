@@ -1,7 +1,7 @@
 import { api } from "@/api";
 import Loader from "@/components/Loader";
 import { Button } from "@/components/ui/button";
-import usePixel from "@/hooks/usePixel";
+import { trackFbPurchase } from "@/hooks/usePixel";
 import { Page } from "@/layouts/user";
 import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -9,7 +9,6 @@ import { FormattedMessage } from "react-intl";
 import Adjust from "@adjustcom/adjust-web-sdk";
 
 export default function Component() {
-    const pixel = usePixel();
     const [loading, setLoading] = useState(true);
     const [result, setResult] = useState(0);
     const query = new URLSearchParams(window.location.search);
@@ -51,8 +50,9 @@ export default function Component() {
                             }
                             localStorage.setItem('paid_url', location.href);
                             const checkout = localStorage.getItem('checkout');
+                            const sn = query.get('sn');
                             if (checkout) {
-                                pixel.track('Purchase', JSON.parse(checkout));
+                                trackFbPurchase(JSON.parse(checkout), sn ?? undefined);
                             }
                         }
                     }).finally(() => {
@@ -74,8 +74,9 @@ export default function Component() {
                             }
                             localStorage.setItem('paid_url', location.href);
                             const checkout = localStorage.getItem('checkout');
+                            const sn = query.get('sn');
                             if (checkout) {
-                                pixel.track('Purchase', JSON.parse(checkout));
+                                trackFbPurchase(JSON.parse(checkout), sn ?? undefined);
                             }
                         }
                     }).finally(() => {
@@ -93,7 +94,7 @@ export default function Component() {
             const sn = query.get('sn');
             if (checkout && sn) {
                 const parsed = JSON.parse(checkout);
-                pixel.track('Purchase', JSON.parse(checkout));
+                trackFbPurchase(parsed, sn);
                 Adjust.trackEvent({
                     deduplicationId: sn,
                     eventToken: 'ux3ud3',
