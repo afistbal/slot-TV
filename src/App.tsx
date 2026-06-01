@@ -536,6 +536,7 @@ function App() {
     }
 
     useEffect(() => {
+        syncFbAttributionCache();
         const query = new URLSearchParams(window.location.search);
         const t = query.get('_t') ?? '';
         const s = query.get('s') ?? '';

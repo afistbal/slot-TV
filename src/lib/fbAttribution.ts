@@ -1,11 +1,12 @@
 const FBP_STORAGE_KEY = 'fbp';
 const FBC_STORAGE_KEY = 'fbc';
+const FBCLID_STORAGE_KEY = 'fbclid';
 
 export type AnalyticsType = 'facebook' | 'tiktok' | '';
 
 let analyticsType: AnalyticsType = '';
 
-/** Pixel init 时写入；TikTok 配置下不传 FB log / pay/create 归因字段 */
+/** Pixel init 时写入；TikTok 配置下不传 FB log 归因字段 */
 export function setAnalyticsType(type: AnalyticsType): void {
     analyticsType = type;
 }
@@ -26,7 +27,44 @@ function fbclidFromLocation(): string {
     if (typeof window === 'undefined') {
         return '';
     }
-    return new URLSearchParams(window.location.search).get('fbclid') ?? '';
+    const fromSearch = new URLSearchParams(window.location.search).get('fbclid');
+    if (fromSearch) {
+        return fromSearch.trim();
+    }
+    const hash = window.location.hash;
+    const hashQuery = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : '';
+    return new URLSearchParams(hashQuery).get('fbclid')?.trim() ?? '';
+}
+
+/** URL 有 fbclid 时持久化；SPA 跳转后 URL 可能已无 fbclid */
+function resolveFbclid(): string {
+    const fromUrl = fbclidFromLocation();
+    if (fromUrl) {
+        try {
+            localStorage.setItem(FBCLID_STORAGE_KEY, fromUrl);
+        } catch {
+            /* noop */
+        }
+        return fromUrl;
+    }
+    try {
+        return localStorage.getItem(FBCLID_STORAGE_KEY) ?? '';
+    } catch {
+        return '';
+    }
+}
+
+function fbcMatchesFbclid(fbc: string, fbclid: string): boolean {
+    return Boolean(fbc && fbclid && fbc.endsWith(`.${fbclid}`));
+}
+
+function writeFbc(fbc: string): void {
+    try {
+        localStorage.setItem(FBC_STORAGE_KEY, fbc);
+    } catch {
+        /* noop */
+    }
+    document.cookie = `_fbc=${encodeURIComponent(fbc)}; path=/; max-age=7776000; SameSite=Lax`;
 }
 
 /**
@@ -36,38 +74,45 @@ function fbclidFromLocation(): string {
 export function syncFbAttributionCache(): void {
     const fbp = readCookie('_fbp');
     if (fbp) {
-        localStorage.setItem(FBP_STORAGE_KEY, fbp);
+        try {
+            localStorage.setItem(FBP_STORAGE_KEY, fbp);
+        } catch {
+            /* noop */
+        }
     }
 
+    const fbclid = resolveFbclid();
     const fbcCookie = readCookie('_fbc');
-    if (fbcCookie) {
-        localStorage.setItem(FBC_STORAGE_KEY, fbcCookie);
+    if (fbcCookie && (!fbclid || fbcMatchesFbclid(fbcCookie, fbclid))) {
+        writeFbc(fbcCookie);
         return;
     }
 
-    const fbclid = fbclidFromLocation();
     if (!fbclid) {
         return;
     }
 
-    const fbc = `fb.1.${Date.now()}.${fbclid}`;
-    localStorage.setItem(FBC_STORAGE_KEY, fbc);
-    document.cookie = `_fbc=${encodeURIComponent(fbc)}; path=/; max-age=7776000; SameSite=Lax`;
+    writeFbc(`fb.1.${Date.now()}.${fbclid}`);
 }
 
 export function getStoredFbp(): string {
-    return localStorage.getItem(FBP_STORAGE_KEY) ?? readCookie('_fbp') ?? '';
+    try {
+        return localStorage.getItem(FBP_STORAGE_KEY) ?? readCookie('_fbp') ?? '';
+    } catch {
+        return readCookie('_fbp') ?? '';
+    }
 }
 
 export function getStoredFbc(): string {
-    return localStorage.getItem(FBC_STORAGE_KEY) ?? readCookie('_fbc') ?? '';
+    try {
+        return localStorage.getItem(FBC_STORAGE_KEY) ?? readCookie('_fbc') ?? '';
+    } catch {
+        return readCookie('_fbc') ?? '';
+    }
 }
 
-/** `pay/create` 请求体：Facebook 且有值才附带 `fbp` / `fbc` */
+/** `pay/create` 请求体：有 fbp / fbc 就附带 */
 export function fbAttributionForPayCreate(): Record<string, string> {
-    if (!isFacebookAnalytics()) {
-        return {};
-    }
     syncFbAttributionCache();
     const payload: Record<string, string> = {};
     const fbp = getStoredFbp();

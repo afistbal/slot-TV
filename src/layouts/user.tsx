@@ -7,6 +7,7 @@ import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
 import UserHome from "@/pages/user/Home";
 import UserSearch from "@/pages/user/Search";
 import usePixel from "@/hooks/usePixel";
+import { syncFbAttributionCache } from "@/lib/fbAttribution";
 import { showBottomTabBar } from "@/env";
 import { IosAddHomeFloatingBtn } from "@/components/IosAddHomeFloatingBtn";
 import {
@@ -41,6 +42,11 @@ function RouteSuspenseFallback() {
 export default function Component() {
     const pixel = usePixel();
     const location = useLocation();
+
+    useEffect(() => {
+        syncFbAttributionCache();
+    }, [location.search]);
+
     const sourceform = `${location.pathname}${location.search}`;
     /**
      * 默认用 pathname+search 作 key，换 URL 即 remount，避免脏状态。
