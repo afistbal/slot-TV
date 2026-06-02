@@ -896,7 +896,9 @@ export default function RadixRc({
                                                 totalCoinsForCoinProduct(currentCheckoutProduct),
                                             )}
                                         </span>
-                                        <span className="text-white/70">?</span>
+                                        <span className="text-white/70" aria-hidden>
+                                            ·
+                                        </span>
                                         <span>${currentCheckoutProduct.price}</span>
                                     </p>
                                 ) : null}

@@ -5,12 +5,14 @@ import Loader from '@/components/Loader';
 import { PageBackBar } from '@/components/PageBackBar';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 
 type MyListLocationState = {
     sourceform?: string;
 };
 
 export default function Component() {
+    const isPc = useMinWidth768();
     const location = useLocation();
     const navigate = useNavigate();
     const locationState = (location.state ?? {}) as MyListLocationState;
@@ -91,9 +93,11 @@ export default function Component() {
                         </Suspense>
                     </div>
                 </div>
-                <div className="shrink-0">
-                    <ReelShortFooter dockAboveBottomTab />
-                </div>
+                {isPc ? (
+                    <div className="shrink-0">
+                        <ReelShortFooter dockAboveBottomTab />
+                    </div>
+                ) : null}
             </div>
         </div>
     );

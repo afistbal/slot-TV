@@ -25,21 +25,22 @@ import { clearEpisodeDetailCache, prewarmEpisodeDetail } from './episodeDetailCa
 import { clearEpisodePeekFrameCache } from './episodeFrameQueueStore';
 import { getEpisodeIdsToPrewarm } from './episodePrewarm';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
+import { readVerticalPcKeyNavAction } from './videoVerticalPcKeyNav';
+import { bindVerticalPcWheelNav } from './videoVerticalPcWheelNav';
 import { canNavigateBack, isPerformanceNavigationReload } from './videoPlayerUtils';
 import { VideoPlayerPcNeighborSlideShell } from './views/VideoPlayerPcNeighborSlideShell';
 import { cn } from '@/lib/utils';
 import type { PcDrawerPanel } from './videoPlayerPcDrawerMotion';
 
 /**
- * PC 竖向切集总开关（滚轮累加切集 + list 上 pointer 竖滑切集）。
+ * PC 竖向切集总开关（滚轮累加切集；PC 不用 pointer 拖拽，H5 仍用 pointer 竖滑）。
  *
- * 【当前产品要求：关闭。后续可能恢复为 `true`。】
- * 【保留要求：请勿删除本常量；恢复 PC 上下滑时改为 `true`，并同步取消下方
- * 「PC 滚轮切集」注释块、确认 pointer 竖滑未单独禁用。】
+ * 【当前：已开启 PC 滚轮切集。】
+ * 【保留要求：请勿删除本常量；若产品再次关闭，改为 `false` 并注释下方 PC 滚轮 `useEffect`。】
  *
  * 其它 Agent：不要「清理」本开关或注释掉的实现代码。
  */
-const PC_VERTICAL_EPISODE_NAV_ENABLED = false;
+const PC_VERTICAL_EPISODE_NAV_ENABLED = true;
 
 /** 非会员：邻格不挂播放器，避免邻格 `VideoPlayer` 再打一遍详情；主格/预拉仍会请求 `movie/episode`（含 auto_unlock） */
 function shouldMountNeighborPeekPlayer(
@@ -95,6 +96,9 @@ export default function VideoVerticalSwiper() {
     locationRef.current = location;
     const dataRef = useRef(data);
     dataRef.current = data;
+    const currentRef = useRef(current);
+    currentRef.current = current;
+    const handleSetEpisodeRef = useRef<(index: number) => void>(() => {});
 
     const pcDrawerProps = {
         pcDrawerPanel,
@@ -216,8 +220,8 @@ export default function VideoVerticalSwiper() {
         if (!el || !data) {
             return;
         }
-        /** PC 竖滑切集：与 `PC_VERTICAL_EPISODE_NAV_ENABLED` 成对；关闭时 PC 仅能用右侧箭头/分集列表切集 */
-        if (isDesktop && !PC_VERTICAL_EPISODE_NAV_ENABLED) {
+        /** PC 仅滚轮/箭头切集，不挂载 pointer 拖拽；H5 竖滑切集 */
+        if (isDesktop) {
             return;
         }
         const onPointerDown = (e: PointerEvent) => {
@@ -296,65 +300,58 @@ export default function VideoVerticalSwiper() {
         },
         [data, markFullscreenTransition, syncNavigateForIndex],
     );
+    handleSetEpisodeRef.current = handleSetEpisode;
 
-    /*
-     * =========================================================================
-     * PC 滚轮切集（暂时关闭 — 勿删本段）
-     * 与文件顶部 `PC_VERTICAL_EPISODE_NAV_ENABLED` 成对恢复。
-     * 恢复步骤：常量改 `true` + 取消本块注释。
-     * =========================================================================
     useEffect(() => {
         if (!PC_VERTICAL_EPISODE_NAV_ENABLED || !isDesktop || !data || !initialized) {
             return;
         }
-        const list = listRef.current;
-        if (!list) {
+        const el = outerRef.current;
+        if (!el) {
             return;
         }
-        let accY = 0;
-        let cooldownUntil = 0;
-        let idleTimer: ReturnType<typeof setTimeout> | null = null;
-        const TH = 140;
-        const COOLDOWN_MS = 480;
-        const IDLE_RESET_MS = 200;
-        const onWheel = (e: WheelEvent) => {
-            if (Date.now() < cooldownUntil) {
+        return bindVerticalPcWheelNav(el, {
+            shouldIgnore: (e) =>
+                Boolean((e.target as Element | null)?.closest('[data-pc-episode-aside]')),
+            onPrev: () => {
+                const c = currentRef.current;
+                if (c > 0) {
+                    handleSetEpisodeRef.current(c - 1);
+                }
+            },
+            onNext: () => {
+                const d = dataRef.current;
+                const c = currentRef.current;
+                if (d && c < d.episodes.length - 1) {
+                    handleSetEpisodeRef.current(c + 1);
+                }
+            },
+        });
+    }, [isDesktop, data, initialized]);
+
+    /** PC：↑/↓ 切上/下一集（与滚轮一致；抽屉打开时不响应） */
+    useEffect(() => {
+        if (!PC_VERTICAL_EPISODE_NAV_ENABLED || !isDesktop || !data || !initialized) {
+            return;
+        }
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (pcDrawerPanel != null) {
                 return;
             }
-            if ((e.target as Element | null)?.closest('[data-pc-episode-aside]')) {
+            const action = readVerticalPcKeyNavAction(e);
+            if (!action) {
                 return;
             }
-            if (idleTimer) {
-                clearTimeout(idleTimer);
-            }
-            idleTimer = setTimeout(() => {
-                accY = 0;
-                idleTimer = null;
-            }, IDLE_RESET_MS);
-            accY += e.deltaY;
-            if (accY > TH) {
-                accY = 0;
-                cooldownUntil = Date.now() + COOLDOWN_MS;
-                if (current < data.episodes.length - 1) {
-                    handleSetEpisode(current + 1);
-                }
-            } else if (accY < -TH) {
-                accY = 0;
-                cooldownUntil = Date.now() + COOLDOWN_MS;
-                if (current > 0) {
-                    handleSetEpisode(current - 1);
-                }
+            e.preventDefault();
+            if (action === 'prev' && current > 0) {
+                handleSetEpisode(current - 1);
+            } else if (action === 'next' && current < data.episodes.length - 1) {
+                handleSetEpisode(current + 1);
             }
         };
-        list.addEventListener('wheel', onWheel, { passive: true });
-        return () => {
-            list.removeEventListener('wheel', onWheel);
-            if (idleTimer) {
-                clearTimeout(idleTimer);
-            }
-        };
-    }, [isDesktop, data, initialized, current, handleSetEpisode]);
-    */
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isDesktop, data, initialized, current, handleSetEpisode, pcDrawerPanel]);
 
     async function loadData() {
         if (skipRemoteApi) {

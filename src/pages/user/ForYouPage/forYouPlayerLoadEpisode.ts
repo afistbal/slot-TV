@@ -117,6 +117,13 @@ export async function runLoadEpisodeForForYouPlayer(
         await Promise.resolve();
 
         if (!rt.videoRef.current) {
+            await new Promise<void>((resolve) => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => resolve());
+                });
+            });
+        }
+        if (!rt.videoRef.current) {
             return;
         }
 

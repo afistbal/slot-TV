@@ -14,8 +14,26 @@ export function VideoCoverPlaceholder({ className }: { className?: string }) {
             <img
                 src={videoCoverPlaceholderLogo}
                 alt=""
+                decoding="sync"
+                loading="eager"
+                fetchPriority="high"
                 className="video-cover-placeholder__logo"
             />
+        </div>
+    );
+}
+
+/** 封面骨架层：灰底 + 居中 logo，无 pulse，实图加载前始终可见 */
+export function VideoCoverPlaceholderShell({
+    className,
+    innerClassName,
+}: {
+    className?: string;
+    innerClassName?: string;
+}) {
+    return (
+        <div className={cn('video-cover-skeleton', className)} aria-hidden>
+            <VideoCoverPlaceholder className={cn('absolute inset-0', innerClassName)} />
         </div>
     );
 }

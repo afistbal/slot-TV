@@ -16,15 +16,11 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 
 import { useRootStore } from '@/stores/root';
 
-import { movieCoverUrl } from '@/lib/movieCoverUrl';
-
 import { useConfigStore } from '@/stores/config';
 
 import { buildPlayerDataFromFeedItem } from './foryouFeedUtils';
 
 import { ForYouPlayer } from './ForYouPlayer';
-
-import { ForYouSlidePoster } from './ForYouSlidePoster';
 
 import { markVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
 
@@ -38,13 +34,16 @@ import {
     setForyouFeedProgressSec,
 } from './foryouFeedProgress';
 
+import { readVerticalPcKeyNavAction } from '@/pages/user/VideoPage/videoVerticalPcKeyNav';
+import { bindVerticalPcWheelNav } from '@/pages/user/VideoPage/videoVerticalPcWheelNav';
+
 import './foryou-vertical.scss';
 
 /**
  * PC 竖向切剧总开关（与 VideoVerticalSwiper 的 `PC_VERTICAL_EPISODE_NAV_ENABLED` 对齐）。
- * 关闭：PC 仅右侧箭头切上/下一条，禁止滚轮与拖拽竖滑。
+ * 开启：PC 仅滚轮切条（无鼠标拖拽竖滑）；关闭：PC 仅右侧箭头，禁止滚轮与拖拽。
  */
-const FORYOU_PC_VERTICAL_NAV_ENABLED = false;
+const FORYOU_PC_VERTICAL_NAV_ENABLED = true;
 
 
 
@@ -65,10 +64,9 @@ export default function ForYouVerticalSwiper() {
     const wasRefreshingRef = useRef(false);
 
     const [activeIndex, setActiveIndex] = useState(0);
-
-    /** 真正开始播放后再淡出模糊封面，避免 canplay 时封面没了但视频仍 opacity:0 全黑 */
-
-    const [playbackStarted, setPlaybackStarted] = useState(false);
+    const activeIndexRef = useRef(activeIndex);
+    activeIndexRef.current = activeIndex;
+    const listLengthRef = useRef(0);
 
     const videoResumeRef = useRef<HTMLVideoElement | null>(null);
 
@@ -112,14 +110,6 @@ export default function ForYouVerticalSwiper() {
 
     useEffect(() => {
 
-        setPlaybackStarted(false);
-
-    }, [activeIndex]);
-
-
-
-    useEffect(() => {
-
         if (wasRefreshingRef.current && !refreshing) {
 
             setActiveIndex(0);
@@ -152,8 +142,6 @@ export default function ForYouVerticalSwiper() {
         (swiper: SwiperClass) => {
             const prevItem = list[swiper.previousIndex];
             saveProgressForItem(prevItem, videoResumeRef.current);
-
-            setPlaybackStarted(false);
 
             const next = swiper.activeIndex;
 
@@ -243,9 +231,59 @@ export default function ForYouVerticalSwiper() {
         if (!swiper) {
             return;
         }
-        const touchEnabled = !isDesktop || FORYOU_PC_VERTICAL_NAV_ENABLED;
-        swiper.allowTouchMove = touchEnabled;
+        swiper.allowTouchMove = !isDesktop;
     }, [isDesktop, list.length]);
+
+    listLengthRef.current = list.length;
+
+    /** PC：滚轮一次手势最多 1 条（监听勿随 activeIndex 重绑，否则连跳） */
+    useEffect(() => {
+        if (!isDesktop || !FORYOU_PC_VERTICAL_NAV_ENABLED || !list.length) {
+            return;
+        }
+        const el = fullscreenTargetRef.current;
+        if (!el) {
+            return;
+        }
+        return bindVerticalPcWheelNav(el, {
+            onPrev: () => {
+                const swiper = swiperRef.current;
+                if (!swiper || activeIndexRef.current <= 0) {
+                    return;
+                }
+                swiper.slidePrev();
+            },
+            onNext: () => {
+                const swiper = swiperRef.current;
+                const len = listLengthRef.current;
+                if (!swiper || activeIndexRef.current >= len - 1) {
+                    return;
+                }
+                swiper.slideNext();
+            },
+        });
+    }, [isDesktop, list.length]);
+
+    /** PC：↑/↓ 切上/下一条（与滚轮一致，无拖拽） */
+    useEffect(() => {
+        if (!isDesktop || !FORYOU_PC_VERTICAL_NAV_ENABLED) {
+            return;
+        }
+        const onKeyDown = (e: KeyboardEvent) => {
+            const action = readVerticalPcKeyNavAction(e);
+            if (!action) {
+                return;
+            }
+            e.preventDefault();
+            if (action === 'prev') {
+                handleFeedPrev();
+            } else {
+                handleFeedNext();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isDesktop, handleFeedPrev, handleFeedNext]);
 
 
 
@@ -369,11 +407,11 @@ export default function ForYouVerticalSwiper() {
 
                     resistanceRatio={0.55}
 
-                    touchReleaseOnEdges={!isDesktop || FORYOU_PC_VERTICAL_NAV_ENABLED}
+                    touchReleaseOnEdges={!isDesktop}
 
-                    allowTouchMove={!isDesktop || FORYOU_PC_VERTICAL_NAV_ENABLED}
+                    allowTouchMove={!isDesktop}
 
-                    simulateTouch={!isDesktop || FORYOU_PC_VERTICAL_NAV_ENABLED}
+                    simulateTouch={!isDesktop}
 
                     noSwiping
 
@@ -383,37 +421,18 @@ export default function ForYouVerticalSwiper() {
 
                         swiperRef.current = swiper;
 
-                        swiper.allowTouchMove = !isDesktop || FORYOU_PC_VERTICAL_NAV_ENABLED;
+                        swiper.allowTouchMove = !isDesktop;
 
                     }}
 
                     onSlideChangeTransitionStart={onSlideChangeStart}
 
-                    onTouchEnd={
-                        !isDesktop || FORYOU_PC_VERTICAL_NAV_ENABLED ? onSwiperTouchEnd : undefined
-                    }
+                    onTouchEnd={!isDesktop ? onSwiperTouchEnd : undefined}
 
                 >
 
                     {list.map((item, i) => {
-
-                        const poster =
-
-                            movieCoverUrl({ id: item.id, image: item.image }, staticBase) ?? '';
-
                         const isActive = i === activeIndex;
-
-                        const posterVariant = !isActive
-
-                            ? 'neighbor'
-
-                            : playbackStarted
-
-                              ? 'active-ready'
-
-                              : 'active-loading';
-
-
 
                         return (
 
@@ -426,8 +445,6 @@ export default function ForYouVerticalSwiper() {
                             >
 
                                 <div className="foryou-slide-shell">
-
-                                    <ForYouSlidePoster posterUrl={poster} variant={posterVariant} />
 
                                     {isActive ? (
 
@@ -455,11 +472,7 @@ export default function ForYouVerticalSwiper() {
 
                                                 feedEpisodeTotal={episodeTotal}
 
-                                                coverPosterUrl={poster}
-
                                                 hideCenterPlayUntilFirstPlay
-
-                                                onPlaybackStarted={() => setPlaybackStarted(true)}
 
                                                 onWatchFullSeries={handleWatchFullSeries}
 

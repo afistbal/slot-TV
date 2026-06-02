@@ -29,7 +29,11 @@ import { InView } from 'react-intersection-observer';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 import {
+    buildTagSearchQuery,
     ensureMovieTagLabels,
+    findTagRowByKey,
+    readMovieTagFromSearch,
+    readTagLabelFromSearch,
     resolveTagDisplayLabel,
     tagRowDisplayLabel,
 } from '@/lib/movieTagLabels';
@@ -418,12 +422,29 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     const isPc = useMinWidth768();
     const isH5SearchPage = type === 'search' && !isPc;
     const isH5TagSearchPage = isTagSearchPage && !isPc;
+    const isPcTagSearchPage = isTagSearchPage && isPc;
     const isH5InnerNavPage = isH5SearchPage || isH5TagSearchPage;
+    const tagLabelFromUrl = isTagSearchPage ? readTagLabelFromSearch(location.search) : '';
+    const tagKeyFromUrl = isTagSearchPage ? readMovieTagFromSearch(location.search) : '';
+    const activeTagKey = searchStore.tag || tagKeyFromUrl;
     const tagDisplayLabel = resolveTagDisplayLabel(
-        searchStore.tag,
+        activeTagKey,
         searchStore.tags,
         intl.formatMessage({ id: 'tag' }),
+        tagLabelFromUrl,
     );
+    const pcTagSearchTitle =
+        tagDisplayLabel ||
+        tagLabelFromUrl ||
+        (activeTagKey && !isOpaqueTagId(activeTagKey) ? activeTagKey : '');
+    const showPcTagSearchHeader = isPcTagSearchPage && Boolean(activeTagKey && pcTagSearchTitle);
+    const resolvedActiveTagLabel = () =>
+        resolveTagDisplayLabel(
+            searchStore.tag,
+            searchStore.tags,
+            intl.formatMessage({ id: 'tag' }),
+            tagLabelFromUrl,
+        );
     const tagResultCount =
         searchStore.totalCount > 0 ? searchStore.totalCount : searchStore.list.length;
     /** 窄屏底栏（Tab + 可选「添加桌面」）时抬高回顶钮 */
@@ -600,7 +621,9 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             void loadData();
             return;
         }
-        navigate(`/tagSearch?${new URLSearchParams({ movie_tag: name }).toString()}`);
+        const row = findTagRowByKey(name, searchStore.tags);
+        const label = row ? tagRowDisplayLabel(row) : '';
+        navigate(`/tagSearch?${buildTagSearchQuery(name, label)}`);
     }
 
     function handleMoreChange(visible: boolean) {
@@ -621,14 +644,14 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
     function breadcrumbCurrentLabel(): string {
         if (searchStore.tag) {
-            const row = searchStore.tags.find((t) => (t['name'] as string) === searchStore.tag);
-            if (row) {
-                return tagRowDisplayLabel(row);
+            const label = resolvedActiveTagLabel();
+            if (label) {
+                return label;
             }
-            if (isOpaqueTagId(searchStore.tag)) {
-                return intl.formatMessage({ id: 'nav_categories' });
+            if (!isOpaqueTagId(searchStore.tag)) {
+                return searchStore.tag;
             }
-            return searchStore.tag;
+            return intl.formatMessage({ id: 'nav_categories' });
         }
         if (searchStore.keyword.trim()) {
             const q = searchStore.keyword.trim();
@@ -639,12 +662,20 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
     function pageHeading(): string {
         if (searchStore.tag) {
-            const row = searchStore.tags.find((t) => (t['name'] as string) === searchStore.tag);
-            if (row) {
-                const tagLabel = tagRowDisplayLabel(row);
-                return intl.formatMessage({ id: 'search_movies_with_tag' }, { tag: tagLabel });
+            const label = resolvedActiveTagLabel();
+            if (isTagSearchPage) {
+                if (label) {
+                    return label;
+                }
+                if (!isOpaqueTagId(searchStore.tag)) {
+                    return searchStore.tag;
+                }
+                return intl.formatMessage({ id: 'search_movies_all' });
             }
-            if (isOpaqueTagId(searchStore.tag)) {
+            if (label) {
+                return intl.formatMessage({ id: 'search_movies_with_tag' }, { tag: label });
+            }
+            if (isOpaqueTagId(searchStore.tag) && searchStore.tags.length === 0) {
                 return intl.formatMessage({ id: 'search_movies_all' });
             }
             return intl.formatMessage(
@@ -913,6 +944,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 isCategoriesPage && 'rs-search-page--categories',
                 isH5SearchPage && 'rs-search-page--h5Search',
                 isH5TagSearchPage && 'rs-search-page--h5TagSearch',
+                isTagSearchPage && 'rs-search-page--tagSearch',
             )}
         >
             <div
@@ -983,7 +1015,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                             <FormattedMessage id="search_popular_now" defaultMessage="Popular Now" />
                         </h2>
                     ) : null}
-                    {isH5TagSearchPage && searchStore.tag ? (
+                    {isH5TagSearchPage && activeTagKey && pcTagSearchTitle ? (
                         <header className="rs-search-page__tagSearchHeading">
                             <div className="rs-search-page__tagSearchTitleRow">
                                 <img
@@ -992,7 +1024,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                     className="rs-search-page__tagSearchIcon"
                                     aria-hidden
                                 />
-                                <h1 className="rs-search-page__tagSearchTitle">{tagDisplayLabel}</h1>
+                                <h1 className="rs-search-page__tagSearchTitle">{pcTagSearchTitle}</h1>
                             </div>
                             <p className="rs-search-page__tagSearchMeta">
                                 <FormattedMessage
@@ -1127,19 +1159,47 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                         {isPc ? (
                             <div className="rs-shelf__container">
                                 <div className="rs-shelf__content rs-search-page__pcContent">
-                                    <div className="rs-shelf__breadcrumbWrap">
-                                        <nav aria-label="Breadcrumb" className="rs-shelf__breadcrumb">
-                                            <Link to="/">
-                                                <FormattedMessage id="home" />
-                                            </Link>
-                                            <span className="rs-shelf__breadcrumbSep">/</span>
-                                            <span className="rs-shelf__breadcrumbCurrent">
-                                                {breadcrumbCurrentLabel()}
-                                            </span>
-                                        </nav>
-                                    </div>
+                                    {showPcTagSearchHeader ? (
+                                        <header className="rs-search-page__pcTagSearchBar">
+                                            <div className="rs-search-page__pcTagSearchLeft">
+                                                <button
+                                                    type="button"
+                                                    className="rs-search-page__pcTagSearchBack"
+                                                    onClick={() => navigate(-1)}
+                                                    aria-label={intl.formatMessage({
+                                                        id: 'back',
+                                                        defaultMessage: 'Back',
+                                                    })}
+                                                >
+                                                    <ChevronLeft size={22} aria-hidden />
+                                                </button>
+                                                <h1 className="rs-search-page__pcTagSearchTitle">
+                                                    {pcTagSearchTitle}
+                                                </h1>
+                                            </div>
+                                            <p className="rs-search-page__tagSearchCount">
+                                                <FormattedMessage
+                                                    id="tag_search_total_count"
+                                                    defaultMessage="{count} in total"
+                                                    values={{ count: tagResultCount }}
+                                                />
+                                            </p>
+                                        </header>
+                                    ) : (
+                                        <div className="rs-shelf__breadcrumbWrap">
+                                            <nav aria-label="Breadcrumb" className="rs-shelf__breadcrumb">
+                                                <Link to="/">
+                                                    <FormattedMessage id="home" />
+                                                </Link>
+                                                <span className="rs-shelf__breadcrumbSep">/</span>
+                                                <span className="rs-shelf__breadcrumbCurrent">
+                                                    {breadcrumbCurrentLabel()}
+                                                </span>
+                                            </nav>
+                                        </div>
+                                    )}
 
-                                    {searchStore.tags.length > 0 ? (
+                                    {searchStore.tags.length > 0 && !isTagSearchPage ? (
                                         <div className="rs-search-page__pcTagPanel">
                                             <div
                                                 ref={pcTagsRef}
@@ -1194,12 +1254,14 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                         </div>
                                     ) : null}
 
-                                    <div className="rs-shelf__heading">
-                                        <div className="rs-shelf__headingRow">
-                                            <h1 className="rs-shelf__title">{pageHeading()}</h1>
+                                    {!isPcTagSearchPage ? (
+                                        <div className="rs-shelf__heading">
+                                            <div className="rs-shelf__headingRow">
+                                                <h1 className="rs-shelf__title">{pageHeading()}</h1>
+                                            </div>
+                                            <div className="rs-shelf__subRow" />
                                         </div>
-                                        <div className="rs-shelf__subRow" />
-                                    </div>
+                                    ) : null}
 
                                     <div className="rs-search-page__results rs-search-page__results--pc">
                                         {searchStore.loading ? (

@@ -49,7 +49,11 @@ export function ForYouPlayerBottomInfo({ data, episode, episodeNo, onOpenIntrodu
                 </span>
             </div>
             {data.tags.length > 0 ? (
-                <div className="video-player-h5-tags">
+                <div
+                    className="video-player-h5-tags"
+                    onClick={(e) => e.stopPropagation()}
+                    onWheel={(e) => e.stopPropagation()}
+                >
                     {data.tags.map((v) => (
                         <Link
                             key={v.unique_id}

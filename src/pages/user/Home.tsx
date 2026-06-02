@@ -22,6 +22,7 @@ import { scrollElementToTop } from '@/lib/scrollToTop';
 import { useRootStore } from '@/stores/root';
 import { applyHomeHeroPreloadLinks } from '@/lib/homeHeroPreloads';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import { VideoPosterLazyCover } from '@/components/VideoPosterLazyCover';
 
 const HERO_FADE_MS = 600;
 /** 首页内层滚动超过此值后显示「回顶」浮动按钮（与 antd BackTop 默认 visibilityHeight=400 对齐） */
@@ -607,16 +608,12 @@ export default function Component() {
                                         state={VIDEO_FROM_HOME_STATE}
                                         className="relative block h-full min-h-0 w-full overflow-hidden"
                                     >
-                                        {coverSrc ? (
-                                            <img
-                                                src={coverSrc}
-                                                alt=""
-                                                decoding="async"
-                                                loading={i === 0 ? 'eager' : 'lazy'}
-                                                {...(i === 0 ? { fetchPriority: 'high' as const } : {})}
-                                                className="home-hero-cover-img absolute inset-0 h-full w-full"
-                                            />
-                                        ) : null}
+                                        <VideoPosterLazyCover
+                                            src={coverSrc}
+                                            alt=""
+                                            priority={i === 0}
+                                            imageClassName="home-hero-cover-img h-full w-full"
+                                        />
                                     </Link>
                                 </div>
                             );

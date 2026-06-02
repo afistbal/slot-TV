@@ -8,6 +8,7 @@
  */
 import { useEffect, type RefObject } from 'react';
 import type { IPlayerData } from '@/types/videoPlayer';
+import { bindVerticalPcWheelNav } from './videoVerticalPcWheelNav';
 
 export type UseVideoVerticalSwiperPcWheelParams = {
     listRef: RefObject<HTMLDivElement | null>;
@@ -31,47 +32,19 @@ export function useVideoVerticalSwiperPcWheel(
         if (!list) {
             return;
         }
-        let accY = 0;
-        let cooldownUntil = 0;
-        let idleTimer: ReturnType<typeof setTimeout> | null = null;
-        const TH = 140;
-        const COOLDOWN_MS = 480;
-        const IDLE_RESET_MS = 200;
-        const onWheel = (e: WheelEvent) => {
-            if (Date.now() < cooldownUntil) {
-                return;
-            }
-            if ((e.target as Element | null)?.closest('[data-pc-episode-aside]')) {
-                return;
-            }
-            if (idleTimer) {
-                clearTimeout(idleTimer);
-            }
-            idleTimer = setTimeout(() => {
-                accY = 0;
-                idleTimer = null;
-            }, IDLE_RESET_MS);
-            accY += e.deltaY;
-            if (accY > TH) {
-                accY = 0;
-                cooldownUntil = Date.now() + COOLDOWN_MS;
-                if (current < data.episodes.length - 1) {
-                    handleSetEpisode(current + 1);
-                }
-            } else if (accY < -TH) {
-                accY = 0;
-                cooldownUntil = Date.now() + COOLDOWN_MS;
+        return bindVerticalPcWheelNav(list, {
+            shouldIgnore: (e) =>
+                Boolean((e.target as Element | null)?.closest('[data-pc-episode-aside]')),
+            onPrev: () => {
                 if (current > 0) {
                     handleSetEpisode(current - 1);
                 }
-            }
-        };
-        list.addEventListener('wheel', onWheel, { passive: true });
-        return () => {
-            list.removeEventListener('wheel', onWheel);
-            if (idleTimer) {
-                clearTimeout(idleTimer);
-            }
-        };
+            },
+            onNext: () => {
+                if (current < data.episodes.length - 1) {
+                    handleSetEpisode(current + 1);
+                }
+            },
+        });
     }, [enabled, data, initialized, listRef, current, handleSetEpisode]);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { VideoCoverPlaceholder } from '@/components/VideoCoverPlaceholder';
+import { VideoCoverPlaceholderShell } from '@/components/VideoCoverPlaceholder';
 import { cn } from '@/lib/utils';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
@@ -69,16 +69,14 @@ export function HomeBookItem({
             />
             {item.showExpo ? <div data-report="expo" className="BookItem_expoItem__EbMPA" /> : null}
             <div className="BookItem_cover__W2qbR">
-                <div className="BookItem_coverPlaceholder" aria-hidden>
-                    <VideoCoverPlaceholder />
-                </div>
+                <VideoCoverPlaceholderShell className="BookItem_coverPlaceholder" />
                 <img
                     src={src}
                     alt={item.title}
                     loading="lazy"
                     decoding="async"
                     className={cn(
-                        'BookItem_coverImg',
+                        'BookItem_coverImg relative z-[1]',
                         coverLoaded ? 'BookItem_coverImg--loaded' : 'BookItem_coverImg--loading',
                     )}
                     onLoad={() => setCoverLoaded(true)}

@@ -85,10 +85,20 @@
 
 .rs-shelf__title {
     margin: 0;
+    min-width: 0;
+    flex: 1;
     font-size: calc(18 / 375 * 100vw);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
     line-height: 1.2;
+}
+
+.rs-search-page--tagSearch .rs-shelf__headingRow .rs-search-page__tagSearchCount {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 400;
+    color: #999999;
+    white-space: nowrap;
 }
 
 .rs-shelf__pageHint {

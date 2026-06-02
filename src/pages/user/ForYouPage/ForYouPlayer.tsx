@@ -1,4 +1,4 @@
-﻿import {
+import {
     ChevronLeft,
     Crown,
     Home,
@@ -86,7 +86,6 @@ export function ForYouPlayer({
     feedEpisodeTotal = 0,
     onWatchFullSeries,
     onVideoElementReady,
-    coverPosterUrl,
     onPlaybackStarted,
     onVideoCanPlay,
     hideCenterPlayUntilFirstPlay = false,
@@ -107,7 +106,6 @@ export function ForYouPlayer({
     feedEpisodeTotal?: number;
     onWatchFullSeries?: () => void;
     onVideoElementReady?: (el: HTMLVideoElement | null) => void;
-    coverPosterUrl?: string;
     onPlaybackStarted?: () => void;
     onVideoCanPlay?: () => void;
     hideCenterPlayUntilFirstPlay?: boolean;
@@ -212,7 +210,6 @@ export function ForYouPlayer({
     /** 未解锁：无 poster；已解锁：仅用截帧 data URL，失败则黑底（不用 `info.image`） */
     const unlockVisualOnly = episode?.lock === true;
     const frameTrim = framePosterDataUrl.trim();
-    const videoPosterAttr = unlockVisualOnly ? undefined : frameTrim.length > 0 ? frameTrim : undefined;
     /** 仅分享弹窗预览卡：用剧封 `info.image`（与播放器 poster 截帧分离） */
     const shareCardPosterUrl = useMemo(
         () => resolveVideoPosterUrl(staticBase, data.info, data.info.id),
@@ -259,11 +256,13 @@ export function ForYouPlayer({
     /** For You 主格用 auto 预加载；其余与 /video 一致用 metadata */
     const videoPreload: 'none' | 'metadata' | 'auto' =
         isForYouFeed && playbackPolicy !== 'paused' ? 'auto' : 'metadata';
-    const feedCoverPoster =
-        coverPosterUrl != null && coverPosterUrl.length > 0 ? coverPosterUrl : undefined;
-    const h5VideoPosterAttr = unlockVisualOnly
+    /** For You /video 一致：`<video poster>` 不用剧封，仅截帧 data URL */
+    const videoPosterAttr = unlockVisualOnly
         ? undefined
-        : feedCoverPoster ?? (frameTrim.length > 0 ? frameTrim : undefined);
+        : frameTrim.length > 0
+          ? frameTrim
+          : undefined;
+    const h5VideoPosterAttr = videoPosterAttr;
 
     /** H5：与 `<video>.muted` 一致且正在播时出全屏点按开声蒙层；用户点过底栏音量后不再出 */
     const showH5FullscreenUnmuteOverlay =
@@ -1733,19 +1732,6 @@ export function ForYouPlayer({
                                 )}
                                 ref={controllerRef}
                             >
-                                {!isFullscreenUi && isForYouFeed ? (
-                                    <div
-                                        className="foryou-player-h5-topbar video-player-h5-topbar absolute top-0 left-0 right-0 z-10 w-full transition-opacity ease-linear"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div
-                                            onClick={handleBack}
-                                            className="video-player-h5-topbar-back text-white flex justify-center items-center shrink-0"
-                                        >
-                                            <ChevronLeft className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                ) : null}
                                 {showCenterPlayControl && !showTapToUnmute && (
                                     <button
                                         type="button"

@@ -1,4 +1,5 @@
 import { api, type TData } from '@/api';
+import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 import { useSearchStore } from '@/stores/search';
 
 export type MovieTagLabelRow = {
@@ -71,6 +72,44 @@ export async function ensureMovieTagLabels(): Promise<void> {
     await movieTagLabelsInflight;
 }
 
+/** 按接口 `source_tag_name` 或 `matched_unique_id` 匹配 */
+export function findTagRowByKey(tagKey: string, tags: TData[]): TData | undefined {
+    const key = tagKey.trim();
+    if (!key) {
+        return undefined;
+    }
+    return (
+        tags.find((t) => (t['name'] as string) === key) ??
+        tags.find((t) => (t['unique_id'] as string) === key)
+    );
+}
+
+/** `/tagSearch` 查询串：`movie_tag` 必填；可读文案走 `tag_label` 供首屏标题 */
+export function buildTagSearchQuery(tagKey: string, displayLabel?: string): string {
+    const params = new URLSearchParams({ movie_tag: tagKey });
+    const label = String(displayLabel ?? '').trim();
+    if (label && !isOpaqueTagId(label)) {
+        params.set('tag_label', label);
+    }
+    return params.toString();
+}
+
+export function readTagLabelFromSearch(search: string): string {
+    const raw = new URLSearchParams(search).get('tag_label');
+    if (!raw) {
+        return '';
+    }
+    return decodeURIComponent(raw.replace(/\+/g, ' ')).trim();
+}
+
+export function readMovieTagFromSearch(search: string): string {
+    const raw = new URLSearchParams(search).get('movie_tag');
+    if (!raw) {
+        return '';
+    }
+    return decodeURIComponent(raw.replace(/\+/g, ' ')).trim();
+}
+
 export function resolveMovieTagLocalLabel(tag: {
     name?: string;
     unique_id?: string;
@@ -83,9 +122,7 @@ export function resolveMovieTagLocalLabel(tag: {
     const tags = useSearchStore.getState().tags;
     const uid = String(tag.unique_id ?? '').trim();
     const name = String(tag.name ?? '').trim();
-    const row =
-        (uid ? tags.find((t) => (t['unique_id'] as string) === uid) : undefined) ??
-        (name ? tags.find((t) => (t['name'] as string) === name) : undefined);
+    const row = findTagRowByKey(uid, tags) ?? findTagRowByKey(name, tags);
     if (row) {
         return tagRowDisplayLabel(row);
     }
@@ -96,16 +133,21 @@ export function resolveTagDisplayLabel(
     tagName: string,
     tags: TData[],
     fallbackTagMessage: string,
+    urlDisplayLabel = '',
 ): string {
+    const fromUrl = String(urlDisplayLabel ?? '').trim();
+    if (fromUrl) {
+        return fromUrl;
+    }
     if (!tagName) {
         return '';
     }
-    const row = tags.find((t) => (t['name'] as string) === tagName);
+    const row = findTagRowByKey(tagName, tags);
     if (row) {
         return tagRowDisplayLabel(row);
     }
-    if (/^[a-f0-9]{10,}$/i.test(tagName)) {
-        return fallbackTagMessage;
+    if (isOpaqueTagId(tagName)) {
+        return tags.length > 0 ? fallbackTagMessage : '';
     }
     return tagName;
 }

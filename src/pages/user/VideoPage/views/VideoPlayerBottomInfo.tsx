@@ -47,7 +47,11 @@ export function VideoPlayerBottomInfo({ data, episode, onOpenIntroduction }: Pro
                 )}
             </div>
             {data.tags.length > 0 && (
-                <div className="video-player-h5-tags">
+                <div
+                    className="video-player-h5-tags"
+                    onClick={(e) => e.stopPropagation()}
+                    onWheel={(e) => e.stopPropagation()}
+                >
                     {data.tags.map((v) => (
                         <Link
                             key={v.name}

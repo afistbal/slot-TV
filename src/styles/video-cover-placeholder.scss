@@ -14,6 +14,15 @@
     }
 }
 
+/** 封面骨架：静态灰底 + logo，不用 Tailwind `animate-pulse` */
+.video-cover-skeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: #212121;
+    border-radius: inherit;
+}
+
 .rs-bi-coverSkeleton,
 .rs-my-list__coverSkeleton {
     background: #212121 !important;

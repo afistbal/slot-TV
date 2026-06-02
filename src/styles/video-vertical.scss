@@ -49,12 +49,57 @@
     height: 100vh;
     min-height: 100dvh;
     background: #000;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 .video-fullscreen-target:fullscreen>.video-vertical-swiper,
-.video-fullscreen-target:-webkit-full-screen>.video-vertical-swiper {
+.video-fullscreen-target:-webkit-full-screen>.video-vertical-swiper,
+.video-fullscreen-target:fullscreen>.foryou-vertical,
+.video-fullscreen-target:-webkit-full-screen>.foryou-vertical,
+.video-fullscreen-target:fullscreen .foryou-vertical__swiper,
+.video-fullscreen-target:-webkit-full-screen .foryou-vertical__swiper {
     height: 100%;
     min-height: 0;
+}
+
+/** For You / Video 容器全屏：去掉 PC 舞台上下 20px 留白，竖向铺满 */
+.video-fullscreen-target:fullscreen .video-player-root,
+.video-fullscreen-target:-webkit-full-screen .video-player-root,
+.video-fullscreen-target:fullscreen .video-player-pc-shell,
+.video-fullscreen-target:-webkit-full-screen .video-player-pc-shell,
+.video-fullscreen-target:fullscreen .foryou-slide-shell,
+.video-fullscreen-target:-webkit-full-screen .foryou-slide-shell,
+.video-fullscreen-target:fullscreen .foryou-player-mount,
+.video-fullscreen-target:-webkit-full-screen .foryou-player-mount {
+    height: 100%;
+    min-height: 0;
+}
+
+.video-fullscreen-target:fullscreen .video-player-pc-shell,
+.video-fullscreen-target:-webkit-full-screen .video-player-pc-shell {
+    align-items: stretch;
+}
+
+.video-fullscreen-target:fullscreen .video-player-pc-stage-cluster,
+.video-fullscreen-target:-webkit-full-screen .video-player-pc-stage-cluster {
+    padding: 0 !important;
+    height: 100%;
+    max-height: 100%;
+    align-items: stretch !important;
+}
+
+.video-fullscreen-target:fullscreen .video-player-pc-stage-cluster .video-player-h5-video-stage,
+.video-fullscreen-target:-webkit-full-screen .video-player-pc-stage-cluster .video-player-h5-video-stage {
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+}
+
+.video-fullscreen-target:fullscreen .video-player-pc-stage-cluster > .aspect-\[9\/16\],
+.video-fullscreen-target:-webkit-full-screen .video-player-pc-stage-cluster > .aspect-\[9\/16\] {
+    height: 100%;
+    max-height: 100%;
 }
 
 /** 控制栏/按钮叠在视频上：单独一层，减轻与父层 transform 叠加时的栅格化发糊 */
@@ -940,8 +985,19 @@
     align-items: center;
     gap: 6px;
     margin-bottom: 4px;
+    min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+        height: 0;
+    }
 }
 
 .video-player-root .video-player-h5-tag {
@@ -1178,6 +1234,11 @@
         align-items: center;
         max-width: 100%;
         transition: transform var(--pc-drawer-duration) var(--pc-drawer-ease);
+        padding: 20px 0;
+
+        .video-player-h5-video-stage {
+            border-radius: 8px;
+        }
     }
 
     .video-player-pc-stage-cluster>.aspect-\[9\/16\] {

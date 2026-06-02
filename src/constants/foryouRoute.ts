@@ -8,6 +8,7 @@ export function isForYouPathname(pathname: string): boolean {
 /** 从 For You 进 `/video` 时携带的播放进度（秒） */
 export type ForYouToVideoLocationState = {
     fromForYouPlayback?: boolean;
+    fromHomeVideoPlayback?: boolean;
     resumeTime?: number;
     episodeRowId?: number;
 };

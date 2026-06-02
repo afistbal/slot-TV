@@ -5,6 +5,7 @@ import { useConfigStore } from '@/stores/config';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import { useHomeStore, type IItem, filterRenderableTopBannerItems } from '@/stores/home';
 import { cn } from '@/lib/utils';
+import { VideoCoverPlaceholderShell } from '@/components/VideoCoverPlaceholder';
 import { coverflowTrackMaxWidthPx, RESPONSIVE_SAFE_GUTTER_PX } from '@/lib/pcHeroArrowInsets';
 
 const TRANSITION_MS = 500;
@@ -345,6 +346,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                         <div className="relative h-full w-full overflow-hidden rounded-[20px]">
                                             <div className="pointer-events-none absolute inset-0 z-0 bg-black" />
                                             <div className="absolute inset-0 z-[1]">
+                                                <VideoCoverPlaceholderShell className="absolute inset-0" />
                                                 {src ? (
                                                     <img
                                                         src={src}
@@ -355,7 +357,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                                         loading="eager"
                                                         decoding="async"
                                                         fetchPriority={t === 0 ? 'high' : 'auto'}
-                                                        className="absolute inset-0 h-full w-full select-none object-cover [user-drag:none]"
+                                                        className="absolute inset-0 z-[1] h-full w-full select-none object-cover [user-drag:none]"
                                                         style={{ opacity: coverOp, transition: imgTrans }}
                                                     />
                                                 ) : null}
