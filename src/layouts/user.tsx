@@ -126,6 +126,7 @@ export function Page({
     bodyClassName,
     children,
     action,
+    showBack = true,
 }: {
     title: string;
     titleClassName?: string;
@@ -133,12 +134,17 @@ export function Page({
     bodyClassName?: string;
     children?: React.ReactNode;
     action?: React.ReactNode;
+    /** 是否展示返回按钮；协议等独立页可设为 false */
+    showBack?: boolean;
 }) {
     const navigate = useNavigate();
 
     function handleBack() {
         navigate(-1);
     }
+
+    const canBack =
+        showBack && typeof window !== 'undefined' && window.history.length > 1;
 
     return <div className="flex flex-col h-full">
         {/** @ts-expect-error - injected by Flutter InAppWebView */}
@@ -151,7 +157,7 @@ export function Page({
                 )}
             >
                 <div className="absolute left-1 top-1/2 -translate-y-1/2 md:left-6">
-                    {history.length > 0 ? (
+                    {canBack ? (
                         <button
                             type="button"
                             onClick={handleBack}

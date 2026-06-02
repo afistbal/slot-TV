@@ -27,8 +27,7 @@ import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/u
 import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
-import enMessages from './locales/en.json';
-import zhMessages from './locales/zh.json';
+import { messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
 
 import LayoutUser from './layouts/user';
 import ShareToVideoRedirect from './pages/user/ShareToVideoRedirect';
@@ -399,25 +398,9 @@ const router = createBrowserRouter([
     },
 ]);
 
-type TIntlMessages = Record<string, string>;
-
-/** 避免 IntlProvider 首屏 messages 为 undefined（异步 import 未完成时整表缺失会报 MISSING_TRANSLATION） */
-function syncMessagesForLocale(code: string): TIntlMessages {
-    const c = code.toLowerCase();
-    if (
-        c === 'zh' ||
-        c === 'zh-hans' ||
-        c === 'zh-hant' ||
-        c === 'zh-tw' ||
-        c === 'zh-cn'
-    ) {
-        return zhMessages as TIntlMessages;
-    }
-    return enMessages as TIntlMessages;
-}
-
+/** 避免 IntlProvider 首屏 messages 为 undefined */
 function getInitialIntlMessages(): TIntlMessages {
-    return syncMessagesForLocale(useRootStore.getState().locale);
+    return messagesForLocale(useRootStore.getState().locale);
 }
 
 function App() {
@@ -617,61 +600,7 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const applyModule = (res: unknown) => {
-            const mod = res as { default?: TIntlMessages };
-            setMessages({
-                ...enMessages,
-                ...(mod.default ?? (res as TIntlMessages)),
-            } as TIntlMessages);
-        };
-
-        switch (rootStore.locale) {
-            case 'zh-hans':
-            case 'zh-hant':
-            case 'zh-TW':
-            case 'zh-CN':
-            case 'zh-tw':
-            case 'zh-cn':
-            case 'zh':
-                // 与顶部静态 import 共用同一份，避免 dev 下再发 en.json?import / zh.json?import 重复请求
-                setMessages(zhMessages as TIntlMessages);
-                return;
-            case 'en':
-                setMessages(enMessages as TIntlMessages);
-                return;
-            case 'ar':
-                void import('./locales/ar.json').then(applyModule);
-                return;
-            case 'de':
-                void import('./locales/de.json').then(applyModule);
-                return;
-            case 'id':
-                void import('./locales/id.json').then(applyModule);
-                return;
-            case 'ja':
-                void import('./locales/ja.json').then(applyModule);
-                return;
-            case 'ko':
-                void import('./locales/ko.json').then(applyModule);
-                return;
-            case 'ms':
-                void import('./locales/ms.json').then(applyModule);
-                return;
-            case 'pt':
-                void import('./locales/pt.json').then(applyModule);
-                return;
-            case 'th':
-                void import('./locales/th.json').then(applyModule);
-                return;
-            case 'tr':
-                void import('./locales/tr.json').then(applyModule);
-                return;
-            case 'vi':
-                void import('./locales/vi.json').then(applyModule);
-                return;
-            default:
-                setMessages(enMessages as TIntlMessages);
-        }
+        setMessages(messagesForLocale(rootStore.locale));
     }, [rootStore.locale]);
 
     useEffect(() => {

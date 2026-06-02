@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Swiper as SwiperClass } from 'swiper';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
-import { FORYOU_DEEP_SCROLL_INDEX, FORYOU_PULL_REFRESH_THRESHOLD_PX } from './foryouConstants';
+import { FORYOU_LOAD_MORE_REFRESH_FALLBACK_PAGE, FORYOU_PULL_REFRESH_THRESHOLD_PX } from './foryouConstants';
 import { fetchForyouList, type ForyouFetchMode } from './fetchForyouList';
 import { mergeForyouFeedItems } from './foryouFeedMerge';
 import { clearForyouFeedProgress } from './foryouFeedProgress';
@@ -12,10 +12,10 @@ import {
 } from './foryouFeedSession';
 
 function canLoadMoreByDepth(maxIndexReached: number, listLength: number): boolean {
-    if (listLength <= FORYOU_DEEP_SCROLL_INDEX) {
+    if (listLength <= FORYOU_LOAD_MORE_REFRESH_FALLBACK_PAGE) {
         return true;
     }
-    return maxIndexReached >= FORYOU_DEEP_SCROLL_INDEX;
+    return maxIndexReached >= FORYOU_LOAD_MORE_REFRESH_FALLBACK_PAGE - 1;
 }
 
 function syncSession(
@@ -158,6 +158,26 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
             const merged = mergeForyouFeedItems(list, incoming);
             const page = res.payload.current_page ?? nextPage;
             const nextHasMore = res.payload.has_more ?? incoming.length > 0;
+            if (merged.length === list.length) {
+                if (page >= FORYOU_LOAD_MORE_REFRESH_FALLBACK_PAGE) {
+                    const refreshRes = await runFetch('refresh');
+                    if (refreshRes.ok) {
+                        const refreshed = mergeForyouFeedItems(list, refreshRes.payload.data);
+                        if (refreshed.length > list.length) {
+                            applyList(
+                                refreshed,
+                                refreshRes.payload.current_page ?? 1,
+                                refreshRes.payload.has_more ?? true,
+                                maxIndexReachedRef.current,
+                            );
+                            return;
+                        }
+                    }
+                }
+                setHasMore(false);
+                patchForyouFeedSession({ hasMore: false });
+                return;
+            }
             applyList(merged, page, nextHasMore, maxIndexReachedRef.current);
         } finally {
             setLoadingMore(false);
@@ -168,7 +188,8 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
     const onActiveIndexChange = useCallback(
         (index: number) => {
             noteIndexReached(index);
-            if (index !== list.length - 1) {
+            const nearEnd = index >= Math.max(0, list.length - 2);
+            if (!nearEnd && index !== list.length - 1) {
                 return;
             }
             void loadMore();

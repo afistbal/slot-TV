@@ -674,7 +674,7 @@ export default function Component() {
                     showPrimaryNav={isPc}
                     showSearch={true}
                     showProfile={false}
-                    showLeftAction
+                    leftAction={isPc ? 'menu' : 'none'}
                     rightActionsMode={isPc ? 'profilePc' : 'default'}
                 />
                 {isPc ? (

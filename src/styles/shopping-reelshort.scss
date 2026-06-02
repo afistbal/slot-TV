@@ -2140,7 +2140,39 @@
                 color: rgba(255, 255, 255, 0.45);
             }
         }
+
+        .rs-shopping__tipsAgreements {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 16px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .rs-shopping__tipsAgreementLink {
+            padding: 0;
+            border: 0;
+            background: none;
+            font: inherit;
+            color: rgba(255, 255, 255, 0.55);
+            text-decoration: underline;
+            cursor: pointer;
+
+            &:hover {
+                color: rgba(255, 255, 255, 0.75);
+            }
+        }
+
+        .rs-shopping__tipsAgreementsSep {
+            color: rgba(255, 255, 255, 0.35);
+            user-select: none;
+        }
     }
+
 
 /** H5 `/shopping` 充值页顶栏等（仅 max-width: 767px） */
 @media (max-width: 767px) {

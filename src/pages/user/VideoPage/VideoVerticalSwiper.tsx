@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { offlinePlayerData } from '@/mocks/videoOffline';
-import type { IPlayerData } from '@/types/videoPlayer';
+import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import Loader from '@/components/Loader';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
@@ -107,6 +107,18 @@ export default function VideoVerticalSwiper() {
         onPcDrawerEnteredChange: setPcDrawerEntered,
         pcDrawerClosingRef,
     };
+
+    const syncEpisodeListLock = useCallback((ep: IPlayerEpisode) => {
+        const locked = ep.lock ? 1 : 0;
+        setData((prev) => {
+            if (!prev) return prev;
+            const i = prev.episodes.findIndex((e) => e.id === ep.id);
+            if (i < 0 || prev.episodes[i].locked === locked) return prev;
+            const episodes = prev.episodes.slice();
+            episodes[i] = { ...episodes[i], locked };
+            return { ...prev, episodes };
+        });
+    }, []);
 
     useEffect(() => {
         pcDrawerClosingRef.current = false;
@@ -521,6 +533,7 @@ export default function VideoVerticalSwiper() {
                                             id={v.id}
                                             index={k}
                                             data={data}
+                                            onEpisodeLockSync={syncEpisodeListLock}
                                             onSetEpisode={handleSetEpisode}
                                             fullscreenTargetRef={fullscreenTargetRef}
                                             shouldKeepFullscreen={keepFullscreen}
@@ -541,6 +554,7 @@ export default function VideoVerticalSwiper() {
                                             id={v.id}
                                             index={k}
                                             data={data}
+                                            onEpisodeLockSync={syncEpisodeListLock}
                                             onSetEpisode={handleSetEpisode}
                                             fullscreenTargetRef={fullscreenTargetRef}
                                             shouldKeepFullscreen={keepFullscreen}

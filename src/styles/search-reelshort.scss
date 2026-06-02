@@ -599,10 +599,10 @@
         display: flex;
         width: 100%;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
         gap: 8px;
-        padding: 28px 16px 40px;
-        flex-wrap: wrap;
+        padding: 28px 0 40px;
+        flex-wrap: nowrap;
     }
 
     &__paginationBtn {
@@ -642,10 +642,12 @@
 
     &__paginationPages {
         display: flex;
+        flex: 1 1 auto;
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
         gap: 4px 8px;
+        min-width: 0;
     }
 
     &__paginationNum {

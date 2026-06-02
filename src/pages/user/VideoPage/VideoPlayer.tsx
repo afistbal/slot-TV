@@ -75,6 +75,7 @@ export function VideoPlayer({
     pcDrawerEntered,
     onPcDrawerEnteredChange,
     pcDrawerClosingRef,
+    onEpisodeLockSync,
     ...props
 }: {
     id: number;
@@ -98,6 +99,8 @@ export function VideoPlayer({
     pcDrawerEntered: boolean;
     onPcDrawerEnteredChange: (entered: boolean) => void;
     pcDrawerClosingRef: RefObject<boolean>;
+    /** 单集详情 `lock` 写回 `movie/info` 列表的 `locked`，避免选集抽屉仍显示上锁 */
+    onEpisodeLockSync?: (ep: IPlayerEpisode) => void;
 }) {
     // const loadingStore = useLoadingStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
@@ -375,6 +378,12 @@ export function VideoPlayer({
         putEpisodeDetailCache(Number(d.id) || id, d);
         void loadData(id, false);
     }
+
+    useEffect(() => {
+        if (episode) {
+            onEpisodeLockSync?.(episode);
+        }
+    }, [episode?.id, episode?.lock, onEpisodeLockSync]);
 
     function handleSetEpisode(index: number) {
         onSetEpisode(index);

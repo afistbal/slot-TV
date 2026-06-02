@@ -67,6 +67,7 @@ export default function ForYouVerticalSwiper() {
     const activeIndexRef = useRef(activeIndex);
     activeIndexRef.current = activeIndex;
     const listLengthRef = useRef(0);
+    const prevListLengthRef = useRef(0);
 
     const videoResumeRef = useRef<HTMLVideoElement | null>(null);
 
@@ -84,6 +85,10 @@ export default function ForYouVerticalSwiper() {
 
         loadingMore,
 
+        hasMore,
+
+        loadMore,
+
         onActiveIndexChange,
 
         onSwiperTouchEnd,
@@ -91,6 +96,19 @@ export default function ForYouVerticalSwiper() {
     } = useForyouFeed(sessionBootstrapReady);
 
 
+
+    useEffect(() => {
+        if (list.length <= prevListLengthRef.current) {
+            prevListLengthRef.current = list.length;
+            return;
+        }
+        if (activeIndex === prevListLengthRef.current - 1) {
+            requestAnimationFrame(() => {
+                swiperRef.current?.slideNext();
+            });
+        }
+        prevListLengthRef.current = list.length;
+    }, [list.length, activeIndex]);
 
     useForyouVideoPreload(list, activeIndex, staticBase);
 
@@ -203,11 +221,17 @@ export default function ForYouVerticalSwiper() {
 
     const handleFeedNext = useCallback(() => {
         const swiper = swiperRef.current;
-        if (!swiper || activeIndex >= list.length - 1) {
+        if (!swiper) {
             return;
         }
-        swiper.slideNext();
-    }, [activeIndex, list.length]);
+        if (activeIndex < list.length - 1) {
+            swiper.slideNext();
+            return;
+        }
+        if (hasMore) {
+            void loadMore();
+        }
+    }, [activeIndex, list.length, hasMore, loadMore]);
 
     /** PC：与 /video 一致，禁止滚轮/触控板竖滑切剧 */
     useEffect(() => {
@@ -256,13 +280,20 @@ export default function ForYouVerticalSwiper() {
             onNext: () => {
                 const swiper = swiperRef.current;
                 const len = listLengthRef.current;
-                if (!swiper || activeIndexRef.current >= len - 1) {
+                const idx = activeIndexRef.current;
+                if (!swiper) {
                     return;
                 }
-                swiper.slideNext();
+                if (idx < len - 1) {
+                    swiper.slideNext();
+                    return;
+                }
+                if (hasMore) {
+                    void loadMore();
+                }
             },
         });
-    }, [isDesktop, list.length]);
+    }, [isDesktop, list.length, hasMore, loadMore]);
 
     /** PC：↑/↓ 切上/下一条（与滚轮一致，无拖拽） */
     useEffect(() => {
@@ -478,7 +509,7 @@ export default function ForYouVerticalSwiper() {
 
                                                 feedHasPrev={activeIndex > 0}
 
-                                                feedHasNext={activeIndex < list.length - 1}
+                                                feedHasNext={activeIndex < list.length - 1 || hasMore}
 
                                                 onFeedPrev={handleFeedPrev}
 

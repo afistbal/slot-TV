@@ -3,10 +3,10 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router";
 import userAgreementEn from "@/content/user-agreement.en.txt?raw";
-import { useMinWidth768 } from "@/hooks/useMinWidth768";
-import { useReelShortLegalDocRem } from "@/hooks/useReelShortLegalDocRem";
-import { reelshortPrivacyPolicyIframeSrc } from "@/lib/legalDocumentUrl";
+import MemberTerms from "@/widgets/MemberTerms";
+import { ShoppingPaidServiceAgreementContent } from "@/pages/user/ShoppingPaidServiceAgreementContent";
 import { BRAND_DISPLAY_NAME } from "@/constants/brand";
+import { cn } from "@/lib/utils";
 
 function linkifyLine(text: string): React.ReactNode {
     const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
@@ -98,55 +98,12 @@ function UserAgreementBody() {
     );
 }
 
-/** PC：版式对齐 ReelShort 静态页（主标题用 strong，rem 由根字号驱动）。 */
-function UserAgreementReelshortPcBody() {
-    const blocks = useUserAgreementBlocks();
-    const kicker = blocks[0];
-    const title = blocks[1];
-    const meta = blocks[2];
-    const body = blocks.slice(3);
-
-    return (
-        <>
-            {kicker && kicker !== title ? <p className="fn-rs-legal-pc__kicker">{linkifyLine(kicker)}</p> : null}
-            <p>
-                <strong>{linkifyLine(title ?? kicker ?? "")}</strong>
-            </p>
-            {meta && meta !== title ? <p>{linkifyLine(meta)}</p> : null}
-            {body.map((block, idx) => {
-                const t = block.trim();
-                if (!t) {
-                    return null;
-                }
-                if (isMajorSectionHeading(t)) {
-                    return <h2 key={idx}>{linkifyLine(t)}</h2>;
-                }
-                if (isSubsectionHeading(t)) {
-                    return <h3 key={idx}>{linkifyLine(t)}</h3>;
-                }
-                if (isAllCapsNotice(t)) {
-                    return (
-                        <p key={idx} className="fn-rs-legal-pc__caps">
-                            {linkifyLine(t)}
-                        </p>
-                    );
-                }
-                return <p key={idx}>{linkifyLine(t)}</p>;
-            })}
-        </>
-    );
-}
-
 function PrivacyPolicyBody() {
     const intl = useIntl();
     const domain = intl.formatMessage({ id: "domain" });
 
     return (
         <>
-            <h1 className="rs-legal-doc__title">
-                <FormattedMessage id="privacy_policy" />
-            </h1>
-            <p className="rs-legal-doc__meta">Last updated: [2025-01-01]</p>
             <p>
                 This Privacy Policy describes how [{domain}] (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;)
                 collects, uses, stores, and discloses information when you use our software application
@@ -272,53 +229,67 @@ function PrivacyPolicyBody() {
     );
 }
 
+type LegalPageKey = "user_agreement" | "privacy_policy" | "membership_agreement" | "payment_agreement";
+
+function parseLegalPageKey(titleParam: string | null): LegalPageKey {
+    switch (titleParam) {
+        case "privacy_policy":
+            return "privacy_policy";
+        case "membership_agreement":
+            return "membership_agreement";
+        case "payment_agreement":
+            return "payment_agreement";
+        default:
+            return "user_agreement";
+    }
+}
+
+const LEGAL_PAGE_TITLE_IDS: Record<LegalPageKey, string> = {
+    user_agreement: "user_agreement",
+    privacy_policy: "privacy_policy",
+    membership_agreement: "shopping_tips_link_membership",
+    payment_agreement: "shopping_tips_link_payment",
+};
+
+function LegalPageBody({ pageKey }: { pageKey: LegalPageKey }) {
+    if (pageKey === "privacy_policy") {
+        return <PrivacyPolicyBody />;
+    }
+    if (pageKey === "membership_agreement") {
+        return <MemberTerms />;
+    }
+    if (pageKey === "payment_agreement") {
+        return <ShoppingPaidServiceAgreementContent />;
+    }
+    return <UserAgreementBody />;
+}
+
 export default function Component() {
     const intl = useIntl();
     const location = useLocation();
-    const mdUp = useMinWidth768();
     const titleParam = new URLSearchParams(location.search).get("title");
-    const pageKey = titleParam === "privacy_policy" ? "privacy_policy" : "user_agreement";
-    const isLegalPc = mdUp && (pageKey === "privacy_policy" || pageKey === "user_agreement");
-
-    useReelShortLegalDocRem(isLegalPc && pageKey === "user_agreement");
+    const pageKey = parseLegalPageKey(titleParam);
+    const pageTitleId = LEGAL_PAGE_TITLE_IDS[pageKey];
 
     /** 浏览器标签标题：全视口生效：`<文案> – YogoShort>`；图标见项目根目录 `index.html`（`/favorite.png`、`/logo.png`）。 */
     useEffect(() => {
         const prev = document.title;
-        const pageTitle =
-            pageKey === "privacy_policy"
-                ? intl.formatMessage({ id: "privacy_policy" })
-                : intl.formatMessage({ id: "user_agreement" });
-        document.title = `${pageTitle} – ${BRAND_DISPLAY_NAME}`;
+        document.title = `${intl.formatMessage({ id: pageTitleId })} – ${BRAND_DISPLAY_NAME}`;
         return () => {
             document.title = prev;
         };
-    }, [pageKey, intl]);
-
-    if (isLegalPc && pageKey === "privacy_policy") {
-        return (
-            <iframe
-                title="Privacy Policy"
-                src={reelshortPrivacyPolicyIframeSrc()}
-                className="block h-[100dvh] w-full max-w-none border-0 bg-app-canvas"
-            />
-        );
-    }
-
-    if (isLegalPc && pageKey === "user_agreement") {
-        return (
-            <div className="fn-rs-legal-pc-host">
-                <article className="fn-rs-legal-pc">
-                    <UserAgreementReelshortPcBody />
-                </article>
-            </div>
-        );
-    }
+    }, [pageTitleId, intl]);
 
     return (
-        <Page title={pageKey} bodyClassName="bg-app-canvas">
-            <article className="rs-legal-doc">
-                {pageKey === "privacy_policy" ? <PrivacyPolicyBody /> : <UserAgreementBody />}
+        <Page title={pageTitleId} bodyClassName="bg-app-canvas" showBack={false}>
+            <article
+                className={cn(
+                    "rs-legal-doc",
+                    pageKey === "membership_agreement" && "rs-legal-doc--memberTerms",
+                    pageKey === "payment_agreement" && "rs-legal-doc--payment",
+                )}
+            >
+                <LegalPageBody pageKey={pageKey} />
             </article>
         </Page>
     );

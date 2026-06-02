@@ -7,6 +7,7 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api } from '@/api';
 import { cn } from '@/lib/utils';
+import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
 import vipCardBg from '@/assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png';
 import iconUnlimitedViewing from '@/assets/images/icon_unlimited_viewing.png';
@@ -232,6 +233,10 @@ export default function RadixRc({
     });
     const [showPayModal, setShowPayModal] = useState(false);
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
+    const tipSiteValues = useMemo(
+        () => ({ site: intl.formatMessage({ id: 'site_name' }) }),
+        [intl],
+    );
     const [payModalStatus, setPayModalStatus] = useState<PayModalStatus>('idle');
     const [paySessionSeed, setPaySessionSeed] = useState(0);
     /** 视频页父组件因 timeupdate 等高频重渲染，回调勿放进 success 定时 effect 依赖，否则 2s 关闭计时器会被反复清掉 */
@@ -838,23 +843,90 @@ export default function RadixRc({
                         <FormattedMessage id="shopping_section_tips" />
                     </h2>
                     <ol className="rs-shopping__tipsList">
-                        <li>
-                            <FormattedMessage
-                                id="shopping_tips_item_1"
-                                values={{ site: intl.formatMessage({ id: 'site_name' }) }}
-                            />
-                        </li>
-                        <li>
-                            <FormattedMessage
-                                id="shopping_tips_item_2"
-                                values={{ site: intl.formatMessage({ id: 'site_name' }) }}
-                            />
-                        </li>
+                        {([1, 2, 3, 4, 5] as const).map((n) => (
+                            <li key={n}>
+                                <FormattedMessage id={`shopping_tips_item_${n}`} values={tipSiteValues} />
+                            </li>
+                        ))}
                     </ol>
+                    <div className="rs-shopping__tipsAgreements">
+                        <LegalDocumentLink
+                            title="membership_agreement"
+                            className="rs-shopping__tipsAgreementLink"
+                        >
+                            <FormattedMessage id="shopping_tips_link_membership" />
+                        </LegalDocumentLink>
+                        <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
+                            |
+                        </span>
+                        <LegalDocumentLink title="payment_agreement" className="rs-shopping__tipsAgreementLink">
+                            <FormattedMessage id="shopping_tips_link_payment" />
+                        </LegalDocumentLink>
+                        <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
+                            |
+                        </span>
+                        <LegalDocumentLink title="privacy_policy" className="rs-shopping__tipsAgreementLink">
+                            <FormattedMessage id="shopping_tips_link_privacy" />
+                        </LegalDocumentLink>
+                    </div>
                 </section>
             ) : null}
 
         </div>
+    );
+
+    const paidServiceAgreementDrawer = (
+        <Drawer
+            direction="bottom"
+            open={showPaidServiceAgreement}
+            onOpenChange={setShowPaidServiceAgreement}
+        >
+            <DrawerContent
+                aria-labelledby="rs-shopping-paid-agreement-title"
+                aria-describedby="rs-shopping-paid-agreement-desc"
+                overlayClassName="rs-shopping__paidAgreementDialogOverlay"
+                className="rs-shopping__paidAgreementPanel rs-shopping__paidAgreementDialogContent"
+            >
+                <DrawerTitle className="sr-only">
+                    {intl.formatMessage({ id: 'shopping_paid_service_agreement_title' })}
+                </DrawerTitle>
+                <DrawerDescription id="rs-shopping-paid-agreement-desc" className="sr-only">
+                    {intl.formatMessage({
+                        id: 'payment_processing_line_1',
+                        defaultMessage: 'Please read the paid service agreement carefully.',
+                    })}
+                </DrawerDescription>
+                <div className="rs-shopping__paidAgreementHead">
+                    <button
+                        type="button"
+                        className="rs-shopping__paidAgreementBackBtn"
+                        onClick={() => setShowPaidServiceAgreement(false)}
+                        aria-label={intl.formatMessage({ id: 'close', defaultMessage: 'Close' })}
+                    >
+                        <svg
+                            className="rs-shopping__paidAgreementBackSvg"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 19l-7-7 7-7"
+                            />
+                        </svg>
+                    </button>
+                    <h1 id="rs-shopping-paid-agreement-title" className="rs-shopping__paidAgreementHeadTitle">
+                        <FormattedMessage id="shopping_paid_service_agreement_title" />
+                    </h1>
+                </div>
+                <div className="rs-shopping__paidAgreementScroll">
+                    <ShoppingPaidServiceAgreementContent />
+                </div>
+            </DrawerContent>
+        </Drawer>
     );
 
     const payModal = showPayModal ? (
@@ -1074,57 +1146,6 @@ export default function RadixRc({
                     </div>
                 </div>
             </div>
-            <Drawer
-                direction="bottom"
-                open={showPaidServiceAgreement}
-                onOpenChange={setShowPaidServiceAgreement}
-            >
-                <DrawerContent
-                    aria-labelledby="rs-shopping-paid-agreement-title"
-                    aria-describedby="rs-shopping-paid-agreement-desc"
-                    overlayClassName="rs-shopping__paidAgreementDialogOverlay"
-                    className="rs-shopping__paidAgreementPanel rs-shopping__paidAgreementDialogContent"
-                >
-                    <DrawerTitle className="sr-only">
-                        {intl.formatMessage({ id: 'shopping_paid_service_agreement_title' })}
-                    </DrawerTitle>
-                    <DrawerDescription id="rs-shopping-paid-agreement-desc" className="sr-only">
-                        {intl.formatMessage({
-                            id: 'payment_processing_line_1',
-                            defaultMessage: 'Please read the paid service agreement carefully.',
-                        })}
-                    </DrawerDescription>
-                    <div className="rs-shopping__paidAgreementHead">
-                        <button
-                            type="button"
-                            className="rs-shopping__paidAgreementBackBtn"
-                            onClick={() => setShowPaidServiceAgreement(false)}
-                            aria-label={intl.formatMessage({ id: 'close', defaultMessage: 'Close' })}
-                        >
-                            <svg
-                                className="rs-shopping__paidAgreementBackSvg"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                aria-hidden="true"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 19l-7-7 7-7"
-                                />
-                            </svg>
-                        </button>
-                        <h1 id="rs-shopping-paid-agreement-title" className="rs-shopping__paidAgreementHeadTitle">
-                            <FormattedMessage id="shopping_paid_service_agreement_title" />
-                        </h1>
-                    </div>
-                    <div className="rs-shopping__paidAgreementScroll">
-                        <ShoppingPaidServiceAgreementContent />
-                    </div>
-                </DrawerContent>
-            </Drawer>
         </>
     ) : null;
 
@@ -1142,6 +1163,7 @@ export default function RadixRc({
                                   document.body,
                               )
                             : null}
+                        {paidServiceAgreementDrawer}
                     </div>
                 </div>
             );
@@ -1204,6 +1226,7 @@ export default function RadixRc({
                               document.body,
                           )
                         : null}
+                    {paidServiceAgreementDrawer}
                 </div>
             </div>
         );
@@ -1218,6 +1241,7 @@ export default function RadixRc({
                     <MembershipInlinePanel />
                 </div>
                 {payModal}
+                {paidServiceAgreementDrawer}
             </div>
         );
     }
@@ -1231,6 +1255,7 @@ export default function RadixRc({
                 {isTopUpH5Layout ? null : <ReelShortFooter />}
             </div>
             {payModal}
+            {paidServiceAgreementDrawer}
         </div>
     );
 }

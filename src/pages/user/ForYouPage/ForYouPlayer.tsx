@@ -1,4 +1,4 @@
-import {
+﻿import {
     ChevronLeft,
     Crown,
     Home,
@@ -988,9 +988,9 @@ export function ForYouPlayer({
         }
     }, [isForYouFeed, episode?.id, playbackSources.length, playbackPolicy, episode?.lock]);
 
-    /** For You H5：pending 态 video opacity:0；canplay 后 React 切 visible 再补 play */
+    /** For You：pending 态 video opacity:0；canplay 后 React 切 visible 再补 play（H5/PC 共用） */
     useEffect(() => {
-        if (!isForYouFeed || isDesktop) {
+        if (!isForYouFeed) {
             return;
         }
         if (!videoFrameReady || playbackPolicy === 'paused' || episode?.lock === true) {
@@ -1022,7 +1022,6 @@ export function ForYouPlayer({
         requestAnimationFrame(kickAutoplay);
     }, [
         isForYouFeed,
-        isDesktop,
         videoFrameReady,
         playbackPolicy,
         episode?.id,
@@ -1041,16 +1040,7 @@ export function ForYouPlayer({
             return;
         }
         void loadData(id);
-    }, [
-        id,
-        feedItem,
-        isForYouFeed,
-        isDesktop,
-        sessionBootstrapReady,
-        playbackPolicy,
-        fromHomeVideoPlayback,
-        data.info.is_favorite,
-    ]);
+    }, [id, feedItem?.ep_id, isForYouFeed, sessionBootstrapReady, playbackPolicy]);
 
     useEffect(() => {
         const el = videoRef.current;
