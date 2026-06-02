@@ -10,8 +10,9 @@ import UserSearch from "@/pages/user/Search";
 import usePixel from "@/hooks/usePixel";
 import { matchSearchFamilyPath } from "@/lib/searchRoutes";
 import { isForYouPathname } from "@/constants/foryouRoute";
+import { syncFbAttributionCache } from "@/lib/fbAttribution";
 
-/** �?App �?`/`、`/search`、`/:locale/search` 占位路由一致；仅这两页�?DOM �?keep-alive，避免反复卸载导致图�?LazyLoad 重跑 */
+/** 与 App 中 `/`、`/search`、`/:locale/search` 占位路由一致；仅这两页做 DOM 级 keep-alive，避免反复卸载导致图片/LazyLoad 重跑 */
 function usePrimaryTabKeepAlive() {
     const { pathname } = useLocation();
     const isHome = matchPath({ path: "/", end: true }, pathname) != null;
@@ -36,9 +37,14 @@ function RouteSuspenseFallback() {
 export default function Component() {
     const pixel = usePixel();
     const location = useLocation();
+
+    useEffect(() => {
+        syncFbAttributionCache();
+    }, [location.search]);
+
     /**
-     * 默认�?pathname+search �?key，换 URL �?remount，避免脏状态�?
-     * 播放页例外：换集只改 `/:episode`，若整页 remount 会丢掉全�?播放器状态；同一�?id 下保持稳�?key�?
+     * 默认用 pathname+search 作 key，换 URL 即 remount，避免脏状态。
+     * 播放页例外：换集只改 `/:episode`，若整页 remount 会丢掉全屏/播放器状态；同一剧 id 下保持稳定 key。
      */
     const outletKey = useMemo(() => {
         const { pathname, search } = location;
@@ -56,7 +62,7 @@ export default function Component() {
     const showPrimaryKeepAlive = isHome || isSearch;
     const pathSegments = location.pathname.toLowerCase().split('/').filter(Boolean);
     const isShoppingRoute = pathSegments[pathSegments.length - 1] === 'shopping';
-    /** 全屏播放 / 收银台：隐藏底部 Tab 与「添加桌面」胶�?*/
+    /** 全屏播放 / 收银台：隐藏底部 Tab 与「添加桌面」胶囊 */
     const hideBottomNav = useMemo(() => {
         const { pathname } = location;
         if (isShoppingRoute) return true;
@@ -69,10 +75,10 @@ export default function Component() {
     }, [location, pixel]);
 
     return <div className="flex h-full min-h-0 flex-col">
-        {/* min-h-0 + overflow-hidden：纵滑只发生在各页内�?scroll 容器，避免与首页 home-page__scroll 双轨滚动导致页脚滚不到、顶�?ref �?scrollTop 恒为 0 */}
+        {/* min-h-0 + overflow-hidden：纵滑只发生在各页内层 scroll 容器，避免与首页 home-page__scroll 双轨滚动导致页脚滚不到、顶部 ref 的 scrollTop 恒为 0 */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             {/*
-              flex-1+min-h-0：保证首�?home-page �?h-full / 内层 overflow-y-auto 高度链不断�?
+              flex-1+min-h-0：保证首页 home-page 的 h-full / 内层 overflow-y-auto 高度链不断。
             */}
             <div className="relative flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
                 {visitedHomeRef.current ? (
@@ -123,7 +129,7 @@ export function Page({
 }: {
     title: string;
     titleClassName?: string;
-    /** 标题下方主滚动区 class（如收银台铺满深色底�?*/
+    /** 标题下方主滚动区 class（如收银台铺满深色底） */
     bodyClassName?: string;
     children?: React.ReactNode;
     action?: React.ReactNode;

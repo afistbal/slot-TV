@@ -24,6 +24,7 @@ import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
 import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/usePixel';
+import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
 import enMessages from './locales/en.json';
@@ -541,6 +542,7 @@ function App() {
             adjustInitedRef.current = true;
         }
 
+        syncFbAttributionCache();
         setChecked(true);
         void initPixel(config.d);
 
@@ -553,6 +555,7 @@ function App() {
     }
 
     useEffect(() => {
+        syncFbAttributionCache();
         const query = new URLSearchParams(window.location.search);
         const t = query.get('_t') ?? '';
         const s = query.get('s') ?? '';
