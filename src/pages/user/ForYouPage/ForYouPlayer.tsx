@@ -1758,7 +1758,6 @@ export function ForYouPlayer({
                                         className={cn(
                                             'video-player-h5-bottom absolute bottom-0 left-0 right-0 w-full z-10',
                                             isFullscreenUi && 'video-player-h5-bottom--fullscreen',
-                                            isForYouFeed && 'swiper-no-swiping',
                                         )}
                                         ref={progressWrapRef}
                                         onClick={(e) => e.stopPropagation()}
@@ -1785,7 +1784,7 @@ export function ForYouPlayer({
                                         ) : null}
                                         <div className="video-player-h5-progress-row">
                                         <div
-                                            className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
+                                            className="video-player-progress-scrub video-player-h5-progress-track-wrap swiper-no-swiping flex-1 flex items-center justify-center min-w-0"
                                             ref={progressRef}
                                             onMouseDown={handleProgressMouseDown}
                                             onMouseMove={handleProgressMouseMove}
@@ -2241,7 +2240,6 @@ export function ForYouPlayer({
                             className={cn(
                                 'video-player-h5-bottom absolute bottom-0 left-0 right-0 w-full',
                                 isFullscreenUi && 'video-player-h5-bottom--fullscreen',
-                                isForYouFeed && 'swiper-no-swiping',
                             )}
                             ref={progressWrapRef}
                             onClick={(e) => e.stopPropagation()}
@@ -2264,7 +2262,7 @@ export function ForYouPlayer({
                             ) : null}
                             <div className="video-player-h5-progress-row">
                                 <div
-                                    className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
+                                    className="video-player-progress-scrub video-player-h5-progress-track-wrap swiper-no-swiping flex-1 flex items-center justify-center min-w-0"
                                     ref={progressRef}
                                     onMouseDown={handleProgressMouseDown}
                                     onMouseMove={handleProgressMouseMove}

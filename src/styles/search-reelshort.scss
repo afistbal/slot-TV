@@ -594,7 +594,49 @@
         }
     }
 
-    /** PC：對標 ReelShort tags 頁底部數字分頁（movie 接口 count / per_page） */
+    /** PC 底部分页：复用 shelf 分页轨（与首页货架 /shelf 一致） */
+    &__paginationWrap {
+        box-sizing: border-box;
+        width: 100%;
+        flex-shrink: 0;
+
+        @media (min-width: 768px) {
+            margin-top: 46px;
+            margin-bottom: 72px;
+        }
+
+        .rs-shelf__pager {
+            width: 100%;
+        }
+
+        .rs-shelf__pagerBtn {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            cursor: pointer;
+
+            &:disabled,
+            &.rs-shelf__pagerBtn--disabled {
+                cursor: not-allowed;
+            }
+        }
+
+        .rs-shelf__pagerNum {
+            margin: 0;
+            padding: 0;
+            border: 0;
+            cursor: pointer;
+            font: inherit;
+            color: inherit;
+
+            &:disabled {
+                cursor: not-allowed;
+                opacity: 0.5;
+            }
+        }
+    }
+
+    /** @deprecated 旧分页样式，保留以免其它引用；Search PC 已改用 rs-shelf__pager */
     &__pagination {
         display: flex;
         width: 100%;

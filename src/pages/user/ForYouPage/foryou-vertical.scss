@@ -130,6 +130,12 @@
     clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
+/** H5 标签横滑：父级 foryou-vertical 为 touch-action:none，此处须恢复 pan-x */
+.foryou-vertical .video-player-h5-tags {
+    touch-action: pan-x !important;
+    -webkit-overflow-scrolling: touch;
+}
+
 .foryou-slide-shell {
     position: relative;
     height: 100%;

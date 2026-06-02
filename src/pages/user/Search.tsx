@@ -4,7 +4,7 @@ import NoContent from '@/components/NoContent';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { Link, useLocation, useNavigate } from 'react-router';
 import {
@@ -261,6 +261,33 @@ function buildSearchPageItems(
     }
     out.push(totalPages);
     return out;
+}
+
+/** 与 `reelshort-dashboard-cabinet-mylist.scss` 中 /search PC 列断点一致 */
+function pcSearchGridColumns(width: number): number {
+    if (width >= 1201) {
+        return 7;
+    }
+    if (width >= 901) {
+        return 6;
+    }
+    return 5;
+}
+
+function usePcSearchGridColumns(enabled: boolean) {
+    const [cols, setCols] = useState(() =>
+        enabled && typeof window !== 'undefined' ? pcSearchGridColumns(window.innerWidth) : 7,
+    );
+    useEffect(() => {
+        if (!enabled) {
+            return;
+        }
+        const onResize = () => setCols(pcSearchGridColumns(window.innerWidth));
+        onResize();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [enabled]);
+    return cols;
 }
 
 type SearchRowItem = {
@@ -937,6 +964,21 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         searchStore.list.length > 0 &&
         (totalKnown ? totalPages > 1 : searchStore.more || searchStore.page > 1);
 
+    const pcGridCols = usePcSearchGridColumns(isPc);
+    /** PC：尚有下一页时裁掉末行未满格（对齐首页 Latest Updates `pcHideIncompleteRow`） */
+    const pcSearchListForRender = useMemo(() => {
+        const rows = searchStore.list;
+        if (!isPc || !canNextPc || rows.length === 0) {
+            return rows;
+        }
+        const remainder = rows.length % pcGridCols;
+        if (remainder === 0) {
+            return rows;
+        }
+        const kept = rows.length - remainder;
+        return kept <= 0 ? rows : rows.slice(0, kept);
+    }, [isPc, canNextPc, searchStore.list, pcGridCols]);
+
     return (
         <div
             className={cn(
@@ -1271,7 +1313,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                         ) : (
                                             <>
                                                 <section className="rs-dc-mylist">
-                                                    {searchStore.list.map((v) => {
+                                                    {pcSearchListForRender.map((v) => {
                                                         const item = toSearchRowItem(v);
                                                         if (!item) {
                                                             return null;
@@ -1283,84 +1325,94 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 </section>
                                                 {showPcPagination ? (
                                                     <nav
-                                                        className="rs-search-page__pagination"
+                                                        className="rs-shelf__pagerWrap rs-search-page__paginationWrap"
                                                         aria-label={intl.formatMessage({
                                                             id: 'pagination',
                                                             defaultMessage: 'Pagination',
                                                         })}
                                                     >
-                                                        <button
-                                                            type="button"
-                                                            className="rs-search-page__paginationBtn rs-search-page__paginationBtn--nav"
-                                                            disabled={!canPrevPc || searchStore.loading}
-                                                            onClick={() =>
-                                                                handlePcPageChange(searchStore.page - 1)
-                                                            }
-                                                            aria-label={intl.formatMessage({
-                                                                id: 'previous_page',
-                                                                defaultMessage: 'Previous page',
-                                                            })}
-                                                        >
-                                                            <ChevronLeft
-                                                                size={20}
-                                                                aria-hidden
-                                                                className="rs-search-page__paginationChevron"
-                                                            />
-                                                        </button>
-                                                        <div className="rs-search-page__paginationPages">
-                                                            {pageItems.length > 0
-                                                                ? pageItems.map((item, idx) =>
-                                                                      item === 'ellipsis' ? (
-                                                                          <span
-                                                                              key={`e-${idx}`}
-                                                                              className="rs-search-page__paginationEllipsis"
-                                                                              aria-hidden
-                                                                          >
-                                                                              …
+                                                        <div className="rs-shelf__pager">
+                                                            <button
+                                                                type="button"
+                                                                className={cn(
+                                                                    'rs-shelf__pagerBtn',
+                                                                    (!canPrevPc || searchStore.loading) &&
+                                                                        'rs-shelf__pagerBtn--disabled',
+                                                                )}
+                                                                disabled={!canPrevPc || searchStore.loading}
+                                                                onClick={() =>
+                                                                    handlePcPageChange(searchStore.page - 1)
+                                                                }
+                                                                aria-label={intl.formatMessage({
+                                                                    id: 'previous_page',
+                                                                    defaultMessage: 'Previous page',
+                                                                })}
+                                                            >
+                                                                <ChevronLeft
+                                                                    className="rs-shelf__pagerIcon"
+                                                                    aria-hidden
+                                                                />
+                                                            </button>
+                                                            <div className="rs-shelf__pagerMid rs-shelf__pagerMid--desktop">
+                                                                {pageItems.length > 0
+                                                                    ? pageItems.map((item, idx) =>
+                                                                          item === 'ellipsis' ? (
+                                                                              <span
+                                                                                  key={`e-${idx}`}
+                                                                                  className="rs-shelf__pagerEllipsis"
+                                                                                  aria-hidden
+                                                                              >
+                                                                                  …
+                                                                              </span>
+                                                                          ) : item === searchStore.page ? (
+                                                                              <span
+                                                                                  key={item}
+                                                                                  className="rs-shelf__pagerCurrent"
+                                                                              >
+                                                                                  {item}
+                                                                              </span>
+                                                                          ) : (
+                                                                              <button
+                                                                                  key={item}
+                                                                                  type="button"
+                                                                                  className="rs-shelf__pagerNum"
+                                                                                  disabled={searchStore.loading}
+                                                                                  onClick={() =>
+                                                                                      handlePcPageChange(item)
+                                                                                  }
+                                                                              >
+                                                                                  {item}
+                                                                              </button>
+                                                                          ),
+                                                                      )
+                                                                    : !totalKnown && searchStore.page > 0 ? (
+                                                                          <span className="rs-shelf__pagerCurrent">
+                                                                              {searchStore.page}
                                                                           </span>
-                                                                      ) : (
-                                                                          <button
-                                                                              key={item}
-                                                                              type="button"
-                                                                              className={cn(
-                                                                                  'rs-search-page__paginationNum',
-                                                                                  item === searchStore.page &&
-                                                                                      'rs-search-page__paginationNum--active',
-                                                                              )}
-                                                                              disabled={searchStore.loading}
-                                                                              onClick={() =>
-                                                                                  handlePcPageChange(item)
-                                                                              }
-                                                                          >
-                                                                              {item}
-                                                                          </button>
-                                                                      ),
-                                                                  )
-                                                                : null}
-                                                            {!totalKnown && searchStore.page > 0 ? (
-                                                                <span className="rs-search-page__paginationMeta">
-                                                                    {searchStore.page}
-                                                                </span>
-                                                            ) : null}
+                                                                      ) : null}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                className={cn(
+                                                                    'rs-shelf__pagerBtn rs-shelf__pagerBtn--next',
+                                                                    (!canNextPc || searchStore.loading) &&
+                                                                        'rs-shelf__pagerBtn--disabled',
+                                                                )}
+                                                                disabled={!canNextPc || searchStore.loading}
+                                                                onClick={() =>
+                                                                    handlePcPageChange(searchStore.page + 1)
+                                                                }
+                                                                aria-label={intl.formatMessage({
+                                                                    id: 'next_page',
+                                                                    defaultMessage: 'Next page',
+                                                                })}
+                                                            >
+                                                                <ChevronRight
+                                                                    className="rs-shelf__pagerIcon"
+                                                                    aria-hidden
+                                                                />
+                                                            </button>
                                                         </div>
-                                                        <button
-                                                            type="button"
-                                                            className="rs-search-page__paginationBtn rs-search-page__paginationBtn--nav"
-                                                            disabled={!canNextPc || searchStore.loading}
-                                                            onClick={() =>
-                                                                handlePcPageChange(searchStore.page + 1)
-                                                            }
-                                                            aria-label={intl.formatMessage({
-                                                                id: 'next_page',
-                                                                defaultMessage: 'Next page',
-                                                            })}
-                                                        >
-                                                            <ChevronRight
-                                                                size={20}
-                                                                aria-hidden
-                                                                className="rs-search-page__paginationChevron"
-                                                            />
-                                                        </button>
                                                     </nav>
                                                 ) : null}
                                             </>

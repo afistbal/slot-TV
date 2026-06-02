@@ -37,6 +37,7 @@ import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
 import { getEpisodePeekFrame, setEpisodePeekFrame } from './episodeFrameQueueStore';
 import { consumeForyouResumeTimeSec } from '@/constants/foryouRoute';
 import { runLoadEpisodeForPlayer } from './videoPlayerLoadEpisode';
+import { reportMovieWatched } from './reportMovieWatched';
 import { markVideoSessionUserUnmuted } from './videoSessionMute';
 import { formatVideoClock } from './videoPlayerTimeFormat';
 import { putEpisodeDetailCache } from './episodeDetailCache';
@@ -1028,6 +1029,10 @@ export function VideoPlayer({
 
         const videoEnded = () => {
             setPlaying(false);
+            if (!hasNextEpisode()) {
+                reportMovieWatched(data.info.id);
+                return;
+            }
             legacyEpisodeAutoplayRef.current = true;
             onSetEpisode(props.index + 1);
         };

@@ -5,6 +5,7 @@ export type ForyouFeedSession = {
     page: number;
     hasMore: boolean;
     maxIndexReached: number;
+    perPage?: number;
 };
 
 let session: ForyouFeedSession | null = null;

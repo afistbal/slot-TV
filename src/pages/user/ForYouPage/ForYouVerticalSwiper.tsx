@@ -89,6 +89,8 @@ export default function ForYouVerticalSwiper() {
 
         loadMore,
 
+        prefetchIfNearEnd,
+
         onActiveIndexChange,
 
         onSwiperTouchEnd,
@@ -109,6 +111,22 @@ export default function ForYouVerticalSwiper() {
         }
         prevListLengthRef.current = list.length;
     }, [list.length, activeIndex]);
+
+    /** H5/PC：滑到倒数第 2 条起持续预拉下一页（loadingMore 结束后若仍在末段会重试） */
+    useEffect(() => {
+        if (loading || !list.length) {
+            return;
+        }
+        prefetchIfNearEnd(activeIndex);
+    }, [activeIndex, list.length, loading, loadingMore, prefetchIfNearEnd]);
+
+    useEffect(() => {
+        const swiper = swiperRef.current;
+        if (!swiper) {
+            return;
+        }
+        swiper.update();
+    }, [list.length]);
 
     useForyouVideoPreload(list, activeIndex, staticBase);
 
@@ -457,6 +475,12 @@ export default function ForYouVerticalSwiper() {
                     }}
 
                     onSlideChangeTransitionStart={onSlideChangeStart}
+
+                    onReachEnd={() => {
+                        if (hasMore) {
+                            void loadMore();
+                        }
+                    }}
 
                     onTouchEnd={!isDesktop ? onSwiperTouchEnd : undefined}
 

@@ -50,8 +50,10 @@ export function ForYouPlayerBottomInfo({ data, episode, episodeNo, onOpenIntrodu
             </div>
             {data.tags.length > 0 ? (
                 <div
-                    className="video-player-h5-tags"
+                    className="video-player-h5-tags swiper-no-swiping"
                     onClick={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchMove={(e) => e.stopPropagation()}
                     onWheel={(e) => e.stopPropagation()}
                 >
                     {data.tags.map((v) => (
