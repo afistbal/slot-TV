@@ -1,5 +1,5 @@
 import { Page } from "@/layouts/user";
-import { FormattedMessage, useIntl } from "react-intl";
+import { useIntl } from "react-intl";
 import { useEffect, useMemo } from "react";
 import { useLocation } from "react-router";
 import userAgreementEn from "@/content/user-agreement.en.txt?raw";
