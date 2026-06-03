@@ -1007,6 +1007,7 @@ export function ReelShortTopNav({
                 </NavLink>
                 <NavLink
                   to={FORYOU_PATH}
+                  state={VIDEO_FROM_HOME_STATE}
                   className={({ isActive }) =>
                     cn(
                       'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',

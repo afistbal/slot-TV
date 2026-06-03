@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 import { buildEpisodeFromFeedItem } from './foryouFeedUtils';
 import iconPlay1 from '@/assets/video/icon_play1@2x.webp';
+import Loader from '@/components/Loader';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
@@ -32,12 +33,19 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 // import UnlockEpisode from '@/widgets/UnlockEpisode';
 // import { useLoadingStore } from "@/stores/loading";
 import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
-import { canNavigateBack, formatFavoriteCountK } from '@/pages/user/VideoPage/videoPlayerUtils';
+import {
+    canNavigateBack,
+    formatFavoriteCountK,
+    isPerformanceNavigationReload,
+} from '@/pages/user/VideoPage/videoPlayerUtils';
 import { getFullscreenElement } from '@/pages/user/VideoPage/videoPlayerFullscreen';
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 import { captureVideoFrameDataUrlWithSeekRetry } from '@/pages/user/VideoPage/videoFramePoster';
 import { getEpisodePeekFrame, setEpisodePeekFrame } from '@/pages/user/VideoPage/episodeFrameQueueStore';
 import { runLoadEpisodeForForYouPlayer } from './forYouPlayerLoadEpisode';
+import { abortForyouVideoLoad, resolveFeedPlaybackUrls } from './foryouFeedMedia';
+import type { ForyouPrewarmMode } from './foryouFeedMedia';
+import { FORYOU_H5_BUFFER_LOADER_DELAY_MS } from './foryouConstants';
 import {
     hasVideoSessionUserUnmuted,
     markVideoSessionUserUnmuted,
@@ -74,6 +82,7 @@ export function ForYouPlayer({
     onSetEpisode,
     fromHomeVideoPlayback,
     legacyEpisodeAutoplayRef,
+    feedColdAutoplayRef,
     playbackPolicy = 'autoplay',
     pcDrawerPanel,
     onPcDrawerPanelChange,
@@ -95,6 +104,7 @@ export function ForYouPlayer({
     feedHasNext = false,
     onFeedPrev,
     onFeedNext,
+    foryouNeighborPreload,
     ...props
 }: {
     id: number;
@@ -117,6 +127,8 @@ export function ForYouPlayer({
     feedHasNext?: boolean;
     onFeedPrev?: () => void;
     onFeedNext?: () => void;
+    /** H5 下一条邻格：挂 feed 源并用 auto 预缓冲，切到该条时 skipReload */
+    foryouNeighborPreload?: ForyouPrewarmMode;
     onSetEpisode: (index: number) => void;
     fullscreenTargetRef: RefObject<HTMLDivElement | null>;
     shouldKeepFullscreen: boolean;
@@ -127,6 +139,8 @@ export function ForYouPlayer({
     fromHomeVideoPlayback: boolean;
     /** 换集走 video-old 式播放（无声优静音策略） */
     legacyEpisodeAutoplayRef: RefObject<boolean>;
+    /** For You 整页 F5 后首条冷启动标记（滑切后由 Swiper 置 false） */
+    feedColdAutoplayRef?: RefObject<boolean>;
     /** 当前集正常播；竖滑相邻格仅挂片+控件，不自动播放 */
     playbackPolicy?: 'autoplay' | 'paused';
     /** PC 右侧抽屉状态（由 VideoVerticalSwiper 持有，换集时不关闭） */
@@ -166,7 +180,9 @@ export function ForYouPlayer({
     const didReportPlaybackStartRef = useRef(false);
     const [controllerVisible, setControllerVisible] = useState(true);
     const [canPlay, setCanPlay] = useState(false);
-    const setWaiting = useCallback((..._args: unknown[]) => {}, []);
+    /** H5 For You：超过 3s 仍未出画时才展示缓冲 loading */
+    const [showBufferLoader, setShowBufferLoader] = useState(false);
+    const bufferLoaderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [framePosterDataUrl, setFramePosterDataUrl] = useState(() => getEpisodePeekFrame(id) ?? '');
     const [current, setCurrent] = useState('00:00');
     const [duration, setDuration] = useState('00:00');
@@ -253,9 +269,25 @@ export function ForYouPlayer({
         shouldIgnoreFullscreenExit,
     } = props;
     const isFullscreenUi = shouldKeepFullscreen || pcFullscreen;
-    /** For You 主格用 auto 预加载；其余与 /video 一致用 metadata */
+    const feedPlaybackUrls = useMemo(() => {
+        if (!isForYouFeed || !feedItem) {
+            return [] as string[];
+        }
+        return resolveFeedPlaybackUrls(feedItem, staticBase);
+    }, [isForYouFeed, feedItem, staticBase]);
+    /** For You / H5：当前条与下一条邻格均 metadata；起播后 +2 隐藏预拉 */
     const videoPreload: 'none' | 'metadata' | 'auto' =
-        isForYouFeed && playbackPolicy !== 'paused' ? 'auto' : 'metadata';
+        foryouNeighborPreload ??
+        (isForYouFeed && playbackPolicy !== 'paused' ? 'metadata' : 'metadata');
+    /** 邻格 paused 也挂 feed 源，切到该条时同源 skipReload，避免重拉 */
+    const forYouVideoSources = isForYouFeed
+        ? playbackSources.length > 0
+            ? playbackSources
+            : feedPlaybackUrls
+        : playbackPolicy === 'paused'
+          ? []
+          : playbackSources;
+    const loadGenerationRef = useRef(0);
     /** For You /video 一致：`<video poster>` 不用剧封，仅截帧 data URL */
     const videoPosterAttr = unlockVisualOnly
         ? undefined
@@ -272,6 +304,49 @@ export function ForYouPlayer({
         !h5UserDismissedUnmuteOverlay &&
         episode?.lock === false &&
         location.search.indexOf('auto_play=0') === -1;
+
+    /** H5 For You：拉流超过 3s 仍未 canplay 时居中 loading */
+    const showForyouH5BufferLoader =
+        isForYouFeed &&
+        !isDesktop &&
+        showBufferLoader &&
+        episode?.lock !== true &&
+        playbackPolicy !== 'paused' &&
+        playbackSources.length > 0;
+
+    const clearForyouBufferLoaderTimer = useCallback(() => {
+        if (bufferLoaderTimerRef.current) {
+            clearTimeout(bufferLoaderTimerRef.current);
+            bufferLoaderTimerRef.current = null;
+        }
+    }, []);
+
+    const clearForyouBufferLoader = useCallback(() => {
+        clearForyouBufferLoaderTimer();
+        setShowBufferLoader(false);
+    }, [clearForyouBufferLoaderTimer]);
+
+    const scheduleForyouBufferLoader = useCallback(() => {
+        if (!isForYouFeed || isDesktop) {
+            return;
+        }
+        clearForyouBufferLoaderTimer();
+        setShowBufferLoader(false);
+        bufferLoaderTimerRef.current = setTimeout(() => {
+            setShowBufferLoader(true);
+        }, FORYOU_H5_BUFFER_LOADER_DELAY_MS);
+    }, [isForYouFeed, isDesktop, clearForyouBufferLoaderTimer]);
+
+    const setWaiting = useCallback(
+        (pending: boolean) => {
+            if (pending) {
+                scheduleForyouBufferLoader();
+            } else {
+                clearForyouBufferLoader();
+            }
+        },
+        [scheduleForyouBufferLoader, clearForyouBufferLoader],
+    );
 
     async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
@@ -395,7 +470,15 @@ export function ForYouPlayer({
 
     async function loadData(episodeId: number, showLoading = false) {
         const suppressPlayback = playbackPolicy === 'paused';
+        const gen = ++loadGenerationRef.current;
+        const shouldAbort = () => gen !== loadGenerationRef.current;
+        const isFeedColdAutoplay =
+            Boolean(isForYouFeed && feedColdAutoplayRef?.current);
         setCanPlay(false);
+        if (isForYouFeed && !suppressPlayback) {
+            scheduleForyouBufferLoader();
+            setVideoFrameReady(false);
+        }
         await runLoadEpisodeForForYouPlayer(
             {
                 videoRef,
@@ -420,12 +503,17 @@ export function ForYouPlayer({
                     viewerIsVip: userStore.isVIP(),
                 },
                 isForYouFeed,
+                isFeedColdAutoplay,
                 onVideoMutedUiSync: setVideoMutedUi,
                 resumeTimeSec: isForYouFeed ? feedResumeTimeSec : undefined,
+                shouldAbort,
             },
             episodeId,
             showLoading,
         );
+        if (isFeedColdAutoplay && feedColdAutoplayRef) {
+            feedColdAutoplayRef.current = false;
+        }
     }
 
     function handleVipEmbedClose() {
@@ -956,6 +1044,7 @@ export function ForYouPlayer({
         setCenterPlayUiEngaged(false);
         setPlaybackStarted(false);
         setVideoFrameReady(false);
+        clearForyouBufferLoader();
         didReportPlaybackStartRef.current = false;
         setFeedInfoData(null);
         setFeedPcDrawerPanel(null);
@@ -967,12 +1056,18 @@ export function ForYouPlayer({
         }
     }, [id, isForYouFeed]);
 
-    /** 与 /video 一致：remount 后若会话已开声，load 完不应再把 muted 设 true */
+    /** PC For You：站内从首页等进入时 load 后试有声；刷新/直链仍走静音冷启动 */
     useEffect(() => {
-        if (!isForYouFeed || !hasVideoSessionUserUnmuted() || episode?.lock === true) {
+        if (!isForYouFeed || episode?.lock === true) {
             return;
         }
         if (playbackPolicy === 'paused') {
+            return;
+        }
+        if (!isDesktop) {
+            return;
+        }
+        if (isPerformanceNavigationReload() || !fromHomeVideoPlayback) {
             return;
         }
         const v = videoRef.current;
@@ -981,52 +1076,25 @@ export function ForYouPlayer({
         }
         v.muted = false;
         setVideoMutedUi(false);
-        if (v.paused) {
-            void v.play()
-                .then(() => setPlaying(true))
-                .catch(() => {});
-        }
-    }, [isForYouFeed, episode?.id, playbackSources.length, playbackPolicy, episode?.lock]);
-
-    /** For You：pending 态 video opacity:0；canplay 后 React 切 visible 再补 play（H5/PC 共用） */
-    useEffect(() => {
-        if (!isForYouFeed) {
-            return;
-        }
-        if (!videoFrameReady || playbackPolicy === 'paused' || episode?.lock === true) {
-            return;
-        }
-        const v = videoRef.current;
-        if (!v || playbackSources.length === 0 || !v.paused) {
-            return;
-        }
-        if (location.search.indexOf('auto_play=0') !== -1) {
-            return;
-        }
-        const kickAutoplay = () => {
-            const el = videoRef.current;
-            if (!el || !el.paused) {
-                return;
-            }
-            void el
-                .play()
-                .then(() => setPlaying(true))
-                .catch(() => {
-                    if (!el.muted) {
-                        el.muted = true;
-                        setVideoMutedUi(true);
-                        void el.play().then(() => setPlaying(true)).catch(() => {});
-                    }
-                });
-        };
-        requestAnimationFrame(kickAutoplay);
+        void v
+            .play()
+            .then(() => setPlaying(true))
+            .catch(() => {
+                v.muted = true;
+                setVideoMutedUi(true);
+                void v
+                    .play()
+                    .then(() => setPlaying(true))
+                    .catch(() => {});
+            });
     }, [
         isForYouFeed,
-        videoFrameReady,
-        playbackPolicy,
+        fromHomeVideoPlayback,
         episode?.id,
-        episode?.lock,
         playbackSources.length,
+        playbackPolicy,
+        episode?.lock,
+        isDesktop,
     ]);
 
     useEffect(() => {
@@ -1040,7 +1108,30 @@ export function ForYouPlayer({
             return;
         }
         void loadData(id);
-    }, [id, feedItem?.ep_id, isForYouFeed, sessionBootstrapReady, playbackPolicy]);
+    }, [id, feedItem?.ep_id, isForYouFeed, sessionBootstrapReady, fromHomeVideoPlayback]);
+
+    const prevPlaybackPolicyRef = useRef(playbackPolicy);
+
+    useEffect(() => {
+        if (!isForYouFeed || !sessionBootstrapReady || !feedItem) {
+            return;
+        }
+        const prev = prevPlaybackPolicyRef.current;
+        prevPlaybackPolicyRef.current = playbackPolicy;
+        if (prev === playbackPolicy) {
+            return;
+        }
+        if (playbackPolicy === 'paused') {
+            const v = videoRef.current;
+            v?.pause();
+            setPlaying(false);
+            if (isForYouFeed && v) {
+                abortForyouVideoLoad(v);
+            }
+            return;
+        }
+        void loadData(feedItem.ep_id);
+    }, [playbackPolicy, isForYouFeed, sessionBootstrapReady, feedItem?.ep_id]);
 
     useEffect(() => {
         const el = videoRef.current;
@@ -1093,12 +1184,17 @@ export function ForYouPlayer({
 
     useEffect(() => {
         return () => {
+            loadGenerationRef.current += 1;
             if (autoplayKickTimerRef.current) {
                 clearTimeout(autoplayKickTimerRef.current);
                 autoplayKickTimerRef.current = null;
             }
+            if (isForYouFeed) {
+                abortForyouVideoLoad(videoRef.current);
+            }
+            clearForyouBufferLoader();
         };
-    }, []);
+    }, [isForYouFeed, clearForyouBufferLoader]);
 
     useEffect(() => {
         setFramePosterDataUrl(getEpisodePeekFrame(id) ?? '');
@@ -1203,7 +1299,7 @@ export function ForYouPlayer({
     }, [isDesktop, activePcDrawerPanel, activePcDrawerEntered]);
 
     useEffect(() => {
-        if (loading || !episode || episode.lock || playbackSources.length === 0) {
+        if (isForYouFeed || loading || !episode || episode.lock || playbackSources.length === 0) {
             return;
         }
         const v = videoRef.current;
@@ -1221,7 +1317,7 @@ export function ForYouPlayer({
         };
         v.addEventListener('loadeddata', onLoadedData);
         return () => v.removeEventListener('loadeddata', onLoadedData);
-    }, [loading, id, episode?.id, episode?.lock, playbackSources]);
+    }, [isForYouFeed, loading, id, episode?.id, episode?.lock, playbackSources]);
 
     useEffect(() => {
         if (loading) {
@@ -1313,7 +1409,7 @@ export function ForYouPlayer({
 
         const videoCanPlay = () => {
             setCanPlay(true);
-            setWaiting(false);
+            clearForyouBufferLoader();
             syncUiFromVideoTime();
             onEpisodeFullscreenReady();
             if (isForYouFeed) {
@@ -1324,8 +1420,15 @@ export function ForYouPlayer({
 
         v.addEventListener('canplay', videoCanPlay);
 
+        const videoWaiting = () => {
+            if (playing) {
+                scheduleForyouBufferLoader();
+            }
+        };
+        v.addEventListener('waiting', videoWaiting);
+
         const videoPlaying = () => {
-            setWaiting(false);
+            clearForyouBufferLoader();
             setPlaying(true);
             if (!didReportPlaybackStartRef.current) {
                 didReportPlaybackStartRef.current = true;
@@ -1345,7 +1448,7 @@ export function ForYouPlayer({
         v.addEventListener('volumechange', syncMutedFromVideo);
 
         const videoError = () => {
-            setWaiting(false);
+            clearForyouBufferLoader();
             setPlaying(false);
             if (import.meta.env.DEV) {
                 console.warn('[Video] media error', videoRef.current?.error);
@@ -1384,6 +1487,7 @@ export function ForYouPlayer({
             v.removeEventListener('loadedmetadata', onLoadedMetadata);
             v.removeEventListener('ended', videoEnded);
             v.removeEventListener('canplay', videoCanPlay);
+            v.removeEventListener('waiting', videoWaiting);
             v.removeEventListener('playing', videoPlaying);
             v.removeEventListener('volumechange', syncMutedFromVideo);
             v.removeEventListener('error', videoError);
@@ -1671,7 +1775,7 @@ export function ForYouPlayer({
                                 disableRemotePlayback
                                 onContextMenu={(e) => e.preventDefault()}
                             >
-                                {playbackSources.map((srcUrl, i) => (
+                                {forYouVideoSources.map((srcUrl, i) => (
                                     <source key={`${id}-${i}`} src={srcUrl} type="video/mp4" />
                                 ))}
                             </video>
@@ -2057,10 +2161,15 @@ export function ForYouPlayer({
                             disableRemotePlayback
                             onContextMenu={(e) => e.preventDefault()}
                         >
-                            {playbackSources.map((srcUrl, i) => (
+                            {forYouVideoSources.map((srcUrl, i) => (
                                 <source key={`${id}-${i}`} src={srcUrl} type="video/mp4" />
                             ))}
                         </video>
+                        {showForyouH5BufferLoader ? (
+                            <div className="foryou-player-buffer-loader" aria-busy="true">
+                                <Loader color="light" />
+                            </div>
+                        ) : null}
                     </div>
                 </div>
                 {!isDesktop &&

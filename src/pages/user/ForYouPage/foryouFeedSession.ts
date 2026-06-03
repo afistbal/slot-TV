@@ -24,3 +24,7 @@ export function patchForyouFeedSession(patch: Partial<ForyouFeedSession>): void 
     }
     session = { ...session, ...patch };
 }
+
+export function clearForyouFeedSession(): void {
+    session = null;
+}

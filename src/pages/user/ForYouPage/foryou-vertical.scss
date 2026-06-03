@@ -2,6 +2,17 @@
     touch-action: none;
 }
 
+/** H5 首屏 loading / 空态 / 错误：占满视口并居中 Loader */
+.foryou-vertical--fullscreen-boot {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+}
+
 @media (max-width: 767px) {
     /** 避免 100vw 含滚动条宽度导致右侧约 2px 缝；与 fixed inset-0 全屏一致 */
     html:has(.foryou-vertical),
@@ -148,6 +159,30 @@
     position: absolute;
     inset: 0;
     z-index: 2;
+}
+
+/** H5 缓冲：仅居中转圈，不铺黑底（底栏/侧栏 UI 保持可见） */
+.foryou-player-buffer-loader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 15;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+
+    > .flex {
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        flex: none !important;
+    }
+}
+
+.foryou-feed-player .video-player-h5-video-stage.foryou-player-video-stage--pending {
+    background-color: transparent;
 }
 
 .foryou-player-mount .foryou-player-video-stage--pending video {

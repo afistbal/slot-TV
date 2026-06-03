@@ -1,29 +1,42 @@
 import { useEffect } from 'react';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
-import { prewarmForyouFeedItem } from './foryouFeedMedia';
+import { prewarmForyouFeedItem, syncForyouPrewarmWindow } from './foryouFeedMedia';
 
-/** 预拉当前条上下各 1～2 条的 mp4 metadata（不挂 ForYouPlayer，省内存） */
+/** 下一条由邻格 ForYouPlayer（metadata）；隐藏 video 负责 +2 */
+const FORYOU_HIDDEN_PRELOAD_OFFSET = 2;
+
+/**
+ * For You：当前条 canplay 后，隐藏预拉 anchor+2（metadata）。
+ * anchor+1 由邻格 ForYouPlayer 承担；H5 仅挂载 [active, active+1] 不挂上一集。
+ */
 export function useForyouVideoPreload(
     list: IForYouFeedItem[],
-    activeIndex: number,
+    anchorIndex: number,
     staticBase: string,
+    anchorPlaybackReady: boolean,
 ) {
     useEffect(() => {
-        if (!list.length) {
+        const keepIds = new Set<number>();
+        for (let i = Math.max(0, anchorIndex - 1); i <= anchorIndex + 2; i += 1) {
+            const item = list[i];
+            if (item) {
+                keepIds.add(item.ep_id);
+            }
+        }
+        syncForyouPrewarmWindow([...keepIds]);
+
+        if (!anchorPlaybackReady || !list.length || anchorIndex < 0) {
             return;
         }
-        const cleanups: Array<() => void> = [];
-        for (const offset of [-1, 1, 2]) {
-            const idx = activeIndex + offset;
-            if (idx < 0 || idx >= list.length) {
-                continue;
-            }
-            cleanups.push(prewarmForyouFeedItem(list[idx], staticBase));
+
+        const idx = anchorIndex + FORYOU_HIDDEN_PRELOAD_OFFSET;
+        if (idx < 0 || idx >= list.length) {
+            return;
         }
+
+        const detach = prewarmForyouFeedItem(list[idx], staticBase, 'metadata');
         return () => {
-            for (const fn of cleanups) {
-                fn();
-            }
+            detach();
         };
-    }, [list, activeIndex, staticBase]);
+    }, [list, anchorIndex, staticBase, anchorPlaybackReady]);
 }

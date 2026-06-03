@@ -13,7 +13,7 @@ import { fetchForyouList, type ForyouFetchMode } from './fetchForyouList';
 import { mergeForyouFeedItems } from './foryouFeedMerge';
 import { clearForyouFeedProgress } from './foryouFeedProgress';
 import {
-    getForyouFeedSession,
+    clearForyouFeedSession,
     patchForyouFeedSession,
     setForyouFeedSession,
 } from './foryouFeedSession';
@@ -54,16 +54,15 @@ function syncSession(
 }
 
 export function useForyouFeed(sessionBootstrapReady: boolean) {
-    const cached = getForyouFeedSession();
-    const [list, setList] = useState<IForYouFeedItem[]>(() => cached?.list ?? []);
-    const [loading, setLoading] = useState(() => !cached?.list.length);
+    const [list, setList] = useState<IForYouFeedItem[]>([]);
+    const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [hasMore, setHasMore] = useState(() => cached?.hasMore ?? true);
-    const pageRef = useRef(cached?.page ?? 1);
-    const perPageRef = useRef(cached?.perPage ?? FORYOU_DEFAULT_PER_PAGE);
-    const maxIndexReachedRef = useRef(cached?.maxIndexReached ?? 0);
+    const [hasMore, setHasMore] = useState(true);
+    const pageRef = useRef(1);
+    const perPageRef = useRef(FORYOU_DEFAULT_PER_PAGE);
+    const maxIndexReachedRef = useRef(0);
     const listRef = useRef(list);
     listRef.current = list;
     const fetchLockRef = useRef(false);
@@ -95,19 +94,8 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
         if (!sessionBootstrapReady) {
             return;
         }
-        const session = getForyouFeedSession();
-        if (session?.list.length) {
-            setLoading(false);
-            setLoadError(null);
-            pageRef.current = session.page;
-            perPageRef.current = session.perPage ?? FORYOU_DEFAULT_PER_PAGE;
-            /** 修复旧 session 误标 hasMore:false（满页仍应可续拉） */
-            if (!session.hasMore && session.list.length >= perPageRef.current) {
-                setHasMore(true);
-                patchForyouFeedSession({ hasMore: true });
-            }
-            return;
-        }
+        /** 避免沿用过期列表（含曾启用的 demo 写死数据） */
+        clearForyouFeedSession();
         let cancelled = false;
         setLoading(true);
         void runFetch('initial').then((res) => {

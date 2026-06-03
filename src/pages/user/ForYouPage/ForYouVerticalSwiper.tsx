@@ -6,7 +6,7 @@ import type { Swiper as SwiperClass } from 'swiper';
 
 import 'swiper/css';
 
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 
 import Loader from '@/components/Loader';
@@ -16,9 +16,9 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 
 import { useRootStore } from '@/stores/root';
 
-import { useConfigStore } from '@/stores/config';
-
 import { buildPlayerDataFromFeedItem } from './foryouFeedUtils';
+import { abortForyouVideoLoad, ensureForyouMediaPreconnect } from './foryouFeedMedia';
+import { useConfigStore } from '@/stores/config';
 
 import { ForYouPlayer } from './ForYouPlayer';
 
@@ -26,9 +26,8 @@ import { markVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSession
 
 import { navigateFromForyouToVideo } from './foryouNavigateToVideo';
 
-import { useForyouVideoPreload } from './useForyouVideoPreload';
-
 import { useForyouFeed } from './useForyouFeed';
+import { useForyouVideoPreload } from './useForyouVideoPreload';
 import {
     getForyouFeedProgressSec,
     setForyouFeedProgressSec,
@@ -36,6 +35,7 @@ import {
 
 import { readVerticalPcKeyNavAction } from '@/pages/user/VideoPage/videoVerticalPcKeyNav';
 import { bindVerticalPcWheelNav } from '@/pages/user/VideoPage/videoVerticalPcWheelNav';
+import { canNavigateBack, isPerformanceNavigationReload } from '@/pages/user/VideoPage/videoPlayerUtils';
 
 import './foryou-vertical.scss';
 
@@ -50,20 +50,34 @@ const FORYOU_PC_VERTICAL_NAV_ENABLED = true;
 export default function ForYouVerticalSwiper() {
     const isDesktop = useMinWidth768();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
-
-    const staticBase = String(useConfigStore((s) => s.config['static'] ?? ''));
+    const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
+    const location = useLocation();
+    /** 显式 state，或站内路由栈已有上一页（非整页刷新）：PC/H5 均可先试有声自动播 */
+    const fromHomeVideoPlayback =
+        Boolean(
+            (location.state as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
+        ) ||
+        (typeof window !== 'undefined' &&
+            canNavigateBack() &&
+            !isPerformanceNavigationReload());
 
     const navigate = useNavigate();
 
     const fullscreenTargetRef = useRef<HTMLDivElement>(null);
 
     const legacyEpisodeAutoplayRef = useRef(false);
+    /** F5 整页刷新后仅首条走静音冷启动；滑切后置 false（navigation.type 在整页会话内恒为 reload） */
+    const feedColdAutoplayRef = useRef(
+        typeof window !== 'undefined' && isPerformanceNavigationReload(),
+    );
 
     const swiperRef = useRef<SwiperClass | null>(null);
 
     const wasRefreshingRef = useRef(false);
 
     const [activeIndex, setActiveIndex] = useState(0);
+    /** 当前条已起播后再预拉后 2 条，避免首屏 3 路 mp4 并发 */
+    const [anchorPlaybackReady, setAnchorPlaybackReady] = useState(false);
     const activeIndexRef = useRef(activeIndex);
     activeIndexRef.current = activeIndex;
     const listLengthRef = useRef(0);
@@ -97,7 +111,15 @@ export default function ForYouVerticalSwiper() {
 
     } = useForyouFeed(sessionBootstrapReady);
 
+    useEffect(() => {
+        setAnchorPlaybackReady(false);
+    }, [activeIndex]);
 
+    const handleAnchorPlaybackStarted = useCallback(() => {
+        setAnchorPlaybackReady(true);
+    }, []);
+
+    useForyouVideoPreload(list, activeIndex, staticBase, anchorPlaybackReady);
 
     useEffect(() => {
         if (list.length <= prevListLengthRef.current) {
@@ -128,8 +150,6 @@ export default function ForYouVerticalSwiper() {
         swiper.update();
     }, [list.length]);
 
-    useForyouVideoPreload(list, activeIndex, staticBase);
-
     useEffect(() => {
 
         useRootStore.getState().setTheme('dark');
@@ -141,6 +161,10 @@ export default function ForYouVerticalSwiper() {
         };
 
     }, []);
+
+    useEffect(() => {
+        ensureForyouMediaPreconnect(staticBase);
+    }, [staticBase]);
 
 
 
@@ -176,8 +200,12 @@ export default function ForYouVerticalSwiper() {
 
     const onSlideChangeStart = useCallback(
         (swiper: SwiperClass) => {
+            feedColdAutoplayRef.current = false;
+
             const prevItem = list[swiper.previousIndex];
             saveProgressForItem(prevItem, videoResumeRef.current);
+            abortForyouVideoLoad(videoResumeRef.current);
+            videoResumeRef.current = null;
 
             const next = swiper.activeIndex;
 
@@ -351,7 +379,7 @@ export default function ForYouVerticalSwiper() {
                 </div>
             </div>
         ) : (
-            <div className="foryou-vertical flex h-full w-full items-center justify-center bg-black">
+            <div className="foryou-vertical foryou-vertical--fullscreen-boot">
                 <Loader color="light" />
             </div>
         );
@@ -371,7 +399,7 @@ export default function ForYouVerticalSwiper() {
                 {errBody}
             </div>
         ) : (
-            <div className="foryou-vertical flex h-full w-full">{errBody}</div>
+            <div className="foryou-vertical foryou-vertical--fullscreen-boot">{errBody}</div>
         );
     }
 
@@ -387,7 +415,7 @@ export default function ForYouVerticalSwiper() {
                 {emptyBody}
             </div>
         ) : (
-            <div className="foryou-vertical flex h-full w-full">{emptyBody}</div>
+            <div className="foryou-vertical foryou-vertical--fullscreen-boot">{emptyBody}</div>
         );
     }
 
@@ -488,6 +516,12 @@ export default function ForYouVerticalSwiper() {
 
                     {list.map((item, i) => {
                         const isActive = i === activeIndex;
+                        const inPlayerWindow = isDesktop
+                            ? i >= activeIndex - 1 && i <= activeIndex + 1
+                            : i >= activeIndex && i <= activeIndex + 1;
+                        /** H5 下一条邻格：metadata 预拉（+2 由隐藏 video）；勿 auto 抢当前条带宽 */
+                        const foryouNeighborPreload =
+                            !isDesktop && i === activeIndex + 1 ? ('metadata' as const) : undefined;
 
                         return (
 
@@ -501,15 +535,25 @@ export default function ForYouVerticalSwiper() {
 
                                 <div className="foryou-slide-shell">
 
-                                    {isActive ? (
+                                    {inPlayerWindow ? (
 
-                                        <div className="foryou-player-mount">
+                                        <div
+                                            className="foryou-player-mount"
+                                            style={{
+                                                visibility: isActive ? 'visible' : 'hidden',
+                                                pointerEvents: isActive ? 'auto' : 'none',
+                                            }}
+                                        >
 
                                             <ForYouPlayer
 
                                                 key={item.ep_id}
 
                                                 id={item.ep_id}
+
+                                                playbackPolicy={
+                                                    isActive ? 'autoplay' : 'paused'
+                                                }
 
                                                 index={0}
 
@@ -529,7 +573,17 @@ export default function ForYouVerticalSwiper() {
 
                                                 hideCenterPlayUntilFirstPlay
 
+                                                foryouNeighborPreload={foryouNeighborPreload}
+
                                                 onWatchFullSeries={handleWatchFullSeries}
+
+                                                onPlaybackStarted={
+                                                    isActive ? handleAnchorPlaybackStarted : undefined
+                                                }
+
+                                                onVideoCanPlay={
+                                                    isActive ? handleAnchorPlaybackStarted : undefined
+                                                }
 
                                                 feedHasPrev={activeIndex > 0}
 
@@ -539,11 +593,13 @@ export default function ForYouVerticalSwiper() {
 
                                                 onFeedNext={handleFeedNext}
 
-                                                onVideoElementReady={(el) => {
-
-                                                    videoResumeRef.current = el;
-
-                                                }}
+                                                onVideoElementReady={
+                                                    isActive
+                                                        ? (el) => {
+                                                              videoResumeRef.current = el;
+                                                          }
+                                                        : undefined
+                                                }
 
                                                 onSetEpisode={() => {}}
 
@@ -557,7 +613,9 @@ export default function ForYouVerticalSwiper() {
 
                                                 shouldIgnoreFullscreenExit={() => false}
 
-                                                fromHomeVideoPlayback
+                                                fromHomeVideoPlayback={fromHomeVideoPlayback}
+
+                                                feedColdAutoplayRef={feedColdAutoplayRef}
 
                                                 legacyEpisodeAutoplayRef={legacyEpisodeAutoplayRef}
 
