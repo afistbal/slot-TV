@@ -5,9 +5,8 @@ import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from './episodeDetail
 import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
 import { SPEED } from './videoPlayerConstants';
 import { hasVideoSessionUserUnmuted } from './videoSessionMute';
-import { isPerformanceNavigationReload } from './videoPlayerUtils';
+import { isEpisodeDetailLocked, isPerformanceNavigationReload } from './videoPlayerUtils';
 import { applyVideoResumeTime } from './applyVideoResumeTime';
-
 export type LoadEpisodeRuntime = {
     videoRef: RefObject<HTMLVideoElement | null>;
     subtitlesRef: RefObject<VTTCue[]>;
@@ -32,6 +31,8 @@ export type LoadEpisodeRuntime = {
     episodeFetchOpts?: EpisodeFetchOpts;
     /** For You → video：续播进度（秒） */
     resumeTimeSec?: number;
+    /** 单集 lock 写回选集列表（movie/info `locked`） */
+    onEpisodeLockSync?: (ep: IPlayerEpisode) => void;
 };
 
 export async function runLoadEpisodeForPlayer(
@@ -47,9 +48,13 @@ export async function runLoadEpisodeForPlayer(
         rt.setLoading(false);
         rt.setEpisode(d);
         rt.setShowTapToUnmute(false);
+        /** 邻格 paused 预拉勿写回列表，避免用旧 lock 覆盖当前集已解锁状态 */
+        if (!rt.suppressPlayback) {
+            rt.onEpisodeLockSync?.(d);
+        }
 
         /** 锁定集（如 VIP 非会员）：只展示锁页，不拉字幕、不挂片源、不 play（滑到该集时再走本分支一次即可） */
-        if (d.lock === true) {
+        if (isEpisodeDetailLocked(d.lock)) {
             rt.setPlaybackSources([]);
             rt.subtitlesRef.current = [];
             if (rt.autoplayKickTimerRef.current) {

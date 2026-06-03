@@ -101,7 +101,7 @@ export function VideoPlayer({
     onPcDrawerEnteredChange: (entered: boolean) => void;
     pcDrawerClosingRef: RefObject<boolean>;
     /** 单集详情 `lock` 写回 `movie/info` 列表的 `locked`，避免选集抽屉仍显示上锁 */
-    onEpisodeLockSync?: (ep: IPlayerEpisode) => void;
+    onEpisodeLockSync?: (ep: IPlayerEpisode, listIndex: number) => void;
 }) {
     // const loadingStore = useLoadingStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
@@ -364,6 +364,9 @@ export function VideoPlayer({
                     viewerIsVip: userStore.isVIP(),
                 },
                 resumeTimeSec,
+                onEpisodeLockSync: onEpisodeLockSync
+                    ? (ep) => onEpisodeLockSync(ep, props.index)
+                    : undefined,
             },
             episodeId,
             showLoading,
@@ -381,10 +384,10 @@ export function VideoPlayer({
     }
 
     useEffect(() => {
-        if (episode) {
-            onEpisodeLockSync?.(episode);
+        if (episode && playbackPolicy !== 'paused') {
+            onEpisodeLockSync?.(episode, props.index);
         }
-    }, [episode?.id, episode?.lock, onEpisodeLockSync]);
+    }, [episode?.id, episode?.lock, onEpisodeLockSync, playbackPolicy, props.index]);
 
     function handleSetEpisode(index: number) {
         onSetEpisode(index);

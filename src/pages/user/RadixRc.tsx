@@ -22,7 +22,11 @@ import iconSuccessful from '@/assets/icons/shopping-pay/icon_successful.png';
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import Countdown from '@/widgets/Countdown';
 import coinIcon from '@/assets/profile/icon_coin@2x.png';
-import { formatSubscriptionPlanRenewText } from '@/lib/subscriptionPlanRenewText';
+import {
+    formatSubscriptionPlanRenewText,
+    isWeeklySubscriptionPlan,
+    resolveSubscriptionPeriod,
+} from '@/lib/subscriptionPlanRenewText';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
 import { MembershipInlinePanel } from '@/pages/user/Membership';
@@ -551,11 +555,12 @@ export default function RadixRc({
             ) : null}
 
             <div className={cn('rs-shopping__plans', 'rs-shopping__plans--vipSubscriptions')}>
-                {(loadingProducts ? [] : planProducts).map((p, planIndex) => {
+                {(loadingProducts ? [] : planProducts).map((p) => {
                     const enableInteraction = true;
-                    const isFirstPlan = planIndex === 0;
+                    const planPeriod = resolveSubscriptionPeriod(p.name);
+                    const isWeeklyPlan = planPeriod === 'weekly';
                     const planBenefitIcons = isReelshortH5StoreUi
-                        ? isFirstPlan
+                        ? isWeeklyPlan
                             ? shoppingVipBenefitIcons.weekly
                             : shoppingVipBenefitIcons.yearly
                         : {
@@ -609,8 +614,8 @@ export default function RadixRc({
                             }
                             className={cn(
                                 'rs-shopping__plan',
-                                isFirstPlan && 'rs-shopping__plan--weekly',
-                                !isFirstPlan && 'rs-shopping__plan--yearly',
+                                isWeeklyPlan && 'rs-shopping__plan--weekly',
+                                planPeriod === 'yearly' && 'rs-shopping__plan--yearly',
                                 currentId === p.id && 'rs-shopping__plan--selected',
                                 !enableInteraction && 'cursor-default',
                             )}
@@ -621,13 +626,15 @@ export default function RadixRc({
                                     style={{ backgroundImage: `url(${vipCardBg})` }}
                                 />
 
-                                {isReelshortH5StoreUi && showCountdown ? (
+                                {isReelshortH5StoreUi &&
+                                showCountdown &&
+                                isWeeklySubscriptionPlan(p.name) ? (
                                     <div className="rs-shopping__planCountdown">
                                         <Countdown variant="planCorner" />
                                     </div>
                                 ) : null}
 
-                                {!isReelshortH5StoreUi ? (
+                                {!isReelshortH5StoreUi && isWeeklySubscriptionPlan(p.name) ? (
                                     <div className="rs-shopping__planOfferBadge">
                                         <FormattedMessage
                                             id="limited_time_offer"
@@ -647,7 +654,7 @@ export default function RadixRc({
                                 <div className="rs-shopping__planBody">
                                     <div className="rs-shopping__planText">
                                         <div className="rs-shopping__planName">
-                                            {isReelshortH5StoreUi && isFirstPlan
+                                            {isReelshortH5StoreUi && isWeeklyPlan
                                                 ? intl.formatMessage({ id: 'shopping_vip_weekly_special_title' })
                                                 : intl.formatMessage({ id: `${p.name}_subscription` })}
                                         </div>

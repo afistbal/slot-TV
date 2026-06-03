@@ -27,7 +27,11 @@ import { getEpisodeIdsToPrewarm } from './episodePrewarm';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
 import { readVerticalPcKeyNavAction } from './videoVerticalPcKeyNav';
 import { bindVerticalPcWheelNav } from './videoVerticalPcWheelNav';
-import { canNavigateBack, isPerformanceNavigationReload } from './videoPlayerUtils';
+import {
+    canNavigateBack,
+    episodeListLockedFromDetail,
+    isPerformanceNavigationReload,
+} from './videoPlayerUtils';
 import { VideoPlayerPcNeighborSlideShell } from './views/VideoPlayerPcNeighborSlideShell';
 import { cn } from '@/lib/utils';
 import type { PcDrawerPanel } from './videoPlayerPcDrawerMotion';
@@ -108,12 +112,25 @@ export default function VideoVerticalSwiper() {
         pcDrawerClosingRef,
     };
 
-    const syncEpisodeListLock = useCallback((ep: IPlayerEpisode) => {
-        const locked = ep.lock ? 1 : 0;
+    const syncEpisodeListLock = useCallback((ep: IPlayerEpisode, listIndex?: number) => {
+        const locked = episodeListLockedFromDetail(ep.lock);
         setData((prev) => {
-            if (!prev) return prev;
-            const i = prev.episodes.findIndex((e) => e.id === ep.id);
-            if (i < 0 || prev.episodes[i].locked === locked) return prev;
+            if (!prev) {
+                return prev;
+            }
+            let i =
+                listIndex != null && listIndex >= 0 && listIndex < prev.episodes.length
+                    ? listIndex
+                    : -1;
+            if (i < 0) {
+                i = prev.episodes.findIndex((e) => e.id === ep.id);
+            }
+            if (i < 0) {
+                i = prev.episodes.findIndex((e) => e.episode === ep.episode);
+            }
+            if (i < 0 || prev.episodes[i].locked === locked) {
+                return prev;
+            }
             const episodes = prev.episodes.slice();
             episodes[i] = { ...episodes[i], locked };
             return { ...prev, episodes };

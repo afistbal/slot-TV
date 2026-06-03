@@ -14,6 +14,7 @@ import { mergeForyouFeedItems } from './foryouFeedMerge';
 import { clearForyouFeedProgress } from './foryouFeedProgress';
 import {
     clearForyouFeedSession,
+    getForyouFeedSession,
     patchForyouFeedSession,
     setForyouFeedSession,
 } from './foryouFeedSession';
@@ -49,27 +50,44 @@ function syncSession(
     hasMore: boolean,
     maxIndexReached: number,
     perPage: number,
+    activeIndex?: number,
 ): void {
-    setForyouFeedSession({ list, page, hasMore, maxIndexReached, perPage });
+    const prev = getForyouFeedSession();
+    setForyouFeedSession({
+        list,
+        page,
+        hasMore,
+        maxIndexReached,
+        perPage,
+        activeIndex: activeIndex ?? prev?.activeIndex ?? 0,
+    });
 }
 
 export function useForyouFeed(sessionBootstrapReady: boolean) {
-    const [list, setList] = useState<IForYouFeedItem[]>([]);
-    const [loading, setLoading] = useState(true);
+    const cachedOnInit = getForyouFeedSession();
+    const [list, setList] = useState<IForYouFeedItem[]>(() => cachedOnInit?.list ?? []);
+    const [loading, setLoading] = useState(() => !(cachedOnInit?.list?.length));
+    const [hasMore, setHasMore] = useState(() => cachedOnInit?.hasMore ?? true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
-    const pageRef = useRef(1);
-    const perPageRef = useRef(FORYOU_DEFAULT_PER_PAGE);
-    const maxIndexReachedRef = useRef(0);
+    const pageRef = useRef(cachedOnInit?.page ?? 1);
+    const perPageRef = useRef(cachedOnInit?.perPage ?? FORYOU_DEFAULT_PER_PAGE);
+    const maxIndexReachedRef = useRef(cachedOnInit?.maxIndexReached ?? 0);
     const listRef = useRef(list);
     listRef.current = list;
     const fetchLockRef = useRef(false);
     const pullRefreshLockRef = useRef(false);
 
     const applyList = useCallback(
-        (rows: IForYouFeedItem[], page: number, nextHasMore: boolean, maxIdx: number, perPage?: number) => {
+        (
+            rows: IForYouFeedItem[],
+            page: number,
+            nextHasMore: boolean,
+            maxIdx: number,
+            perPage?: number,
+            resetActiveIndex = false,
+        ) => {
             if (perPage != null && perPage > 0) {
                 perPageRef.current = perPage;
             }
@@ -77,7 +95,14 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
             maxIndexReachedRef.current = maxIdx;
             setList(rows);
             setHasMore(nextHasMore);
-            syncSession(rows, page, nextHasMore, maxIdx, perPageRef.current);
+            syncSession(
+                rows,
+                page,
+                nextHasMore,
+                maxIdx,
+                perPageRef.current,
+                resetActiveIndex ? 0 : undefined,
+            );
         },
         [],
     );
@@ -94,8 +119,19 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
         if (!sessionBootstrapReady) {
             return;
         }
-        /** 避免沿用过期列表（含曾启用的 demo 写死数据） */
-        clearForyouFeedSession();
+
+        const cached = getForyouFeedSession();
+        if (cached?.list?.length) {
+            pageRef.current = cached.page;
+            perPageRef.current = cached.perPage ?? FORYOU_DEFAULT_PER_PAGE;
+            maxIndexReachedRef.current = cached.maxIndexReached;
+            setList(cached.list);
+            setHasMore(cached.hasMore);
+            setLoadError(null);
+            setLoading(false);
+            return;
+        }
+
         let cancelled = false;
         setLoading(true);
         void runFetch('initial').then((res) => {
@@ -109,7 +145,7 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
             } else {
                 const rows = res.payload.data;
                 const pp = res.payload.per_page ?? res.payload.count ?? FORYOU_DEFAULT_PER_PAGE;
-                applyList(rows, res.payload.current_page ?? 1, inferHasMore(res.payload, pp), 0, pp);
+                applyList(rows, res.payload.current_page ?? 1, inferHasMore(res.payload, pp), 0, pp, true);
                 setLoadError(null);
             }
             setLoading(false);
@@ -142,7 +178,8 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
             const rows = res.payload.data;
             const pp = res.payload.per_page ?? res.payload.count ?? perPageRef.current;
             clearForyouFeedProgress();
-            applyList(rows, res.payload.current_page ?? 1, inferHasMore(res.payload, pp), 0, pp);
+            clearForyouFeedSession();
+            applyList(rows, res.payload.current_page ?? 1, inferHasMore(res.payload, pp), 0, pp, true);
             setLoadError(null);
         } finally {
             setRefreshing(false);
@@ -194,6 +231,7 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
     const onActiveIndexChange = useCallback(
         (index: number) => {
             noteIndexReached(index);
+            patchForyouFeedSession({ activeIndex: index });
             prefetchIfNearEnd(index);
         },
         [noteIndexReached, prefetchIfNearEnd],

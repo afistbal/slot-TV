@@ -42,7 +42,10 @@ import { getFullscreenElement } from '@/pages/user/VideoPage/videoPlayerFullscre
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 import { captureVideoFrameDataUrlWithSeekRetry } from '@/pages/user/VideoPage/videoFramePoster';
 import { getEpisodePeekFrame, setEpisodePeekFrame } from '@/pages/user/VideoPage/episodeFrameQueueStore';
-import { runLoadEpisodeForForYouPlayer } from './forYouPlayerLoadEpisode';
+import {
+    runLoadEpisodeForForYouPlayer,
+    tryForyouWarmStartPlayback,
+} from './forYouPlayerLoadEpisode';
 import {
     abortForyouVideoLoad,
     resyncForyouVideoSources,
@@ -291,10 +294,10 @@ export function ForYouPlayer({
         }
         return resolveFeedPlaybackUrls(feedItem, staticBase);
     }, [isForYouFeed, feedItem, staticBase]);
-    /** For You：当前条与下 1/2 邻格 metadata；窗口外再下 1 条由隐藏 video 预拉 */
+    /** For You：当前条 autoplay 用 auto；邻格由 foryouNeighborPreload 分级 */
     const videoPreload: 'none' | 'metadata' | 'auto' =
         foryouNeighborPreload ??
-        (isForYouFeed && playbackPolicy !== 'paused' ? 'metadata' : 'metadata');
+        (isForYouFeed && playbackPolicy === 'autoplay' ? 'auto' : 'metadata');
     /** 邻格 paused 也挂 feed 源，切到该条时同源 skipReload，避免重拉 */
     const forYouVideoSources = isForYouFeed
         ? playbackSources.length > 0
@@ -503,10 +506,47 @@ export function ForYouPlayer({
         hideController();
     }
 
+    function buildForyouLoadRuntime(
+        gen: number,
+        suppressPlayback: boolean,
+        isFeedColdAutoplay: boolean,
+    ) {
+        const shouldAbort = () => gen !== loadGenerationRef.current;
+        return {
+            videoRef,
+            subtitlesRef,
+            autoplayKickTimerRef,
+            getStaticBase: () => String(configStore.config['static'] ?? ''),
+            speed,
+            fromHomeVideoPlayback,
+            legacyEpisodeAutoplayRef,
+            suppressPlayback,
+            setLoading,
+            setEpisode,
+            setShowTapToUnmute,
+            setWaiting,
+            setPlaying,
+            setCanPlay,
+            setPlaybackSources,
+            showController,
+            hideController,
+            controllerTimerRef,
+            episodeFetchOpts: {
+                viewerIsVip: userStore.isVIP(),
+            },
+            isForYouFeed,
+            isFeedColdAutoplay,
+            onVideoMutedUiSync: setVideoMutedUi,
+            resumeTimeSec: isForYouFeed ? feedResumeTimeSec : undefined,
+            shouldAbort,
+            primeNeighborBuffer:
+                isForYouFeed && suppressPlayback && foryouNeighborPreload === 'auto',
+        };
+    }
+
     async function loadData(episodeId: number, showLoading = false) {
         const suppressPlayback = playbackPolicy === 'paused';
         const gen = ++loadGenerationRef.current;
-        const shouldAbort = () => gen !== loadGenerationRef.current;
         const isFeedColdAutoplay =
             Boolean(isForYouFeed && feedColdAutoplayRef?.current);
         if (isFeedColdAutoplay) {
@@ -518,49 +558,33 @@ export function ForYouPlayer({
                 setVideoMutedUi(false);
             }
         }
+
+        const urls =
+            playbackSources.length > 0 ? playbackSources : feedPlaybackUrls;
+        const rt = buildForyouLoadRuntime(gen, suppressPlayback, isFeedColdAutoplay);
+
+        if (
+            isForYouFeed &&
+            !suppressPlayback &&
+            tryForyouWarmStartPlayback(rt, episodeId, urls, episode?.id)
+        ) {
+            scheduleForyouBufferLoader();
+            if (isFeedColdAutoplay && feedColdAutoplayRef) {
+                feedColdAutoplayRef.current = false;
+            }
+            return;
+        }
+
         setCanPlay(false);
         if (isForYouFeed && !suppressPlayback) {
             const v = videoRef.current;
-            const urls =
-                playbackSources.length > 0 ? playbackSources : feedPlaybackUrls;
             if (v && urls.length > 0) {
                 resyncForyouVideoSources(v, urls);
             }
             scheduleForyouBufferLoader();
             setVideoFrameReady(false);
         }
-        await runLoadEpisodeForForYouPlayer(
-            {
-                videoRef,
-                subtitlesRef,
-                autoplayKickTimerRef,
-                getStaticBase: () => String(configStore.config['static'] ?? ''),
-                speed,
-                fromHomeVideoPlayback,
-                legacyEpisodeAutoplayRef,
-                suppressPlayback,
-                setLoading,
-                setEpisode,
-                setShowTapToUnmute,
-                setWaiting,
-                setPlaying,
-                setCanPlay,
-                setPlaybackSources,
-                showController,
-                hideController,
-                controllerTimerRef,
-                episodeFetchOpts: {
-                    viewerIsVip: userStore.isVIP(),
-                },
-                isForYouFeed,
-                isFeedColdAutoplay,
-                onVideoMutedUiSync: setVideoMutedUi,
-                resumeTimeSec: isForYouFeed ? feedResumeTimeSec : undefined,
-                shouldAbort,
-            },
-            episodeId,
-            showLoading,
-        );
+        await runLoadEpisodeForForYouPlayer(rt, episodeId, showLoading);
         if (isFeedColdAutoplay && feedColdAutoplayRef) {
             feedColdAutoplayRef.current = false;
         }

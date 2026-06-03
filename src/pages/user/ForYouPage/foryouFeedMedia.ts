@@ -41,6 +41,24 @@ export function resolveFeedPlaybackUrls(item: IForYouFeedItem, staticBase: strin
  * `abortForyouVideoLoad` 会手改 DOM 上的 `<source src>`，React 未必会再写回。
  * 从 paused 回到 autoplay（尤其 PC 向上切条）前需把 src 与 media 拉取对齐。
  */
+/** 邻格 paused + preload=auto：对齐源并触发浏览器继续拉媒体（不 play） */
+export function primeForyouNeighborBuffer(el: HTMLVideoElement, urls: string[]): void {
+    resyncForyouVideoSources(el, urls);
+    if (el.preload !== 'auto') {
+        el.preload = 'auto';
+    }
+    if (
+        el.readyState < HTMLMediaElement.HAVE_FUTURE_DATA &&
+        el.networkState !== HTMLMediaElement.NETWORK_LOADING
+    ) {
+        try {
+            el.load();
+        } catch {
+            // ignore
+        }
+    }
+}
+
 export function resyncForyouVideoSources(
     el: HTMLVideoElement,
     urls: string[],

@@ -8,8 +8,8 @@ import {
 import { prewarmForyouFeedItem, syncForyouPrewarmWindow } from './foryouFeedMedia';
 
 /**
- * For You：当前条 canplay 后，隐藏预拉 anchor+3（metadata）。
- * anchor-1～+2 由邻格 ForYouPlayer 承担（上 1 / 下 2）。
+ * For You：当前条起播后隐藏预拉 anchor+3（metadata）。
+ * anchor±1 由邻格 ForYouPlayer preload=auto；+2 邻格 metadata。
  */
 export function useForyouVideoPreload(
     list: IForYouFeedItem[],
@@ -31,18 +31,27 @@ export function useForyouVideoPreload(
         }
         syncForyouPrewarmWindow([...keepIds]);
 
-        if (!anchorPlaybackReady || !list.length || anchorIndex < 0) {
+        if (!list.length || anchorIndex < 0) {
             return;
         }
 
-        const idx = anchorIndex + FORYOU_HIDDEN_PRELOAD_BELOW_OFFSET;
-        if (idx < 0 || idx >= list.length) {
-            return;
+        const cleanups: Array<() => void> = [];
+
+        /** 当前条在播时，对再下 1 条（+2 邻格）提前 metadata，缩短连滑两条时的空档 */
+        const nearIdx = anchorIndex + 2;
+        if (anchorPlaybackReady && nearIdx >= 0 && nearIdx < list.length) {
+            cleanups.push(prewarmForyouFeedItem(list[nearIdx], staticBase, 'metadata'));
         }
 
-        const detach = prewarmForyouFeedItem(list[idx], staticBase, 'metadata');
+        const farIdx = anchorIndex + FORYOU_HIDDEN_PRELOAD_BELOW_OFFSET;
+        if (anchorPlaybackReady && farIdx >= 0 && farIdx < list.length) {
+            cleanups.push(prewarmForyouFeedItem(list[farIdx], staticBase, 'metadata'));
+        }
+
         return () => {
-            detach();
+            for (const fn of cleanups) {
+                fn();
+            }
         };
     }, [list, anchorIndex, staticBase, anchorPlaybackReady]);
 }

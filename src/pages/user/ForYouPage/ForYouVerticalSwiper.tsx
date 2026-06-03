@@ -34,6 +34,7 @@ import {
 } from './foryouFeedProgress';
 
 import { isInForyouPlayerWindow } from './foryouConstants';
+import { getForyouFeedSession, patchForyouFeedSession } from './foryouFeedSession';
 import { readVerticalPcKeyNavAction } from '@/pages/user/VideoPage/videoVerticalPcKeyNav';
 import { bindVerticalPcWheelNav } from '@/pages/user/VideoPage/videoVerticalPcWheelNav';
 import { resolveForyouMountAutoplayFlags } from './foryouAutoplayPolicy';
@@ -68,11 +69,19 @@ export default function ForYouVerticalSwiper() {
 
     const wasRefreshingRef = useRef(false);
 
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(() => {
+        const cached = getForyouFeedSession();
+        if (!cached?.list?.length) {
+            return 0;
+        }
+        const saved = cached.activeIndex ?? 0;
+        return Math.min(Math.max(0, saved), cached.list.length - 1);
+    });
     /** 当前条已起播后再预拉后 2 条，避免首屏 3 路 mp4 并发 */
     const [anchorPlaybackReady, setAnchorPlaybackReady] = useState(false);
     const activeIndexRef = useRef(activeIndex);
     activeIndexRef.current = activeIndex;
+    const feedIndexRestoredRef = useRef(false);
     const listLengthRef = useRef(0);
     const prevListLengthRef = useRef(0);
 
@@ -107,6 +116,26 @@ export default function ForYouVerticalSwiper() {
     useEffect(() => {
         setAnchorPlaybackReady(false);
     }, [activeIndex]);
+
+    /** 从 /video 返回：恢复离开前的竖滑条位（列表由 useForyouFeed 会话缓存） */
+    useEffect(() => {
+        if (loading || !list.length || feedIndexRestoredRef.current) {
+            return;
+        }
+        feedIndexRestoredRef.current = true;
+        const saved = getForyouFeedSession()?.activeIndex ?? 0;
+        const target = Math.min(Math.max(0, saved), list.length - 1);
+        if (target !== activeIndexRef.current) {
+            setActiveIndex(target);
+            activeIndexRef.current = target;
+        }
+        requestAnimationFrame(() => {
+            const swiper = swiperRef.current;
+            if (swiper && swiper.activeIndex !== target) {
+                swiper.slideTo(target, 0);
+            }
+        });
+    }, [loading, list.length]);
 
     const handleAnchorPlaybackStarted = useCallback(() => {
         setAnchorPlaybackReady(true);
@@ -255,6 +284,8 @@ export default function ForYouVerticalSwiper() {
             markVideoSessionUserUnmuted();
 
         }
+
+        patchForyouFeedSession({ activeIndex: activeIndexRef.current });
 
         navigateFromForyouToVideo(navigate, activeItem, resume);
 
@@ -524,10 +555,14 @@ export default function ForYouVerticalSwiper() {
                         const inPlayerWindow = isInForyouPlayerWindow(i, activeIndex);
                         /** 仍在邻条窗口内、仅 paused 的格：勿 abort 清源，避免上滑复用实例黑屏 */
                         const foryouKeepMediaOnPause = inPlayerWindow && !isActive;
-                        /** 下 1/2 条邻格：metadata 预拉；上 1 条与隐藏 +3 不在此挂邻格 preload */
+                        /** 紧邻上下条 auto 预缓冲；再下 1 条 metadata，减轻滑切后首秒 rebuffer */
                         const foryouNeighborPreload =
-                            inPlayerWindow && !isActive && i > activeIndex
-                                ? ('metadata' as const)
+                            inPlayerWindow && !isActive
+                                ? i === activeIndex + 1 || i === activeIndex - 1
+                                    ? ('auto' as const)
+                                    : i > activeIndex
+                                      ? ('metadata' as const)
+                                      : undefined
                                 : undefined;
 
                         return (

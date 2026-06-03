@@ -4,9 +4,12 @@ import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from '@/pages/user/VideoPage/episodeDetailCache';
 import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
 import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
-import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
-import { preferForyouSoundAutoplay } from '@/pages/user/ForYouPage/foryouAutoplayPolicy';
-import { hasVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
+import {
+    applyForyouResumeSeek,
+    canForyouWarmStart,
+    kickForyouAutoplay,
+} from '@/pages/user/ForYouPage/foryouPlaybackKick';
+import { primeForyouNeighborBuffer } from '@/pages/user/ForYouPage/foryouFeedMedia';
 
 export type LoadEpisodeRuntime = {
     videoRef: RefObject<HTMLVideoElement | null>;
@@ -38,6 +41,8 @@ export type LoadEpisodeRuntime = {
     shouldAbort?: () => boolean;
     /** For You 整页 F5 后首条冷启动（仅首条 true；滑切后为 false，勿用 navigation.reload 判滑切） */
     isFeedColdAutoplay?: boolean;
+    /** 邻格 paused + preload=auto 时，挂源后主动多拉几秒媒体 */
+    primeNeighborBuffer?: boolean;
 };
 
 export async function runLoadEpisodeForForYouPlayer(
@@ -185,7 +190,8 @@ export async function runLoadEpisodeForForYouPlayer(
         const skipReload =
             Boolean(rt.isForYouFeed) &&
             sameSources &&
-            (el.readyState >= 1 || el.networkState === HTMLMediaElement.NETWORK_LOADING);
+            (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA ||
+                el.networkState === HTMLMediaElement.NETWORK_LOADING);
 
         if (rt.suppressPlayback) {
             el.playbackRate = SPEED[rt.speed];
@@ -195,6 +201,9 @@ export async function runLoadEpisodeForForYouPlayer(
             rt.setCanPlay(false);
             rt.setShowTapToUnmute(false);
             rt.showController(false);
+            if (rt.isForYouFeed && rt.primeNeighborBuffer && urls.length > 0) {
+                primeForyouNeighborBuffer(el, urls);
+            }
             return;
         }
 
@@ -216,162 +225,16 @@ export async function runLoadEpisodeForForYouPlayer(
                 ? rt.resumeTimeSec
                 : 0;
         if (resumeSec > 0) {
-            const applyResume = () => {
-                const v = rt.videoRef.current;
-                if (!v) {
-                    return;
-                }
-                const d = v.duration;
-                const t =
-                    Number.isFinite(d) && d > 0
-                        ? Math.min(resumeSec, Math.max(0, d - 0.25))
-                        : resumeSec;
-                try {
-                    v.currentTime = t;
-                } catch {
-                    // ignore seek before ready
-                }
-            };
-            if (el.readyState >= 1) {
-                applyResume();
-            } else {
-                el.addEventListener('loadedmetadata', applyResume, { once: true });
-            }
+            applyForyouResumeSeek(el, resumeSec);
         } else if (!skipReload) {
             el.currentTime = 0;
         }
 
-        const isPcViewport =
-            typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
-        const sessionUnmuted = hasVideoSessionUserUnmuted();
-        const isH5 = !isPcViewport;
-        const isFeedColdAutoplay = Boolean(rt.isFeedColdAutoplay);
-        /** 仅冷启动首条静音；首页进入 / 滑切 /（H5）会话已开声 → 有声（见 FORYOU_AUTOPLAY.md） */
-        const preferSoundAutoplay =
-            preferForyouSoundAutoplay(isFeedColdAutoplay) ||
-            (isH5 && sessionUnmuted && !isFeedColdAutoplay);
-        const isColdVideoAutoplay = !preferSoundAutoplay;
-        /** PC 冷启动静音时展示 `.xgplayer-unmute` */
-        const showTapToUnmuteOnMutedAutoplay = isPcViewport && isFeedColdAutoplay;
-
-        const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
-        rt.legacyEpisodeAutoplayRef.current = false;
-
         if (location.search.indexOf('auto_play=0') === -1) {
-            if (useLegacyEpisodePlayback) {
-                /** H5 竖滑（含 iOS）：手势链内与安卓一致，先试有声；冷启动或失败再静音 */
-                if (preferSoundAutoplay) {
-                    el.muted = false;
-                    rt.onVideoMutedUiSync?.(false);
-                } else {
-                    el.muted = true;
-                    rt.onVideoMutedUiSync?.(true);
-                }
-                const runLegacyPlay = () => {
-                    const v = rt.videoRef.current;
-                    if (!v) {
-                        return;
-                    }
-                    v.play()
-                        .then(() => rt.setPlaying(true))
-                        .catch(() => {
-                            if (preferSoundAutoplay && !v.muted) {
-                                v.muted = true;
-                                rt.onVideoMutedUiSync?.(true);
-                                v.play()
-                                    .then(() => rt.setPlaying(true))
-                                    .catch(() => {
-                                        rt.showController(false);
-                                        rt.setWaiting(false);
-                                        rt.setCanPlay(true);
-                                    });
-                                return;
-                            }
-                            rt.showController(false);
-                            rt.setWaiting(false);
-                            rt.setCanPlay(true);
-                        });
-                };
-                if (rt.isForYouFeed && el.readyState < 1) {
-                    el.addEventListener('loadedmetadata', runLegacyPlay, { once: true });
-                } else {
-                    runLegacyPlay();
-                }
-            } else {
-                if (preferSoundAutoplay) {
-                    el.muted = false;
-                    rt.onVideoMutedUiSync?.(false);
-                } else {
-                    el.muted = true;
-                    rt.onVideoMutedUiSync?.(true);
-                    rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
-                }
-                const runPlay = () => {
-                    const v = rt.videoRef.current;
-                    if (!v) {
-                        return;
-                    }
-                    const onPlayFail = () => {
-                        console.log('autoplay failed');
-                        rt.showController(false);
-                        rt.setWaiting(false);
-                        rt.setCanPlay(true);
-                        if (!(isPcViewport && v.muted && showTapToUnmuteOnMutedAutoplay)) {
-                            rt.setShowTapToUnmute(false);
-                        }
-                    };
-                    const fallbackMutedAutoplay = () => {
-                        /** iOS 滑切后 unmuted play 失败时仍须静音起播，否则会卡在首帧 */
-                        if (
-                            rt.isForYouFeed &&
-                            isH5 &&
-                            sessionUnmuted &&
-                            !isFeedColdAutoplay &&
-                            !isIosLikeDevice()
-                        ) {
-                            onPlayFail();
-                            return;
-                        }
-                        v.muted = true;
-                        rt.onVideoMutedUiSync?.(true);
-                        rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
-                        v.play()
-                            .then(() => rt.setPlaying(true))
-                            .catch(onPlayFail);
-                    };
-                    v.play()
-                        .then(() => {
-                            rt.setPlaying(true);
-                        })
-                        .catch(() => {
-                            if (preferSoundAutoplay && !v.muted) {
-                                fallbackMutedAutoplay();
-                                return;
-                            }
-                            onPlayFail();
-                        });
-                };
-                const delayMs = isPcViewport && isColdVideoAutoplay ? 300 : 0;
-                const schedulePlay = () => {
-                    if (rt.isForYouFeed && el.readyState < 1) {
-                        el.addEventListener('loadedmetadata', runPlay, { once: true });
-                        return;
-                    }
-                    runPlay();
-                };
-                if (delayMs > 0) {
-                    rt.autoplayKickTimerRef.current = setTimeout(schedulePlay, delayMs);
-                } else {
-                    schedulePlay();
-                }
-            }
+            kickForyouAutoplay(rt, el);
         } else {
             el.muted = false;
         }
-
-        rt.controllerTimerRef.current = window.setTimeout(() => {
-            rt.hideController();
-        }, 10000);
     };
 
     const d = await fetchEpisodeDetailOrNull(id, loading, rt.episodeFetchOpts);
@@ -383,4 +246,39 @@ export async function runLoadEpisodeForForYouPlayer(
         return;
     }
     await applyEpisode(d);
+}
+
+/** 滑到邻格已暖缓存的条：跳过 fetch/apply，直接续播 */
+export function tryForyouWarmStartPlayback(
+    rt: LoadEpisodeRuntime,
+    episodeId: number,
+    urls: string[],
+    cachedEpisodeId: number | undefined,
+): boolean {
+    if (rt.suppressPlayback || !rt.isForYouFeed || rt.isFeedColdAutoplay) {
+        return false;
+    }
+    if (cachedEpisodeId !== episodeId) {
+        return false;
+    }
+    const el = rt.videoRef.current;
+    if (!canForyouWarmStart(el, urls)) {
+        return false;
+    }
+    if (!el) {
+        return false;
+    }
+    if (rt.shouldAbort?.()) {
+        return false;
+    }
+    const resumeSec =
+        rt.resumeTimeSec != null && rt.resumeTimeSec > 0 ? rt.resumeTimeSec : 0;
+    if (resumeSec > 0) {
+        applyForyouResumeSeek(el, resumeSec);
+    }
+    el.playbackRate = SPEED[rt.speed];
+    if (location.search.indexOf('auto_play=0') === -1) {
+        kickForyouAutoplay(rt, el);
+    }
+    return true;
 }
