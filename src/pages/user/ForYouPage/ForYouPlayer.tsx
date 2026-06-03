@@ -245,9 +245,16 @@ export function ForYouPlayer({
     /** 冷启动/刷新：静音自动播时展示（PC 用 `.xgplayer-unmute-bt`，H5 用底部按钮层） */
     const [showTapToUnmute, setShowTapToUnmute] = useState(false);
     /** 与 `<video>.muted` 同步，用于底部音量图标（对标 douyin BaseMusic 入口） */
-    const [videoMutedUi, setVideoMutedUi] = useState(() => !hasVideoSessionUserUnmuted());
+    const [videoMutedUi, setVideoMutedUi] = useState(() => {
+        if (fromHomeVideoPlayback || hasVideoSessionUserUnmuted()) {
+            return false;
+        }
+        return Boolean(feedColdAutoplayRef?.current);
+    });
     /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
     const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
+    /** For You 冷启动首条（F5/直链）：允许未起播时展示「点按开声」蒙层（H5/PC 共用） */
+    const [foryouColdUnmuteOverlay, setForyouColdUnmuteOverlay] = useState(false);
     /** PC For You：用户主动点底栏静音后不再出全屏蒙层（本集内）；换 `id` 重置 */
     const [pcUserDismissedUnmuteOverlay, setPcUserDismissedUnmuteOverlay] = useState(false);
     /** `loadedmetadata`：videoWidth > videoHeight 为横屏，否则竖屏 */
@@ -297,6 +304,7 @@ export function ForYouPlayer({
           ? []
           : playbackSources;
     const loadGenerationRef = useRef(0);
+    const prevForYouEpisodeIdRef = useRef<number | null>(null);
     /** For You /video 一致：`<video poster>` 不用剧封，仅截帧 data URL */
     const videoPosterAttr = unlockVisualOnly
         ? undefined
@@ -305,27 +313,32 @@ export function ForYouPlayer({
           : undefined;
     const h5VideoPosterAttr = videoPosterAttr;
 
-    /** H5：与 `<video>.muted` 一致且正在播时出全屏点按开声蒙层；用户点过底栏音量后不再出 */
+    /**
+     * H5 全屏「点按开声」：仅冷启动首条静音时展示（见 FORYOU_AUTOPLAY.md）。
+     */
     const showH5FullscreenUnmuteOverlay =
         !isDesktop &&
+        isForYouFeed &&
+        foryouColdUnmuteOverlay &&
         videoMutedUi &&
-        playing &&
         !h5UserDismissedUnmuteOverlay &&
         episode?.lock === false &&
-        location.search.indexOf('auto_play=0') === -1;
+        location.search.indexOf('auto_play=0') === -1 &&
+        (playing || canPlay || videoFrameReady);
 
     /**
-     * PC For You：与 `<video>.muted` 同步展示蒙层（勿只依赖 `showTapToUnmute`，F5 二次 load / StrictMode 会清掉该 state）。
-     * 非 For You 仍走 `showTapToUnmute`（loadEpisode 显式控制）。
+     * PC For You：仅冷启动首条静音时展示 `.xgplayer-unmute`。
      */
     const showPcUnmuteOverlay =
         isDesktop &&
-        playing &&
         episode?.lock === false &&
         location.search.indexOf('auto_play=0') === -1 &&
         (isForYouFeed
-            ? videoMutedUi && !pcUserDismissedUnmuteOverlay
-            : showTapToUnmute);
+            ? foryouColdUnmuteOverlay &&
+              videoMutedUi &&
+              !pcUserDismissedUnmuteOverlay &&
+              (playing || canPlay || videoFrameReady)
+            : showTapToUnmute && playing);
 
     /** H5 For You：拉流超过 3s 仍未 canplay 时居中 loading */
     const showForyouH5BufferLoader =
@@ -496,6 +509,15 @@ export function ForYouPlayer({
         const shouldAbort = () => gen !== loadGenerationRef.current;
         const isFeedColdAutoplay =
             Boolean(isForYouFeed && feedColdAutoplayRef?.current);
+        if (isFeedColdAutoplay) {
+            setForyouColdUnmuteOverlay(true);
+            setVideoMutedUi(true);
+        } else {
+            setForyouColdUnmuteOverlay(false);
+            if (fromHomeVideoPlayback || hasVideoSessionUserUnmuted()) {
+                setVideoMutedUi(false);
+            }
+        }
         setCanPlay(false);
         if (isForYouFeed && !suppressPlayback) {
             const v = videoRef.current;
@@ -581,6 +603,9 @@ export function ForYouPlayer({
             if (!feedHasPrev) {
                 return;
             }
+            if (!isDesktop) {
+                legacyEpisodeAutoplayRef.current = true;
+            }
             showController();
             onFeedPrev?.();
             return;
@@ -599,6 +624,9 @@ export function ForYouPlayer({
         if (isForYouFeed) {
             if (!feedHasNext) {
                 return;
+            }
+            if (!isDesktop) {
+                legacyEpisodeAutoplayRef.current = true;
             }
             showController();
             onFeedNext?.();
@@ -1017,6 +1045,7 @@ export function ForYouPlayer({
         v.muted = false;
         setVideoMutedUi(false);
         setShowTapToUnmute(false);
+        setForyouColdUnmuteOverlay(false);
         void v.play().then(() => setPlaying(true)).catch(() => {});
         showController();
     }
@@ -1085,6 +1114,16 @@ export function ForYouPlayer({
         if (isForYouFeed && hasVideoSessionUserUnmuted()) {
             setVideoMutedUi(false);
         }
+    }, [id, isForYouFeed]);
+
+    useEffect(() => {
+        if (!isForYouFeed) {
+            return;
+        }
+        if (prevForYouEpisodeIdRef.current != null && prevForYouEpisodeIdRef.current !== id) {
+            setForyouColdUnmuteOverlay(false);
+        }
+        prevForYouEpisodeIdRef.current = id;
     }, [id, isForYouFeed]);
 
     /** PC For You：站内从首页等进入时 load 后试有声；刷新/直链仍走静音冷启动 */

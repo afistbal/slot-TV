@@ -48,8 +48,8 @@ export function canNavigateBack() {
     return typeof state?.idx === 'number' && state.idx > 0;
 }
 
-/** 整页刷新（F5）无用户手势：与直链冷启动一样走静音自动播 */
-export function isPerformanceNavigationReload() {
+/** 本次**文档加载**是否为 F5/刷新（整页生命周期内不变；SPA 切路由不会变） */
+export function isDocumentReload(): boolean {
     if (typeof performance === 'undefined') {
         return false;
     }
@@ -57,4 +57,9 @@ export function isPerformanceNavigationReload() {
         | PerformanceNavigationTiming
         | undefined;
     return entry?.type === 'reload';
+}
+
+/** 当前导航是否为 reload（For You 冷启动请用 `isDocumentReload`，勿在 SPA 内反复调用本函数） */
+export function isPerformanceNavigationReload() {
+    return isDocumentReload();
 }

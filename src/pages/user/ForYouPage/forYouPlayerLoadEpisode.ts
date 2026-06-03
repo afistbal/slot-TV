@@ -4,6 +4,8 @@ import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from '@/pages/user/VideoPage/episodeDetailCache';
 import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
 import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
+import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
+import { preferForyouSoundAutoplay } from '@/pages/user/ForYouPage/foryouAutoplayPolicy';
 import { hasVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
 
 export type LoadEpisodeRuntime = {
@@ -241,41 +243,23 @@ export async function runLoadEpisodeForForYouPlayer(
 
         const isPcViewport =
             typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
-        /** ?????????????query???? `?A100C100`???????????????????????????????? query ???????????????????????????????????????????????????????????????????*/
-        const marketingSoundQuery =
-            typeof location !== 'undefined' &&
-            location.search.length > 1 &&
-            location.search.indexOf('auto_play=0') === -1;
         const sessionUnmuted = hasVideoSessionUserUnmuted();
         const isH5 = !isPcViewport;
-        const isH5ForYou = Boolean(rt.isForYouFeed) && isH5;
-        const isPcForYou = Boolean(rt.isForYouFeed) && isPcViewport;
         const isFeedColdAutoplay = Boolean(rt.isFeedColdAutoplay);
-        /** H5 滑切/站内：先试有声；For You 整页 F5 后仅首条静音自动播（isFeedColdAutoplay，非 navigation.reload） */
-        const allowSoundAutoplay = rt.fromHomeVideoPlayback || isH5 || marketingSoundQuery;
-        let preferSoundAutoplay: boolean;
-        if (isPcForYou) {
-            preferSoundAutoplay =
-                !isFeedColdAutoplay &&
-                (rt.fromHomeVideoPlayback || marketingSoundQuery);
-        } else if (isH5ForYou && isFeedColdAutoplay) {
-            preferSoundAutoplay = false;
-        } else {
-            preferSoundAutoplay =
-                allowSoundAutoplay ||
-                (Boolean(rt.isForYouFeed) && isH5 && sessionUnmuted);
-        }
+        /** 仅冷启动首条静音；首页进入 / 滑切 /（H5）会话已开声 → 有声（见 FORYOU_AUTOPLAY.md） */
+        const preferSoundAutoplay =
+            preferForyouSoundAutoplay(isFeedColdAutoplay) ||
+            (isH5 && sessionUnmuted && !isFeedColdAutoplay);
         const isColdVideoAutoplay = !preferSoundAutoplay;
-        /** PC：凡走静音自动播策略即允许展示取消静音（含 F5 冷启动、有声失败兜底） */
-        const showTapToUnmutePc =
-            isPcViewport && (isFeedColdAutoplay || marketingSoundQuery || !preferSoundAutoplay);
-        const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
+        /** PC 冷启动静音时展示 `.xgplayer-unmute` */
+        const showTapToUnmuteOnMutedAutoplay = isPcViewport && isFeedColdAutoplay;
 
         const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
         rt.legacyEpisodeAutoplayRef.current = false;
 
         if (location.search.indexOf('auto_play=0') === -1) {
             if (useLegacyEpisodePlayback) {
+                /** H5 竖滑（含 iOS）：手势链内与安卓一致，先试有声；冷启动或失败再静音 */
                 if (preferSoundAutoplay) {
                     el.muted = false;
                     rt.onVideoMutedUiSync?.(false);
@@ -337,7 +321,14 @@ export async function runLoadEpisodeForForYouPlayer(
                         }
                     };
                     const fallbackMutedAutoplay = () => {
-                        if (rt.isForYouFeed && isH5 && sessionUnmuted && !isFeedColdAutoplay) {
+                        /** iOS 滑切后 unmuted play 失败时仍须静音起播，否则会卡在首帧 */
+                        if (
+                            rt.isForYouFeed &&
+                            isH5 &&
+                            sessionUnmuted &&
+                            !isFeedColdAutoplay &&
+                            !isIosLikeDevice()
+                        ) {
                             onPlayFail();
                             return;
                         }

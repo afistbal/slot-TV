@@ -36,7 +36,7 @@ import {
 import { isInForyouPlayerWindow } from './foryouConstants';
 import { readVerticalPcKeyNavAction } from '@/pages/user/VideoPage/videoVerticalPcKeyNav';
 import { bindVerticalPcWheelNav } from '@/pages/user/VideoPage/videoVerticalPcWheelNav';
-import { canNavigateBack, isPerformanceNavigationReload } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { resolveForyouMountAutoplayFlags } from './foryouAutoplayPolicy';
 
 import './foryou-vertical.scss';
 
@@ -53,24 +53,16 @@ export default function ForYouVerticalSwiper() {
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
     const location = useLocation();
-    /** 显式 state，或站内路由栈已有上一页（非整页刷新）：PC/H5 均可先试有声自动播 */
-    const fromHomeVideoPlayback =
-        Boolean(
-            (location.state as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
-        ) ||
-        (typeof window !== 'undefined' &&
-            canNavigateBack() &&
-            !isPerformanceNavigationReload());
+    const mountAutoplayRef = useRef(resolveForyouMountAutoplayFlags(location.state));
+    /** 站内点击进入 → 有声；F5 落页一次性冷启动 → 静音（见 `FORYOU_AUTOPLAY.md`） */
+    const fromHomeVideoPlayback = mountAutoplayRef.current.fromHomeVideoPlayback;
 
     const navigate = useNavigate();
 
     const fullscreenTargetRef = useRef<HTMLDivElement>(null);
 
     const legacyEpisodeAutoplayRef = useRef(false);
-    /** F5 整页刷新后仅首条走静音冷启动；滑切后置 false（navigation.type 在整页会话内恒为 reload） */
-    const feedColdAutoplayRef = useRef(
-        typeof window !== 'undefined' && isPerformanceNavigationReload(),
-    );
+    const feedColdAutoplayRef = useRef(mountAutoplayRef.current.feedColdAutoplay);
 
     const swiperRef = useRef<SwiperClass | null>(null);
 
@@ -199,6 +191,13 @@ export default function ForYouVerticalSwiper() {
         [],
     );
 
+    const markH5SwipeAutoplayIntent = useCallback(() => {
+        if (!isDesktop) {
+            /** 与 /video H5 竖滑一致：在用户手势链内置位，iOS 上走 legacy 有声→静音兜底 play */
+            legacyEpisodeAutoplayRef.current = true;
+        }
+    }, [isDesktop]);
+
     const onSlideChangeStart = useCallback(
         (swiper: SwiperClass) => {
             feedColdAutoplayRef.current = false;
@@ -209,12 +208,15 @@ export default function ForYouVerticalSwiper() {
             videoResumeRef.current = null;
 
             const next = swiper.activeIndex;
+            if (next !== swiper.previousIndex) {
+                markH5SwipeAutoplayIntent();
+            }
 
             setActiveIndex(next);
 
             onActiveIndexChange(next);
         },
-        [list, onActiveIndexChange, saveProgressForItem],
+        [list, onActiveIndexChange, saveProgressForItem, markH5SwipeAutoplayIntent],
     );
 
     const handleFeedPlaybackProgress = useCallback(
@@ -504,6 +506,8 @@ export default function ForYouVerticalSwiper() {
                     }}
 
                     onSlideChangeTransitionStart={onSlideChangeStart}
+
+                    onTouchStart={!isDesktop ? markH5SwipeAutoplayIntent : undefined}
 
                     onReachEnd={() => {
                         if (hasMore) {
