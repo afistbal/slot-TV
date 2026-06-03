@@ -5,7 +5,6 @@ import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from '@/pages/user/Vi
 import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
 import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
 import { hasVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
-import { isPerformanceNavigationReload } from '@/pages/user/VideoPage/videoPlayerUtils';
 
 export type LoadEpisodeRuntime = {
     videoRef: RefObject<HTMLVideoElement | null>;
@@ -242,21 +241,12 @@ export async function runLoadEpisodeForForYouPlayer(
 
         const isPcViewport =
             typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
-        const isReload = isPerformanceNavigationReload();
         /** ?????????????query???? `?A100C100`???????????????????????????????? query ???????????????????????????????????????????????????????????????????*/
         const marketingSoundQuery =
             typeof location !== 'undefined' &&
             location.search.length > 1 &&
             location.search.indexOf('auto_play=0') === -1;
         const sessionUnmuted = hasVideoSessionUserUnmuted();
-        /** PC????????????????????? query???????????????????????? session ????????????*/
-        const showTapToUnmutePc =
-            isPcViewport &&
-            (isReload ||
-                marketingSoundQuery ||
-                (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
-        /** PC ????????????????????H5 ?????? `VideoPlayer` ???`video.muted` + ??????????????????????????*/
-        const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
         const isH5 = !isPcViewport;
         const isH5ForYou = Boolean(rt.isForYouFeed) && isH5;
         const isPcForYou = Boolean(rt.isForYouFeed) && isPcViewport;
@@ -276,6 +266,10 @@ export async function runLoadEpisodeForForYouPlayer(
                 (Boolean(rt.isForYouFeed) && isH5 && sessionUnmuted);
         }
         const isColdVideoAutoplay = !preferSoundAutoplay;
+        /** PC：凡走静音自动播策略即允许展示取消静音（含 F5 冷启动、有声失败兜底） */
+        const showTapToUnmutePc =
+            isPcViewport && (isFeedColdAutoplay || marketingSoundQuery || !preferSoundAutoplay);
+        const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
 
         const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
         rt.legacyEpisodeAutoplayRef.current = false;
@@ -338,7 +332,9 @@ export async function runLoadEpisodeForForYouPlayer(
                         rt.showController(false);
                         rt.setWaiting(false);
                         rt.setCanPlay(true);
-                        rt.setShowTapToUnmute(false);
+                        if (!(isPcViewport && v.muted && showTapToUnmuteOnMutedAutoplay)) {
+                            rt.setShowTapToUnmute(false);
+                        }
                     };
                     const fallbackMutedAutoplay = () => {
                         if (rt.isForYouFeed && isH5 && sessionUnmuted && !isFeedColdAutoplay) {

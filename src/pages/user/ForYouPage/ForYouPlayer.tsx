@@ -241,6 +241,8 @@ export function ForYouPlayer({
     const [videoMutedUi, setVideoMutedUi] = useState(() => !hasVideoSessionUserUnmuted());
     /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
     const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
+    /** PC For You：用户主动点底栏静音后不再出全屏蒙层（本集内）；换 `id` 重置 */
+    const [pcUserDismissedUnmuteOverlay, setPcUserDismissedUnmuteOverlay] = useState(false);
     /** `loadedmetadata`：videoWidth > videoHeight 为横屏，否则竖屏 */
     const [videoOrientation, setVideoOrientation] = useState<VideoOrientation | null>(null);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
@@ -304,6 +306,19 @@ export function ForYouPlayer({
         !h5UserDismissedUnmuteOverlay &&
         episode?.lock === false &&
         location.search.indexOf('auto_play=0') === -1;
+
+    /**
+     * PC For You：与 `<video>.muted` 同步展示蒙层（勿只依赖 `showTapToUnmute`，F5 二次 load / StrictMode 会清掉该 state）。
+     * 非 For You 仍走 `showTapToUnmute`（loadEpisode 显式控制）。
+     */
+    const showPcUnmuteOverlay =
+        isDesktop &&
+        playing &&
+        episode?.lock === false &&
+        location.search.indexOf('auto_play=0') === -1 &&
+        (isForYouFeed
+            ? videoMutedUi && !pcUserDismissedUnmuteOverlay
+            : showTapToUnmute);
 
     /** H5 For You：拉流超过 3s 仍未 canplay 时居中 loading */
     const showForyouH5BufferLoader =
@@ -1001,6 +1016,8 @@ export function ForYouPlayer({
         }
         if (!isDesktop) {
             setH5UserDismissedUnmuteOverlay(true);
+        } else {
+            setPcUserDismissedUnmuteOverlay(true);
         }
         if (v.muted) {
             handleTapToUnmute();
@@ -1040,6 +1057,7 @@ export function ForYouPlayer({
 
     useEffect(() => {
         setH5UserDismissedUnmuteOverlay(false);
+        setPcUserDismissedUnmuteOverlay(false);
         setVideoOrientation(null);
         setCenterPlayUiEngaged(false);
         setPlaybackStarted(false);
@@ -1779,11 +1797,7 @@ export function ForYouPlayer({
                                     <source key={`${id}-${i}`} src={srcUrl} type="video/mp4" />
                                 ))}
                             </video>
-                            {isDesktop &&
-                                showTapToUnmute &&
-                                playing &&
-                                episode?.lock === false &&
-                                location.search.indexOf('auto_play=0') === -1 && (
+                            {showPcUnmuteOverlay && (
                                     <div
                                         className="xgplayer-unmute"
                                         role="button"
@@ -1822,11 +1836,11 @@ export function ForYouPlayer({
                                 className={cn(
                                     videoPlayerUiClassName,
                                     /** 静音蒙层在 DOM 序在前；全屏控制器含 translateZ(0) 时会盖住蒙层并吞点击，需让事件穿透到 .xgplayer-unmute */
-                                    showTapToUnmute && 'pointer-events-none',
+                                    showPcUnmuteOverlay && 'pointer-events-none',
                                 )}
                                 ref={controllerRef}
                             >
-                                {showCenterPlayControl && !showTapToUnmute && (
+                                {showCenterPlayControl && !showPcUnmuteOverlay && (
                                     <button
                                         type="button"
                                         className="video-player-center-play video-player-center-play--pc-decor absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
