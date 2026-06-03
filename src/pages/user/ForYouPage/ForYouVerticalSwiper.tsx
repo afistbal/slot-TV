@@ -33,6 +33,7 @@ import {
     setForyouFeedProgressSec,
 } from './foryouFeedProgress';
 
+import { isInForyouPlayerWindow } from './foryouConstants';
 import { readVerticalPcKeyNavAction } from '@/pages/user/VideoPage/videoVerticalPcKeyNav';
 import { bindVerticalPcWheelNav } from '@/pages/user/VideoPage/videoVerticalPcWheelNav';
 import { canNavigateBack, isPerformanceNavigationReload } from '@/pages/user/VideoPage/videoPlayerUtils';
@@ -516,12 +517,14 @@ export default function ForYouVerticalSwiper() {
 
                     {list.map((item, i) => {
                         const isActive = i === activeIndex;
-                        const inPlayerWindow = isDesktop
-                            ? i >= activeIndex - 1 && i <= activeIndex + 1
-                            : i >= activeIndex && i <= activeIndex + 1;
-                        /** H5 下一条邻格：metadata 预拉（+2 由隐藏 video）；勿 auto 抢当前条带宽 */
+                        const inPlayerWindow = isInForyouPlayerWindow(i, activeIndex);
+                        /** 仍在邻条窗口内、仅 paused 的格：勿 abort 清源，避免上滑复用实例黑屏 */
+                        const foryouKeepMediaOnPause = inPlayerWindow && !isActive;
+                        /** 下 1/2 条邻格：metadata 预拉；上 1 条与隐藏 +3 不在此挂邻格 preload */
                         const foryouNeighborPreload =
-                            !isDesktop && i === activeIndex + 1 ? ('metadata' as const) : undefined;
+                            inPlayerWindow && !isActive && i > activeIndex
+                                ? ('metadata' as const)
+                                : undefined;
 
                         return (
 
@@ -574,6 +577,8 @@ export default function ForYouVerticalSwiper() {
                                                 hideCenterPlayUntilFirstPlay
 
                                                 foryouNeighborPreload={foryouNeighborPreload}
+
+                                                foryouKeepMediaOnPause={foryouKeepMediaOnPause}
 
                                                 onWatchFullSeries={handleWatchFullSeries}
 

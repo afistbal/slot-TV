@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
+import {
+    FORYOU_HIDDEN_PRELOAD_BELOW_OFFSET,
+    FORYOU_PLAYER_WINDOW_NEXT,
+    FORYOU_PLAYER_WINDOW_PREV,
+} from './foryouConstants';
 import { prewarmForyouFeedItem, syncForyouPrewarmWindow } from './foryouFeedMedia';
 
-/** 下一条由邻格 ForYouPlayer（metadata）；隐藏 video 负责 +2 */
-const FORYOU_HIDDEN_PRELOAD_OFFSET = 2;
-
 /**
- * For You：当前条 canplay 后，隐藏预拉 anchor+2（metadata）。
- * anchor+1 由邻格 ForYouPlayer 承担；H5 仅挂载 [active, active+1] 不挂上一集。
+ * For You：当前条 canplay 后，隐藏预拉 anchor+3（metadata）。
+ * anchor-1～+2 由邻格 ForYouPlayer 承担（上 1 / 下 2）。
  */
 export function useForyouVideoPreload(
     list: IForYouFeedItem[],
@@ -17,7 +19,11 @@ export function useForyouVideoPreload(
 ) {
     useEffect(() => {
         const keepIds = new Set<number>();
-        for (let i = Math.max(0, anchorIndex - 1); i <= anchorIndex + 2; i += 1) {
+        for (
+            let i = Math.max(0, anchorIndex - FORYOU_PLAYER_WINDOW_PREV);
+            i <= anchorIndex + FORYOU_PLAYER_WINDOW_NEXT;
+            i += 1
+        ) {
             const item = list[i];
             if (item) {
                 keepIds.add(item.ep_id);
@@ -29,7 +35,7 @@ export function useForyouVideoPreload(
             return;
         }
 
-        const idx = anchorIndex + FORYOU_HIDDEN_PRELOAD_OFFSET;
+        const idx = anchorIndex + FORYOU_HIDDEN_PRELOAD_BELOW_OFFSET;
         if (idx < 0 || idx >= list.length) {
             return;
         }

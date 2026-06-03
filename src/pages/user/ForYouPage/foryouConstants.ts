@@ -10,5 +10,18 @@ export const FORYOU_PULL_REFRESH_THRESHOLD_PX = 72;
 /** H5 缓冲 loading：超过该时长仍未 canplay 才展示 */
 export const FORYOU_H5_BUFFER_LOADER_DELAY_MS = 3000;
 
-/** H5 邻条窗口：当前条 ±N（对标 douyin prev=1 / next=2 的简化版） */
-export const FORYOU_H5_PLAYER_WINDOW_RADIUS = 1;
+/** For You 挂载窗口：相对当前条向上保留（PC/H5 一致，对标 douyin prev=1） */
+export const FORYOU_PLAYER_WINDOW_PREV = 1;
+
+/** For You 挂载窗口：相对当前条向下保留（PC/H5 一致，对标 douyin next=2） */
+export const FORYOU_PLAYER_WINDOW_NEXT = 2;
+
+/** 挂载窗口再向下 1 条：隐藏 video metadata 预拉（已由邻格 +1/+2 承担） */
+export const FORYOU_HIDDEN_PRELOAD_BELOW_OFFSET = FORYOU_PLAYER_WINDOW_NEXT + 1;
+
+export function isInForyouPlayerWindow(index: number, activeIndex: number): boolean {
+    return (
+        index >= activeIndex - FORYOU_PLAYER_WINDOW_PREV &&
+        index <= activeIndex + FORYOU_PLAYER_WINDOW_NEXT
+    );
+}

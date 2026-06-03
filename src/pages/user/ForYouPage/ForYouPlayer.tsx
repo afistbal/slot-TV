@@ -43,7 +43,11 @@ import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUr
 import { captureVideoFrameDataUrlWithSeekRetry } from '@/pages/user/VideoPage/videoFramePoster';
 import { getEpisodePeekFrame, setEpisodePeekFrame } from '@/pages/user/VideoPage/episodeFrameQueueStore';
 import { runLoadEpisodeForForYouPlayer } from './forYouPlayerLoadEpisode';
-import { abortForyouVideoLoad, resolveFeedPlaybackUrls } from './foryouFeedMedia';
+import {
+    abortForyouVideoLoad,
+    resyncForyouVideoSources,
+    resolveFeedPlaybackUrls,
+} from './foryouFeedMedia';
 import type { ForyouPrewarmMode } from './foryouFeedMedia';
 import { FORYOU_H5_BUFFER_LOADER_DELAY_MS } from './foryouConstants';
 import {
@@ -105,6 +109,7 @@ export function ForYouPlayer({
     onFeedPrev,
     onFeedNext,
     foryouNeighborPreload,
+    foryouKeepMediaOnPause = false,
     ...props
 }: {
     id: number;
@@ -127,8 +132,10 @@ export function ForYouPlayer({
     feedHasNext?: boolean;
     onFeedPrev?: () => void;
     onFeedNext?: () => void;
-    /** H5 下一条邻格：挂 feed 源并用 auto 预缓冲，切到该条时 skipReload */
+    /** 下 1/2 条邻格：metadata 预拉，切到该条时 skipReload */
     foryouNeighborPreload?: ForyouPrewarmMode;
+    /** 邻条窗口内 paused：保留 <source>，上滑回到该条时避免 React/DOM 不同步黑屏 */
+    foryouKeepMediaOnPause?: boolean;
     onSetEpisode: (index: number) => void;
     fullscreenTargetRef: RefObject<HTMLDivElement | null>;
     shouldKeepFullscreen: boolean;
@@ -277,7 +284,7 @@ export function ForYouPlayer({
         }
         return resolveFeedPlaybackUrls(feedItem, staticBase);
     }, [isForYouFeed, feedItem, staticBase]);
-    /** For You / H5：当前条与下一条邻格均 metadata；起播后 +2 隐藏预拉 */
+    /** For You：当前条与下 1/2 邻格 metadata；窗口外再下 1 条由隐藏 video 预拉 */
     const videoPreload: 'none' | 'metadata' | 'auto' =
         foryouNeighborPreload ??
         (isForYouFeed && playbackPolicy !== 'paused' ? 'metadata' : 'metadata');
@@ -491,6 +498,12 @@ export function ForYouPlayer({
             Boolean(isForYouFeed && feedColdAutoplayRef?.current);
         setCanPlay(false);
         if (isForYouFeed && !suppressPlayback) {
+            const v = videoRef.current;
+            const urls =
+                playbackSources.length > 0 ? playbackSources : feedPlaybackUrls;
+            if (v && urls.length > 0) {
+                resyncForyouVideoSources(v, urls);
+            }
             scheduleForyouBufferLoader();
             setVideoFrameReady(false);
         }
@@ -1143,13 +1156,19 @@ export function ForYouPlayer({
             const v = videoRef.current;
             v?.pause();
             setPlaying(false);
-            if (isForYouFeed && v) {
+            if (isForYouFeed && v && !foryouKeepMediaOnPause) {
                 abortForyouVideoLoad(v);
             }
             return;
         }
         void loadData(feedItem.ep_id);
-    }, [playbackPolicy, isForYouFeed, sessionBootstrapReady, feedItem?.ep_id]);
+    }, [
+        playbackPolicy,
+        isForYouFeed,
+        sessionBootstrapReady,
+        feedItem?.ep_id,
+        foryouKeepMediaOnPause,
+    ]);
 
     useEffect(() => {
         const el = videoRef.current;

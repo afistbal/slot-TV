@@ -37,6 +37,44 @@ export function resolveFeedPlaybackUrls(item: IForYouFeedItem, staticBase: strin
     return resolveEpisodePlaybackUrls(buildEpisodeFromFeedItem(item), staticBase);
 }
 
+/**
+ * `abortForyouVideoLoad` 会手改 DOM 上的 `<source src>`，React 未必会再写回。
+ * 从 paused 回到 autoplay（尤其 PC 向上切条）前需把 src 与 media 拉取对齐。
+ */
+export function resyncForyouVideoSources(
+    el: HTMLVideoElement,
+    urls: string[],
+): void {
+    if (!urls.length) {
+        return;
+    }
+    const sources = Array.from(el.querySelectorAll('source'));
+    let changed = false;
+    urls.forEach((url, i) => {
+        const node = sources[i];
+        if (node) {
+            if (node.getAttribute('src') !== url) {
+                node.setAttribute('src', url);
+                changed = true;
+            }
+            return;
+        }
+        const created = document.createElement('source');
+        created.setAttribute('src', url);
+        created.type = 'video/mp4';
+        el.appendChild(created);
+        changed = true;
+    });
+    const mountedEmpty = sources.length > 0 && sources.every((s) => !s.getAttribute('src'));
+    if (changed || mountedEmpty) {
+        try {
+            el.load();
+        } catch {
+            // ignore
+        }
+    }
+}
+
 /** 取消当前 video 的 media 拉取（避免快速滑走时旧条占满连接队列） */
 export function abortForyouVideoLoad(el: HTMLVideoElement | null | undefined): void {
     if (!el) {
@@ -63,7 +101,7 @@ export type ForyouPrewarmMode = 'metadata' | 'auto';
 
 /**
  * 隐藏 video 预拉（写入 pool，切条时可被播放器 adopt）。
- * @param mode `auto` 用于下一条邻格，多缓冲几秒媒体；`metadata` 用于更远的 +2。
+ * @param mode `auto` 用于下一条邻格，多缓冲几秒媒体；`metadata` 用于窗口外再下 1 条。
  */
 export function prewarmForyouFeedItem(
     item: IForYouFeedItem,
