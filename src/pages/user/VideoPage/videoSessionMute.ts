@@ -21,3 +21,14 @@ export function markVideoSessionUserUnmuted(): void {
         // ignore
     }
 }
+
+/** For You iOS 条内静音态（与 `<video>.muted` 同步，供滑切有声策略） */
+let foryouPlayerMuted = true;
+
+export function getForyouPlayerMuted(): boolean {
+    return foryouPlayerMuted;
+}
+
+export function setForyouPlayerMuted(muted: boolean): void {
+    foryouPlayerMuted = muted;
+}

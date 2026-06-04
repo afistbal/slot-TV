@@ -9,7 +9,15 @@ import {
     canForyouWarmStart,
     kickForyouAutoplay,
 } from '@/pages/user/ForYouPage/foryouPlaybackKick';
-import { primeForyouNeighborBuffer } from '@/pages/user/ForYouPage/foryouFeedMedia';
+import {
+    ensureForyouIosVideoLoad,
+    isForyouIosPlayback,
+    kickForyouIosAutoplay,
+} from '@/pages/user/ForYouPage/foryouIosPlayback';
+import {
+    primeForyouNeighborBuffer,
+    resyncForyouVideoSources,
+} from '@/pages/user/ForYouPage/foryouFeedMedia';
 
 export type LoadEpisodeRuntime = {
     videoRef: RefObject<HTMLVideoElement | null>;
@@ -230,8 +238,24 @@ export async function runLoadEpisodeForForYouPlayer(
             el.currentTime = 0;
         }
 
+        if (rt.isForYouFeed && urls.length > 0) {
+            /** abortForyouVideoLoad 会 strip DOM src；kick 前强制 resync 恢复 */
+            resyncForyouVideoSources(el, urls);
+        }
+
+        if (rt.isForYouFeed && isForyouIosPlayback()) {
+            ensureForyouIosVideoLoad(el);
+        }
+
         if (location.search.indexOf('auto_play=0') === -1) {
-            kickForyouAutoplay(rt, el);
+            const isPcViewport =
+                typeof window !== 'undefined' &&
+                window.matchMedia('(min-width: 768px)').matches;
+            if (rt.isForYouFeed && isForyouIosPlayback() && !isPcViewport) {
+                kickForyouIosAutoplay(rt, el);
+            } else {
+                kickForyouAutoplay(rt, el);
+            }
         } else {
             el.muted = false;
         }
@@ -278,7 +302,19 @@ export function tryForyouWarmStartPlayback(
     }
     el.playbackRate = SPEED[rt.speed];
     if (location.search.indexOf('auto_play=0') === -1) {
-        kickForyouAutoplay(rt, el);
+        if (urls.length > 0) {
+            resyncForyouVideoSources(el, urls);
+        }
+        if (isForyouIosPlayback()) {
+            ensureForyouIosVideoLoad(el);
+        }
+        const isPcViewport =
+            typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
+        if (rt.isForYouFeed && isForyouIosPlayback() && !isPcViewport) {
+            kickForyouIosAutoplay(rt, el);
+        } else {
+            kickForyouAutoplay(rt, el);
+        }
     }
     return true;
 }

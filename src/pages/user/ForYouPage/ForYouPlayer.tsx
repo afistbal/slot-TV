@@ -56,7 +56,15 @@ import { FORYOU_H5_BUFFER_LOADER_DELAY_MS } from './foryouConstants';
 import {
     hasVideoSessionUserUnmuted,
     markVideoSessionUserUnmuted,
+    setForyouPlayerMuted,
 } from '@/pages/user/VideoPage/videoSessionMute';
+import {
+    bindForyouIosPlayRetry,
+    ensureForyouIosVideoLoad,
+    isForyouIosPlayback,
+    primeForyouIosLoadDataVideo,
+    safeForyouIosPlay,
+} from './foryouIosPlayback';
 import { formatVideoClock } from '@/pages/user/VideoPage/videoPlayerTimeFormat';
 import { putEpisodeDetailCache } from '@/pages/user/VideoPage/episodeDetailCache';
 import { readVideoOrientation, type VideoOrientation } from '@/pages/user/VideoPage/videoOrientation';
@@ -222,6 +230,8 @@ export function ForYouPlayer({
     const activePcDrawerClosingRef = isForYouFeed ? feedPcDrawerClosingRef : pcDrawerClosingRef;
     const displayData = feedInfoData ?? data;
     const isDesktop = useMinWidth768();
+    /** iOS H5 For You：专用起播链路（单 video DOM，不影响 Android） */
+    const isIosH5Foryou = Boolean(isForYouFeed && !isDesktop && isForyouIosPlayback());
     const staticBase = useMemo(() => String(configStore.config['static'] ?? ''), [configStore.config['static']]);
     const {
         shareOpen,
@@ -552,6 +562,9 @@ export function ForYouPlayer({
         if (isFeedColdAutoplay) {
             setForyouColdUnmuteOverlay(true);
             setVideoMutedUi(true);
+            if (isIosH5Foryou) {
+                setForyouPlayerMuted(true);
+            }
         } else {
             setForyouColdUnmuteOverlay(false);
             if (fromHomeVideoPlayback || hasVideoSessionUserUnmuted()) {
@@ -580,6 +593,13 @@ export function ForYouPlayer({
             const v = videoRef.current;
             if (v && urls.length > 0) {
                 resyncForyouVideoSources(v, urls);
+                if (isIosH5Foryou) {
+                    primeForyouIosLoadDataVideo(v, {
+                        isFeedColdAutoplay,
+                        fromHomeVideoPlayback,
+                        onMutedUi: setVideoMutedUi,
+                    });
+                }
             }
             scheduleForyouBufferLoader();
             setVideoFrameReady(false);
@@ -1191,6 +1211,52 @@ export function ForYouPlayer({
         isDesktop,
     ]);
 
+    /** iOS H5 For You：首页进入有声起播（Android 不走） */
+    useEffect(() => {
+        if (!isIosH5Foryou || episode?.lock === true) {
+            return;
+        }
+        if (playbackPolicy === 'paused') {
+            return;
+        }
+        if (isPerformanceNavigationReload() || !fromHomeVideoPlayback) {
+            return;
+        }
+        const v = videoRef.current;
+        if (!v || playbackSources.length === 0) {
+            return;
+        }
+        v.muted = false;
+        setVideoMutedUi(false);
+        ensureForyouIosVideoLoad(v);
+        safeForyouIosPlay(v);
+    }, [
+        isIosH5Foryou,
+        fromHomeVideoPlayback,
+        episode?.id,
+        playbackSources.length,
+        playbackPolicy,
+        episode?.lock,
+    ]);
+
+    /** iOS H5 For You：canplay/loadeddata 补播（Android 不走） */
+    const iosWantPlayRef = useRef(false);
+    useEffect(() => {
+        iosWantPlayRef.current =
+            isIosH5Foryou && playbackPolicy === 'autoplay' && episode?.lock !== true;
+    }, [isIosH5Foryou, playbackPolicy, episode?.lock, id]);
+
+    useEffect(() => {
+        if (!isIosH5Foryou || playbackPolicy === 'paused') {
+            return;
+        }
+        const v = videoRef.current;
+        if (!v) {
+            return;
+        }
+        return bindForyouIosPlayRetry(v, () => iosWantPlayRef.current);
+    }, [isIosH5Foryou, playbackPolicy, id, playbackSources.length]);
+
     useEffect(() => {
         if (!sessionBootstrapReady) {
             return;
@@ -1480,6 +1546,10 @@ export function ForYouPlayer({
         const onLoadedMetadata = () => {
             syncVideoOrientation();
             syncUiFromVideoTime();
+            if (isIosH5Foryou && isForYouFeed) {
+                setVideoFrameReady(true);
+                setCanPlay(true);
+            }
         };
         v.addEventListener('loadedmetadata', onLoadedMetadata);
         syncVideoOrientation();
@@ -1608,6 +1678,7 @@ export function ForYouPlayer({
         onFeedNext,
         onSetEpisode,
         props.index,
+        isIosH5Foryou,
     ]);
 
     useEffect(() => {

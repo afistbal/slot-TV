@@ -39,6 +39,8 @@ import { readVerticalPcKeyNavAction } from '@/pages/user/VideoPage/videoVertical
 import { bindVerticalPcWheelNav } from '@/pages/user/VideoPage/videoVerticalPcWheelNav';
 import { resolveForyouMountAutoplayFlags } from './foryouAutoplayPolicy';
 
+import { isForyouIosPlayback, kickForyouIosGestureAutoplay } from './foryouIosPlayback';
+
 import './foryou-vertical.scss';
 
 /**
@@ -125,14 +127,17 @@ export default function ForYouVerticalSwiper() {
         feedIndexRestoredRef.current = true;
         const saved = getForyouFeedSession()?.activeIndex ?? 0;
         const target = Math.min(Math.max(0, saved), list.length - 1);
-        if (target !== activeIndexRef.current) {
-            setActiveIndex(target);
-            activeIndexRef.current = target;
-        }
+        /** 勿先 setActiveIndex 再 slideTo：React 会先 pause/abort 当前条，Swiper 仍停在旧 slide → 黑屏 */
         requestAnimationFrame(() => {
             const swiper = swiperRef.current;
-            if (swiper && swiper.activeIndex !== target) {
+            if (!swiper) {
+                return;
+            }
+            if (swiper.activeIndex !== target) {
                 swiper.slideTo(target, 0);
+            } else if (target !== activeIndexRef.current) {
+                activeIndexRef.current = target;
+                setActiveIndex(target);
             }
         });
     }, [loading, list.length]);
@@ -231,19 +236,28 @@ export default function ForYouVerticalSwiper() {
         (swiper: SwiperClass) => {
             feedColdAutoplayRef.current = false;
 
+            /** Swiper init/update 可能触发同 index 的 transitionStart，误 abort 会把 src 清掉且 React 不写回 */
+            if (swiper.activeIndex === swiper.previousIndex) {
+                return;
+            }
+
             const prevItem = list[swiper.previousIndex];
             saveProgressForItem(prevItem, videoResumeRef.current);
             abortForyouVideoLoad(videoResumeRef.current);
             videoResumeRef.current = null;
 
             const next = swiper.activeIndex;
-            if (next !== swiper.previousIndex) {
-                markH5SwipeAutoplayIntent();
-            }
+            markH5SwipeAutoplayIntent();
 
             setActiveIndex(next);
 
             onActiveIndexChange(next);
+
+            if (!isDesktop && isForyouIosPlayback()) {
+                requestAnimationFrame(() => {
+                    kickForyouIosGestureAutoplay(videoResumeRef.current);
+                });
+            }
         },
         [list, onActiveIndexChange, saveProgressForItem, markH5SwipeAutoplayIntent],
     );
