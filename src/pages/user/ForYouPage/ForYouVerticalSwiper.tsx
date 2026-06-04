@@ -113,7 +113,7 @@ export default function ForYouVerticalSwiper() {
 
         onSwiperTouchEnd,
 
-    } = useForyouFeed(sessionBootstrapReady);
+    } = useForyouFeed(sessionBootstrapReady, mountAutoplayRef.current.reloadLanding);
 
     useEffect(() => {
         setAnchorPlaybackReady(false);

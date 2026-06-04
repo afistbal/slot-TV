@@ -50,6 +50,9 @@ type Props = {
     hideIntroDrawer?: boolean;
     /** For You：仅用接口 tags 字段，不走 tag-labels */
     tagsFromBackendOnly?: boolean;
+    /** PC：倍速底栏挂到 9:16 视频舞台，宽度与视频一致 */
+    videoStageRef?: RefObject<HTMLElement | null>;
+    anchorSpeedDrawerToVideoStage?: boolean;
 };
 
 export function VideoPlayerEpisodeSpeedIntroDrawers({
@@ -72,7 +75,12 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     hideEpisodeDrawer = false,
     hideIntroDrawer = false,
     tagsFromBackendOnly = false,
+    videoStageRef,
+    anchorSpeedDrawerToVideoStage = false,
 }: Props) {
+    const speedDrawerContainer = anchorSpeedDrawerToVideoStage
+        ? (videoStageRef?.current ?? undefined)
+        : undefined;
     const tagLabel = tagsFromBackendOnly ? getBackendTagDisplayText : getTagDisplayText;
     useMovieTagLabelsReady();
     const episodeCount = data.episodes.length;
@@ -195,7 +203,11 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                     </DrawerContent>
                 </Drawer>
             ) : null}
-            <Drawer open={speedOpen} onOpenChange={onSpeedDrawerOpenChange}>
+            <Drawer
+                open={speedOpen}
+                onOpenChange={onSpeedDrawerOpenChange}
+                container={speedDrawerContainer}
+            >
                 <DrawerContent
                     className="video-h5-drawer video-h5-drawer--speed"
                     aria-describedby="PlaybackSpeed"

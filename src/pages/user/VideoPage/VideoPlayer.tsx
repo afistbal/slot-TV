@@ -119,6 +119,7 @@ export function VideoPlayer({
     const pcStageClusterRef = useRef<HTMLDivElement>(null);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
     const episodeRef = useRef<HTMLDivElement>(null);
+    const videoStageRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const intl = useIntl();
     const userStore = useUserStore();
@@ -1357,6 +1358,7 @@ export function VideoPlayer({
                                 }}
                             >
                             <div
+                                ref={videoStageRef}
                                 className={videoStageClassName}
                                 onClick={handleDesktopPlayerClick}
                                 onMouseEnter={handleDesktopPlayerMouseEnter}
@@ -1674,6 +1676,8 @@ export function VideoPlayer({
                         onCloseIntroductionLinks={() => setIntroduction(false)}
                         hideEpisodeDrawer
                         hideIntroDrawer
+                        videoStageRef={videoStageRef}
+                        anchorSpeedDrawerToVideoStage
                     />
                     <VideoPlayerPcCommerceDialogs
                         vip={vip}
@@ -1708,6 +1712,7 @@ export function VideoPlayer({
                     )}
                 >
                     <div
+                        ref={videoStageRef}
                         className={videoStageClassName}
                         onClick={(e) => {
                             if (!controllerVisible && !progressDragging) {

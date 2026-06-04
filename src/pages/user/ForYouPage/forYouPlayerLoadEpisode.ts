@@ -1,7 +1,7 @@
 import { WebVTT } from 'videojs-vtt.js';
 import type { RefObject } from 'react';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
-import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from '@/pages/user/VideoPage/episodeDetailCache';
+import { getForyouEpisodeFromCache } from './foryouEpisodeCache';
 import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
 import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
 import {
@@ -39,8 +39,6 @@ export type LoadEpisodeRuntime = {
     showController: (autoClose?: boolean) => void;
     hideController: () => void;
     controllerTimerRef: RefObject<number>;
-    /** ??? `fetchEpisodeDetailOrNull`???????`movie/episode` ???`auto_unlock` */
-    episodeFetchOpts?: EpisodeFetchOpts;
     isForYouFeed?: boolean;
     onVideoMutedUiSync?: (muted: boolean) => void;
     /** For You ??????????????? */
@@ -56,7 +54,7 @@ export type LoadEpisodeRuntime = {
 export async function runLoadEpisodeForForYouPlayer(
     rt: LoadEpisodeRuntime,
     id: number,
-    loading: boolean,
+    _loading: boolean,
 ): Promise<void> {
     /** ???? / ?????????????????????????????????????????????????????????????????????????????????? closure ????? hide */
     window.clearTimeout(rt.controllerTimerRef.current);
@@ -261,8 +259,9 @@ export async function runLoadEpisodeForForYouPlayer(
         }
     };
 
-    const d = await fetchEpisodeDetailOrNull(id, loading, rt.episodeFetchOpts);
+    const d = getForyouEpisodeFromCache(id);
     if (!d) {
+        rt.setLoading(false);
         rt.setPlaybackSources([]);
         return;
     }

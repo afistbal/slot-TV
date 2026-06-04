@@ -12,6 +12,7 @@ import {
 import { fetchForyouList, type ForyouFetchMode } from './fetchForyouList';
 import { mergeForyouFeedItems } from './foryouFeedMerge';
 import { clearForyouFeedProgress } from './foryouFeedProgress';
+import { clearForyouEpisodeCache } from './foryouEpisodeCache';
 import {
     clearForyouFeedSession,
     getForyouFeedSession,
@@ -63,7 +64,7 @@ function syncSession(
     });
 }
 
-export function useForyouFeed(sessionBootstrapReady: boolean) {
+export function useForyouFeed(sessionBootstrapReady: boolean, reloadLanding = false) {
     const cachedOnInit = getForyouFeedSession();
     const [list, setList] = useState<IForYouFeedItem[]>(() => cachedOnInit?.list ?? []);
     const [loading, setLoading] = useState(() => !(cachedOnInit?.list?.length));
@@ -120,6 +121,35 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
             return;
         }
 
+        /** F5 落页：不走 session 缓存，拉新一批推荐（`refresh=1`） */
+        if (reloadLanding) {
+            let cancelled = false;
+            setLoading(true);
+            clearForyouFeedProgress();
+            clearForyouEpisodeCache();
+            clearForyouFeedSession();
+            void runFetch('refresh').then((res) => {
+                if (cancelled) {
+                    return;
+                }
+                if (!res.ok) {
+                    setLoadError(res.message);
+                    setList([]);
+                    setHasMore(false);
+                } else {
+                    const rows = res.payload.data;
+                    const pp = res.payload.per_page ?? res.payload.count ?? FORYOU_DEFAULT_PER_PAGE;
+                    applyList(rows, res.payload.current_page ?? 1, inferHasMore(res.payload, pp), 0, pp, true);
+                    setLoadError(null);
+                }
+                setLoading(false);
+            });
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        /** SPA 从 /video 返回等同 tab 内：复用 session 列表，不重复打 foryou */
         const cached = getForyouFeedSession();
         if (cached?.list?.length) {
             pageRef.current = cached.page;
@@ -153,7 +183,7 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
         return () => {
             cancelled = true;
         };
-    }, [sessionBootstrapReady, applyList, runFetch]);
+    }, [sessionBootstrapReady, reloadLanding, applyList, runFetch]);
 
     const noteIndexReached = useCallback((index: number) => {
         if (index <= maxIndexReachedRef.current) {
@@ -178,6 +208,7 @@ export function useForyouFeed(sessionBootstrapReady: boolean) {
             const rows = res.payload.data;
             const pp = res.payload.per_page ?? res.payload.count ?? perPageRef.current;
             clearForyouFeedProgress();
+            clearForyouEpisodeCache();
             clearForyouFeedSession();
             applyList(rows, res.payload.current_page ?? 1, inferHasMore(res.payload, pp), 0, pp, true);
             setLoadError(null);

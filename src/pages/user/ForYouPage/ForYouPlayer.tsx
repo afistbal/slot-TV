@@ -66,7 +66,7 @@ import {
     safeForyouIosPlay,
 } from './foryouIosPlayback';
 import { formatVideoClock } from '@/pages/user/VideoPage/videoPlayerTimeFormat';
-import { putEpisodeDetailCache } from '@/pages/user/VideoPage/episodeDetailCache';
+import { putForyouEpisodeCache } from './foryouEpisodeCache';
 import { readVideoOrientation, type VideoOrientation } from '@/pages/user/VideoPage/videoOrientation';
 import {
     ForYouPlayerBottomInfo,
@@ -500,6 +500,10 @@ export function ForYouPlayer({
         ) {
             return;
         }
+        if (isForYouFeed) {
+            handleCenterTogglePlay(e);
+            return;
+        }
         const v = videoRef.current;
         if (!v) {
             return;
@@ -541,9 +545,6 @@ export function ForYouPlayer({
             showController,
             hideController,
             controllerTimerRef,
-            episodeFetchOpts: {
-                viewerIsVip: userStore.isVIP(),
-            },
             isForYouFeed,
             isFeedColdAutoplay,
             onVideoMutedUiSync: setVideoMutedUi,
@@ -612,12 +613,6 @@ export function ForYouPlayer({
 
     function handleVipEmbedClose() {
         setVip(false);
-    }
-
-    /** 充值/VIP 支付成功：RadixRc 已拉最新 `movie/episode`，写入缓存并走同一套 `loadData` 更新播放 */
-    function handleEmbedPaySuccessEpisodeDetail(d: IPlayerEpisode) {
-        putEpisodeDetailCache(Number(d.id) || id, d);
-        void loadData(id, false);
     }
 
     function handleSetEpisode(index: number) {
@@ -916,6 +911,22 @@ export function ForYouPlayer({
     //     onReload();
     // }
 
+    /** For You H5：点视频空白区走与居中按钮相同的 toggle（侧栏/底栏等除外） */
+    function handleForyouControllerTap(e: React.MouseEvent<HTMLElement>) {
+        if (progressDragStartRef.current || episode?.lock) {
+            return;
+        }
+        const target = e.target as HTMLElement;
+        if (
+            target.closest(
+                '.video-player-h5-bottom, .video-player-h5-side-actions, .video-player-h5-topbar, .foryou-player-h5-topbar, .video-player-progress-scrub, .foryou-watch-full-btn',
+            )
+        ) {
+            return;
+        }
+        handleCenterTogglePlay(e);
+    }
+
     function handleCenterTogglePlay(e: React.MouseEvent<HTMLElement>) {
         if (videoRef.current === null) {
             return;
@@ -942,7 +953,17 @@ export function ForYouPlayer({
         setPlaying(!v.paused);
     }
 
+    /** For You：暂停时展示播放三角 icon；播放中不展示两竖杠，点视频区 toggle */
+    const foryouMediaReady =
+        canPlay || videoFrameReady || playbackStarted;
+    const showForyouCenterPlayIcon =
+        isForYouFeed &&
+        episode?.lock === false &&
+        !playing &&
+        foryouMediaReady &&
+        (!hideCenterPlayUntilFirstPlay || playbackStarted || videoFrameReady);
     const showCenterPlayControl =
+        !isForYouFeed &&
         canPlay &&
         episode?.lock === false &&
         (!hideCenterPlayUntilFirstPlay || playbackStarted || videoFrameReady) &&
@@ -1262,7 +1283,7 @@ export function ForYouPlayer({
             return;
         }
         if (isForYouFeed && feedItem) {
-            putEpisodeDetailCache(feedItem.ep_id, buildEpisodeFromFeedItem(feedItem));
+            putForyouEpisodeCache(feedItem.ep_id, buildEpisodeFromFeedItem(feedItem));
             setFavorite(Boolean(feedItem.is_favor) || data.info.is_favorite === 1);
             void loadData(feedItem.ep_id);
             return;
@@ -1993,7 +2014,19 @@ export function ForYouPlayer({
                                 )}
                                 ref={controllerRef}
                             >
-                                {showCenterPlayControl && !showPcUnmuteOverlay && (
+                                {showForyouCenterPlayIcon && !showPcUnmuteOverlay && (
+                                    <div
+                                        className="video-player-center-play video-player-center-play--pc-decor pointer-events-none absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 items-center justify-center p-0"
+                                        aria-hidden
+                                    >
+                                        <img
+                                            src={iconPlay1}
+                                            alt=""
+                                            className="h-16 w-16 object-contain"
+                                        />
+                                    </div>
+                                )}
+                                {!isForYouFeed && showCenterPlayControl && !showPcUnmuteOverlay && (
                                     <button
                                         type="button"
                                         className="video-player-center-play video-player-center-play--pc-decor absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
@@ -2264,8 +2297,6 @@ export function ForYouPlayer({
                         vip={vip}
                         onVipOpenChange={setVip}
                         onVipEmbedClose={handleVipEmbedClose}
-                        embedVideoEpisodeRowId={id}
-                        onEmbedPaySuccessEpisodeDetail={handleEmbedPaySuccessEpisodeDetail}
                         vipHeaderEpisodeUnlockCoins={episode != null ? episode.unlock_coins : undefined}
                         shareOpen={shareOpen}
                         onShareOpenChange={setShareOpen}
@@ -2307,7 +2338,14 @@ export function ForYouPlayer({
                                     : 'foryou-player-video-stage--pending'),
                         )}
                         onClick={(e) => {
-                            if (!controllerVisible && !progressDragging) {
+                            if (progressDragging) {
+                                return;
+                            }
+                            if (isForYouFeed) {
+                                handleCenterTogglePlay(e);
+                                return;
+                            }
+                            if (!controllerVisible) {
                                 e.stopPropagation();
                                 setCenterPlayUiEngaged(true);
                                 showController();
@@ -2381,11 +2419,12 @@ export function ForYouPlayer({
                 <div
                     className={cn(
                         videoPlayerUiClassName,
+                        isForYouFeed && 'foryou-player-ui--tap-through',
                         /** 与 PC 一致：静音蒙层出现时勿让全屏控制层挡在「取消静音」之上 */
                         showH5FullscreenUnmuteOverlay && 'pointer-events-none',
                     )}
                     ref={controllerRef}
-                    onClick={handleControllerTouchStart}
+                    onClick={isForYouFeed ? handleForyouControllerTap : handleControllerTouchStart}
                 >
                     {!isFullscreenUi && isForYouFeed ? (
                         <div
@@ -2425,7 +2464,19 @@ export function ForYouPlayer({
                             </div>
                         </div>
                     ) : null}
-                    {showCenterPlayControl && !showH5FullscreenUnmuteOverlay && (
+                    {showForyouCenterPlayIcon && !showH5FullscreenUnmuteOverlay && (
+                        <div
+                            className="video-player-center-play pointer-events-none absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 items-center justify-center p-0"
+                            aria-hidden
+                        >
+                            <img
+                                src={iconPlay1}
+                                alt=""
+                                className="h-16 w-16 object-contain"
+                            />
+                        </div>
+                    )}
+                    {!isForYouFeed && showCenterPlayControl && !showH5FullscreenUnmuteOverlay && (
                         <button
                             type="button"
                             className="video-player-center-play absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"
@@ -2645,8 +2696,6 @@ export function ForYouPlayer({
                     vip={vip}
                     onVipOpenChange={setVip}
                     onVipEmbedClose={handleVipEmbedClose}
-                    embedVideoEpisodeRowId={id}
-                    onEmbedPaySuccessEpisodeDetail={handleEmbedPaySuccessEpisodeDetail}
                     vipHeaderEpisodeUnlockCoins={episode != null ? episode.unlock_coins : undefined}
                     shareOpen={shareOpen}
                     onShareOpenChange={setShareOpen}

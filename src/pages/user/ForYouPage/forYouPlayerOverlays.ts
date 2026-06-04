@@ -6,11 +6,11 @@ export {
     VideoPlayerEpisodeSpeedIntroDrawers as ForYouPlayerEpisodeSpeedIntroDrawers,
 } from '@/pages/user/VideoPage/views/VideoPlayerEpisodeSpeedIntroDrawers';
 export {
-    VideoPlayerH5CommerceDrawers as ForYouPlayerH5CommerceDrawers,
-} from '@/pages/user/VideoPage/views/VideoPlayerH5CommerceDrawers';
+    ForYouPlayerH5CommerceDrawers,
+} from './views/ForYouPlayerH5CommerceDrawers';
 export {
-    VideoPlayerPcCommerceDialogs as ForYouPlayerPcCommerceDialogs,
-} from '@/pages/user/VideoPage/views/VideoPlayerPcCommerceDialogs';
+    ForYouPlayerPcCommerceDialogs,
+} from './views/ForYouPlayerPcCommerceDialogs';
 export {
     VideoPlayerPcEpisodeDrawer as ForYouPlayerPcEpisodeDrawer,
 } from '@/pages/user/VideoPage/views/VideoPlayerPcEpisodeDrawer';

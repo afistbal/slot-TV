@@ -3,15 +3,20 @@ import {
     isDocumentReload,
 } from '@/pages/user/VideoPage/videoPlayerUtils';
 
+import { clearForyouEpisodeCache } from './foryouEpisodeCache';
+import { clearForyouFeedSession } from './foryouFeedSession';
+
 const FORYOU_RELOAD_LANDING_KEY = 'foryou-reload-landing';
 
-/** 文档级 F5 时写入；For You 首次 mount 消费一次，避免与 SPA「从首页进入」互相覆盖 */
+/** 文档级 F5：标记冷启动 + 清 feed 会话，mount 时重新拉 `/api/foryou?refresh=1` */
 if (typeof window !== 'undefined' && isDocumentReload()) {
     try {
         sessionStorage.setItem(FORYOU_RELOAD_LANDING_KEY, '1');
     } catch {
         // ignore
     }
+    clearForyouFeedSession();
+    clearForyouEpisodeCache();
 }
 
 /**

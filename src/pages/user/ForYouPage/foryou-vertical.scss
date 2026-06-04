@@ -193,3 +193,23 @@
     opacity: 1;
     transition: opacity 0.4s ease;
 }
+
+/** For You H5：沉浸态控制层穿透，点视频区 toggle；侧栏/底栏/顶栏仍可交互 */
+.foryou-feed-player .foryou-player-ui--tap-through.video-player-ui--chrome-hidden {
+    pointer-events: none !important;
+
+    * {
+        pointer-events: none !important;
+    }
+
+    .video-player-h5-bottom,
+    .video-player-h5-bottom *,
+    .video-player-h5-side-actions,
+    .video-player-h5-side-actions *,
+    .video-player-h5-topbar,
+    .video-player-h5-topbar *,
+    .foryou-player-h5-topbar,
+    .foryou-player-h5-topbar * {
+        pointer-events: auto !important;
+    }
+}

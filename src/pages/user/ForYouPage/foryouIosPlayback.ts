@@ -107,6 +107,15 @@ function shouldIosBlockMuteFallback(isFeedColdAutoplay: boolean, wasSwipe: boole
     return wasSwipe;
 }
 
+function isIosPlayAbortError(err: unknown): boolean {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+        return true;
+    }
+    return Boolean(
+        err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'AbortError',
+    );
+}
+
 function playWithOptionalMuteFallback(
     v: HTMLVideoElement,
     preferSoundAutoplay: boolean,
@@ -117,7 +126,10 @@ function playWithOptionalMuteFallback(
 ): void {
     v.play()
         .then(onSuccess)
-        .catch(() => {
+        .catch((err: unknown) => {
+            if (isIosPlayAbortError(err)) {
+                return;
+            }
             if (preferSoundAutoplay && !v.muted) {
                 if (blockIosMuteFallback) {
                     v.muted = false;
@@ -129,7 +141,11 @@ function playWithOptionalMuteFallback(
                 onMutedUi();
                 v.play()
                     .then(onSuccess)
-                    .catch(onPlayFail);
+                    .catch((mutedErr: unknown) => {
+                        if (!isIosPlayAbortError(mutedErr)) {
+                            onPlayFail();
+                        }
+                    });
                 return;
             }
             onPlayFail();
@@ -162,6 +178,10 @@ export function kickForyouIosAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoEleme
     };
 
     const scheduleWhenBuffered = (run: () => void) => {
+        if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            run();
+            return;
+        }
         run();
         scheduleForyouIosWhenReady(el, run);
     };
@@ -259,6 +279,10 @@ export function primeForyouIosLoadDataVideo(
     }
     ensureForyouIosVideoLoad(video);
     if (opts.isFeedColdAutoplay) {
+        video.muted = true;
+        opts.onMutedUi(true);
+        setForyouPlayerMuted(true);
+        safeForyouIosPlay(video);
         return;
     }
     video.muted = false;

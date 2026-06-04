@@ -1,7 +1,7 @@
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
 import { buildEpisodeFromFeedItem } from './foryouFeedUtils';
-import { putEpisodeDetailCache } from '@/pages/user/VideoPage/episodeDetailCache';
+import { putForyouEpisodeCache } from './foryouEpisodeCache';
 import { evictPrewarmExcept, putPrewarmedVideo } from './foryouPrewarmPool';
 
 const FORYOU_MEDIA_PRECONNECT_ID = 'foryou-media-preconnect';
@@ -136,7 +136,7 @@ export function prewarmForyouFeedItem(
     staticBase: string,
     mode: ForyouPrewarmMode = 'metadata',
 ): () => void {
-    putEpisodeDetailCache(item.ep_id, buildEpisodeFromFeedItem(item));
+    putForyouEpisodeCache(item.ep_id, buildEpisodeFromFeedItem(item));
     ensureForyouMediaPreconnect(staticBase);
     const url = resolveFeedVideoUrl(item, staticBase);
     if (!url || typeof document === 'undefined') {
