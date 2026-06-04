@@ -9,6 +9,7 @@ import UserHome from "@/pages/user/Home";
 import UserSearch from "@/pages/user/Search";
 import usePixel from "@/hooks/usePixel";
 import { matchSearchFamilyPath } from "@/lib/searchRoutes";
+import { isForDemoPathname } from "@/constants/forDemoRoute";
 import { isForYouPathname } from "@/constants/foryouRoute";
 import { syncFbAttributionCache } from "@/lib/fbAttribution";
 
@@ -67,6 +68,7 @@ export default function Component() {
         const { pathname } = location;
         if (isShoppingRoute) return true;
         if (isForYouPathname(pathname)) return true;
+        if (isForDemoPathname(pathname)) return true;
         return matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null;
     }, [location.pathname, isShoppingRoute]);
 

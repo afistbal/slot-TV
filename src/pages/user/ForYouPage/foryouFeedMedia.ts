@@ -5,8 +5,22 @@ import { putEpisodeDetailCache } from '@/pages/user/VideoPage/episodeDetailCache
 import { evictPrewarmExcept, putPrewarmedVideo } from './foryouPrewarmPool';
 
 const FORYOU_MEDIA_PRECONNECT_ID = 'foryou-media-preconnect';
+const FORYOU_MEDIA_DNS_PREFETCH_ID = 'foryou-media-dns-prefetch';
 
-/** 提前与 CDN 建连，略减每条 mp4 的 301/首包 RTT */
+function upsertHeadLink(id: string, rel: string, href: string): void {
+    let link = document.getElementById(id) as HTMLLinkElement | null;
+    if (!link) {
+        link = document.createElement('link');
+        link.id = id;
+        link.rel = rel;
+        document.head.appendChild(link);
+    }
+    if (link.href !== href) {
+        link.href = href;
+    }
+}
+
+/** 提前与 CDN 建连，略减每条 mp4 的 301/首包 RTT 与 TLS 握手 */
 export function ensureForyouMediaPreconnect(staticBase: string): void {
     if (typeof document === 'undefined') {
         return;
@@ -21,15 +35,11 @@ export function ensureForyouMediaPreconnect(staticBase: string): void {
     } catch {
         return;
     }
-    let link = document.getElementById(FORYOU_MEDIA_PRECONNECT_ID) as HTMLLinkElement | null;
-    if (!link) {
-        link = document.createElement('link');
-        link.id = FORYOU_MEDIA_PRECONNECT_ID;
-        link.rel = 'preconnect';
-        document.head.appendChild(link);
-    }
-    if (link.href !== origin) {
-        link.href = origin;
+    upsertHeadLink(FORYOU_MEDIA_DNS_PREFETCH_ID, 'dns-prefetch', origin);
+    upsertHeadLink(FORYOU_MEDIA_PRECONNECT_ID, 'preconnect', origin);
+    const preconnect = document.getElementById(FORYOU_MEDIA_PRECONNECT_ID) as HTMLLinkElement | null;
+    if (preconnect) {
+        preconnect.crossOrigin = 'anonymous';
     }
 }
 
