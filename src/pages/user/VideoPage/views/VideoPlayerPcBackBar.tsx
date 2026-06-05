@@ -9,7 +9,7 @@ export type VideoPlayerPcBackBarProps = {
     className?: string;
 };
 
-const PC_TOPNAV_LOGO_SELECTOR = '.video-vertical-pc-topnav .reelshort-topnav__brand-logo';
+const PC_TOPNAV_LOGO_SELECTOR = '.video-vertical-pc-topnav .reelshort-topnav__brand-wordmark';
 
 /** PC 左上返回：左缘与顶栏 Logo 图标对齐（设计图） */
 export function VideoPlayerPcBackBar({ episodeNo, onBack, className }: VideoPlayerPcBackBarProps) {

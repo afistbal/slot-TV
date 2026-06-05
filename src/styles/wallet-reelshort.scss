@@ -269,7 +269,6 @@
 /* PC Profile 嵌入 — 对齐 web_我的_充值记录 / web_我的_消费记录 */
 .rs-profile__pc-wallet {
     flex: 1 1 0%;
-    font-family: Roboto, Roboto;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -375,7 +374,6 @@
     display: grid;
     column-gap: 16px;
     padding: 0 var(--rs-wallet-pc-row-pad-x, 20px) var(--rs-wallet-pc-head-pad-b, 12px);
-    font-family: Roboto, Roboto;
     font-weight: 400;
     font-size: 16px;
     color: #FFFFFF;

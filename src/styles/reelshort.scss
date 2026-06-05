@@ -417,10 +417,12 @@ a.reelshort-topnav__brand-link {
 }
 
 .reelshort-topnav__brand-wordmark {
-    height: 24px;
-    max-width: min(calc(42 * var(--app-vw) / 100), 200px);
+    height: 28px;
+    width: auto;
+    max-width: min(calc(52 * var(--app-vw) / 100), 200px);
+    flex-shrink: 0;
     object-fit: contain;
-    object-position: left;
+    object-position: left center;
 }
 
 @media (min-width: 640px) {
@@ -531,9 +533,9 @@ a.reelshort-topnav__profile-link {
         --rs-pc-page-gutter-x: 8px;
     }
 
-    .reelshort-topnav__brand-logo {
-        height: clamp(38px, 3vw, 45px);
-        width: clamp(38px, 3vw, 45px);
+    .reelshort-topnav__brand-wordmark {
+        height: clamp(40px, 3.8vw, 52px);
+        max-width: min(280px, 42vw);
     }
 
     /* slot_old -> ReelShort CommonNav 映射：

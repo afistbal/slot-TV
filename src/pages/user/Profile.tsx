@@ -672,7 +672,7 @@ export default function Component() {
                     scrollParentRef={scrollRef}
                     /* PC?????????? brand-cluster ?? ? ????????H5 ?????/?? subnav */
                     showPrimaryNav={isPc}
-                    showSearch={true}
+                    showSearch={isPc}
                     showProfile={false}
                     leftAction={isPc ? 'menu' : 'none'}
                     rightActionsMode={isPc ? 'profilePc' : 'default'}

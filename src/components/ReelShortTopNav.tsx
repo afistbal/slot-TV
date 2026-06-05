@@ -13,7 +13,7 @@ import {
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
-import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
+import { BRAND_DISPLAY_NAME, BRAND_TOPNAV_WORDMARK_SRC } from '@/constants/brand';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
 import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
@@ -393,14 +393,6 @@ function TopNavSearchEntry() {
         </div>
       ) : null}
     </div>
-  );
-}
-
-function BrandWordmark() {
-  return (
-    <span className="reelshort-topnav__brand-text">
-      {BRAND_DISPLAY_NAME}
-    </span>
   );
 }
 
@@ -973,8 +965,11 @@ export function ReelShortTopNav({
 
             <div className="reelshort-topnav__brand-cluster reelshort-topnav__brand-cluster--with-primary">
               <Link to="/" className="reelshort-topnav__brand-link">
-                <img src={BRAND_LOGO_SRC} alt="" className="reelshort-topnav__brand-logo" />
-                <BrandWordmark />
+                <img
+                  src={BRAND_TOPNAV_WORDMARK_SRC}
+                  alt={BRAND_DISPLAY_NAME}
+                  className="reelshort-topnav__brand-wordmark"
+                />
               </Link>
               <nav
                 className="reelshort-topnav__pc-primary-nav"

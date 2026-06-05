@@ -1,8 +1,8 @@
 import { Page } from '@/layouts/user';
 import { FormattedMessage } from 'react-intl';
-import step1 from '@/assets/images/1.png';
-import step2 from '@/assets/images/2.png';
-import step3 from '@/assets/images/3.png';
+import step1 from '@/assets/images/new1.png';
+import step2 from '@/assets/images/new2.png';
+import step3 from '@/assets/images/new3.png';
 
 /** iOS 添加主屏幕说明：留白 + 顶栏返回 + 标题 */
 export default function Component() {

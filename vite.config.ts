@@ -15,7 +15,7 @@ const appVersion = packageJson.version ?? '0.0.0'
 function patchHtmlAssetRefs(html: string, version: string): string {
   const q = `?v=${encodeURIComponent(version)}`
   return html.replace(
-    /(href|src)="(\/(?:favorite\.svg|logo\.png|icons\/192\.png|icons\/512\.png|manifest\.json))(?:\?[^"#]*)?"/g,
+    /(href|src)="(\/(?:favorite\.svg|new-logo\.png|logo\.png|icons\/192\.png|icons\/512\.png|manifest\.json))(?:\?[^"#]*)?"/g,
     (_m, attr, p) => `${attr}="${p}${q}"`,
   )
 }
