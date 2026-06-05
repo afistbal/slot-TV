@@ -1,11 +1,13 @@
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 import Loader from '@/components/Loader';
 import { PageBackBar } from '@/components/PageBackBar';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
+import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { cn } from '@/lib/utils';
 
 type MyListLocationState = {
     sourceform?: string;
@@ -13,6 +15,7 @@ type MyListLocationState = {
 
 export default function Component() {
     const isPc = useMinWidth768();
+    const intl = useIntl();
     const location = useLocation();
     const navigate = useNavigate();
     const locationState = (location.state ?? {}) as MyListLocationState;
@@ -30,6 +33,76 @@ export default function Component() {
         // @ts-expect-error Flutter InAppWebView
         window.flutter_inappwebview
     );
+
+    const navigateTab = useCallback(
+        (v: 'favorite' | 'history') => {
+            navigate(
+                `${v === 'history' ? '/my-list/history' : '/my-list'}${
+                    sourceform ? `?sourceform=${encodeURIComponent(sourceform)}` : ''
+                }`,
+                {
+                    replace: true,
+                    state: sourceform ? { sourceform } : undefined,
+                },
+            );
+        },
+        [navigate, sourceform],
+    );
+
+    const outlet = (
+        <Suspense key={location.key} fallback={<Loader />}>
+            <Outlet key={location.key} />
+        </Suspense>
+    );
+
+    if (!isPc) {
+        return (
+            <div className="rs-my-list-page rs-my-list-page--h5 flex h-full min-h-0 flex-col bg-app-canvas text-white">
+                {showTopBar ? (
+                    <ReelShortTopNav leftAction="none" showSearch={false} showRightActions={false} />
+                ) : null}
+                <div className="rs-my-list-page__scroll flex min-h-0 min-w-0 flex-1 flex-col">
+                    <div className="rs-my-list-page__inner">
+                        <div className="rs-my-list-tx">
+                            <div
+                                className="rs-my-list-tx__tabs"
+                                role="tablist"
+                                aria-label={intl.formatMessage({ id: 'my_list_history_title' })}
+                            >
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={tab === 'favorite'}
+                                    className={cn(
+                                        'rs-my-list-tx__tab',
+                                        tab === 'favorite' && 'rs-my-list-tx__tab--active',
+                                    )}
+                                    onClick={() => navigateTab('favorite')}
+                                >
+                                    <FormattedMessage id="my_list" />
+                                </button>
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={tab === 'history'}
+                                    className={cn(
+                                        'rs-my-list-tx__tab',
+                                        tab === 'history' && 'rs-my-list-tx__tab--active',
+                                    )}
+                                    onClick={() => navigateTab('history')}
+                                >
+                                    <FormattedMessage id="nav_watch_history" />
+                                </button>
+                            </div>
+                            <div className="rs-my-list-tx__panel" role="tabpanel">
+                                {outlet}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="rs-my-list-page flex h-full min-h-0 flex-col bg-app-canvas text-white">
@@ -54,20 +127,10 @@ export default function Component() {
 
                 <Tabs
                     value={tab}
-                    onValueChange={(v) =>
-                        navigate(
-                            `${v === 'history' ? '/my-list/history' : '/my-list'}${
-                                sourceform ? `?sourceform=${encodeURIComponent(sourceform)}` : ''
-                            }`,
-                            {
-                            replace: true,
-                            state: sourceform ? { sourceform } : undefined,
-                        },
-                        )
-                    }
+                    onValueChange={(v) => navigateTab(v as 'favorite' | 'history')}
                     className="flex w-full shrink-0 flex-col bg-black"
                 >
-                    <TabsList className="flex w-full flex-wrap items-stretch justify-start gap-x-8 gap-y-2 overflow-visible rounded-none border-0 border-b border-white/10 bg-black p-[calc(4/100*var(--app-vw))] pb-[calc(6/100*var(--app-vw)+2px)] text-[calc(3.73333/100*var(--app-vw))] shadow-none md:p-4 md:pb-6 md:text-sm">
+                    <TabsList className="flex w-full flex-wrap items-stretch justify-start gap-x-8 gap-y-2 overflow-visible rounded-none border-0 border-b border-white/10 bg-black p-4 pb-6 text-sm shadow-none">
                         <TabsTrigger
                             value="favorite"
                             className="rs-my-list__tabTrigger rounded-none border-0 bg-transparent px-0 py-1 text-inherit font-normal leading-normal text-white/60 shadow-none ring-offset-0 transition-colors hover:text-white/80 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
@@ -84,20 +147,13 @@ export default function Component() {
                 </Tabs>
             </div>
 
-            {/* 列表单独滚动，页脚固定在视口底部（内容少时也在最下方，不跟在首屏内容后） */}
             <div className="flex min-h-0 flex-1 flex-col">
                 <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-                    <div className="flex min-h-full min-w-0 flex-1 flex-col">
-                        <Suspense key={location.key} fallback={<Loader />}>
-                            <Outlet key={location.key} />
-                        </Suspense>
-                    </div>
+                    <div className="flex min-h-full min-w-0 flex-1 flex-col">{outlet}</div>
                 </div>
-                {isPc ? (
-                    <div className="shrink-0">
-                        <ReelShortFooter dockAboveBottomTab />
-                    </div>
-                ) : null}
+                <div className="shrink-0">
+                    <ReelShortFooter dockAboveBottomTab />
+                </div>
             </div>
         </div>
     );

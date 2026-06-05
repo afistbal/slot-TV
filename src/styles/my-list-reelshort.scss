@@ -3,27 +3,122 @@
  * 入口：main.tsx import
  */
 
-/* --- Tab 选中：对标 LibraryPage_activeKey ::after 横条 --- */
+/* —— H5 一级页布局（对齐 /wallet rs-wallet-page--h5） —— */
+.rs-my-list-page--h5 {
+    background: #000;
+
+    .rs-my-list-page__scroll {
+        background: #000;
+    }
+}
+
+.rs-my-list-page__scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.rs-my-list-page__inner {
+    padding: calc(16 / 375 * var(--app-vw));
+    padding-bottom: calc(24 / 375 * var(--app-vw));
+    padding-top: 0;
+    box-sizing: border-box;
+}
+
+.rs-my-list-tx {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    color: hsla(0, 0%, 100%, 0.9);
+}
+
+.rs-my-list-tx__tabs {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    width: 100%;
+    gap: calc(32 / 375 * var(--app-vw));
+    padding: calc(12 / 375 * var(--app-vw)) 0 calc(10 / 375 * var(--app-vw));
+    border: 0;
+    background: #000;
+}
+
+.rs-my-list-tx__tab {
+    position: relative;
+    flex: 0 0 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 calc(8 / 375 * var(--app-vw));
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.25;
+    text-align: left;
+    color: #888888;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-my-list-tx__tab--active {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+
+    &::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        width: 24px;
+        height: 2px;
+        background-color: #e83a57;
+        transform: translateX(-50%);
+        border-radius: 2px;
+    }
+}
+
+.rs-my-list-tx__panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.rs-my-list-page--h5 .rs-my-list__grid {
+    padding: calc(8 / 375 * var(--app-vw)) 0 calc(24 / 375 * var(--app-vw));
+}
+
+/* H5 一级页：顶栏与 Tab 区均无横线分隔（设计稿） */
+.rs-my-list-page--h5 .reelshort-topnav {
+    border-bottom: 0;
+}
+
+/* --- PC Tab：与 H5 设计稿一致（灰字 / 选中白字加粗 + 短下划线） --- */
 .rs-my-list__tabTrigger {
     position: relative;
     border-bottom: 0 !important;
+    font-size: 16px;
+    font-weight: 400;
+    color: #888888 !important;
 
-    &[data-state='active']::after {
-        content: '';
-        position: absolute;
-        bottom: calc(-1.6 / 100 * var(--app-vw));
-        left: 50%;
-        width: calc(8.8 / 100 * var(--app-vw));
-        height: calc(0.8 / 100 * var(--app-vw));
-        background-color: #e83a57;
-        transform: translateX(-50%);
-    }
+    &[data-state='active'] {
+        font-size: 18px;
+        font-weight: 600;
+        color: #fff !important;
 
-    @media (min-width: 768px) {
-        &[data-state='active']::after {
+        &::after {
+            content: '';
+            position: absolute;
+            left: 50%;
             bottom: -6px;
-            width: 33px;
+            width: 24px;
             height: 3px;
+            background-color: #e83a57;
+            transform: translateX(-50%);
+            border-radius: 2px;
         }
     }
 }

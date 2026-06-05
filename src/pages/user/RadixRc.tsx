@@ -9,7 +9,7 @@ import { api } from '@/api';
 import { cn } from '@/lib/utils';
 import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer';
-import vipCardBg from '@/assets/images/5c3ff370-f045-11f0-84ad-6b5693b490dc.png';
+import vipCardBg from '@/assets/images/img_vip2-2.png';
 import iconUnlimitedViewing from '@/assets/images/icon_unlimited_viewing.png';
 import icon1080p from '@/assets/images/icon_1080p.png';
 import { profileH5Assets } from '@/constants/profileAssets';
