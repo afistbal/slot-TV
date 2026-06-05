@@ -1421,48 +1421,59 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                 </div>
                             </div>
                         ) : (
-                            <div className="rs-search-page__results rs-search-page__results--h5">
+                            <div
+                                className={cn(
+                                    'rs-search-page__results rs-search-page__results--h5',
+                                    (searchStore.loading || searchStore.list.length === 0) &&
+                                        'rs-search-page__results--h5Shell',
+                                )}
+                            >
                                 {searchStore.loading ? (
                                     <Loader />
                                 ) : searchStore.list.length === 0 ? (
                                     <NoContent />
                                 ) : (
-                                    <div className="rs-search-page__grid">
-                                        {searchStore.list.map((v) => (
-                                            <Link
-                                                to={`/video/${v['id']}`}
-                                                state={VIDEO_FROM_HOME_STATE}
-                                                key={String(v['id'])}
-                                                className="rs-search-page__card"
-                                            >
-                                                <Image
-                                                    height={1.3325}
-                                                    width="100%"
-                                                    alt={v['title'] as string}
-                                                    src={movieCoverUrl(v, configStore.config['static'] as string) ?? ''}
-                                                    className="rs-search-page__poster"
-                                                />
-                                                <div className="rs-search-page__title">{`${v['title']}`}</div>
-                                            </Link>
-                                        ))}
-                                    </div>
+                                    <>
+                                        <div className="rs-search-page__grid">
+                                            {searchStore.list.map((v) => (
+                                                <Link
+                                                    to={`/video/${v['id']}`}
+                                                    state={VIDEO_FROM_HOME_STATE}
+                                                    key={String(v['id'])}
+                                                    className="rs-search-page__card"
+                                                >
+                                                    <Image
+                                                        height={1.3325}
+                                                        width="100%"
+                                                        alt={v['title'] as string}
+                                                        src={
+                                                            movieCoverUrl(
+                                                                v,
+                                                                configStore.config['static'] as string,
+                                                            ) ?? ''
+                                                        }
+                                                        className="rs-search-page__poster"
+                                                    />
+                                                    <div className="rs-search-page__title">{`${v['title']}`}</div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                        <InView
+                                            as="div"
+                                            onChange={handleMoreChange}
+                                            className="rs-search-page__inview"
+                                        >
+                                            {searchStore.more ? (
+                                                <LoaderCircle className="rs-search-page__spinner" />
+                                            ) : (
+                                                <div className="rs-search-page__noMore">
+                                                    <FormattedMessage id="no_more" />
+                                                </div>
+                                            )}
+                                        </InView>
+                                    </>
                                 )}
                             </div>
-                        )}
-                        {!isPc && !searchStore.loading && (
-                            <InView
-                                as="div"
-                                onChange={handleMoreChange}
-                                className="rs-search-page__inview"
-                            >
-                                {searchStore.more ? (
-                                    <LoaderCircle className="rs-search-page__spinner" />
-                                ) : (
-                                    <div className="rs-search-page__noMore">
-                                        <FormattedMessage id="no_more" />
-                                    </div>
-                                )}
-                            </InView>
                         )}
                     </div>
                 </div>

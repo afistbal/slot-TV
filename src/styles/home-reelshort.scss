@@ -751,6 +751,15 @@
 
 }
 
+/* PC Banner 封面下剧名：强制无衬线栈（避免仅写 Inter/Noto 未加载时 Mac 回退到衬线体） */
+@media (min-width: 768px) {
+    .ns-pc-hero-card-title {
+        font-family: var(--fontFamily);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
 /* PC 首屏大幕布 `home-bg.png` 上叠层（`Home.tsx` z-0 容器内，在轮播/顶栏之下），与 H5 同套压暗逻辑 */
 @media (min-width: 768px) {
     .ns-pc-hero-vignette {

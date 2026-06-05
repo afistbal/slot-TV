@@ -366,7 +366,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                     </div>
                                     {isCenter && (
                                         <div className="absolute left-0 right-0 top-full mt-[12px] flex flex-col justify-center px-2 text-left">
-                                            <span className="truncate font-[Inter] text-[22px] font-medium leading-snug text-white">
+                                            <span className="ns-pc-hero-card-title truncate text-[22px] font-medium leading-snug text-white">
                                                 {item.title ?? ''}
                                             </span>
                                         </div>
@@ -380,7 +380,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                         >
                                             <span
                                                 className={cn(
-                                                    'truncate font-[Inter] text-[15px] font-medium leading-snug text-white/80',
+                                                    'ns-pc-hero-card-title truncate text-[15px] font-medium leading-snug text-white/80',
                                                     rel === 1 ? 'w-full' : 'w-[70%]',
                                                 )}
                                             >

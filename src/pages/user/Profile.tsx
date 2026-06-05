@@ -503,7 +503,7 @@ export default function Component() {
                 <div className="rs-profile__h5VipBenefit">
                     <img src={profileH5Assets.benefitHd} alt="" className="rs-profile__h5VipBenefitIcon" />
                     <span>
-                        <FormattedMessage id="shopping_benefit_1080p" />
+                        <FormattedMessage id="shopping_benefit_hd" />
                     </span>
                 </div>
                 <div className="rs-profile__h5VipBenefit">
