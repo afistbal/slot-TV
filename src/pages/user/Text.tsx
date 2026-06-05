@@ -271,7 +271,7 @@ export default function Component() {
     const pageKey = parseLegalPageKey(titleParam);
     const pageTitleId = LEGAL_PAGE_TITLE_IDS[pageKey];
 
-    /** 浏览器标签标题：全视口生效：`<文案> – YogoShort>`；图标见项目根目录 `index.html`（`/favorite.png`、`/logo.png`）。 */
+    /** 浏览器标签标题：全视口生效：`<文案> – YogoShort>`；图标见项目根目录 `index.html`（`/favorite.png`、`/new-logo.png`）。 */
     useEffect(() => {
         const prev = document.title;
         document.title = `${intl.formatMessage({ id: pageTitleId })} – ${BRAND_DISPLAY_NAME}`;

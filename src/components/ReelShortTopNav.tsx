@@ -13,7 +13,7 @@ import {
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
-import { BRAND_DISPLAY_NAME, BRAND_TOPNAV_WORDMARK_SRC } from '@/constants/brand';
+import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC, BRAND_TOPNAV_WORDMARK_SRC } from '@/constants/brand';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
 import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
@@ -548,7 +548,7 @@ function TopNavInstallEntry() {
               <FormattedMessage id="pwa_open" />
             </button>
           </div>
-          <img src="/logo.png" alt="logo" className="reelshort-topnav__download-logo" />
+          <img src={BRAND_LOGO_SRC} alt="logo" className="reelshort-topnav__download-logo" />
         </DropdownMenuContent>
       </div>
     </DropdownMenu>

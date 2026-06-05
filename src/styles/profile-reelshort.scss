@@ -507,8 +507,9 @@
     }
 
     .rs-profile__menuChevronIcon {
-        width: calc(11 / 375 * var(--app-vw));
-        height: calc(11 / 375 * var(--app-vw));
+        width: calc(14 / 375 * var(--app-vw));
+        height: calc(14 / 375 * var(--app-vw));
+        object-fit: contain;
     }
 }
 

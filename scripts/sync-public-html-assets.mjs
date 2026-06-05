@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 /** 与 `vite.config.ts` 中 `patchHtmlAssetRefs` 保持一致：本地静态资源加 `?v=` 清缓存。 */
 const ASSET_REF_RE =
-    /(href|src)="(\/(?:favorite\.svg|new-logo\.png|logo\.png|icons\/192\.png|icons\/512\.png|manifest\.json))(?:\?[^"#]*)?"/g;
+    /(href|src)="(\/(?:favorite\.svg|new-logo\.png|icons\/new-192\.png|icons\/new-512\.png|manifest\.json))(?:\?[^"#]*)?"/g;
 
 export function patchHtmlAssetRefsString(html, version) {
     const q = `?v=${encodeURIComponent(version)}`;

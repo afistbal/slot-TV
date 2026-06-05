@@ -4,7 +4,7 @@
  */
 export const BRAND_DISPLAY_NAME = 'YogoShort';
 
-export const BRAND_LOGO_SRC = '/logo.png';
+export const BRAND_LOGO_SRC = '/new-logo.png';
 
 /** 顶栏品牌链接：Logo + 字标合一的横版 WebP */
 export const BRAND_TOPNAV_WORDMARK_SRC = '/web_logo.webp';
