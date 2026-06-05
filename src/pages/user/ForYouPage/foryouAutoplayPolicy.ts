@@ -3,13 +3,19 @@ import {
     isDocumentReload,
 } from '@/pages/user/VideoPage/videoPlayerUtils';
 
+import { isForYouPathname } from '@/constants/foryouRoute';
+
 import { clearForyouEpisodeCache } from './foryouEpisodeCache';
 import { clearForyouFeedSession } from './foryouFeedSession';
 
 const FORYOU_RELOAD_LANDING_KEY = 'foryou-reload-landing';
 
-/** 文档级 F5：标记冷启动 + 清 feed 会话，mount 时重新拉 `/api/foryou?refresh=1` */
-if (typeof window !== 'undefined' && isDocumentReload()) {
+/** 仅在 For You 页 F5：标记冷启动 + 清 feed 会话（首页等其它页 reload 不误伤站内跳转有声播） */
+if (
+    typeof window !== 'undefined' &&
+    isDocumentReload() &&
+    isForYouPathname(window.location.pathname)
+) {
     try {
         sessionStorage.setItem(FORYOU_RELOAD_LANDING_KEY, '1');
     } catch {
