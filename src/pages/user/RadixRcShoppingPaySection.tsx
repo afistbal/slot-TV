@@ -685,17 +685,6 @@ export default function RadixRcShoppingPaySection({
                 visuallyHidden={payment !== 3}
                 inert={googlePayFocusGuard}
             />
-
-            {!checkoutTargetProductId ? (
-                <div className="text-xs text-white/60 mt-2">
-                    <FormattedMessage id="loading" defaultMessage="Loading" />
-                </div>
-            ) : null}
-            {!sessionReady ? (
-                <div className="text-xs text-white/60 mt-2">
-                    <FormattedMessage id="loading" defaultMessage="Loading" />
-                </div>
-            ) : null}
         </div>
     );
 }
