@@ -142,12 +142,6 @@ function totalCoinsForCoinProduct(p: Pick<Product, 'coin' | 'bouns'>): number {
     return baseCoin + bonusCoins;
 }
 
-function pickDefaultSubscriptionPlanId(list: Product[]): number | null {
-    const subs = list.filter((p) => p.type === 1);
-    const planPick = subs.length > 0 ? subs : list;
-    return planPick[0]?.id ?? null;
-}
-
 export type RadixRcLayout = 'page' | 'embed';
 
 export type RadixRcProps = {
@@ -231,10 +225,7 @@ export default function RadixRc({
     const [loadingProducts, setLoadingProducts] = useState(
         () => !shoppingProductCache.has(productFrom),
     );
-    const [currentId, setCurrentId] = useState<number | null>(() => {
-        const cached = shoppingProductCache.get(productFrom);
-        return cached?.length ? pickDefaultSubscriptionPlanId(cached) : null;
-    });
+    const [currentId, setCurrentId] = useState<number | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
     const tipSiteValues = useMemo(
@@ -248,6 +239,14 @@ export default function RadixRc({
     onEmbedCloseRef.current = onEmbedClose;
     const onEmbedPaySuccessEpisodeDetailRef = useRef(onEmbedPaySuccessEpisodeDetail);
     onEmbedPaySuccessEpisodeDetailRef.current = onEmbedPaySuccessEpisodeDetail;
+    const payModalOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    function clearPayModalOpenTimer() {
+        if (payModalOpenTimerRef.current != null) {
+            window.clearTimeout(payModalOpenTimerRef.current);
+            payModalOpenTimerRef.current = null;
+        }
+    }
 
     useEffect(() => {
         let cancelled = false;
@@ -300,11 +299,14 @@ export default function RadixRc({
     }, [layout, productFrom, sessionBootstrapReady]);
 
     function closePayModal() {
+        clearPayModalOpenTimer();
         setShowPaidServiceAgreement(false);
         setPayModalStatus('idle');
         setShowPayModal(false);
         setPaySessionSeed((prev) => prev + 1);
     }
+
+    useEffect(() => () => clearPayModalOpenTimer(), []);
 
     useEffect(() => {
         if (payModalStatus !== 'success' || !showPayModal) return;
@@ -366,7 +368,6 @@ export default function RadixRc({
         const cached = shoppingProductCache.get(productFrom);
         if (cached?.length) {
             setProducts(cached);
-            setCurrentId(pickDefaultSubscriptionPlanId(cached));
             setLoadingProducts(false);
             return;
         }
@@ -385,7 +386,6 @@ export default function RadixRc({
                 if (res.c !== 0) return;
                 shoppingProductCache.set(productFrom, res.d);
                 setProducts(res.d);
-                setCurrentId(pickDefaultSubscriptionPlanId(res.d));
             })
             .finally(() => {
                 if (!alive) return;
@@ -422,11 +422,15 @@ export default function RadixRc({
     const retryAmount = currentCheckoutProduct?.price ? `$${currentCheckoutProduct.price}` : '';
 
     function handleSelectPlan(productId: number) {
+        clearPayModalOpenTimer();
         setCurrentId(productId);
         setPayModalStatus('idle');
         setShowPaidServiceAgreement(false);
-        setShowPayModal(true);
         setPaySessionSeed((prev) => prev + 1);
+        payModalOpenTimerRef.current = setTimeout(() => {
+            payModalOpenTimerRef.current = null;
+            setShowPayModal(true);
+        }, 500);
     }
 
     const showCountdown = !loadingProducts && products.length > 0;
@@ -559,8 +563,9 @@ export default function RadixRc({
                     const enableInteraction = true;
                     const planPeriod = resolveSubscriptionPeriod(p.name);
                     const isWeeklyPlan = planPeriod === 'weekly';
+                    const isPlanSelected = currentId === p.id;
                     const planBenefitIcons = isReelshortH5StoreUi
-                        ? isWeeklyPlan
+                        ? isPlanSelected
                             ? shoppingVipBenefitIcons.weekly
                             : shoppingVipBenefitIcons.yearly
                         : {
@@ -614,8 +619,6 @@ export default function RadixRc({
                             }
                             className={cn(
                                 'rs-shopping__plan',
-                                isWeeklyPlan && 'rs-shopping__plan--weekly',
-                                planPeriod === 'yearly' && 'rs-shopping__plan--yearly',
                                 currentId === p.id && 'rs-shopping__plan--selected',
                                 !enableInteraction && 'cursor-default',
                             )}
@@ -759,6 +762,7 @@ export default function RadixRc({
                                         isReelshortH5StoreUi
                                             ? 'rs-shopping__coinSku--topUpH5'
                                             : 'rounded-[4px] p-4',
+                                        currentId === p.id && 'rs-shopping__coinSku--selected',
                                     )}
                                 >
                                     {isReelshortH5StoreUi ? (

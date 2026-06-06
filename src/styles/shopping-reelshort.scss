@@ -1227,6 +1227,28 @@
     }
 
 
+    @keyframes rs-shopping-payModalMaskIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes rs-shopping-payModalPanelIn {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .rs-shopping__payModalMask {
         position: fixed;
         inset: 0;
@@ -1236,6 +1258,7 @@
         justify-content: center;
         background: rgba(0, 0, 0, 0.65);
         pointer-events: auto;
+        animation: rs-shopping-payModalMaskIn 0.2s ease forwards;
     }
 
     .rs-shopping__payModalMask--nested {
@@ -1258,6 +1281,7 @@
         border-top-right-radius: 16px;
         background: #222222;
         padding: calc(14 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw));
+        animation: rs-shopping-payModalPanelIn 0.2s ease forwards;
 
         @media (min-width: 768px) {
             border-radius: 16px;
@@ -1888,32 +1912,80 @@
         .rs-shopping__plan {
             min-height: 148px;
             border-radius: calc(12 / 375 * var(--app-vw));
-        }
-
-        .rs-shopping__plan--weekly {
-            background: linear-gradient(86deg, #FFECD4 0%, #F1DA97 100%);
-        }
-
-        .rs-shopping__plan--yearly {
             background: linear-gradient(87deg, #3C3427 0%, #201816 100%);
+            isolation: isolate;
+
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: 0;
+                border-radius: inherit;
+                background: linear-gradient(86deg, #FFECD4 0%, #F1DA97 100%);
+                opacity: 0;
+                transition: opacity 0.1s ease;
+                pointer-events: none;
+            }
 
             .rs-shopping__planName,
             .rs-shopping__planPrice {
                 color: #FFFFFF;
+                transition: color 0.1s ease;
             }
 
             .rs-shopping__planRenew {
                 color: rgba(255, 255, 255, 0.75);
+                transition: color 0.1s ease;
             }
 
             .rs-shopping__planBenefits {
                 background: rgba(78, 78, 78, 0.35);
                 color: #F1DA97;
+                transition: background-color 0.1s ease, color 0.1s ease;
+            }
+        }
+
+        .rs-shopping__plan--selected {
+            &::before {
+                opacity: 1;
+            }
+
+            .rs-shopping__planBg {
+                opacity: 1;
+            }
+
+            .rs-shopping__planName {
+                color: #633E25;
+            }
+
+            .rs-shopping__planRenew {
+                color: rgba(64, 26, 6, 0.75);
+            }
+
+            .rs-shopping__planBenefits {
+                background: rgba(255, 255, 255, 0.2);
+                color: #633E25;
             }
         }
 
         .rs-shopping__planBg {
-            opacity: 0.35;
+            top: 0;
+            right: 0;
+            height: 100%;
+            width: calc(210 / 375 * var(--app-vw));
+            opacity: 0.1;
+            background-repeat: no-repeat;
+            background-size: auto 100%;
+            background-position: right center;
+            transition: opacity 0.1s ease;
+
+            @media (min-width: 768px) {
+                top: 0;
+                right: 0;
+                height: 100%;
+                width: 180px;
+                background-size: auto 100%;
+            }
         }
 
         .rs-shopping__planCountdown {
@@ -1959,14 +2031,12 @@
         .rs-shopping__planName {
             font-size: 15px;
             font-weight: 500;
-            color: #633E25;
         }
 
         .rs-shopping__planRenew {
             margin-top: calc(7 / 375 * var(--app-vw));
             font-size: calc(11 / 375 * var(--app-vw));
             line-height: 1.35;
-            color: rgba(64, 26, 6, 0.75);
             -webkit-line-clamp: 3;
             line-clamp: 3;
             font-weight: 400;
@@ -1981,23 +2051,40 @@
         }
 
         .rs-shopping__planPrice {
+            position: relative;
+            isolation: isolate;
             display: inline-flex;
             min-width: 72px;
             align-items: center;
             justify-content: center;
             padding: 8px 14px;
             border-radius: 999px;
-            background: linear-gradient(90deg, #C17846 0%, #603C24 100%);
+            background: #3A342F;
             font-size: 15px;
             font-family: DIN Alternate, DIN Alternate;
             font-weight: bold;
-            color: #FFFFFF;
+            color: #F1DA97;
             line-height: 1;
+            transition: color 0.1s ease;
+
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: -1;
+                border-radius: inherit;
+                background: linear-gradient(90deg, #C17846 0%, #603C24 100%);
+                opacity: 0;
+                transition: opacity 0.1s ease;
+            }
         }
 
-        .rs-shopping__plan--yearly .rs-shopping__planPrice {
-            background: #3A342F;
-            color: #F1DA97;
+        .rs-shopping__plan--selected .rs-shopping__planPrice {
+            color: #FFFFFF;
+
+            &::before {
+                opacity: 1;
+            }
         }
 
         .rs-shopping__planBenefit--topUpExtra {
@@ -2055,6 +2142,7 @@
             top: 0;
             right: 0;
             z-index: 1;
+            isolation: isolate;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2067,9 +2155,22 @@
             font-weight: 500;
             line-height: 1;
             color: #fff;
+
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: -1;
+                border-radius: inherit;
+                background: linear-gradient(270deg, #EA6F3C 0%, #EBA341 100%);
+                opacity: 0;
+                transition: opacity 0.1s ease;
+            }
         }
 
         .rs-shopping__coinSkuBody {
+            position: relative;
+            isolation: isolate;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -2078,9 +2179,21 @@
             gap: 4px;
             padding: 14px 10px 0;
             background: #332F2A;
+
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: -1;
+                background: linear-gradient(86deg, #FFECD4 0%, #F1DA97 100%);
+                opacity: 0;
+                transition: opacity 0.1s ease;
+            }
         }
 
         .rs-shopping__coinSkuAmount {
+            position: relative;
+            z-index: 1;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2089,6 +2202,7 @@
             font-weight: 500;
             line-height: 1.2;
             color: #fff;
+            transition: color 0.1s ease;
 
             img {
                 width: 20px;
@@ -2098,14 +2212,19 @@
         }
 
         .rs-shopping__coinSkuBonus {
+            position: relative;
+            z-index: 1;
             margin: 0;
             font-size: 14px;
             font-weight: 400;
             line-height: 1.2;
             color: rgba(255, 255, 255, 0.75);
+            transition: color 0.1s ease;
         }
 
         .rs-shopping__coinSkuPrice {
+            position: relative;
+            isolation: isolate;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2119,6 +2238,40 @@
             line-height: 1.2;
             color: #F1DA97;
             text-align: center;
+            transition: color 0.1s ease;
+
+            &::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                z-index: -1;
+                background: linear-gradient(90deg, #C17846 0%, #603C24 100%);
+                opacity: 0;
+                transition: opacity 0.1s ease;
+            }
+        }
+
+        .rs-shopping__coinSku--selected {
+            .rs-shopping__coinSkuBadge::before {
+                opacity: 1;
+            }
+
+            .rs-shopping__coinSkuBody::before {
+                opacity: 1;
+            }
+
+            .rs-shopping__coinSkuAmount,
+            .rs-shopping__coinSkuBonus {
+                color: #633E25;
+            }
+
+            .rs-shopping__coinSkuPrice {
+                color: #FFFFFF;
+
+                &::before {
+                    opacity: 1;
+                }
+            }
         }
 
         .rs-shopping__tipsSection {
