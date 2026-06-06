@@ -828,7 +828,7 @@ export default function Component() {
                             </div>
                         </div>
                         <div className="rs-profile__pc-footer-wrap">
-                            <ReelShortFooter />
+                            <ReelShortFooter hideSupportCenter />
                         </div>
                     </>
                 ) : (
@@ -839,7 +839,7 @@ export default function Component() {
                         {isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard}
                         {h5MyAccountCard}
                         {h5Menu}
-                        <ReelShortFooter dockAboveBottomTab />
+                        <ReelShortFooter dockAboveBottomTab hideSupportCenter />
                     </div>
                 )}
                 <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />

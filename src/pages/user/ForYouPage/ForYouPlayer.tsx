@@ -52,7 +52,7 @@ import {
     resolveFeedPlaybackUrls,
 } from './foryouFeedMedia';
 import type { ForyouPrewarmMode } from './foryouFeedMedia';
-import { FORYOU_H5_BUFFER_LOADER_DELAY_MS } from './foryouConstants';
+import { FORYOU_H5_BUFFER_LOADER_DELAY_MS, FORYOU_MAX_VISIBLE_TAGS } from './foryouConstants';
 import {
     hasVideoSessionUserUnmuted,
     markVideoSessionUserUnmuted,
@@ -85,6 +85,7 @@ import {
     pcEpisodeTabIndexForEpisodeNo,
 } from '@/pages/user/VideoPage/videoPlayerPcEpisodeTabs';
 import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
+import { usePcPlayerRightRailAlign } from '@/pages/user/VideoPage/usePcPlayerRightRailAlign';
 import {
     PC_DRAWER_DURATION_MS,
     type PcDrawerPanel,
@@ -182,6 +183,7 @@ export function ForYouPlayer({
     const subtitleRef = useRef<HTMLDivElement>(null);
     const pcShellRef = useRef<HTMLDivElement>(null);
     const pcStageClusterRef = useRef<HTMLDivElement>(null);
+    const videoStageRef = useRef<HTMLDivElement>(null);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
     const episodeRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -298,6 +300,11 @@ export function ForYouPlayer({
         shouldIgnoreFullscreenExit,
     } = props;
     const isFullscreenUi = shouldKeepFullscreen || pcFullscreen;
+    const pcRightRailStyle = usePcPlayerRightRailAlign(
+        pcShellRef,
+        videoStageRef,
+        isDesktop && !pcFullscreen,
+    );
     const feedPlaybackUrls = useMemo(() => {
         if (!isForYouFeed || !feedItem) {
             return [] as string[];
@@ -1948,6 +1955,7 @@ export function ForYouPlayer({
                                 }}
                             >
                             <div
+                                ref={videoStageRef}
                                 className={videoStageClassName}
                                 onClick={handleDesktopPlayerClick}
                                 onMouseEnter={handleDesktopPlayerMouseEnter}
@@ -2228,13 +2236,14 @@ export function ForYouPlayer({
                                     'video-player-pc-right-rail',
                                     activePcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
                                 )}
+                                style={pcRightRailStyle}
                             >
                                 {!isForYouFeed ? (
                                     <ForYouPlayerPcEpisodeDrawer
                                         open={activePcDrawerPanel === 'episodes'}
                                         entered={activePcDrawerEntered && activePcDrawerPanel === 'episodes'}
                                         onClose={closePcDrawer}
-                                        anchorRef={pcShellRef}
+                                        anchorRef={videoStageRef}
                                         currentEpisodeNo={currentEpisodeNo}
                                         data={data}
                                         viewerIsVip={userStore.isVIP()}
@@ -2249,11 +2258,12 @@ export function ForYouPlayer({
                                     open={activePcDrawerPanel === 'intro'}
                                     entered={activePcDrawerEntered && activePcDrawerPanel === 'intro'}
                                     onClose={closePcDrawer}
-                                    anchorRef={pcShellRef}
+                                    anchorRef={videoStageRef}
                                     data={displayData}
                                     episode={episode}
                                     staticBase={staticBase}
                                     tagsFromBackendOnly={isForYouFeed}
+                                    maxTags={isForYouFeed ? FORYOU_MAX_VISIBLE_TAGS : undefined}
                                 />
                                 {!pcFullscreen && (
                                     <ForYouPlayerPcEpisodeNav
@@ -2291,9 +2301,10 @@ export function ForYouPlayer({
                         onCloseIntroductionLinks={() => setIntroduction(false)}
                         hideEpisodeDrawer
                         hideIntroDrawer
-                        tagsFromBackendOnly={isForYouFeed}
-                    />
-                    <ForYouPlayerPcCommerceDialogs
+                                    tagsFromBackendOnly={isForYouFeed}
+                                    maxTags={isForYouFeed ? FORYOU_MAX_VISIBLE_TAGS : undefined}
+                                />
+                                <ForYouPlayerPcCommerceDialogs
                         vip={vip}
                         onVipOpenChange={setVip}
                         onVipEmbedClose={handleVipEmbedClose}
@@ -2691,6 +2702,7 @@ export function ForYouPlayer({
                     onIntroductionOpenChange={handleIntroductionOpenChange}
                     onCloseIntroductionLinks={() => setIntroduction(false)}
                     tagsFromBackendOnly={isForYouFeed}
+                    maxTags={isForYouFeed ? FORYOU_MAX_VISIBLE_TAGS : undefined}
                 />
                 <ForYouPlayerH5CommerceDrawers
                     vip={vip}

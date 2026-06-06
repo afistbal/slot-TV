@@ -19,6 +19,8 @@
     }
 }
 
+/* H5：Page 返回栏无底部分割线（对齐 my-list 设计稿，见 Wallet titleClassName） */
+
 .rs-wallet-page__scroll {
     flex: 1 1 auto;
     min-height: 0;
@@ -107,7 +109,7 @@
     width: 100%;
     gap: 0;
     padding: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border: 0;
     background: #000;
 }
 
@@ -136,7 +138,7 @@
         content: '';
         position: absolute;
         left: 50%;
-        bottom: 0;
+        bottom: 5px;
         width: calc(40 / 375 * var(--app-vw));
         height: calc(3 / 375 * var(--app-vw));
         background-color: #e83a57;
@@ -302,7 +304,7 @@
     .rs-wallet-tx__tabs {
         gap: var(--rs-wallet-pc-tab-gap);
         padding: 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border: 0;
         background: #000;
         justify-content: flex-start;
     }

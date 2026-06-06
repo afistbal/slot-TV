@@ -309,6 +309,7 @@ button.reelshort-topnav__menu-btn {
 
 a.reelshort-topnav__brand-link {
     display: inline-flex;
+    flex-shrink: 0;
     min-width: 0;
     align-items: center;
     justify-content: center;
@@ -420,6 +421,7 @@ a.reelshort-topnav__brand-link {
     height: 28px;
     width: auto;
     max-width: min(calc(52 * var(--app-vw) / 100), 200px);
+    aspect-ratio: 280 / 80;
     flex-shrink: 0;
     object-fit: contain;
     object-position: left center;
@@ -533,9 +535,17 @@ a.reelshort-topnav__profile-link {
         --rs-pc-page-gutter-x: 8px;
     }
 
+    .reelshort-topnav {
+        --rs-brand-wordmark-height: clamp(34px, 3.2vw, 42px);
+    }
+
     .reelshort-topnav__brand-wordmark {
-        height: clamp(40px, 3.8vw, 52px);
-        max-width: min(280px, 42vw);
+        height: var(--rs-brand-wordmark-height);
+        max-width: min(220px, 34vw);
+    }
+
+    a.reelshort-topnav__brand-link {
+        min-height: var(--rs-brand-wordmark-height);
     }
 
     /* slot_old -> ReelShort CommonNav 映射：
@@ -547,7 +557,8 @@ a.reelshort-topnav__profile-link {
         /* 对齐对标：默认 10px，md 24px，lg 30px，xxl 40px */
         --rs-nav-hit-size: min(9.8vw, 40px);
         --rs-nav-search-icon-size: min(5.2vw, 24px);
-        --rs-nav-download-icon-size: min(5.2vw, 24px);
+        /* 历史/下载 SVG 画幅更满，略缩 1px 与搜索图标视觉对齐 */
+        --rs-nav-download-icon-size: min(5.2vw, 23px);
         --rs-nav-lang-icon-size: min(5.2vw, 24px);
         --rs-nav-gap-size: 10px;
         --rs-nav-label-size: 16px;
@@ -574,7 +585,7 @@ a.reelshort-topnav__profile-link {
             --rs-nav-hit-size: 48px;
             --rs-nav-gap-size: 40px;
             --rs-nav-search-icon-size: 24px;
-            --rs-nav-download-icon-size: 24px;
+            --rs-nav-download-icon-size: 23px;
             --rs-nav-lang-icon-size: 20px;
         }
     }
@@ -710,12 +721,13 @@ a.reelshort-topnav__profile-link {
         }
     }
 
-    .reelshort-topnav__download-trigger {
+    /* 搜索 / 下载 / 历史：<1440px 仅图标，与语言/头像垂直居中；≥1440px 双行栅格对齐文案 */
+    .reelshort-topnav__search-entry,
+    .reelshort-topnav__download-trigger,
+    .reelshort-topnav__history {
         display: inline-flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 2px;
         width: auto;
         height: var(--rs-nav-hit-size);
         min-height: 0;
@@ -725,30 +737,52 @@ a.reelshort-topnav__profile-link {
         color: rgba(255, 255, 255, 0.92);
         line-height: 0;
         cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    @media (min-width: 1440px) {
+        .reelshort-topnav__search-entry,
+        .reelshort-topnav__download-trigger,
+        .reelshort-topnav__history {
+            display: grid;
+            grid-template-rows: var(--rs-nav-icon-row-size) var(--rs-nav-label-row-size);
+            grid-template-columns: minmax(0, auto);
+            align-items: center;
+            justify-items: center;
+            align-content: start;
+            row-gap: 2px;
+            height: calc(var(--rs-nav-icon-row-size) + 2px + var(--rs-nav-label-row-size));
+        }
+
+        .reelshort-topnav__search,
+        .reelshort-topnav__download,
+        .reelshort-topnav__history {
+            height: calc(var(--rs-nav-icon-row-size) + 2px + var(--rs-nav-label-row-size));
+            align-items: flex-start;
+        }
+
+        /* 覆盖下方 768px 对 history 的 inline-flex，大屏需 grid 双行 */
+        .reelshort-topnav__history {
+            display: grid;
+        }
+
+        .reelshort-topnav__actions {
+            align-items: flex-start;
+        }
     }
 
     .reelshort-topnav__history {
         display: none;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        gap: 4px;
-        height: var(--rs-nav-hit-size);
-        padding: 0 2px;
-        border: 0;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.92);
-        cursor: pointer;
-        line-height: 0;
     }
 
-    @media (min-width: 768px) {
+    @media (min-width: 768px) and (max-width: 1439px) {
         .reelshort-topnav__history {
             display: inline-flex;
         }
     }
 
-    .reelshort-topnav__history:hover {
+    .reelshort-topnav__history:hover,
+    .reelshort-topnav__download-trigger:hover {
         color: var(--rs-nav-hover-color);
     }
 
@@ -758,23 +792,7 @@ a.reelshort-topnav__profile-link {
         display: block;
         flex-shrink: 0;
         align-self: center;
-    }
-
-    .reelshort-topnav__history-label {
-        padding-top: 4px;
-        font-size: var(--rs-nav-label-size);
-        line-height: 1;
-        display: none;
-    }
-
-    @media (min-width: 1440px) {
-        .reelshort-topnav__history-label {
-            display: block;
-        }
-    }
-
-    .reelshort-topnav__download-trigger:hover {
-        color: var(--rs-nav-hover-color);
+        grid-row: 1;
     }
 
     .reelshort-topnav__download-icon {
@@ -795,19 +813,28 @@ a.reelshort-topnav__profile-link {
         -webkit-mask-size: contain;
         mask-size: contain;
         align-self: center;
+        grid-row: 1;
     }
 
-    .reelshort-topnav__download-label {
-        padding-top: 4px;
-        font-size: var(--rs-nav-label-size);
-        line-height: 1;
-        margin: 0;
-        white-space: nowrap;
+    .reelshort-topnav__search-label,
+    .reelshort-topnav__download-label,
+    .reelshort-topnav__history-label {
         display: none;
+        grid-row: 2;
+        margin: 0;
+        padding: 0;
+        font-size: 15px;
+        line-height: var(--rs-nav-label-row-size);
+        height: var(--rs-nav-label-row-size);
+        white-space: nowrap;
+        text-align: center;
+        align-self: center;
     }
 
     @media (min-width: 1440px) {
-        .reelshort-topnav__download-label {
+        .reelshort-topnav__search-label,
+        .reelshort-topnav__download-label,
+        .reelshort-topnav__history-label {
             display: block;
         }
     }
@@ -889,24 +916,11 @@ a.reelshort-topnav__profile-link {
     }
 
     .reelshort-topnav__search-entry {
-        height: var(--rs-nav-hit-size);
-        width: auto;
-        display: grid;
-        grid-template-rows: var(--rs-nav-icon-row-size) var(--rs-nav-label-row-size);
-        align-items: center;
-        justify-items: center;
-        row-gap: 2px;
-        padding: 0 2px;
         border-radius: 9999px;
-        border: 0;
         outline: none;
         box-shadow: none;
         appearance: none;
         -webkit-appearance: none;
-        background: transparent;
-        line-height: 0;
-        color: rgba(255, 255, 255, 0.92);
-        transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .reelshort-topnav__search-entry:focus,
@@ -931,6 +945,7 @@ a.reelshort-topnav__profile-link {
         line-height: 0;
         vertical-align: middle;
         align-self: center;
+        grid-row: 1;
     }
 
     .reelshort-topnav__search-icon-wrap svg {
@@ -939,28 +954,19 @@ a.reelshort-topnav__profile-link {
         height: 100%;
     }
 
-    .reelshort-topnav__search-label {
-        display: none;
-        font-size: var(--rs-nav-label-size);
-        line-height: var(--rs-nav-label-row-size);
-        height: var(--rs-nav-label-row-size);
-        padding-top: 4px;
-        margin: 0;
-        white-space: nowrap;
-    }
-
-    @media (min-width: 1440px) {
-        .reelshort-topnav__search-label {
-            display: block;
-        }
-    }
-
     /* PC 顶栏下拉搜索（对标 ReelShort search-panel） */
     .reelshort-topnav__search-inner {
         position: relative;
         display: inline-flex;
         flex-direction: column;
         align-items: center;
+    }
+
+    @media (min-width: 1440px) {
+        .reelshort-topnav__search-inner:not(.reelshort-topnav__search-inner--panel-open) {
+            align-items: flex-start;
+            align-self: flex-start;
+        }
     }
 
     .reelshort-topnav__search-inner--panel-open {

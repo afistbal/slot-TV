@@ -8,5 +8,20 @@ export const BRAND_LOGO_SRC = '/new-logo.png';
 
 /** 顶栏品牌链接：Logo + 字标合一的横版 WebP */
 export const BRAND_TOPNAV_WORDMARK_SRC = '/web_logo.webp';
+export const BRAND_TOPNAV_WORDMARK_WIDTH = 280;
+export const BRAND_TOPNAV_WORDMARK_HEIGHT = 80;
 
 export const BRAND_WORDMARK_SRC = '/brand-wordmark.png';
+
+let brandTopnavWordmarkPreloaded = false;
+
+/** 应用启动时预载顶栏字标，避免路由切换后 TopNav 重挂载时 logo 闪一下 */
+export function preloadBrandTopnavWordmark(): void {
+    if (brandTopnavWordmarkPreloaded || typeof window === 'undefined') {
+        return;
+    }
+    brandTopnavWordmarkPreloaded = true;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = BRAND_TOPNAV_WORDMARK_SRC;
+}

@@ -8,7 +8,22 @@
     background: #000;
 
     .rs-my-list-page__scroll {
+        display: flex;
+        flex-direction: column;
         background: #000;
+    }
+
+    .rs-my-list-page__inner,
+    .rs-my-list-tx {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+    }
+
+    .rs-my-list-tx__panel {
+        flex: 1 1 auto;
+        min-height: 0;
     }
 }
 
@@ -89,6 +104,28 @@
 
 .rs-my-list-page--h5 .rs-my-list__grid {
     padding: calc(8 / 375 * var(--app-vw)) 0 calc(24 / 375 * var(--app-vw));
+}
+
+/* H5 空态：对齐钱包页，在 Tab 下方可视区垂直居中 */
+.rs-my-list-page--h5 .rs-my-list__empty {
+    flex: 1 1 auto;
+    min-height: calc(
+        100svh - var(--rs-bottom-nav-stack, 0px) - calc(44 / 375 * var(--app-vw)) - calc(52 / 375 * var(--app-vw)) -
+            calc(16 / 375 * var(--app-vw))
+    );
+    padding: calc(24 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw));
+    box-sizing: border-box;
+}
+
+.rs-my-list-page--h5 .rs-my-list__empty img {
+    width: calc(160 / 375 * var(--app-vw));
+    height: calc(160 / 375 * var(--app-vw));
+}
+
+.rs-my-list-page--h5 .rs-my-list__empty > div {
+    margin-top: calc(12 / 375 * var(--app-vw));
+    font-size: calc(14 / 375 * var(--app-vw));
+    color: rgba(255, 255, 255, 0.45);
 }
 
 /* H5 一级页：顶栏与 Tab 区均无横线分隔（设计稿） */

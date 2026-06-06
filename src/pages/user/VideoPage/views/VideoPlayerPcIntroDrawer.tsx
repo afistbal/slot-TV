@@ -20,6 +20,8 @@ export type VideoPlayerPcIntroDrawerProps = {
     staticBase: string;
     /** For You：仅用接口 tags 字段，不走 tag-labels */
     tagsFromBackendOnly?: boolean;
+    /** 最多展示的 tag 数量，超出截断 */
+    maxTags?: number;
 };
 
 export function VideoPlayerPcIntroDrawer({
@@ -30,8 +32,10 @@ export function VideoPlayerPcIntroDrawer({
     data,
     staticBase,
     tagsFromBackendOnly = false,
+    maxTags,
 }: VideoPlayerPcIntroDrawerProps) {
     const tagLabel = tagsFromBackendOnly ? getBackendTagDisplayText : getTagDisplayText;
+    const visibleTags = maxTags != null ? data.tags.slice(0, maxTags) : data.tags;
     useMovieTagLabelsReady();
     return (
         <VideoPlayerPcRightDrawer
@@ -68,9 +72,9 @@ export function VideoPlayerPcIntroDrawer({
                         </p>
                     )}
                 </div>
-                {data.tags.length > 0 && (
+                {visibleTags.length > 0 && (
                     <div className="video-pc-intro-drawer__tags">
-                        {data.tags.map((v) => (
+                        {visibleTags.map((v) => (
                             <Link
                                 key={v.unique_id}
                                 to={videoIntroTagSearchPath(v)}

@@ -1,3 +1,6 @@
+/** For You 播放器/简介抽屉：最多展示的 tag 数量 */
+export const FORYOU_MAX_VISIBLE_TAGS = 3;
+
 /** 接口默认每页条数（foryou 常见 10 条/页） */
 export const FORYOU_DEFAULT_PER_PAGE = 10;
 

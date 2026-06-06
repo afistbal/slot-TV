@@ -113,6 +113,7 @@ export function VideoPlayerPcRightDrawer({
                     'video-pc-right-drawer__panel',
                     panelSettled && 'video-pc-right-drawer__panel--settled',
                 )}
+                style={frame}
             >
                 {showPanelClose ? (
                     <button

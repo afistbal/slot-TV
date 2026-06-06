@@ -13,7 +13,13 @@ import {
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
-import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC, BRAND_TOPNAV_WORDMARK_SRC } from '@/constants/brand';
+import {
+  BRAND_DISPLAY_NAME,
+  BRAND_LOGO_SRC,
+  BRAND_TOPNAV_WORDMARK_HEIGHT,
+  BRAND_TOPNAV_WORDMARK_SRC,
+  BRAND_TOPNAV_WORDMARK_WIDTH,
+} from '@/constants/brand';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
 import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
@@ -74,8 +80,6 @@ function TopNavHistoryIcon({ className }: { className?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="21"
-      height="20"
       viewBox="0 0 21 20"
       fill="none"
       className={cn('reelshort-topnav__history-icon', className)}
@@ -241,7 +245,7 @@ function TopNavSearchEntry() {
       )}
       onClick={() => navigate('/search')}
     >
-      <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current md:text-2xl">
+      <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current">
         <TopNavSearchIcon className="h-[1em] w-[1em]" />
       </span>
       <div className="reelshort-topnav__search-label">
@@ -267,12 +271,12 @@ function TopNavSearchEntry() {
           aria-expanded={false}
           className={cn(
             'reelshort-topnav__search-entry',
-            'relative flex cursor-pointer flex-col items-center justify-center text-white',
+            'relative cursor-pointer text-white',
             'hover:text-[var(--rs-brand,#d4a853)]',
           )}
           onClick={() => setOpen(true)}
         >
-          <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current md:text-2xl">
+          <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current">
             <TopNavSearchIcon className="h-[1em] w-[1em]" />
           </span>
           <div className="reelshort-topnav__search-label">
@@ -969,6 +973,11 @@ export function ReelShortTopNav({
                   src={BRAND_TOPNAV_WORDMARK_SRC}
                   alt={BRAND_DISPLAY_NAME}
                   className="reelshort-topnav__brand-wordmark"
+                  width={BRAND_TOPNAV_WORDMARK_WIDTH}
+                  height={BRAND_TOPNAV_WORDMARK_HEIGHT}
+                  decoding="async"
+                  loading="eager"
+                  fetchPriority="high"
                 />
               </Link>
               <nav

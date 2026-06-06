@@ -149,7 +149,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
     }
 
     if (list.length === 0) {
-        return <NoContent className="h-full" />;
+        return <NoContent className="rs-my-list__empty" />;
     }
 
     const sheet = (

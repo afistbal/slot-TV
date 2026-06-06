@@ -10,9 +10,14 @@ const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c
 export type ReelShortFooterProps = {
     /** H5：页脚紧贴底部四栏 Tab，隐藏版权区并去掉底内边距（如 /my-list） */
     dockAboveBottomTab?: boolean;
+    /** Profile 等页已有反馈入口时隐藏「支援中心」区块 */
+    hideSupportCenter?: boolean;
 };
 
-export function ReelShortFooter({ dockAboveBottomTab = false }: ReelShortFooterProps) {
+export function ReelShortFooter({
+    dockAboveBottomTab = false,
+    hideSupportCenter = false,
+}: ReelShortFooterProps) {
     const year = new Date().getFullYear();
     const appVersion = __APP_VERSION__;
     const [aboutOpen, setAboutOpen] = useState(false);
@@ -61,33 +66,35 @@ export function ReelShortFooter({ dockAboveBottomTab = false }: ReelShortFooterP
                         </div>
                     </div>
 
-                    <div className="reelshort-footer__collapse-box">
-                        <button
-                            type="button"
-                            className={cn(
-                                'reelshort-footer__collapse-item',
-                                supportOpen && 'reelshort-footer__collapse-head--open',
-                            )}
-                            onClick={() => setSupportOpen((v) => !v)}
-                            aria-expanded={supportOpen}
-                        >
-                            <span className="reelshort-footer__title">
-                                <FormattedMessage id="footer_support_center" />
-                            </span>
-                            <img width={12} height={10} alt="" src={FOOTER_CHEVRON} className="opacity-80" />
-                        </button>
-                        <div
-                            className={cn(
-                                'reelshort-footer__collapsible',
-                                supportOpen && 'reelshort-footer__collapsible--open',
-                            )}
-                            aria-hidden={!supportOpen}
-                        >
-                            <Link className="reelshort-footer__collapse-item" to="/profile?tab=feedback">
-                                <FormattedMessage id="feedback_help" />
-                            </Link>
+                    {hideSupportCenter ? null : (
+                        <div className="reelshort-footer__collapse-box">
+                            <button
+                                type="button"
+                                className={cn(
+                                    'reelshort-footer__collapse-item',
+                                    supportOpen && 'reelshort-footer__collapse-head--open',
+                                )}
+                                onClick={() => setSupportOpen((v) => !v)}
+                                aria-expanded={supportOpen}
+                            >
+                                <span className="reelshort-footer__title">
+                                    <FormattedMessage id="footer_support_center" />
+                                </span>
+                                <img width={12} height={10} alt="" src={FOOTER_CHEVRON} className="opacity-80" />
+                            </button>
+                            <div
+                                className={cn(
+                                    'reelshort-footer__collapsible',
+                                    supportOpen && 'reelshort-footer__collapsible--open',
+                                )}
+                                aria-hidden={!supportOpen}
+                            >
+                                <Link className="reelshort-footer__collapse-item" to="/profile?tab=feedback">
+                                    <FormattedMessage id="feedback_help" />
+                                </Link>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="reelshort-footer__copyright">
                         <FormattedMessage id="footer_copyright" values={{ year, site: BRAND_DISPLAY_NAME }} />
@@ -123,16 +130,18 @@ export function ReelShortFooter({ dockAboveBottomTab = false }: ReelShortFooterP
                             </div>
                         </div>
 
-                        <div className="Footer_footer_item__Jzv7v">
-                            <div className="Footer_item_title__7csub">
-                                <FormattedMessage id="footer_support_center" />
+                        {hideSupportCenter ? null : (
+                            <div className="Footer_footer_item__Jzv7v">
+                                <div className="Footer_item_title__7csub">
+                                    <FormattedMessage id="footer_support_center" />
+                                </div>
+                                <div className="Footer_item_sub_title__VYtUB">
+                                    <Link to="/profile?tab=feedback" className="Footer_item_sub_text__EQ_F8">
+                                        <FormattedMessage id="feedback_help" />
+                                    </Link>
+                                </div>
                             </div>
-                            <div className="Footer_item_sub_title__VYtUB">
-                                <Link to="/profile?tab=feedback" className="Footer_item_sub_text__EQ_F8">
-                                    <FormattedMessage id="feedback_help" />
-                                </Link>
-                            </div>
-                        </div>
+                        )}
                     </div>
                     <div className="Footer_copyright__ygL71">
                         <FormattedMessage id="footer_copyright" values={{ year, site: BRAND_DISPLAY_NAME }} />

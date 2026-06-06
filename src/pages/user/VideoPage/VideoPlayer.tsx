@@ -58,6 +58,7 @@ import {
     pcEpisodeTabIndexForEpisodeNo,
 } from './videoPlayerPcEpisodeTabs';
 import { measurePcStageShiftPx } from './videoPlayerPcDrawerStageShift';
+import { usePcPlayerRightRailAlign } from './usePcPlayerRightRailAlign';
 import {
     PC_DRAWER_DURATION_MS,
     type PcDrawerPanel,
@@ -205,6 +206,11 @@ export function VideoPlayer({
         shouldIgnoreFullscreenExit,
     } = props;
     const isFullscreenUi = shouldKeepFullscreen || pcFullscreen;
+    const pcRightRailStyle = usePcPlayerRightRailAlign(
+        pcShellRef,
+        videoStageRef,
+        isDesktop && !pcFullscreen,
+    );
     /** 主格与邻格均用 metadata，便于邻格在拖拽时尽快出首帧占位（比 none 少黑屏） */
     const videoPreload: 'none' | 'metadata' = 'metadata';
 
@@ -1616,12 +1622,13 @@ export function VideoPlayer({
                                     'video-player-pc-right-rail',
                                     pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
                                 )}
+                                style={pcRightRailStyle}
                             >
                                 <VideoPlayerPcEpisodeDrawer
                                     open={pcDrawerPanel === 'episodes'}
                                     entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
                                     onClose={closePcDrawer}
-                                    anchorRef={pcShellRef}
+                                    anchorRef={videoStageRef}
                                     currentEpisodeNo={currentEpisodeNo}
                                     data={data}
                                     viewerIsVip={userStore.isVIP()}
@@ -1635,7 +1642,7 @@ export function VideoPlayer({
                                     open={pcDrawerPanel === 'intro'}
                                     entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
                                     onClose={closePcDrawer}
-                                    anchorRef={pcShellRef}
+                                    anchorRef={videoStageRef}
                                     data={data}
                                     episode={episode}
                                     staticBase={staticBase}

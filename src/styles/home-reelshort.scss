@@ -352,18 +352,35 @@
             }
         }
 
-        /* 旧 H5 type_5 两栏（PC 另加 .HomePage_type_5--pc，此处排除以免干扰 grid） */
+        /* H5 type_5：双列 grid 按行对齐（避免左右分栏 flex 因标题行数不同导致错位） */
         &.HomePage_type_5__SK5Rv:not(.HomePage_type_5--pc) {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            column-gap: calc(4.26667 * var(--app-vw) / 100);
+            row-gap: calc(3.46667 * var(--app-vw) / 100);
+            align-items: start;
+            /* 旧版固定 43.2vw 卡宽时右侧自然留白；grid 满宽后需与左侧 4.8vw 对称 */
+            padding-right: calc(4.8 * var(--app-vw) / 100);
+            box-sizing: border-box;
 
             .book-item {
-                margin-bottom: calc(7.46667 * var(--app-vw) / 100);
+                margin-bottom: 0;
+                width: 100%;
             }
 
-            .HomePage_colunm__1XbhV {
-                display: flex;
-                flex-direction: column;
-                margin-right: calc(4.26667 * var(--app-vw) / 100);
+            .book-item.BookItem_bookStyle5__Hn17I {
+                width: 100%;
+
+                .BookItem_cover__W2qbR {
+                    width: 100%;
+                    height: auto;
+                    aspect-ratio: 3 / 4;
+                }
+
+                /* 标题固定两行高度，同行卡片顶边对齐 */
+                .BookItem_title__85fqs {
+                    min-height: calc(11.2 * var(--app-vw) / 100);
+                }
             }
         }
     }
@@ -643,7 +660,8 @@
         .HomePage_main__BzEnK
         .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        /* 窄 PC（≈768–999）原 3 列卡片过大，与对站一致从 5 列起 */
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         /* 对站 .Slider_item padding:0 .4% → 列向 0.8% ；行向同 .Slider_item>div */
         column-gap: 0.8%;
         row-gap: min(2vw, 30px);
@@ -667,7 +685,7 @@
         .home-page
             .HomePage_main__BzEnK
             .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
         }
     }
 
@@ -676,7 +694,7 @@
         .home-page
             .HomePage_main__BzEnK
             .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(6, minmax(0, 1fr));
         }
     }
 
@@ -685,7 +703,7 @@
         .home-page
             .HomePage_main__BzEnK
             .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
-            grid-template-columns: repeat(6, minmax(0, 1fr));
+            grid-template-columns: repeat(7, minmax(0, 1fr));
         }
     }
 

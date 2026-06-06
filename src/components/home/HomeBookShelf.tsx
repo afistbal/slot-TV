@@ -46,7 +46,7 @@ function pcHomeShelfGridColumns(width: number): number {
     if (width >= 1000) {
         return 4;
     }
-    return 3;
+    return 4;
 }
 
 function usePcType5GridColumns(track: boolean) {
@@ -141,30 +141,16 @@ export function HomeBookShelf({
                         </div>
                     ) : (
                         <div className="HomePage_content__DZ4dU HomePage_type_5__SK5Rv">
-                            <div className="HomePage_colunm__1XbhV">
-                                {items.filter((_, idx) => idx % 2 === 0).map((item) => (
-                                    <HomeBookItem
-                                        key={item.id}
-                                        to={toEpisodeOrVideoHref(item)}
-                                        staticBase={staticBase}
-                                        item={{ ...item, showExpo: true, showPlayMask: false }}
-                                        variant="style5"
-                                        linkState={VIDEO_FROM_HOME_STATE}
-                                    />
-                                ))}
-                            </div>
-                            <div className="HomePage_colunm__1XbhV">
-                                {items.filter((_, idx) => idx % 2 === 1).map((item) => (
-                                    <HomeBookItem
-                                        key={item.id}
-                                        to={toEpisodeOrVideoHref(item)}
-                                        staticBase={staticBase}
-                                        item={{ ...item, showExpo: true, showPlayMask: false }}
-                                        variant="style5"
-                                        linkState={VIDEO_FROM_HOME_STATE}
-                                    />
-                                ))}
-                            </div>
+                            {items.map((item) => (
+                                <HomeBookItem
+                                    key={item.id}
+                                    to={toEpisodeOrVideoHref(item)}
+                                    staticBase={staticBase}
+                                    item={{ ...item, showExpo: true, showPlayMask: false }}
+                                    variant="style5"
+                                    linkState={VIDEO_FROM_HOME_STATE}
+                                />
+                            ))}
                         </div>
                     )}
                 </div>

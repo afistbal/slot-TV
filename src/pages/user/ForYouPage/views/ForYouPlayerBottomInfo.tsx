@@ -4,6 +4,7 @@ import Forward from '@/components/Forward';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import { getBackendTagDisplayText } from '@/lib/normalizePlayerTags';
 import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
+import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
 
 type Props = {
     data: IPlayerData;
@@ -56,7 +57,7 @@ export function ForYouPlayerBottomInfo({ data, episode, episodeNo, onOpenIntrodu
                     onTouchMove={(e) => e.stopPropagation()}
                     onWheel={(e) => e.stopPropagation()}
                 >
-                    {data.tags.map((v) => (
+                    {data.tags.slice(0, FORYOU_MAX_VISIBLE_TAGS).map((v) => (
                         <Link
                             key={v.unique_id}
                             to={videoIntroTagSearchPath(v)}

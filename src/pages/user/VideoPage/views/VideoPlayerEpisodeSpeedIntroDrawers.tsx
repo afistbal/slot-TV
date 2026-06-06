@@ -50,6 +50,8 @@ type Props = {
     hideIntroDrawer?: boolean;
     /** For You：仅用接口 tags 字段，不走 tag-labels */
     tagsFromBackendOnly?: boolean;
+    /** 最多展示的 tag 数量，超出截断 */
+    maxTags?: number;
     /** PC：倍速底栏挂到 9:16 视频舞台，宽度与视频一致 */
     videoStageRef?: RefObject<HTMLElement | null>;
     anchorSpeedDrawerToVideoStage?: boolean;
@@ -75,6 +77,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     hideEpisodeDrawer = false,
     hideIntroDrawer = false,
     tagsFromBackendOnly = false,
+    maxTags,
     videoStageRef,
     anchorSpeedDrawerToVideoStage = false,
 }: Props) {
@@ -82,6 +85,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
         ? (videoStageRef?.current ?? undefined)
         : undefined;
     const tagLabel = tagsFromBackendOnly ? getBackendTagDisplayText : getTagDisplayText;
+    const visibleTags = maxTags != null ? data.tags.slice(0, maxTags) : data.tags;
     useMovieTagLabelsReady();
     const episodeCount = data.episodes.length;
     const currentEpisodeNo = episode?.episode ?? episodeIndex + 1;
@@ -293,9 +297,9 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                                     <FormattedMessage id="no_introduction_available" />
                                 )}
                             </p>
-                            {data.tags.length > 0 ? (
+                            {visibleTags.length > 0 ? (
                                 <div className="video-h5-drawer__introTags">
-                                    {data.tags.map((v) => (
+                                    {visibleTags.map((v) => (
                                         <Link
                                             key={v.unique_id}
                                             to={videoIntroTagSearchPath(v)}
