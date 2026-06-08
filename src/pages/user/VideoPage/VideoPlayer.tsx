@@ -78,7 +78,6 @@ export function VideoPlayer({
     onPcDrawerEnteredChange,
     pcDrawerClosingRef,
     onEpisodeLockSync,
-    onPcUnmuteOverlayChange,
     ...props
 }: {
     id: number;
@@ -104,8 +103,6 @@ export function VideoPlayer({
     pcDrawerClosingRef: RefObject<boolean>;
     /** 单集详情 `lock` 写回 `movie/info` 列表的 `locked`，避免选集抽屉仍显示上锁 */
     onEpisodeLockSync?: (ep: IPlayerEpisode, listIndex: number) => void;
-    /** PC：`.xgplayer-unmute` 蒙层可见性（供 Swiper 禁止滚轮切集） */
-    onPcUnmuteOverlayChange?: (visible: boolean) => void;
 }) {
     // const loadingStore = useLoadingStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
@@ -225,21 +222,6 @@ export function VideoPlayer({
         !h5UserDismissedUnmuteOverlay &&
         episode?.lock === false &&
         location.search.indexOf('auto_play=0') === -1;
-
-    const showPcUnmuteOverlay =
-        isDesktop &&
-        showTapToUnmute &&
-        playing &&
-        episode?.lock === false &&
-        location.search.indexOf('auto_play=0') === -1;
-
-    useEffect(() => {
-        if (!isDesktop || !onPcUnmuteOverlayChange) {
-            return;
-        }
-        onPcUnmuteOverlayChange(showPcUnmuteOverlay);
-        return () => onPcUnmuteOverlayChange(false);
-    }, [isDesktop, onPcUnmuteOverlayChange, showPcUnmuteOverlay]);
 
     async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
@@ -1407,7 +1389,11 @@ export function VideoPlayer({
                                     <source key={`${id}-${i}`} src={srcUrl} type="video/mp4" />
                                 ))}
                             </video>
-                            {showPcUnmuteOverlay && (
+                            {isDesktop &&
+                                showTapToUnmute &&
+                                playing &&
+                                episode?.lock === false &&
+                                location.search.indexOf('auto_play=0') === -1 && (
                                     <div
                                         className="xgplayer-unmute"
                                         role="button"
@@ -1446,11 +1432,11 @@ export function VideoPlayer({
                                 className={cn(
                                     videoPlayerUiClassName,
                                     /** 静音蒙层在 DOM 序在前；全屏控制器含 translateZ(0) 时会盖住蒙层并吞点击，需让事件穿透到 .xgplayer-unmute */
-                                    showPcUnmuteOverlay && 'pointer-events-none',
+                                    showTapToUnmute && 'pointer-events-none',
                                 )}
                                 ref={controllerRef}
                             >
-                                {showCenterPlayControl && !showPcUnmuteOverlay && (
+                                {showCenterPlayControl && !showTapToUnmute && (
                                     <button
                                         type="button"
                                         className="video-player-center-play video-player-center-play--pc-decor absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"

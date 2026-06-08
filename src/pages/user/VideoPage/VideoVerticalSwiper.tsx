@@ -103,11 +103,6 @@ export default function VideoVerticalSwiper() {
     const currentRef = useRef(current);
     currentRef.current = current;
     const handleSetEpisodeRef = useRef<(index: number) => void>(() => {});
-    /** PC：当前条展示「Click to unmute」时仅禁止滚轮切集（侧栏箭头仍可点） */
-    const pcUnmuteOverlayVisibleRef = useRef(false);
-    const handlePcUnmuteOverlayChange = useCallback((visible: boolean) => {
-        pcUnmuteOverlayVisibleRef.current = visible;
-    }, []);
 
     const pcDrawerProps = {
         pcDrawerPanel,
@@ -348,18 +343,12 @@ export default function VideoVerticalSwiper() {
             shouldIgnore: (e) =>
                 Boolean((e.target as Element | null)?.closest('[data-pc-episode-aside]')),
             onPrev: () => {
-                if (pcUnmuteOverlayVisibleRef.current) {
-                    return;
-                }
                 const c = currentRef.current;
                 if (c > 0) {
                     handleSetEpisodeRef.current(c - 1);
                 }
             },
             onNext: () => {
-                if (pcUnmuteOverlayVisibleRef.current) {
-                    return;
-                }
                 const d = dataRef.current;
                 const c = currentRef.current;
                 if (d && c < d.episodes.length - 1) {
@@ -591,7 +580,6 @@ export default function VideoVerticalSwiper() {
                                             shouldIgnoreFullscreenExit={shouldIgnoreFullscreenExit}
                                             fromHomeVideoPlayback={fromHomeVideoPlayback}
                                             legacyEpisodeAutoplayRef={legacyEpisodeAutoplayRef}
-                                            onPcUnmuteOverlayChange={handlePcUnmuteOverlayChange}
                                             {...pcDrawerProps}
                                         />
                                     </div>
