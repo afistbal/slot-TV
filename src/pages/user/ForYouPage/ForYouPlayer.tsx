@@ -113,6 +113,7 @@ export function ForYouPlayer({
     onVideoElementReady,
     onPlaybackStarted,
     onVideoCanPlay,
+    onPcUnmuteOverlayChange,
     hideCenterPlayUntilFirstPlay = false,
     feedResumeTimeSec = 0,
     onFeedPlaybackProgress,
@@ -135,6 +136,8 @@ export function ForYouPlayer({
     onVideoElementReady?: (el: HTMLVideoElement | null) => void;
     onPlaybackStarted?: () => void;
     onVideoCanPlay?: () => void;
+    /** PC：`.xgplayer-unmute` 蒙层可见性（供 Swiper 禁止滚轮/键盘切条） */
+    onPcUnmuteOverlayChange?: (visible: boolean) => void;
     hideCenterPlayUntilFirstPlay?: boolean;
     /** For You：从 feed 恢复播放进度（秒） */
     feedResumeTimeSec?: number;
@@ -359,6 +362,14 @@ export function ForYouPlayer({
               !pcUserDismissedUnmuteOverlay &&
               (playing || canPlay || videoFrameReady)
             : showTapToUnmute && playing);
+
+    useEffect(() => {
+        if (!isDesktop || !onPcUnmuteOverlayChange) {
+            return;
+        }
+        onPcUnmuteOverlayChange(showPcUnmuteOverlay);
+        return () => onPcUnmuteOverlayChange(false);
+    }, [isDesktop, onPcUnmuteOverlayChange, showPcUnmuteOverlay]);
 
     /** H5 For You：拉流超过 3s 仍未 canplay 时居中 loading */
     const showForyouH5BufferLoader =

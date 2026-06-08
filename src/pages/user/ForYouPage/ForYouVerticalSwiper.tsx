@@ -88,8 +88,11 @@ export default function ForYouVerticalSwiper() {
     const prevListLengthRef = useRef(0);
 
     const videoResumeRef = useRef<HTMLVideoElement | null>(null);
-
-
+    /** PC：当前条展示「Click to unmute」时仅禁止滚轮切条（侧栏箭头仍可点） */
+    const pcUnmuteOverlayVisibleRef = useRef(false);
+    const handlePcUnmuteOverlayChange = useCallback((visible: boolean) => {
+        pcUnmuteOverlayVisibleRef.current = visible;
+    }, []);
 
     const {
 
@@ -365,6 +368,9 @@ export default function ForYouVerticalSwiper() {
         }
         return bindVerticalPcWheelNav(el, {
             onPrev: () => {
+                if (pcUnmuteOverlayVisibleRef.current) {
+                    return;
+                }
                 const swiper = swiperRef.current;
                 if (!swiper || activeIndexRef.current <= 0) {
                     return;
@@ -372,6 +378,9 @@ export default function ForYouVerticalSwiper() {
                 swiper.slidePrev();
             },
             onNext: () => {
+                if (pcUnmuteOverlayVisibleRef.current) {
+                    return;
+                }
                 const swiper = swiperRef.current;
                 const len = listLengthRef.current;
                 const idx = activeIndexRef.current;
@@ -657,6 +666,10 @@ export default function ForYouVerticalSwiper() {
                                                               videoResumeRef.current = el;
                                                           }
                                                         : undefined
+                                                }
+
+                                                onPcUnmuteOverlayChange={
+                                                    isActive ? handlePcUnmuteOverlayChange : undefined
                                                 }
 
                                                 onSetEpisode={() => {}}
