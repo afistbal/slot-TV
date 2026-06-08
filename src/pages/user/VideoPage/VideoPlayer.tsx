@@ -397,6 +397,7 @@ export function VideoPlayer({
     }, [episode?.id, episode?.lock, onEpisodeLockSync, playbackPolicy, props.index]);
 
     function handleSetEpisode(index: number) {
+        legacyEpisodeAutoplayRef.current = true;
         onSetEpisode(index);
     }
 
