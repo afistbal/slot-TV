@@ -657,7 +657,7 @@
 
     function fetchMovieInfo(movieId) {
       if (!movieId) return Promise.resolve(null);
-      var url = getApiBaseUrl() + '/share/info?m=' + encodeURIComponent(movieId);
+      var url = getApiBaseUrl() + '/share/info?id=' + encodeURIComponent(movieId);
       return fetch(url, {
         headers: {
           Accept: 'application/json',
