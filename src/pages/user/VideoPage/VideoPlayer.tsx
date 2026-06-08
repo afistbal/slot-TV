@@ -36,11 +36,15 @@ import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
 import { captureVideoFrameDataUrlWithSeekRetry } from './videoFramePoster';
 import { getEpisodePeekFrame, setEpisodePeekFrame } from './episodeFrameQueueStore';
 import { consumeForyouResumeTimeSec } from '@/constants/foryouRoute';
-import { runLoadEpisodeForPlayer } from './videoPlayerLoadEpisode';
+import { putEpisodeDetailCache, getEpisodeDetailFromCache } from './episodeDetailCache';
+import { registerEpisodeInFullQueue } from './videoEpisodeQueues';
+import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
+import { tryVideoWarmStartPlayback } from './videoPlaybackKick';
+import { abortVideoLoad } from './videoFeedMedia';
+import { runLoadEpisodeForPlayer, type LoadEpisodeRuntime } from './videoPlayerLoadEpisode';
 import { reportMovieWatched } from './reportMovieWatched';
-import { markVideoSessionUserUnmuted } from './videoSessionMute';
+import { hasVideoSessionUserUnmuted, markVideoSessionUserUnmuted } from './videoSessionMute';
 import { formatVideoClock } from './videoPlayerTimeFormat';
-import { putEpisodeDetailCache } from './episodeDetailCache';
 import { readVideoOrientation, type VideoOrientation } from './videoOrientation';
 import {
     VideoPlayerBottomInfo,
@@ -78,6 +82,12 @@ export function VideoPlayer({
     onPcDrawerEnteredChange,
     pcDrawerClosingRef,
     onEpisodeLockSync,
+    onVideoElementReady,
+    h5VerticalPlayback = false,
+    videoKeepMediaOnPause = false,
+    videoNeighborPreload,
+    videoColdAutoplayRef,
+    fetchEpisodeDetail,
     ...props
 }: {
     id: number;
@@ -103,7 +113,20 @@ export function VideoPlayer({
     pcDrawerClosingRef: RefObject<boolean>;
     /** 单集详情 `lock` 写回 `movie/info` 列表的 `locked`，避免选集抽屉仍显示上锁 */
     onEpisodeLockSync?: (ep: IPlayerEpisode, listIndex: number) => void;
+    /** 竖滑容器：当前活跃 `<video>` 回调（切集 abort 用） */
+    onVideoElementReady?: (el: HTMLVideoElement | null) => void;
+    /** H5 竖滑切集：走 iOS 专用起播 / resync 链路 */
+    h5VerticalPlayback?: boolean;
+    /** 仍在邻条窗口内、仅 paused 的格：勿 abort 清源，避免滑回/滑到邻格黑屏 */
+    videoKeepMediaOnPause?: boolean;
+    /** 紧邻上下条 auto 预缓冲；再下 1 条 metadata */
+    videoNeighborPreload?: 'auto' | 'metadata';
+    /** 竖滑：仅首进/首条为 true，滑切后置 false，控制冷启动静音蒙层 */
+    videoColdAutoplayRef?: RefObject<boolean>;
+    /** 双队列：由 VideoSeriesVerticalSwiper 注入，避免重复 `movie/episode` */
+    fetchEpisodeDetail?: (episodeRowId: number, showLoading?: boolean) => Promise<IPlayerEpisode | null>;
 }) {
+    const isVerticalSeriesPlayer = fetchEpisodeDetail != null;
     // const loadingStore = useLoadingStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const configStore = useConfigStore();
@@ -172,12 +195,31 @@ export function VideoPlayer({
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const [progressHover, setProgressHover] = useState(false);
     const [progressDragging, setProgressDragging] = useState(false);
-    /** 冷启动/刷新：静音自动播时展示（PC 用 `.xgplayer-unmute-bt`，H5 用底部按钮层） */
+    /** 冷启动/刷新：静音自动播时展示（非竖滑 PC 仍走 showTapToUnmute） */
     const [showTapToUnmute, setShowTapToUnmute] = useState(false);
     /** 与 `<video>.muted` 同步，用于底部音量图标（对标 douyin BaseMusic 入口） */
-    const [videoMutedUi, setVideoMutedUi] = useState(true);
+    const [videoMutedUi, setVideoMutedUi] = useState(() => {
+        if (fromHomeVideoPlayback || hasVideoSessionUserUnmuted()) {
+            return false;
+        }
+        return Boolean(
+            (h5VerticalPlayback || fetchEpisodeDetail != null) && videoColdAutoplayRef?.current,
+        );
+    });
     /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
     const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
+    /** 竖滑冷启动首条：允许未起播时展示「点按开声」蒙层（H5/PC 共用） */
+    const [videoColdUnmuteOverlay, setVideoColdUnmuteOverlay] = useState(() => {
+        if (hasVideoSessionUserUnmuted() || fromHomeVideoPlayback) {
+            return false;
+        }
+        if (fetchEpisodeDetail == null) {
+            return false;
+        }
+        return Boolean(videoColdAutoplayRef?.current);
+    });
+    /** PC 竖滑：用户主动点底栏静音后不再出全屏蒙层（本集内）；换 `id` 重置 */
+    const [pcUserDismissedUnmuteOverlay, setPcUserDismissedUnmuteOverlay] = useState(false);
     /** `loadedmetadata`：videoWidth > videoHeight 为横屏，否则竖屏 */
     const [videoOrientation, setVideoOrientation] = useState<VideoOrientation | null>(null);
     const progressActiveElementRef = useRef<HTMLDivElement | null>(null);
@@ -198,6 +240,7 @@ export function VideoPlayer({
     const pausedByDocumentVisibilityRef = useRef(false);
     /** 对标 NetShort `playWithDelay(300)`：直链/刷新 PC 静音自动播前稍迟再 play，且切换 md 断点前需清掉 */
     const autoplayKickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const loadGenerationRef = useRef(0);
     const {
         fullscreenTargetRef,
         shouldKeepFullscreen,
@@ -211,17 +254,38 @@ export function VideoPlayer({
         videoStageRef,
         isDesktop && !pcFullscreen,
     );
-    /** 主格与邻格均用 metadata，便于邻格在拖拽时尽快出首帧占位（比 none 少黑屏） */
-    const videoPreload: 'none' | 'metadata' = 'metadata';
+    /** H5 竖滑：当前条 autoplay 用 auto；邻格由 videoNeighborPreload 分级 */
+    const videoPreload: 'none' | 'metadata' | 'auto' =
+        videoNeighborPreload ??
+        (isVerticalSeriesPlayer && playbackPolicy === 'autoplay' ? 'auto' : 'metadata');
 
-    /** H5：与 `<video>.muted` 一致且正在播时出全屏点按开声蒙层；用户点过底栏音量后不再出 */
+    /**
+     * H5 全屏「点按开声」：竖滑仅冷启动首条；单页播放仍按 muted+playing。
+     */
     const showH5FullscreenUnmuteOverlay =
         !isDesktop &&
-        videoMutedUi &&
-        playing &&
-        !h5UserDismissedUnmuteOverlay &&
         episode?.lock === false &&
-        location.search.indexOf('auto_play=0') === -1;
+        location.search.indexOf('auto_play=0') === -1 &&
+        !hasVideoSessionUserUnmuted() &&
+        (h5VerticalPlayback || isVerticalSeriesPlayer
+            ? videoColdUnmuteOverlay &&
+              videoMutedUi &&
+              !h5UserDismissedUnmuteOverlay &&
+              (playing || canPlay || videoColdUnmuteOverlay)
+            : videoMutedUi && playing && !h5UserDismissedUnmuteOverlay);
+
+    /** PC 竖滑：仅冷启动首条静音时展示 `.xgplayer-unmute` */
+    const showPcUnmuteOverlay =
+        isDesktop &&
+        episode?.lock === false &&
+        location.search.indexOf('auto_play=0') === -1 &&
+        !hasVideoSessionUserUnmuted() &&
+        (h5VerticalPlayback || isVerticalSeriesPlayer
+            ? (videoColdUnmuteOverlay || showTapToUnmute) &&
+              videoMutedUi &&
+              !pcUserDismissedUnmuteOverlay &&
+              (playing || canPlay || videoColdUnmuteOverlay || showTapToUnmute)
+            : showTapToUnmute && playing);
 
     async function forceExitFullscreen(options?: { skipVideoWebKitExit?: boolean }) {
         const video = videoRef.current as (HTMLVideoElement & { webkitExitFullscreen?: () => void }) | null;
@@ -343,38 +407,86 @@ export function VideoPlayer({
         hideController();
     }
 
+    function buildLoadRuntime(
+        gen: number,
+        suppressPlayback: boolean,
+        resumeTimeSec?: number,
+    ): LoadEpisodeRuntime {
+        return {
+            videoRef,
+            subtitlesRef,
+            autoplayKickTimerRef,
+            getStaticBase: () => String(configStore.config['static'] ?? ''),
+            speed,
+            fromHomeVideoPlayback,
+            legacyEpisodeAutoplayRef,
+            suppressPlayback,
+            setLoading,
+            setEpisode,
+            setShowTapToUnmute,
+            setWaiting,
+            setPlaying,
+            setCanPlay,
+            setPlaybackSources,
+            showController,
+            hideController,
+            controllerTimerRef,
+            episodeFetchOpts: {
+                viewerIsVip: userStore.isVIP(),
+            },
+            resumeTimeSec,
+            onEpisodeLockSync: onEpisodeLockSync
+                ? (ep) => onEpisodeLockSync(ep, props.index)
+                : undefined,
+            shouldAbort: () => gen !== loadGenerationRef.current,
+            primeNeighborBuffer:
+                isVerticalSeriesPlayer && suppressPlayback && videoNeighborPreload === 'auto',
+            h5VerticalPlayback,
+            seriesVerticalPlayback: isVerticalSeriesPlayer,
+            onVideoMutedUiSync: setVideoMutedUi,
+            fetchEpisodeDetail: fetchEpisodeDetail
+                ? (episodeId, showLoading) => fetchEpisodeDetail(episodeId, showLoading)
+                : undefined,
+        };
+    }
+
     async function loadData(episodeId: number, showLoading = false) {
         const suppressPlayback = playbackPolicy === 'paused';
-        setCanPlay(false);
+        const gen = ++loadGenerationRef.current;
         const resumeTimeSec = consumeForyouResumeTimeSec(data.info.id, episodeId);
+        const isVideoColdAutoplay = Boolean(
+            isVerticalSeriesPlayer &&
+                !hasVideoSessionUserUnmuted() &&
+                videoColdAutoplayRef?.current,
+        );
+
+        if (isVerticalSeriesPlayer && !suppressPlayback) {
+            if (isVideoColdAutoplay) {
+                setVideoColdUnmuteOverlay(true);
+                setVideoMutedUi(true);
+            } else {
+                setVideoColdUnmuteOverlay(false);
+                if (fromHomeVideoPlayback || hasVideoSessionUserUnmuted()) {
+                    setVideoMutedUi(false);
+                }
+            }
+
+            const urls =
+                playbackSources.length > 0
+                    ? playbackSources
+                    : (() => {
+                          const cached = getEpisodeDetailFromCache(episodeId);
+                          return cached ? resolveEpisodePlaybackUrls(cached, staticBase) : [];
+                      })();
+            const rt = buildLoadRuntime(gen, suppressPlayback, resumeTimeSec);
+            if (tryVideoWarmStartPlayback(rt, episodeId, urls, episode?.id)) {
+                return;
+            }
+        }
+
+        setCanPlay(false);
         await runLoadEpisodeForPlayer(
-            {
-                videoRef,
-                subtitlesRef,
-                autoplayKickTimerRef,
-                getStaticBase: () => String(configStore.config['static'] ?? ''),
-                speed,
-                fromHomeVideoPlayback,
-                legacyEpisodeAutoplayRef,
-                suppressPlayback,
-                setLoading,
-                setEpisode,
-                setShowTapToUnmute,
-                setWaiting,
-                setPlaying,
-                setCanPlay,
-                setPlaybackSources,
-                showController,
-                hideController,
-                controllerTimerRef,
-                episodeFetchOpts: {
-                    viewerIsVip: userStore.isVIP(),
-                },
-                resumeTimeSec,
-                onEpisodeLockSync: onEpisodeLockSync
-                    ? (ep) => onEpisodeLockSync(ep, props.index)
-                    : undefined,
-            },
+            buildLoadRuntime(gen, suppressPlayback, resumeTimeSec),
             episodeId,
             showLoading,
         );
@@ -387,6 +499,7 @@ export function VideoPlayer({
     /** 充值/VIP 支付成功：RadixRc 已拉最新 `movie/episode`，写入缓存并走同一套 `loadData` 更新播放 */
     function handleEmbedPaySuccessEpisodeDetail(d: IPlayerEpisode) {
         putEpisodeDetailCache(Number(d.id) || id, d);
+        registerEpisodeInFullQueue(data.info.id, d);
         void loadData(id, false);
     }
 
@@ -758,6 +871,7 @@ export function VideoPlayer({
         v.muted = false;
         setVideoMutedUi(false);
         setShowTapToUnmute(false);
+        setVideoColdUnmuteOverlay(false);
         void v.play().then(() => setPlaying(true)).catch(() => {});
         showController();
     }
@@ -770,6 +884,8 @@ export function VideoPlayer({
         }
         if (!isDesktop) {
             setH5UserDismissedUnmuteOverlay(true);
+        } else if (h5VerticalPlayback || isVerticalSeriesPlayer) {
+            setPcUserDismissedUnmuteOverlay(true);
         }
         if (v.muted) {
             handleTapToUnmute();
@@ -809,6 +925,7 @@ export function VideoPlayer({
 
     useEffect(() => {
         setH5UserDismissedUnmuteOverlay(false);
+        setPcUserDismissedUnmuteOverlay(false);
         setVideoOrientation(null);
         setCenterPlayUiEngaged(false);
     }, [id]);
@@ -818,7 +935,45 @@ export function VideoPlayer({
             return;
         }
         void loadData(id);
-    }, [id, isDesktop, sessionBootstrapReady, playbackPolicy, fromHomeVideoPlayback]);
+    }, [id, sessionBootstrapReady, fromHomeVideoPlayback]);
+
+    const prevPlaybackPolicyRef = useRef(playbackPolicy);
+
+    useEffect(() => {
+        if (!isVerticalSeriesPlayer || !sessionBootstrapReady) {
+            return;
+        }
+        const prev = prevPlaybackPolicyRef.current;
+        prevPlaybackPolicyRef.current = playbackPolicy;
+        if (prev === playbackPolicy) {
+            return;
+        }
+        if (playbackPolicy === 'paused') {
+            const v = videoRef.current;
+            v?.pause();
+            setPlaying(false);
+            if (v && !videoKeepMediaOnPause) {
+                abortVideoLoad(v);
+            }
+            return;
+        }
+        void loadData(id);
+    }, [playbackPolicy, isVerticalSeriesPlayer, sessionBootstrapReady, videoKeepMediaOnPause, id]);
+
+    useEffect(() => {
+        const el = videoRef.current;
+        if (!el) {
+            onVideoElementReady?.(null);
+            return;
+        }
+        onVideoElementReady?.(el);
+        const onMeta = () => onVideoElementReady?.(videoRef.current);
+        el.addEventListener('loadedmetadata', onMeta);
+        return () => {
+            el.removeEventListener('loadedmetadata', onMeta);
+            onVideoElementReady?.(null);
+        };
+    }, [episode?.id, onVideoElementReady, playbackSources.length]);
 
     useEffect(() => {
         if (playbackPolicy !== 'paused' || controllerRef.current === null) {
@@ -835,12 +990,16 @@ export function VideoPlayer({
 
     useEffect(() => {
         return () => {
+            loadGenerationRef.current += 1;
             if (autoplayKickTimerRef.current) {
                 clearTimeout(autoplayKickTimerRef.current);
                 autoplayKickTimerRef.current = null;
             }
+            if (isVerticalSeriesPlayer) {
+                abortVideoLoad(videoRef.current);
+            }
         };
-    }, []);
+    }, [isVerticalSeriesPlayer]);
 
     useEffect(() => {
         setFramePosterDataUrl(getEpisodePeekFrame(id) ?? '');
@@ -1389,11 +1548,7 @@ export function VideoPlayer({
                                     <source key={`${id}-${i}`} src={srcUrl} type="video/mp4" />
                                 ))}
                             </video>
-                            {isDesktop &&
-                                showTapToUnmute &&
-                                playing &&
-                                episode?.lock === false &&
-                                location.search.indexOf('auto_play=0') === -1 && (
+                            {showPcUnmuteOverlay && (
                                     <div
                                         className="xgplayer-unmute"
                                         role="button"
@@ -1432,11 +1587,11 @@ export function VideoPlayer({
                                 className={cn(
                                     videoPlayerUiClassName,
                                     /** 静音蒙层在 DOM 序在前；全屏控制器含 translateZ(0) 时会盖住蒙层并吞点击，需让事件穿透到 .xgplayer-unmute */
-                                    showTapToUnmute && 'pointer-events-none',
+                                    showPcUnmuteOverlay && 'pointer-events-none',
                                 )}
                                 ref={controllerRef}
                             >
-                                {showCenterPlayControl && !showTapToUnmute && (
+                                {showCenterPlayControl && !showPcUnmuteOverlay && (
                                     <button
                                         type="button"
                                         className="video-player-center-play video-player-center-play--pc-decor absolute left-0 right-0 top-0 bottom-0 m-auto flex h-20 w-20 cursor-pointer items-center justify-center border-0 bg-transparent p-0"

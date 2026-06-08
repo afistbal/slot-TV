@@ -7,6 +7,8 @@ import { SPEED } from './videoPlayerConstants';
 import { hasVideoSessionUserUnmuted } from './videoSessionMute';
 import { isEpisodeDetailLocked, isPerformanceNavigationReload } from './videoPlayerUtils';
 import { applyVideoResumeTime } from './applyVideoResumeTime';
+import { kickVideoAutoplayForPlatform } from './videoPlaybackKick';
+import { primeVideoNeighborBuffer, resyncVideoSources } from './videoFeedMedia';
 export type LoadEpisodeRuntime = {
     videoRef: RefObject<HTMLVideoElement | null>;
     subtitlesRef: RefObject<VTTCue[]>;
@@ -39,7 +41,11 @@ export type LoadEpisodeRuntime = {
     primeNeighborBuffer?: boolean;
     /** H5 竖滑：异步字幕、skipReload、kick 前 resync 等 */
     h5VerticalPlayback?: boolean;
+    /** 剧集竖滑（含 PC ±1 窗口）：邻格预拉与 skipReload */
+    seriesVerticalPlayback?: boolean;
     onVideoMutedUiSync?: (muted: boolean) => void;
+    /** 双队列 fetcher：命中全量队列则不再打 `movie/episode` */
+    fetchEpisodeDetail?: (id: number, loading: boolean) => Promise<IPlayerEpisode | null>;
 };
 
 export async function runLoadEpisodeForPlayer(
@@ -96,7 +102,13 @@ export async function runLoadEpisodeForPlayer(
         }
 
         const subtitleStr = d.subtitle != null ? String(d.subtitle) : '';
-        if (subtitleStr) {
+        const h5Vertical = Boolean(rt.h5VerticalPlayback);
+        const verticalSeries = h5Vertical || Boolean(rt.seriesVerticalPlayback);
+        const loadSubtitles = async () => {
+            if (!subtitleStr) {
+                rt.subtitlesRef.current = [];
+                return;
+            }
             const subUrl =
                 subtitleStr.startsWith('http://') || subtitleStr.startsWith('https://')
                     ? subtitleStr
@@ -121,13 +133,52 @@ export async function runLoadEpisodeForPlayer(
                 rt.subtitlesRef.current = [];
                 console.warn('[Video] subtitle load skipped (CORS/network/parse)', subUrl, e);
             }
-        } else {
+        };
+
+        if (verticalSeries) {
             rt.subtitlesRef.current = [];
+            void loadSubtitles();
+        } else {
+            await loadSubtitles();
         }
 
         await Promise.resolve();
 
-        if (!rt.videoRef.current) {
+        if (rt.shouldAbort?.()) {
+            return;
+        }
+
+        if (verticalSeries && urls.length > 0) {
+            for (let i = 0; i < 6; i += 1) {
+                await new Promise<void>((resolve) => {
+                    requestAnimationFrame(() => resolve());
+                });
+                if (rt.shouldAbort?.()) {
+                    return;
+                }
+                const waitEl = rt.videoRef.current;
+                if (!waitEl) {
+                    continue;
+                }
+                const mounted = Array.from(waitEl.querySelectorAll('source')).map(
+                    (s) => s.getAttribute('src') ?? '',
+                );
+                if (
+                    mounted.length >= urls.length &&
+                    urls.every((u, idx) => mounted[idx] === u)
+                ) {
+                    break;
+                }
+            }
+        } else if (!rt.videoRef.current) {
+            await new Promise<void>((resolve) => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => resolve());
+                });
+            });
+        }
+
+        if (rt.shouldAbort?.() || !rt.videoRef.current) {
             return;
         }
 
@@ -136,20 +187,21 @@ export async function runLoadEpisodeForPlayer(
             rt.autoplayKickTimerRef.current = null;
         }
         const el = rt.videoRef.current;
-        el.removeAttribute('src');
-        el.playbackRate = SPEED[rt.speed];
-        try {
-            el.load();
-        } catch {
-            // ignore
-        }
-        if (rt.resumeTimeSec != null && rt.resumeTimeSec > 0) {
-            applyVideoResumeTime(el, rt.resumeTimeSec);
-        } else {
-            el.currentTime = 0;
-        }
+        const existingSources = Array.from(el.querySelectorAll('source')).map(
+            (s) => s.getAttribute('src') ?? '',
+        );
+        const sameSources =
+            urls.length > 0 &&
+            existingSources.length === urls.length &&
+            urls.every((u, idx) => existingSources[idx] === u);
+        const skipReload =
+            verticalSeries &&
+            sameSources &&
+            (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA ||
+                el.networkState === HTMLMediaElement.NETWORK_LOADING);
 
         if (rt.suppressPlayback) {
+            el.playbackRate = SPEED[rt.speed];
             el.muted = true;
             el.pause();
             rt.setPlaying(false);
@@ -157,6 +209,44 @@ export async function runLoadEpisodeForPlayer(
             rt.setCanPlay(false);
             rt.setShowTapToUnmute(false);
             rt.showController(false);
+            if (rt.primeNeighborBuffer && urls.length > 0) {
+                primeVideoNeighborBuffer(el, urls);
+            }
+            return;
+        }
+
+        el.playbackRate = SPEED[rt.speed];
+        if (!skipReload && !verticalSeries) {
+            el.removeAttribute('src');
+            try {
+                el.load();
+            } catch {
+                // ignore
+            }
+        } else if (!skipReload && verticalSeries && !sameSources) {
+            el.removeAttribute('src');
+            try {
+                el.load();
+            } catch {
+                // ignore
+            }
+        }
+
+        if (rt.resumeTimeSec != null && rt.resumeTimeSec > 0) {
+            applyVideoResumeTime(el, rt.resumeTimeSec);
+        } else if (!skipReload) {
+            el.currentTime = 0;
+        }
+
+        if (verticalSeries && urls.length > 0) {
+            resyncVideoSources(el, urls);
+        }
+
+        if (h5Vertical && location.search.indexOf('auto_play=0') === -1) {
+            kickVideoAutoplayForPlatform(rt, el);
+            rt.controllerTimerRef.current = window.setTimeout(() => {
+                rt.hideController();
+            }, 10000);
             return;
         }
 
@@ -169,19 +259,24 @@ export async function runLoadEpisodeForPlayer(
             location.search.length > 1 &&
             location.search.indexOf('auto_play=0') === -1;
         const sessionUnmuted = hasVideoSessionUserUnmuted();
+        const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
+        rt.legacyEpisodeAutoplayRef.current = false;
         /** PC：整页刷新、带归因 query、或站内冷链（可结合 session 少打蒙层） */
         const showTapToUnmutePc =
             isPcViewport &&
+            !useLegacyEpisodePlayback &&
             (isReload ||
                 marketingSoundQuery ||
                 (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
         /** PC 全屏点按开声蒙层（H5 改由 `VideoPlayer` 按 `video.muted` + 底栏音量是否点过控制） */
         const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
-        const allowSoundAutoplay = rt.fromHomeVideoPlayback || !isPcViewport || marketingSoundQuery;
+        const allowSoundAutoplay =
+            rt.fromHomeVideoPlayback ||
+            !isPcViewport ||
+            marketingSoundQuery ||
+            (isPcViewport && useLegacyEpisodePlayback) ||
+            (isPcViewport && sessionUnmuted);
         const isColdVideoAutoplay = !allowSoundAutoplay;
-
-        const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
-        rt.legacyEpisodeAutoplayRef.current = false;
 
         if (location.search.indexOf('auto_play=0') === -1) {
             if (useLegacyEpisodePlayback) {
@@ -247,7 +342,11 @@ export async function runLoadEpisodeForPlayer(
         }, 10000);
     };
 
-    const d = await fetchEpisodeDetailOrNull(id, loading, rt.episodeFetchOpts);
+    const fetcher =
+        rt.fetchEpisodeDetail ??
+        ((episodeId: number, showLoading: boolean) =>
+            fetchEpisodeDetailOrNull(episodeId, showLoading, rt.episodeFetchOpts));
+    const d = await fetcher(id, loading);
     if (!d) {
         rt.setPlaybackSources([]);
         return;

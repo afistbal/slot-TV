@@ -7,6 +7,10 @@ import { offlinePlayerEpisode } from '@/mocks/videoOffline';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { isEpisodeDetailLocked } from './videoPlayerUtils';
 
+function episodeHasPlayableMedia(ep: IPlayerEpisode): boolean {
+    return Boolean(ep.video?.trim() || (ep.video_urls?.length ?? 0) > 0);
+}
+
 
 
 const detailById = new Map<number, IPlayerEpisode>();
@@ -81,22 +85,19 @@ export async function fetchEpisodeDetailOrNull(
 
     const autoUnlock = opts?.viewerIsVip ? 0 : 1;
 
-    /** auto_unlock 后 lock 可能变 false，勿用旧的「仍上锁」缓存 */
-
-    if (autoUnlock === 1) {
-
-        detailById.delete(nid);
-
-    }
-
-
-
     const cached = detailById.get(nid);
-
     if (cached) {
-
-        return cached;
-
+        if (autoUnlock === 1) {
+            /** 非 VIP：仅在上锁或无片源时重拉 auto_unlock；已有 mp4/vtt 则复用全量队列 */
+            const needsRefresh =
+                isEpisodeDetailLocked(cached.lock) || !episodeHasPlayableMedia(cached);
+            if (!needsRefresh) {
+                return cached;
+            }
+            detailById.delete(nid);
+        } else {
+            return cached;
+        }
     }
 
 

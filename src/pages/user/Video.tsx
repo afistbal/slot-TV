@@ -1,3 +1,8 @@
 import './VideoPage/videoPage.css';
 
-export { default } from './VideoPage/VideoVerticalSwiper';
+import '@/pages/user/ForYouPage/foryou-vertical.scss';
+
+
+
+export { default } from './VideoPage/VideoSeriesVerticalSwiper';
+
