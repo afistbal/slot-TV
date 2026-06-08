@@ -33,6 +33,13 @@ export type LoadEpisodeRuntime = {
     resumeTimeSec?: number;
     /** 单集 lock 写回选集列表（movie/info `locked`） */
     onEpisodeLockSync?: (ep: IPlayerEpisode) => void;
+    /** 换集 / 重拉时取消过期的 applyEpisode */
+    shouldAbort?: () => boolean;
+    /** 邻格 paused + preload=auto 时多拉媒体 */
+    primeNeighborBuffer?: boolean;
+    /** H5 竖滑：异步字幕、skipReload、kick 前 resync 等 */
+    h5VerticalPlayback?: boolean;
+    onVideoMutedUiSync?: (muted: boolean) => void;
 };
 
 export async function runLoadEpisodeForPlayer(
