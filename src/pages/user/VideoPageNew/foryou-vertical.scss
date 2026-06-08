@@ -1,0 +1,214 @@
+.foryou-vertical {
+    touch-action: none;
+}
+
+/** H5 首屏 loading / 空态 / 错误：占满视口并居中 Loader */
+.foryou-vertical--fullscreen-boot {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+}
+
+@media (max-width: 767px) {
+    /** 避免 100vw 含滚动条宽度导致右侧约 2px 缝；与 fixed inset-0 全屏一致 */
+    html:has(.foryou-vertical),
+    body:has(.foryou-vertical) {
+        overflow: hidden;
+        overscroll-behavior: none;
+        background-color: #000;
+    }
+
+    .foryou-vertical,
+    .video-fullscreen-target:has(.foryou-vertical) {
+        width: 100%;
+        max-width: none;
+        min-height: 100dvh;
+        height: 100dvh;
+    }
+
+    .foryou-vertical__swiper,
+    .foryou-vertical__swiper .swiper-slide,
+    .foryou-slide-shell,
+    .foryou-player-mount,
+    .foryou-player-mount .video-player-root {
+        width: 100%;
+        height: 100%;
+        min-height: 100%;
+    }
+
+}
+
+@media (min-width: 768px) {
+    .foryou-vertical-pc-shell {
+        .foryou-vertical {
+            height: 100%;
+        }
+
+        .foryou-vertical,
+        .foryou-vertical__swiper {
+            touch-action: none;
+        }
+    }
+}
+
+.foryou-vertical__edge-hint {
+    position: absolute;
+    left: 50%;
+    z-index: 30;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.foryou-vertical__edge-hint--top {
+    top: 12px;
+}
+
+.foryou-vertical__edge-hint--bottom {
+    bottom: 88px;
+}
+
+.foryou-vertical__swiper {
+    width: 100%;
+    height: 100%;
+}
+
+/** 设计稿：顶栏仅返回；剧名与集数在底部信息区 */
+.foryou-player-h5-topbar {
+    display: flex;
+    align-items: center;
+    padding: 8px 4px 0;
+    pointer-events: auto;
+}
+
+/**
+ * For You 与 /video 共用 ForYouPlayer 壳子：强制隐藏分集/顶栏集数等，保留进度条与播放控制（与 video 一致）
+ */
+.video-player-root.foryou-feed-player {
+    .video-player-pc-back-bar__ep,
+    .video-player-h5-topbar-ep {
+        display: none !important;
+    }
+
+    .foryou-watch-full-btn {
+        display: flex;
+    }
+}
+
+@media (min-width: 768px) {
+    .video-player-root.foryou-feed-player .foryou-player-h5-topbar {
+        display: none;
+    }
+}
+
+/** 设计稿：与标题/标签左缘对齐，小圆角毛玻璃，宽度随文案 */
+.foryou-watch-full-btn {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    margin: 0 0 8px;
+    padding: 9px 16px;
+    width: fit-content;
+    max-width: 100%;
+    border: 0;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-weight: 400;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.92);
+    line-height: 18px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/** 设计稿：左侧实心白色三角播放标 */
+.foryou-watch-full-btn__play {
+    flex-shrink: 0;
+    display: block;
+    width: 8px;
+    height: 9px;
+    background: rgba(255, 255, 255, 0.92);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+/** H5 标签横滑：父级 foryou-vertical 为 touch-action:none，此处须恢复 pan-x */
+.foryou-vertical .video-player-h5-tags {
+    touch-action: pan-x !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+.foryou-slide-shell {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+}
+
+.foryou-player-mount {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+}
+
+/** H5 缓冲：仅居中转圈，不铺黑底（底栏/侧栏 UI 保持可见） */
+.foryou-player-buffer-loader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 15;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+
+    > .flex {
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        flex: none !important;
+    }
+}
+
+.foryou-feed-player .video-player-h5-video-stage.foryou-player-video-stage--pending {
+    background-color: transparent;
+}
+
+.foryou-player-mount .foryou-player-video-stage--pending video {
+    opacity: 0;
+}
+
+.foryou-player-mount .foryou-player-video-stage--visible video {
+    opacity: 1;
+    transition: opacity 0.4s ease;
+}
+
+/** For You H5：沉浸态控制层穿透，点视频区 toggle；侧栏/底栏/顶栏仍可交互 */
+.foryou-feed-player .foryou-player-ui--tap-through.video-player-ui--chrome-hidden {
+    pointer-events: none !important;
+
+    * {
+        pointer-events: none !important;
+    }
+
+    .video-player-h5-bottom,
+    .video-player-h5-bottom *,
+    .video-player-h5-side-actions,
+    .video-player-h5-side-actions *,
+    .video-player-h5-topbar,
+    .video-player-h5-topbar *,
+    .foryou-player-h5-topbar,
+    .foryou-player-h5-topbar * {
+        pointer-events: auto !important;
+    }
+}
