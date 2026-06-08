@@ -3,8 +3,23 @@ import react from '@vitejs/plugin-react'
 // import legacy from '@vitejs/plugin-legacy'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { copyFileSync, existsSync, readFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, readFileSync, statSync } from 'node:fs'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from "path"
+
+const OP_NEW_DIR = path.join(process.cwd(), 'op_new')
+
+const OP_NEW_MIME: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+}
 
 const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
@@ -52,6 +67,55 @@ function injectApiOriginPreconnect(apiOrigin: string): Plugin {
         `    <link rel="preconnect" href="${apiOrigin}" crossorigin />\n`
       return html.replace('<head>', `<head>\n${hints}`)
     },
+  }
+}
+
+function serveOpNewStatic(req: IncomingMessage, res: ServerResponse, next: () => void) {
+  const raw = req.url?.split('?')[0] ?? ''
+  if (!raw.startsWith('/op_new')) {
+    next()
+    return
+  }
+  let rel = decodeURIComponent(raw.replace(/^\/op_new\/?/, '') || 'app-google-share.html')
+  if (rel === '' || rel.endsWith('/')) {
+    rel = 'app-google-share.html'
+  }
+  const fp = path.normalize(path.join(OP_NEW_DIR, rel))
+  if (!fp.startsWith(OP_NEW_DIR)) {
+    next()
+    return
+  }
+  try {
+    const st = statSync(fp)
+    if (!st.isFile()) {
+      next()
+      return
+    }
+    const ext = path.extname(fp).toLowerCase()
+    res.setHeader('Content-Type', OP_NEW_MIME[ext] ?? 'application/octet-stream')
+    res.end(readFileSync(fp))
+  } catch {
+    next()
+  }
+}
+
+/** 打包时复制 op_new/（App 分享落地页）到 outDir；dev/preview 可直接访问 /op_new/ */
+function opNewStatic(outDir: string): Plugin {
+  const attachMiddleware = (server: { middlewares: { use: (fn: typeof serveOpNewStatic) => void } }) => {
+    server.middlewares.use(serveOpNewStatic)
+  }
+  return {
+    name: 'op-new-static',
+    closeBundle() {
+      if (!existsSync(OP_NEW_DIR)) {
+        return
+      }
+      const dest = path.join(outDir, 'op_new')
+      cpSync(OP_NEW_DIR, dest, { recursive: true })
+      console.log(`[op-new-static] copied op_new -> ${dest}`)
+    },
+    configureServer: attachMiddleware,
+    configurePreviewServer: attachMiddleware,
   }
 }
 
@@ -115,6 +179,7 @@ export default ({ mode }: { mode: string }) => {
     plugins: [
       htmlAssetCacheBust(appVersion),
       copyShareHtmlFiles(outDir),
+      opNewStatic(outDir),
       injectApiOriginPreconnect(apiOriginForHints),
       react(),
       tailwindcss(),
@@ -136,9 +201,10 @@ export default ({ mode }: { mode: string }) => {
           clientsClaim: true,
           navigateFallbackDenylist: [
             /^\/api\//,
+            /^\/op_new\//,
             /^\/[\w-]+\.html/
           ],
-          globIgnores: ['**/share*', 'airwallex.html'],
+          globIgnores: ['**/share*', '**/op_new/**', 'airwallex.html'],
         },
       })
     ],
@@ -150,8 +216,6 @@ export default ({ mode }: { mode: string }) => {
         input: {
           index: 'index.html',
           share: 'share.html',
-          'share-test': 'share-test.html',
-          'og-share': 'og-share.html',
         },
       }
     },

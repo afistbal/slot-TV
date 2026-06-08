@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" type="image/png" href="./images/favicon.png">
+  <title>YogoShort</title>
+
+  <meta id="metaDescription" name="description" content="Watch short dramas on YogoShort.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="YogoShort">
+  <meta id="ogUrl" property="og:url" content="">
+  <meta id="ogTitle" property="og:title" content="YogoShort">
+  <meta id="ogDescription" property="og:description" content="Watch short dramas on YogoShort.">
+  <meta id="ogImage" property="og:image" content="">
+  <meta id="ogImageSecure" property="og:image:secure_url" content="">
+  <meta property="og:image:type" content="image/webp">
+  <meta property="og:image:width" content="360">
+  <meta property="og:image:height" content="640">
+  <meta name="twitter:card" content="summary">
+  <meta id="twitterTitle" name="twitter:title" content="YogoShort">
+  <meta id="twitterDescription" name="twitter:description" content="Watch short dramas on YogoShort.">
+  <meta id="twitterImage" name="twitter:image" content="">
+
+  <!--
+    App 分享 FB / Twitter 落地页（与 H5 /share/{id}?v= 同级用途，供 App 唤起商店/Deep Link）
+
+    分享链接示例：
+      https://yogoshort.com/op_new/app-google-share.html?id=9846&episode=1
+    App 若需 FB 爬虫直读 OG，可在链接上附带（可选）：
+      &og_title=...&og_description=...&og_image=https://...
+
+    进站会保留 fbclid / utm_* 等参数，并写入 _fbc cookie（对齐站内 fbAttribution.ts）
+  -->
+  <script>
+    (function bootstrapOgFromQuery() {
+      var q = new URLSearchParams(location.search);
+      var title = q.get('og_title') || q.get('title') || '';
+      var desc = q.get('og_description') || q.get('introduction') || '';
+      var image = q.get('og_image') || q.get('cover') || '';
+      function setContent(id, value) {
+        if (!value) return;
+        var el = document.getElementById(id);
+        if (el) el.setAttribute('content', value);
+      }
+      if (title) {
+        document.title = title.indexOf('YogoShort') > -1 ? title : title + ' | YogoShort';
+        setContent('ogTitle', document.title);
+        setContent('twitterTitle', document.title);
+      }
+      if (desc) {
+        setContent('metaDescription', desc);
+        setContent('ogDescription', desc);
+        setContent('twitterDescription', desc);
+      }
+      if (image) {
+        setContent('ogImage', image);
+        setContent('ogImageSecure', image);
+        setContent('twitterImage', image);
+      }
+      setContent('ogUrl', location.href.split('#')[0]);
+    })();
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'Microsoft Yahei', sans-serif;
+      background: #000;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 425px;
+      min-height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease-out;
+    }
+
+    .page--ready {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .loading-mask {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      z-index: 999;
+    }
+
+    .loading-dot {
+      width: 8px;
+      height: 8px;
+      margin: 0 3px;
+      border-radius: 50%;
+      background: #ff4d8d;
+      opacity: 0.25;
+      animation: loadingBlink 1.2s infinite;
+    }
+
+    .loading-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .loading-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes loadingBlink {
+
+      0%,
+      100% {
+        opacity: 0.2;
+        transform: translateY(0);
+      }
+
+      40% {
+        opacity: 1;
+        transform: translateY(-3px);
+      }
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #141414;
+    }
+
+    .topbar__brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .topbar__logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      object-fit: cover;
+    }
+
+    .topbar__name {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .topbar__sub {
+      margin-top: 2px;
+      font-size: 12px;
+      color: #8c8c8c;
+      line-height: 1.2;
+    }
+
+    .topbar__open {
+      flex-shrink: 0;
+      min-width: 72px;
+      height: 32px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ff6b35 0%, #ff4d8d 100%);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .topbar__open:active {
+      opacity: 0.88;
+    }
+
+    .content {
+      flex: 1;
+      padding: 16px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .poster-wrap {
+      position: relative;
+      width: min(100%, 320px);
+      margin: 0 auto 20px;
+      cursor: pointer;
+    }
+
+    .poster {
+      display: block;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #1a1a1a;
+    }
+
+    .poster-play {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .poster-play img {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+    }
+
+    .episodes-badge {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.72);
+      font-size: 11px;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .episodes-badge img {
+      width: 12px;
+      height: 12px;
+      object-fit: contain;
+    }
+
+    .title {
+      width: 100%;
+      margin-bottom: 14px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.45;
+      color: #fff;
+      word-break: break-word;
+    }
+
+    .tags {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #2a2a2a;
+      color: #b3b3b3;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .desc {
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #8c8c8c;
+      word-break: break-word;
+    }
+
+    .bottom {
+      position: sticky;
+      bottom: 0;
+      padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.92) 28%, #000 100%);
+    }
+
+    .cta-btn {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ff6b35 0%, #ff4d8d 100%);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(255, 77, 141, 0.28);
+    }
+
+    .cta-btn:active {
+      opacity: 0.9;
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="loading-mask" id="loadingMask">
+    <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#fff;">
+      <span>Loading</span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+      <span class="loading-dot"></span>
+    </div>
+  </div>
+
+  <div class="page" id="pageRoot">
+    <header class="topbar">
+      <div class="topbar__brand">
+        <img class="topbar__logo" src="./images/app-logo.png" alt="YogoShort">
+        <div>
+          <div class="topbar__name">YogoShort</div>
+          <div class="topbar__sub">Continue Watching</div>
+        </div>
+      </div>
+      <button type="button" class="topbar__open" id="headerOpenBtn">Open</button>
+    </header>
+
+    <main class="content">
+      <div class="poster-wrap" id="posterWrap">
+        <img class="poster" id="posterImg" alt="">
+        <div class="poster-play" aria-hidden="true">
+          <img src="./images/icon-play1.webp" alt="">
+        </div>
+        <div class="episodes-badge">
+          <img src="./images/icon-play-badge.webp" alt="">
+          <span id="episodeCountText">0 Episodes</span>
+        </div>
+      </div>
+      <h1 class="title" id="movieTitle">YogoShort</h1>
+      <div class="tags" id="tagList"></div>
+      <p class="desc" id="movieDesc"></p>
+    </main>
+
+    <div class="bottom">
+      <button type="button" class="cta-btn" id="ctaBtn">Open YogoShort</button>
+    </div>
+  </div>
+
+  <script>
+    var APP_SCHEME_BASE = 'open://yogo.com/movie';
+    var APP_PACKAGE = 'com.yogoshort.app';
+    var IOS_APP_STORE_URL = 'https://apps.apple.com/app/id6751373638';
+    var STATIC_BASE = 'https://cos.yogoshort.com';
+
+    var TRACKING_KEYS = [
+      'fbclid', 'fbc', 'fbp', 'gclid', 'ttclid',
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id'
+    ];
+
+    function getApiBaseUrl() {
+      var host = location.hostname || '';
+      var isLocal = !host || host === 'localhost' || host === '127.0.0.1';
+      var isTest = /test/i.test(host) || isLocal;
+      return isTest ? 'https://test.yogoshort.com/api' : 'https://i.yogoshort.com/api';
+    }
+
+    function getUrlParam(name) {
+      var match = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search);
+      return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+    }
+
+    function parseRouteParams() {
+      var movieId = getUrlParam('movieId') || getUrlParam('id') || '';
+      var episodeNum = getUrlParam('episodeNum') || getUrlParam('episode') || getUrlParam('v') || '1';
+      var parts = (location.pathname || '').split('/').filter(Boolean);
+      var idx = parts.length - 1;
+      if (parts[idx] && /\.html$/i.test(parts[idx])) {
+        idx -= 1;
+      }
+      if (!movieId && parts[idx] && /^\d+$/.test(parts[idx])) {
+        movieId = parts[idx];
+        if (parts[idx + 1] && /^\d+$/.test(parts[idx + 1])) {
+          episodeNum = parts[idx + 1];
+        }
+      }
+      return {
+        movieId: String(movieId || '').trim(),
+        episodeNum: String(episodeNum || '1').trim() || '1'
+      };
+    }
+
+    function readCookie(name) {
+      var match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+      return match && match[1] ? decodeURIComponent(match[1]) : '';
+    }
+
+    function writeCookie(name, value, maxAge) {
+      document.cookie = name + '=' + encodeURIComponent(value) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+    }
+
+    /** 对齐 src/lib/fbAttribution.ts：进站带 fbclid 时写 _fbc / localStorage */
+    function syncFbAttributionCache() {
+      var fbclid = getUrlParam('fbclid');
+      if (fbclid) {
+        try {
+          localStorage.setItem('fbclid', fbclid);
+        } catch (e) { }
+        var fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+        try {
+          localStorage.setItem('fbc', fbc);
+        } catch (e) { }
+        writeCookie('_fbc', fbc, 7776000);
+      }
+      var fbp = readCookie('_fbp');
+      if (fbp) {
+        try {
+          localStorage.setItem('fbp', fbp);
+        } catch (e) { }
+      }
+    }
+
+    function collectTrackingParams() {
+      var out = new URLSearchParams();
+      TRACKING_KEYS.forEach(function (key) {
+        var val = getUrlParam(key);
+        if (val) out.set(key, val);
+      });
+      if (!out.get('fbc')) {
+        var storedFbc = '';
+        try {
+          storedFbc = localStorage.getItem('fbc') || readCookie('_fbc') || '';
+        } catch (e) { }
+        if (storedFbc) out.set('fbc', storedFbc);
+      }
+      return out;
+    }
+
+    function appendParamsToUrl(baseUrl, extraParams) {
+      var url;
+      try {
+        url = new URL(baseUrl);
+      } catch (e) {
+        return baseUrl;
+      }
+      extraParams.forEach(function (value, key) {
+        if (!url.searchParams.has(key)) {
+          url.searchParams.set(key, value);
+        }
+      });
+      return url.toString();
+    }
+
+    function joinStaticUrl(path) {
+      var img = String(path || '').trim();
+      if (!img) return '';
+      if (/^https?:\/\//i.test(img)) return img;
+      if (img.indexOf('//') === 0) return 'https:' + img;
+      var base = String(STATIC_BASE || '').replace(/\/+$/, '');
+      return base + '/' + img.replace(/^\//, '');
+    }
+
+    function resolveCoverUrl(info, movieId) {
+      if (!info) return '';
+      var isRename = info.is_rename === 1 || info.is_rename === '1' || info.is_rename === true;
+      if (isRename && movieId) {
+        return joinStaticUrl('movie_images/' + movieId + '.webp');
+      }
+      return joinStaticUrl(info.image);
+    }
+
+    function buildDeepLink(movieId, episodeNum) {
+      var url = APP_SCHEME_BASE
+        + '?movieId=' + encodeURIComponent(movieId || '')
+        + '&episodeNum=' + encodeURIComponent(episodeNum || '1');
+      return appendParamsToUrl(url, collectTrackingParams());
+    }
+
+    function buildGooglePlayUrl() {
+      var tracking = collectTrackingParams();
+      var referrerParts = ['utm_source=app_google_share'];
+      tracking.forEach(function (value, key) {
+        referrerParts.push(encodeURIComponent(key) + '%3D' + encodeURIComponent(value));
+      });
+      var referrer = referrerParts.join('%26');
+      return 'https://play.google.com/store/apps/details?id=' + encodeURIComponent(APP_PACKAGE) + '&referrer=' + referrer;
+    }
+
+    function buildIosStoreUrl() {
+      var url = IOS_APP_STORE_URL;
+      var tracking = collectTrackingParams();
+      if (tracking.toString()) {
+        url = appendParamsToUrl(url, tracking);
+      }
+      return url;
+    }
+
+    function isAndroid() {
+      return /Android/i.test(navigator.userAgent || '');
+    }
+
+    function isIos() {
+      return /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    }
+
+    function openWithFallback(schemeUrl, fallbackUrl) {
+      var opened = false;
+      var timer = null;
+
+      function cleanup() {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        document.removeEventListener('visibilitychange', onVisibility);
+        window.removeEventListener('pagehide', onPageHide);
+        window.removeEventListener('blur', onBlur);
+      }
+
+      function markOpened() {
+        opened = true;
+        cleanup();
+      }
+
+      function onVisibility() {
+        if (document.visibilityState === 'hidden') {
+          markOpened();
+        }
+      }
+
+      function onPageHide() {
+        markOpened();
+      }
+
+      function onBlur() {
+        markOpened();
+      }
+
+      document.addEventListener('visibilitychange', onVisibility);
+      window.addEventListener('pagehide', onPageHide);
+      window.addEventListener('blur', onBlur);
+
+      timer = setTimeout(function () {
+        cleanup();
+        if (!opened) {
+          window.location.href = fallbackUrl;
+        }
+      }, 1800);
+
+      window.location.href = schemeUrl;
+    }
+
+    function openApp() {
+      var route = parseRouteParams();
+      var schemeUrl = buildDeepLink(route.movieId, route.episodeNum);
+
+      if (isAndroid()) {
+        openWithFallback(schemeUrl, buildGooglePlayUrl());
+        return;
+      }
+
+      if (isIos()) {
+        openWithFallback(schemeUrl, buildIosStoreUrl());
+        return;
+      }
+
+      window.open(buildGooglePlayUrl(), '_blank');
+    }
+
+    function setMetaContent(id, value) {
+      if (!value) return;
+      var el = document.getElementById(id);
+      if (el) el.setAttribute('content', value);
+    }
+
+    function renderMovieInfo(data, movieId) {
+      if (!data || !data.info) return;
+      var info = data.info;
+      var title = info.title || 'YogoShort';
+      var desc = info.introduction || '';
+      var cover = resolveCoverUrl(info, movieId);
+      var episodes = Array.isArray(data.episodes) ? data.episodes.length : 0;
+      var pageTitle = title + ' | YogoShort';
+
+      document.title = pageTitle;
+      document.getElementById('movieTitle').textContent = title;
+      document.getElementById('movieDesc').textContent = desc;
+      document.getElementById('episodeCountText').textContent = episodes + ' Episodes';
+
+      var posterEl = document.getElementById('posterImg');
+      if (cover) {
+        posterEl.src = cover;
+        posterEl.alt = title;
+      }
+
+      var tagListEl = document.getElementById('tagList');
+      tagListEl.innerHTML = '';
+      if (Array.isArray(data.tags)) {
+        data.tags.forEach(function (tag) {
+          var label = tag.local_label || tag.name || tag.unique_id || '';
+          if (!label) return;
+          var el = document.createElement('span');
+          el.className = 'tag';
+          el.textContent = label;
+          tagListEl.appendChild(el);
+        });
+      }
+
+      setMetaContent('metaDescription', desc);
+      setMetaContent('ogTitle', pageTitle);
+      setMetaContent('ogDescription', desc);
+      setMetaContent('twitterTitle', pageTitle);
+      setMetaContent('twitterDescription', desc);
+      setMetaContent('ogUrl', location.href.split('#')[0]);
+      if (cover) {
+        setMetaContent('ogImage', cover);
+        setMetaContent('ogImageSecure', cover);
+        setMetaContent('twitterImage', cover);
+      }
+    }
+
+    function fetchConfig() {
+      return fetch(getApiBaseUrl() + '/config', {
+        headers: {
+          Accept: 'application/json',
+          'X-Platform': 'web'
+        }
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        if (res && res.c === 0 && res.d && res.d.static) {
+          STATIC_BASE = String(res.d.static).indexOf('//') === 0 ? 'https:' + res.d.static : res.d.static;
+        }
+      }).catch(function () { });
+    }
+
+    function fetchMovieInfo(movieId) {
+      if (!movieId) return Promise.resolve(null);
+      var url = getApiBaseUrl() + '/movie/info?id=' + encodeURIComponent(movieId);
+      return fetch(url, {
+        headers: {
+          Accept: 'application/json',
+          'X-Platform': 'web'
+        }
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        if (res && res.c === 0 && res.d) return res.d;
+        return null;
+      }).catch(function () {
+        return null;
+      });
+    }
+
+    (function init() {
+      syncFbAttributionCache();
+
+      var route = parseRouteParams();
+      var headerOpenBtn = document.getElementById('headerOpenBtn');
+      var ctaBtn = document.getElementById('ctaBtn');
+      var posterWrap = document.getElementById('posterWrap');
+      var loadingMask = document.getElementById('loadingMask');
+      var pageRoot = document.getElementById('pageRoot');
+
+      headerOpenBtn.addEventListener('click', openApp);
+      ctaBtn.addEventListener('click', openApp);
+      posterWrap.addEventListener('click', openApp);
+
+      Promise.resolve()
+        .then(fetchConfig)
+        .then(function () { return fetchMovieInfo(route.movieId); })
+        .then(function (data) {
+          if (data) {
+            renderMovieInfo(data, route.movieId);
+          }
+        })
+        .finally(function () {
+          if (loadingMask) loadingMask.style.display = 'none';
+          if (pageRoot) pageRoot.classList.add('page--ready');
+        });
+    })();
+  </script>
+</body>
+
+</html>
