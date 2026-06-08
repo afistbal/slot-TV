@@ -21,11 +21,8 @@ import { clearEpisodePeekFrameCache } from './episodeFrameQueueStore';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
 import { readVerticalPcKeyNavAction } from './videoVerticalPcKeyNav';
 import { bindVerticalPcWheelNav } from './videoVerticalPcWheelNav';
-import {
-    canNavigateBack,
-    episodeListLockedFromDetail,
-    isPerformanceNavigationReload,
-} from './videoPlayerUtils';
+import { isVideoSeriesColdAutoplay, resolveVideoMountAutoplayFlags } from './videoAutoplayPolicy';
+import { episodeListLockedFromDetail } from './videoPlayerUtils';
 import type { PcDrawerPanel } from './videoPlayerPcDrawerMotion';
 import { abortVideoLoad, ensureVideoMediaPreconnect } from './videoFeedMedia';
 import { isInVideoPlayerWindow } from './videoSeriesConstants';
@@ -52,13 +49,9 @@ export default function VideoSeriesVerticalSwiper() {
     const params = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const fromHomeVideoPlayback =
-        Boolean(
-            (location.state as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
-        ) ||
-        (typeof window !== 'undefined' &&
-            canNavigateBack() &&
-            !isPerformanceNavigationReload());
+    const mountAutoplayRef = useRef(resolveVideoMountAutoplayFlags(location.state));
+    /** 站内点击进入 → 有声；F5 落页一次性冷启动 → 静音蒙层（对标 For You） */
+    const fromHomeVideoPlayback = mountAutoplayRef.current.fromHomeVideoPlayback;
 
     const isDesktop = useMinWidth768();
     const viewerIsVip = useUserStore((s) => Boolean(s.signed && s.info?.['is_vip']));
@@ -68,7 +61,7 @@ export default function VideoSeriesVerticalSwiper() {
     const legacyEpisodeAutoplayRef = useRef(false);
     const neighborLegacyAutoplayRef = useRef(false);
     /** 竖滑：仅首进当前剧/首条为 true，滑切后置 false（对标 ForYou feedColdAutoplayRef） */
-    const videoColdAutoplayRef = useRef(true);
+    const videoColdAutoplayRef = useRef(mountAutoplayRef.current.videoColdAutoplay);
     const videoResumeRef = useRef<HTMLVideoElement | null>(null);
     const activeIndexRef = useRef(0);
     const dataRef = useRef<IPlayerData | undefined>(undefined);
@@ -254,7 +247,7 @@ export default function VideoSeriesVerticalSwiper() {
         clearEpisodeDetailCache();
         clearAllVideoEpisodeQueues();
         clearEpisodePeekFrameCache();
-        videoColdAutoplayRef.current = true;
+        videoColdAutoplayRef.current = isVideoSeriesColdAutoplay(fromHomeVideoPlayback, false);
         initialUrlAlignDoneRef.current = false;
         setActiveIndex(0);
     }, [params['id']]);

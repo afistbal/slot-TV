@@ -1,3 +1,4 @@
+import { resolveVideoAllowSoundAutoplay } from './videoAutoplayPolicy';
 import { hasVideoSessionUserUnmuted } from './videoSessionMute';
 import { isPerformanceNavigationReload } from './videoPlayerUtils';
 import { SPEED } from './videoPlayerConstants';
@@ -78,20 +79,23 @@ export function kickVideoAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement):
     const sessionUnmuted = hasVideoSessionUserUnmuted();
     const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
     rt.legacyEpisodeAutoplayRef.current = false;
+    const isVideoColdAutoplay = Boolean(rt.isVideoColdAutoplay);
     const showTapToUnmutePc =
         isPcViewport &&
         !useLegacyEpisodePlayback &&
-        (isReload ||
+        (isVideoColdAutoplay ||
+            isReload ||
             marketingSoundQuery ||
             (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
     const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
-    /** PC 用户主动切集（滚轮/键盘/分集按钮）与站内进站一样优先有声自动播 */
-    const allowSoundAutoplay =
-        rt.fromHomeVideoPlayback ||
-        !isPcViewport ||
-        marketingSoundQuery ||
-        (isPcViewport && useLegacyEpisodePlayback) ||
-        (isPcViewport && sessionUnmuted);
+    const allowSoundAutoplay = resolveVideoAllowSoundAutoplay({
+        fromHomeVideoPlayback: rt.fromHomeVideoPlayback,
+        marketingSoundQuery,
+        isPcViewport,
+        useLegacyEpisodePlayback,
+        isVideoColdAutoplay,
+        sessionUnmuted,
+    });
     const isColdVideoAutoplay = !allowSoundAutoplay;
     const h5Vertical = Boolean(rt.h5VerticalPlayback);
 

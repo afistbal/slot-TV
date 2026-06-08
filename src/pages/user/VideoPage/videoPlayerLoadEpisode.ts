@@ -4,6 +4,7 @@ import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from './episodeDetailCache';
 import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
 import { SPEED } from './videoPlayerConstants';
+import { resolveVideoAllowSoundAutoplay } from './videoAutoplayPolicy';
 import { hasVideoSessionUserUnmuted } from './videoSessionMute';
 import { isEpisodeDetailLocked, isPerformanceNavigationReload } from './videoPlayerUtils';
 import { applyVideoResumeTime } from './applyVideoResumeTime';
@@ -43,6 +44,8 @@ export type LoadEpisodeRuntime = {
     h5VerticalPlayback?: boolean;
     /** 剧集竖滑（含 PC ±1 窗口）：邻格预拉与 skipReload */
     seriesVerticalPlayback?: boolean;
+    /** 竖滑首条 F5/直链冷启动：PC 仍静音自动播并展示蒙层（不受 session 开声影响） */
+    isVideoColdAutoplay?: boolean;
     onVideoMutedUiSync?: (muted: boolean) => void;
     /** 双队列 fetcher：命中全量队列则不再打 `movie/episode` */
     fetchEpisodeDetail?: (id: number, loading: boolean) => Promise<IPlayerEpisode | null>;
@@ -261,21 +264,25 @@ export async function runLoadEpisodeForPlayer(
         const sessionUnmuted = hasVideoSessionUserUnmuted();
         const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
         rt.legacyEpisodeAutoplayRef.current = false;
+        const isVideoColdAutoplay = Boolean(rt.isVideoColdAutoplay);
         /** PC：整页刷新、带归因 query、或站内冷链（可结合 session 少打蒙层） */
         const showTapToUnmutePc =
             isPcViewport &&
             !useLegacyEpisodePlayback &&
-            (isReload ||
+            (isVideoColdAutoplay ||
+                isReload ||
                 marketingSoundQuery ||
                 (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
         /** PC 全屏点按开声蒙层（H5 改由 `VideoPlayer` 按 `video.muted` + 底栏音量是否点过控制） */
         const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
-        const allowSoundAutoplay =
-            rt.fromHomeVideoPlayback ||
-            !isPcViewport ||
-            marketingSoundQuery ||
-            (isPcViewport && useLegacyEpisodePlayback) ||
-            (isPcViewport && sessionUnmuted);
+        const allowSoundAutoplay = resolveVideoAllowSoundAutoplay({
+            fromHomeVideoPlayback: rt.fromHomeVideoPlayback,
+            marketingSoundQuery,
+            isPcViewport,
+            useLegacyEpisodePlayback,
+            isVideoColdAutoplay,
+            sessionUnmuted,
+        });
         const isColdVideoAutoplay = !allowSoundAutoplay;
 
         if (location.search.indexOf('auto_play=0') === -1) {
@@ -308,7 +315,9 @@ export async function runLoadEpisodeForPlayer(
                         rt.showController(false);
                         rt.setWaiting(false);
                         rt.setCanPlay(true);
-                        rt.setShowTapToUnmute(false);
+                        if (!(isPcViewport && v.muted && showTapToUnmuteOnMutedAutoplay)) {
+                            rt.setShowTapToUnmute(false);
+                        }
                     };
                     v.play()
                         .then(() => {

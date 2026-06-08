@@ -208,12 +208,9 @@ export function VideoPlayer({
     });
     /** H5：用户点过底栏音量按钮后不再出全屏「点按取消静音」蒙层（本集内）；换 `id` 重置 */
     const [h5UserDismissedUnmuteOverlay, setH5UserDismissedUnmuteOverlay] = useState(false);
-    /** 竖滑冷启动首条：允许未起播时展示「点按开声」蒙层（H5/PC 共用） */
+    /** PC 竖滑冷启动首条：允许未起播时展示「点按开声」蒙层 */
     const [videoColdUnmuteOverlay, setVideoColdUnmuteOverlay] = useState(() => {
-        if (hasVideoSessionUserUnmuted() || fromHomeVideoPlayback) {
-            return false;
-        }
-        if (fetchEpisodeDetail == null) {
+        if (fromHomeVideoPlayback || fetchEpisodeDetail == null || !isDesktop) {
             return false;
         }
         return Boolean(videoColdAutoplayRef?.current);
@@ -274,12 +271,11 @@ export function VideoPlayer({
               (playing || canPlay || videoColdUnmuteOverlay)
             : videoMutedUi && playing && !h5UserDismissedUnmuteOverlay);
 
-    /** PC 竖滑：仅冷启动首条静音时展示 `.xgplayer-unmute` */
+    /** PC 竖滑：仅冷启动首条静音时展示 `.xgplayer-unmute`（对标 For You，F5 冷启动不受 session 开声影响） */
     const showPcUnmuteOverlay =
         isDesktop &&
         episode?.lock === false &&
         location.search.indexOf('auto_play=0') === -1 &&
-        !hasVideoSessionUserUnmuted() &&
         (h5VerticalPlayback || isVerticalSeriesPlayer
             ? (videoColdUnmuteOverlay || showTapToUnmute) &&
               videoMutedUi &&
@@ -411,6 +407,7 @@ export function VideoPlayer({
         gen: number,
         suppressPlayback: boolean,
         resumeTimeSec?: number,
+        isVideoColdAutoplay = false,
     ): LoadEpisodeRuntime {
         return {
             videoRef,
@@ -421,6 +418,7 @@ export function VideoPlayer({
             fromHomeVideoPlayback,
             legacyEpisodeAutoplayRef,
             suppressPlayback,
+            isVideoColdAutoplay,
             setLoading,
             setEpisode,
             setShowTapToUnmute,
@@ -456,12 +454,12 @@ export function VideoPlayer({
         const resumeTimeSec = consumeForyouResumeTimeSec(data.info.id, episodeId);
         const isVideoColdAutoplay = Boolean(
             isVerticalSeriesPlayer &&
-                !hasVideoSessionUserUnmuted() &&
+                !fromHomeVideoPlayback &&
                 videoColdAutoplayRef?.current,
         );
 
         if (isVerticalSeriesPlayer && !suppressPlayback) {
-            if (isVideoColdAutoplay) {
+            if (isVideoColdAutoplay && isDesktop) {
                 setVideoColdUnmuteOverlay(true);
                 setVideoMutedUi(true);
             } else {
@@ -478,18 +476,24 @@ export function VideoPlayer({
                           const cached = getEpisodeDetailFromCache(episodeId);
                           return cached ? resolveEpisodePlaybackUrls(cached, staticBase) : [];
                       })();
-            const rt = buildLoadRuntime(gen, suppressPlayback, resumeTimeSec);
+            const rt = buildLoadRuntime(gen, suppressPlayback, resumeTimeSec, isVideoColdAutoplay);
             if (tryVideoWarmStartPlayback(rt, episodeId, urls, episode?.id)) {
+                if (isVideoColdAutoplay && videoColdAutoplayRef) {
+                    videoColdAutoplayRef.current = false;
+                }
                 return;
             }
         }
 
         setCanPlay(false);
         await runLoadEpisodeForPlayer(
-            buildLoadRuntime(gen, suppressPlayback, resumeTimeSec),
+            buildLoadRuntime(gen, suppressPlayback, resumeTimeSec, isVideoColdAutoplay),
             episodeId,
             showLoading,
         );
+        if (isVideoColdAutoplay && videoColdAutoplayRef) {
+            videoColdAutoplayRef.current = false;
+        }
     }
 
     function handleVipEmbedClose() {
