@@ -4,7 +4,10 @@ import { useLoadingStore } from './stores/loading';
 import { useUserStore } from './stores/user';
 import { UAParser } from 'ua-parser-js';
 import { apiBaseURL } from './api/baseURL';
+import { encryptRequestPayload, shouldEncryptApiRequest } from './lib/requestEncryption';
 
+/** `false` → POST 明文；`true` → POST 混合加密（GET 始终明文） */
+const API_REQUEST_ENCRYPTION_ENABLED = true;
 
 interface IResult<T> {
     c: number,
@@ -50,21 +53,48 @@ export async function api<T = TData>(path: string, options?: {
     }
 
     try {
+        const requestHeaders: Record<string, string | undefined> = {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Accept-Language': localStorage.getItem('locale') ?? 'en',
+            Accept: 'application/json',
+            'X-Platform': 'web',
+            'X-OS': ua.os.name?.toLowerCase() ?? 'unknown',
+            'X-Test': localStorage.getItem('test') ?? '',
+            'X-Source': localStorage.getItem('source') ?? '',
+            ...options?.headers,
+        };
+
+        const useEncryption =
+            API_REQUEST_ENCRYPTION_ENABLED && shouldEncryptApiRequest(options?.method);
+        let requestBody: string | undefined;
+
+        const postPayload = options?.method === 'post' ? (options?.data ?? {}) : undefined;
+
+        if (useEncryption) {
+            const encrypted = await encryptRequestPayload(postPayload ?? {});
+            Object.assign(requestHeaders, encrypted.headers);
+            requestBody = encrypted.body;
+        }
+
+        if (options?.method === 'post') {
+            const requestUrl = `${apiBaseURL}${path}`;
+            console.log('[api:post]', {
+                url: requestUrl,
+                method: 'POST',
+                encrypted: useEncryption,
+                payload: postPayload,
+                headers: { ...requestHeaders },
+                body: useEncryption ? requestBody : postPayload,
+            });
+        }
+
         const response = await ky(path, {
             prefixUrl: apiBaseURL,
             method: options?.method,
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                'Accept-Language': localStorage.getItem('locale') ?? 'en',
-                'Accept': 'application/json',
-                'X-Platform': 'web',
-                'X-OS': ua.os.name?.toLowerCase() ?? 'unknown',
-                'X-Test': localStorage.getItem('test') ?? '',
-                'X-Source': localStorage.getItem('source') ?? '',
-                ...options?.headers,
-            },
+            headers: requestHeaders,
             timeout: 30000,
-            json: options?.method === 'post' ? options?.data : undefined,
+            json: !useEncryption && options?.method === 'post' ? options?.data : undefined,
+            body: useEncryption ? requestBody : undefined,
             throwHttpErrors: false,
         });
 
