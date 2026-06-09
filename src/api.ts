@@ -6,8 +6,13 @@ import { UAParser } from 'ua-parser-js';
 import { apiBaseURL } from './api/baseURL';
 import { encryptRequestPayload } from './lib/requestEncryption';
 
-/** `false` → POST 明文；`true` → POST 混合加密（封装层已将 GET 统一转为 POST） */
-const API_REQUEST_ENCRYPTION_ENABLED = true;
+/** POST 加密：`VITE_API_REQUEST_ENCRYPTION=true|false` 可覆盖；未设则 dev 加密、打包线上明文 */
+const API_REQUEST_ENCRYPTION_ENABLED =
+    import.meta.env.VITE_API_REQUEST_ENCRYPTION === 'true'
+        ? true
+        : import.meta.env.VITE_API_REQUEST_ENCRYPTION === 'false'
+            ? false
+            : !import.meta.env.PROD;
 
 function resolvePostPayload(
     path: string,
@@ -77,6 +82,9 @@ export async function api<T = TData>(path: string, options?: {
         let requestBody: string | undefined;
 
         if (useEncryption) {
+            if (requestPath === 'product') {
+                console.log('[api/product] before encrypt', { path: requestPath, payload });
+            }
             const encrypted = await encryptRequestPayload(payload);
             Object.assign(requestHeaders, encrypted.headers);
             requestBody = encrypted.body;
