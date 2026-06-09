@@ -4,10 +4,29 @@ import { useLoadingStore } from './stores/loading';
 import { useUserStore } from './stores/user';
 import { UAParser } from 'ua-parser-js';
 import { apiBaseURL } from './api/baseURL';
-import { encryptRequestPayload, shouldEncryptApiRequest } from './lib/requestEncryption';
+import { encryptRequestPayload } from './lib/requestEncryption';
 
-/** `false` → POST 明文；`true` → POST 混合加密（GET 始终明文） */
+/** `false` → POST 明文；`true` → POST 混合加密（封装层已将 GET 统一转为 POST） */
 const API_REQUEST_ENCRYPTION_ENABLED = true;
+
+function resolvePostPayload(
+    path: string,
+    data?: { [key: string]: unknown },
+): { requestPath: string; payload: { [key: string]: unknown } } {
+    let requestPath = path;
+    const payload: { [key: string]: unknown } = { ...(data ?? {}) };
+    const queryIndex = requestPath.indexOf('?');
+
+    if (queryIndex !== -1) {
+        const queryString = requestPath.slice(queryIndex + 1);
+        requestPath = requestPath.slice(0, queryIndex);
+        new URLSearchParams(queryString).forEach((value, key) => {
+            payload[key] = value;
+        });
+    }
+
+    return { requestPath, payload };
+}
 
 interface IResult<T> {
     c: number,
@@ -36,17 +55,7 @@ export async function api<T = TData>(path: string, options?: {
     toastOnError?: boolean,
     persistSessionOn401?: boolean,
 }): Promise<IResult<T>> {
-    const query = new URLSearchParams();
-
-    if ((options?.method === undefined || options?.method === 'get') && options?.data !== undefined) {
-        Object.entries(options.data).forEach(item => {
-            query.set(item[0], item[1] as string);
-        });
-    }
-
-    const queryString = query.toString();
-
-    path = queryString ? path + '?' + queryString : path;
+    const { requestPath, payload } = resolvePostPayload(path, options?.data);
 
     if (options?.loading !== false) {
         useLoadingStore.setState({ status: true });
@@ -64,36 +73,21 @@ export async function api<T = TData>(path: string, options?: {
             ...options?.headers,
         };
 
-        const useEncryption =
-            API_REQUEST_ENCRYPTION_ENABLED && shouldEncryptApiRequest(options?.method);
+        const useEncryption = API_REQUEST_ENCRYPTION_ENABLED;
         let requestBody: string | undefined;
 
-        const postPayload = options?.method === 'post' ? (options?.data ?? {}) : undefined;
-
         if (useEncryption) {
-            const encrypted = await encryptRequestPayload(postPayload ?? {});
+            const encrypted = await encryptRequestPayload(payload);
             Object.assign(requestHeaders, encrypted.headers);
             requestBody = encrypted.body;
         }
 
-        if (options?.method === 'post') {
-            const requestUrl = `${apiBaseURL}${path}`;
-            console.log('[api:post]', {
-                url: requestUrl,
-                method: 'POST',
-                encrypted: useEncryption,
-                payload: postPayload,
-                headers: { ...requestHeaders },
-                body: useEncryption ? requestBody : postPayload,
-            });
-        }
-
-        const response = await ky(path, {
+        const response = await ky(requestPath, {
             prefixUrl: apiBaseURL,
-            method: options?.method,
+            method: 'post',
             headers: requestHeaders,
             timeout: 30000,
-            json: !useEncryption && options?.method === 'post' ? options?.data : undefined,
+            json: !useEncryption ? payload : undefined,
             body: useEncryption ? requestBody : undefined,
             throwHttpErrors: false,
         });
