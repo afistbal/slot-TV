@@ -1,31 +1,10 @@
 import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
-import { hasVideoSessionUserUnmuted } from './videoSessionMute';
+import { preferVideoSoundAutoplay } from './videoAutoplayPolicy';
 import type { LoadEpisodeRuntime } from './videoPlayerLoadEpisode';
 
 /** 仅 `/video` iOS H5 启用；Android / PC 不得调用本模块起播 */
 export function isVideoIosPlayback(): boolean {
     return isIosLikeDevice();
-}
-
-function marketingSoundQueryEnabled(): boolean {
-    return (
-        typeof location !== 'undefined' &&
-        location.search.length > 1 &&
-        location.search.indexOf('auto_play=0') === -1
-    );
-}
-
-/** iOS H5 `/video`：是否优先有声自动播 */
-export function preferVideoIosSoundAutoplay(
-    fromHomeVideoPlayback: boolean,
-    legacyEpisodeAutoplay: boolean,
-): boolean {
-    return (
-        fromHomeVideoPlayback ||
-        legacyEpisodeAutoplay ||
-        hasVideoSessionUserUnmuted() ||
-        marketingSoundQueryEnabled()
-    );
 }
 
 export function safeVideoIosPlay(video: HTMLVideoElement): void {
@@ -62,12 +41,10 @@ export function ensureVideoIosVideoLoad(el: HTMLVideoElement | null | undefined)
     if (!videoIosVideoHasSourceSrc(el)) {
         return;
     }
-    if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        return;
-    }
+    /** 已有 metadata 时勿 load()，否则滑切邻格会黑屏再解码首帧（对标 foryouIosPlayback 行为） */
     if (
-        el.networkState === HTMLMediaElement.NETWORK_LOADING &&
-        videoIosVideoHasSourceSrc(el)
+        el.readyState >= HTMLMediaElement.HAVE_METADATA ||
+        el.networkState === HTMLMediaElement.NETWORK_LOADING
     ) {
         return;
     }
@@ -162,25 +139,35 @@ function playWithOptionalMuteFallback(
                     });
                 return;
             }
+            if (!preferSoundAutoplay && v.muted) {
+                ensureVideoIosVideoLoad(v);
+                scheduleVideoIosWhenReady(v, () => {
+                    v.play()
+                        .then(onSuccess)
+                        .catch((mutedErr: unknown) => {
+                            if (!isIosPlayAbortError(mutedErr)) {
+                                onPlayFail();
+                            }
+                        });
+                });
+                return;
+            }
             onPlayFail();
         });
 }
 
-/** iOS H5 `/video` 专用起播（Android/PC 请走 videoPlaybackKick.kickVideoAutoplay） */
+/** iOS H5 `/video` 专用起播（对标 `kickForyouIosAutoplay`） */
 export function kickVideoIosAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement): void {
     if (!isVideoIosPlayback()) {
         return;
     }
 
+    const isVideoColdAutoplay = Boolean(rt.isVideoColdAutoplay);
+    const preferSoundAutoplay = preferVideoSoundAutoplay(isVideoColdAutoplay);
     const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
     rt.legacyEpisodeAutoplayRef.current = false;
     const wasSwipe = useLegacyEpisodePlayback;
-    const preferSoundAutoplay = preferVideoIosSoundAutoplay(
-        rt.fromHomeVideoPlayback,
-        useLegacyEpisodePlayback,
-    );
-    const isColdAutoplay = !preferSoundAutoplay;
-    const blockIosMuteFallback = shouldIosBlockMuteFallback(isColdAutoplay, wasSwipe);
+    const blockIosMuteFallback = shouldIosBlockMuteFallback(isVideoColdAutoplay, wasSwipe);
 
     if (location.search.indexOf('auto_play=0') !== -1) {
         el.muted = false;
@@ -201,12 +188,12 @@ export function kickVideoIosAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElemen
     };
 
     if (useLegacyEpisodePlayback) {
-        if (isColdAutoplay) {
+        if (isVideoColdAutoplay) {
             syncMuted(true);
         } else if (preferSoundAutoplay || wasSwipe) {
             syncMuted(false);
         } else {
-            syncMuted(!hasVideoSessionUserUnmuted());
+            syncMuted(true);
         }
         const runLegacyPlay = () => {
             const v = rt.videoRef.current;
@@ -236,7 +223,7 @@ export function kickVideoIosAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElemen
         return;
     }
 
-    if (isColdAutoplay) {
+    if (isVideoColdAutoplay) {
         syncMuted(true);
     } else if (preferSoundAutoplay) {
         syncMuted(false);
@@ -277,7 +264,7 @@ export function kickVideoIosAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElemen
     }, 10000);
 }
 
-/** loadData 内：fetch 完成前 iOS 补 load / early play */
+/** loadData 内：fetch 完成前 iOS 补 load / early play（对标 `primeForyouIosLoadDataVideo`） */
 export function primeVideoIosLoadDataVideo(
     video: HTMLVideoElement | null,
     opts: {
@@ -310,6 +297,9 @@ export function bindVideoIosPlayRetry(
     }
     const retry = () => {
         if (!shouldRetry() || !videoIosVideoHasSourceSrc(el)) {
+            return;
+        }
+        if (!el.paused && !el.ended) {
             return;
         }
         ensureVideoIosVideoLoad(el);

@@ -21,13 +21,12 @@ import { clearEpisodePeekFrameCache } from './episodeFrameQueueStore';
 import { resolveVideoListIndexFromUrlSegment } from './resolveVideoListIndexFromUrlSegment';
 import { readVerticalPcKeyNavAction } from './videoVerticalPcKeyNav';
 import { bindVerticalPcWheelNav } from './videoVerticalPcWheelNav';
-import { isVideoSeriesColdAutoplay, resolveVideoMountAutoplayFlags } from './videoAutoplayPolicy';
+import { isVideoSeriesColdAutoplay, resolveVideoMountAutoplayFlags, resetVideoMountAutoplayCache } from './videoAutoplayPolicy';
 import { episodeListLockedFromDetail } from './videoPlayerUtils';
 import type { PcDrawerPanel } from './videoPlayerPcDrawerMotion';
 import { abortVideoLoad, ensureVideoMediaPreconnect } from './videoFeedMedia';
 import { isInVideoPlayerWindow } from './videoSeriesConstants';
 import { useVideoSeriesEpisodeQueues } from './useVideoSeriesEpisodeQueues';
-import { isVideoIosPlayback, kickVideoIosGestureAutoplay } from './videoIosPlayback';
 import '@/pages/user/ForYouPage/foryou-vertical.scss';
 
 const PC_VERTICAL_EPISODE_NAV_ENABLED = true;
@@ -62,10 +61,16 @@ export default function VideoSeriesVerticalSwiper() {
     const neighborLegacyAutoplayRef = useRef(false);
     /** 竖滑：仅首进当前剧/首条为 true，滑切后置 false（对标 ForYou feedColdAutoplayRef） */
     const videoColdAutoplayRef = useRef(mountAutoplayRef.current.videoColdAutoplay);
+    /** F5 落页冷启动：与 URL 集数绑定，直到首条起播完成或用户滑切 */
+    const videoReloadLandingRef = useRef(mountAutoplayRef.current.reloadLanding);
+    /** H5 触摸 / PC 滚轮键盘：区分用户滑切 vs Swiper 程序化 slideTo */
+    const userInitiatedSlideRef = useRef(false);
     const videoResumeRef = useRef<HTMLVideoElement | null>(null);
     const activeIndexRef = useRef(0);
     const dataRef = useRef<IPlayerData | undefined>(undefined);
     const navigatingFromSwipeRef = useRef(false);
+    /** SPA 换剧 id 时重置冷启动；首 mount（含 F5）保留 mountAutoplayRef 的一次性 reloadLanding */
+    const prevSeriesIdRef = useRef<string | undefined>(undefined);
     /** 首屏 URL 对齐完成前勿用动画 slideTo，避免 PC 先闪滑一下 */
     const initialUrlAlignDoneRef = useRef(false);
     /** Swiper 程序式 slideTo（非用户滑）时跳过 transitionStart 副作用 */
@@ -80,6 +85,8 @@ export default function VideoSeriesVerticalSwiper() {
     const pcDrawerClosingRef = useRef(false);
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
+    /** H5：当前条起播后再挂邻格 player / 预拉 episode，减轻首屏回闪 */
+    const [anchorPlaybackReady, setAnchorPlaybackReady] = useState(false);
 
     activeIndexRef.current = activeIndex;
     dataRef.current = data;
@@ -100,11 +107,29 @@ export default function VideoSeriesVerticalSwiper() {
         episodes,
         activeIndex,
         viewerIsVip,
+        {
+            anchorPlaybackReady: isDesktop || anchorPlaybackReady,
+            sequentialNeighborPreload: !isDesktop,
+        },
     );
 
     useEffect(() => {
         ensureVideoMediaPreconnect(staticBase);
     }, [staticBase]);
+
+    useEffect(() => {
+        return () => {
+            resetVideoMountAutoplayCache();
+        };
+    }, []);
+
+    useEffect(() => {
+        setAnchorPlaybackReady(false);
+    }, [params['id']]);
+
+    const handleAnchorPlaybackStarted = useCallback(() => {
+        setAnchorPlaybackReady(true);
+    }, []);
 
     const syncEpisodeListLock = useCallback((ep: IPlayerEpisode, listIndex?: number) => {
         const locked = episodeListLockedFromDetail(ep.lock);
@@ -184,6 +209,7 @@ export default function VideoSeriesVerticalSwiper() {
             }
             markFullscreenTransition();
             legacyEpisodeAutoplayRef.current = true;
+            videoReloadLandingRef.current = false;
             videoColdAutoplayRef.current = false;
             abortVideoLoad(videoResumeRef.current);
             videoResumeRef.current = null;
@@ -202,7 +228,8 @@ export default function VideoSeriesVerticalSwiper() {
         [goToEpisode],
     );
 
-    const markVerticalSwipeAutoplayIntent = useCallback(() => {
+    const markUserEpisodeNavIntent = useCallback(() => {
+        userInitiatedSlideRef.current = true;
         legacyEpisodeAutoplayRef.current = true;
     }, []);
 
@@ -214,23 +241,36 @@ export default function VideoSeriesVerticalSwiper() {
             if (swiper.activeIndex === swiper.previousIndex) {
                 return;
             }
-            videoColdAutoplayRef.current = false;
-            abortVideoLoad(videoResumeRef.current);
-            videoResumeRef.current = null;
-            markVerticalSwipeAutoplayIntent();
 
             const next = swiper.activeIndex;
+            const isUserNav =
+                userInitiatedSlideRef.current || navigatingFromSwipeRef.current;
+            userInitiatedSlideRef.current = false;
+
+            /** F5 落在第 N 集时 Swiper 可能触发 0→N 程序化 transition，勿误判为滑切 */
+            if (!isUserNav) {
+                if (next !== activeIndexRef.current) {
+                    activeIndexRef.current = next;
+                    setActiveIndex(next);
+                }
+                return;
+            }
+
+            videoReloadLandingRef.current = false;
+            videoColdAutoplayRef.current = false;
+            /** 仅 pause：邻格 `videoKeepMediaOnPause` 需保留 `<source>`，勿 abort 否则滑回/滑到邻格会二次 load 闪屏 */
+            const leavingVideo = videoResumeRef.current;
+            if (leavingVideo) {
+                leavingVideo.pause();
+            }
+            videoResumeRef.current = null;
+            legacyEpisodeAutoplayRef.current = true;
+
             navigatingFromSwipeRef.current = true;
             setActiveIndex(next);
             syncNavigateForIndex(next);
-
-            if (!isDesktop && isVideoIosPlayback()) {
-                requestAnimationFrame(() => {
-                    kickVideoIosGestureAutoplay(videoResumeRef.current);
-                });
-            }
         },
-        [isDesktop, markVerticalSwipeAutoplayIntent, syncNavigateForIndex],
+        [syncNavigateForIndex],
     );
 
     const onSlideChangeTransitionEnd = useCallback(() => {
@@ -244,13 +284,19 @@ export default function VideoSeriesVerticalSwiper() {
     }, [params['id']]);
 
     useEffect(() => {
-        clearEpisodeDetailCache();
-        clearAllVideoEpisodeQueues();
-        clearEpisodePeekFrameCache();
-        videoColdAutoplayRef.current = isVideoSeriesColdAutoplay(fromHomeVideoPlayback, false);
+        const seriesIdChanged =
+            prevSeriesIdRef.current !== undefined && prevSeriesIdRef.current !== params['id'];
+        prevSeriesIdRef.current = params['id'];
+        if (seriesIdChanged) {
+            clearEpisodeDetailCache();
+            clearAllVideoEpisodeQueues();
+            clearEpisodePeekFrameCache();
+            videoReloadLandingRef.current = false;
+            videoColdAutoplayRef.current = isVideoSeriesColdAutoplay(fromHomeVideoPlayback, false);
+            setActiveIndex(0);
+        }
         initialUrlAlignDoneRef.current = false;
-        setActiveIndex(0);
-    }, [params['id']]);
+    }, [params['id'], fromHomeVideoPlayback]);
 
     async function loadMovieInfo() {
         if (skipRemoteApi) {
@@ -369,13 +415,15 @@ export default function VideoSeriesVerticalSwiper() {
             shouldIgnore: (e) =>
                 Boolean((e.target as Element | null)?.closest('[data-pc-episode-aside]')),
             onPrev: () => {
+                markUserEpisodeNavIntent();
                 swiperRef.current?.slidePrev();
             },
             onNext: () => {
+                markUserEpisodeNavIntent();
                 swiperRef.current?.slideNext();
             },
         });
-    }, [isDesktop, data, loading]);
+    }, [isDesktop, data, loading, markUserEpisodeNavIntent]);
 
     useEffect(() => {
         if (!PC_VERTICAL_EPISODE_NAV_ENABLED || !isDesktop || !data || loading) {
@@ -390,6 +438,7 @@ export default function VideoSeriesVerticalSwiper() {
                 return;
             }
             e.preventDefault();
+            markUserEpisodeNavIntent();
             if (action === 'prev') {
                 swiperRef.current?.slidePrev();
             } else {
@@ -398,7 +447,7 @@ export default function VideoSeriesVerticalSwiper() {
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isDesktop, data, loading, pcDrawerPanel]);
+    }, [isDesktop, data, loading, pcDrawerPanel, markUserEpisodeNavIntent]);
 
     const pcTopNav = isDesktop ? (
         <div className="video-vertical-pc-topnav">
@@ -452,14 +501,14 @@ export default function VideoSeriesVerticalSwiper() {
                     id={row.id}
                     index={episodeIndex}
                     data={data}
-                    onEpisodeLockSync={syncEpisodeListLock}
+                    onEpisodeLockSync={isActive ? syncEpisodeListLock : undefined}
                     onSetEpisode={handleSetEpisode}
                     fullscreenTargetRef={fullscreenTargetRef}
                     shouldKeepFullscreen={keepFullscreen}
                     onFullscreenPrefChange={setKeepFullscreen}
                     onEpisodeFullscreenReady={handleEpisodeFullscreenReady}
                     shouldIgnoreFullscreenExit={shouldIgnoreFullscreenExit}
-                    fromHomeVideoPlayback={isActive ? fromHomeVideoPlayback : false}
+                    fromHomeVideoPlayback={fromHomeVideoPlayback}
                     legacyEpisodeAutoplayRef={
                         isActive ? legacyEpisodeAutoplayRef : neighborLegacyAutoplayRef
                     }
@@ -468,6 +517,8 @@ export default function VideoSeriesVerticalSwiper() {
                     videoKeepMediaOnPause={videoKeepMediaOnPause}
                     videoNeighborPreload={videoNeighborPreload}
                     videoColdAutoplayRef={isActive ? videoColdAutoplayRef : undefined}
+                    videoReloadLandingRef={isActive ? videoReloadLandingRef : undefined}
+                    videoMountColdAutoplay={isActive ? mountAutoplayRef.current.videoColdAutoplay : false}
                     onVideoElementReady={
                         isActive
                             ? (el) => {
@@ -475,6 +526,7 @@ export default function VideoSeriesVerticalSwiper() {
                               }
                             : undefined
                     }
+                    onAnchorPlaybackStarted={isActive ? handleAnchorPlaybackStarted : undefined}
                     fetchEpisodeDetail={fetchEpisodeDetail}
                     {...pcDrawerProps}
                 />
@@ -547,7 +599,7 @@ export default function VideoSeriesVerticalSwiper() {
                         }}
                         onSlideChangeTransitionStart={onSlideChangeTransitionStart}
                         onSlideChangeTransitionEnd={onSlideChangeTransitionEnd}
-                        onTouchStart={!isDesktop ? markVerticalSwipeAutoplayIntent : undefined}
+                        onTouchStart={!isDesktop ? markUserEpisodeNavIntent : undefined}
                     >
                         {episodes.map((row, i) => (
                             <SwiperSlide

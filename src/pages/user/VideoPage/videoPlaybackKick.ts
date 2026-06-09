@@ -1,9 +1,9 @@
-import { resolveVideoAllowSoundAutoplay } from './videoAutoplayPolicy';
+import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
+import { preferVideoSoundAutoplay } from './videoAutoplayPolicy';
 import { hasVideoSessionUserUnmuted } from './videoSessionMute';
-import { isPerformanceNavigationReload } from './videoPlayerUtils';
 import { SPEED } from './videoPlayerConstants';
 import { resyncVideoSources } from './videoFeedMedia';
-import { isVideoIosPlayback, kickVideoIosAutoplay } from './videoIosPlayback';
+import { ensureVideoIosVideoLoad, isVideoIosPlayback, kickVideoIosAutoplay } from './videoIosPlayback';
 import type { LoadEpisodeRuntime } from './videoPlayerLoadEpisode';
 
 /** H5 iOS 走专用 kick，其余走 kickVideoAutoplay */
@@ -25,12 +25,19 @@ export function videoSourcesMatch(el: HTMLVideoElement, urls: string[]): boolean
     return mounted.length >= urls.length && urls.every((u, idx) => mounted[idx] === u);
 }
 
-/** 邻格 paused 已挂同源且已有当前帧数据 → 滑到该集可跳过整段 loadData */
-export function canVideoWarmStart(el: HTMLVideoElement | null, urls: string[]): boolean {
+/** 邻格 paused 已挂同源且已有可播数据 → 滑到该集可跳过整段 loadData */
+export function canVideoWarmStart(
+    el: HTMLVideoElement | null,
+    urls: string[],
+    swipeAutoplay = false,
+): boolean {
     if (!el || !urls.length || !videoSourcesMatch(el, urls)) {
         return false;
     }
-    return el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+    if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        return true;
+    }
+    return swipeAutoplay && el.readyState >= HTMLMediaElement.HAVE_METADATA;
 }
 
 export function applyVideoResumeSeek(el: HTMLVideoElement, resumeSec: number): void {
@@ -67,11 +74,10 @@ function scheduleWhenBuffered(el: HTMLVideoElement, h5VerticalPlayback: boolean,
     run();
 }
 
-/** `/video` 起播（与 videoPlayerLoadEpisode 内逻辑一致，供暖启动复用） */
+/** `/video` 起播（对标 `kickForyouAutoplay`） */
 export function kickVideoAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement): void {
     const isPcViewport =
         typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
-    const isReload = isPerformanceNavigationReload();
     const marketingSoundQuery =
         typeof location !== 'undefined' &&
         location.search.length > 1 &&
@@ -80,23 +86,19 @@ export function kickVideoAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement):
     const useLegacyEpisodePlayback = rt.legacyEpisodeAutoplayRef.current;
     rt.legacyEpisodeAutoplayRef.current = false;
     const isVideoColdAutoplay = Boolean(rt.isVideoColdAutoplay);
-    const showTapToUnmutePc =
-        isPcViewport &&
-        !useLegacyEpisodePlayback &&
-        (isVideoColdAutoplay ||
-            isReload ||
-            marketingSoundQuery ||
-            (!rt.fromHomeVideoPlayback && (!sessionUnmuted || isReload)));
-    const showTapToUnmuteOnMutedAutoplay = showTapToUnmutePc;
-    const allowSoundAutoplay = resolveVideoAllowSoundAutoplay({
-        fromHomeVideoPlayback: rt.fromHomeVideoPlayback,
-        marketingSoundQuery,
-        isPcViewport,
-        useLegacyEpisodePlayback,
-        isVideoColdAutoplay,
-        sessionUnmuted,
-    });
-    const isColdVideoAutoplay = !allowSoundAutoplay;
+    const isH5 = !isPcViewport;
+    const preferSoundAutoplay =
+        preferVideoSoundAutoplay(isVideoColdAutoplay) ||
+        (isH5 && sessionUnmuted && !isVideoColdAutoplay) ||
+        (isPcViewport &&
+            (rt.fromHomeVideoPlayback ||
+                marketingSoundQuery ||
+                useLegacyEpisodePlayback ||
+                (sessionUnmuted && !isVideoColdAutoplay)));
+    const isColdVideoAutoplay = !preferSoundAutoplay;
+    /** H5 蒙层由 VideoPlayer `videoColdUnmuteOverlay`；PC 仍用 kick 内 showTapToUnmute */
+    const showTapToUnmuteOnMutedAutoplay =
+        isPcViewport && !useLegacyEpisodePlayback && isVideoColdAutoplay;
     const h5Vertical = Boolean(rt.h5VerticalPlayback);
 
     if (location.search.indexOf('auto_play=0') !== -1) {
@@ -105,7 +107,7 @@ export function kickVideoAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement):
     }
 
     if (useLegacyEpisodePlayback) {
-        if (allowSoundAutoplay) {
+        if (preferSoundAutoplay) {
             el.muted = false;
             rt.onVideoMutedUiSync?.(false);
         } else {
@@ -120,7 +122,7 @@ export function kickVideoAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement):
             v.play()
                 .then(() => rt.setPlaying(true))
                 .catch(() => {
-                    if (allowSoundAutoplay && !v.muted) {
+                    if (preferSoundAutoplay && !v.muted) {
                         v.muted = true;
                         rt.onVideoMutedUiSync?.(true);
                         v.play()
@@ -141,7 +143,7 @@ export function kickVideoAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement):
         return;
     }
 
-    if (allowSoundAutoplay) {
+    if (preferSoundAutoplay) {
         el.muted = false;
         rt.onVideoMutedUiSync?.(false);
     } else {
@@ -163,16 +165,29 @@ export function kickVideoAutoplay(rt: LoadEpisodeRuntime, el: HTMLVideoElement):
                 rt.setShowTapToUnmute(false);
             }
         };
+        const fallbackMutedAutoplay = () => {
+            if (
+                isH5 &&
+                rt.fromHomeVideoPlayback &&
+                !isVideoColdAutoplay &&
+                sessionUnmuted &&
+                !isIosLikeDevice()
+            ) {
+                onPlayFail();
+                return;
+            }
+            v.muted = true;
+            rt.onVideoMutedUiSync?.(true);
+            rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
+            v.play()
+                .then(() => rt.setPlaying(true))
+                .catch(onPlayFail);
+        };
         v.play()
             .then(() => rt.setPlaying(true))
             .catch(() => {
-                if (allowSoundAutoplay && !v.muted) {
-                    v.muted = true;
-                    rt.onVideoMutedUiSync?.(true);
-                    rt.setShowTapToUnmute(showTapToUnmuteOnMutedAutoplay);
-                    v.play()
-                        .then(() => rt.setPlaying(true))
-                        .catch(onPlayFail);
+                if (preferSoundAutoplay && !v.muted) {
+                    fallbackMutedAutoplay();
                     return;
                 }
                 onPlayFail();
@@ -200,11 +215,15 @@ export function tryVideoWarmStartPlayback(
     urls: string[],
     cachedEpisodeId: number | undefined,
 ): boolean {
-    if (rt.suppressPlayback || cachedEpisodeId !== episodeId) {
+    if (rt.suppressPlayback || Boolean(rt.isVideoColdAutoplay)) {
+        return false;
+    }
+    if (cachedEpisodeId != null && cachedEpisodeId !== episodeId) {
         return false;
     }
     const el = rt.videoRef.current;
-    if (!canVideoWarmStart(el, urls)) {
+    const swipeAutoplay = rt.legacyEpisodeAutoplayRef.current;
+    if (!canVideoWarmStart(el, urls, swipeAutoplay)) {
         return false;
     }
     if (rt.shouldAbort?.() || !el) {
@@ -216,11 +235,22 @@ export function tryVideoWarmStartPlayback(
         applyVideoResumeSeek(el, resumeSec);
     }
     el.playbackRate = SPEED[rt.speed];
-    if (urls.length > 0) {
+    if (urls.length > 0 && !videoSourcesMatch(el, urls)) {
         resyncVideoSources(el, urls);
+    }
+    if (isVideoIosPlayback()) {
+        ensureVideoIosVideoLoad(el);
     }
     rt.setLoading(false);
     rt.setCanPlay(true);
-    kickVideoAutoplayForPlatform(rt, el);
+    if (location.search.indexOf('auto_play=0') === -1) {
+        const isPcViewport =
+            typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
+        if (rt.h5VerticalPlayback && isVideoIosPlayback() && !isPcViewport) {
+            kickVideoIosAutoplay(rt, el);
+        } else {
+            kickVideoAutoplayForPlatform(rt, el);
+        }
+    }
     return true;
 }

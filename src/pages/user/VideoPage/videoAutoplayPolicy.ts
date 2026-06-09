@@ -3,18 +3,23 @@ import {
     isDocumentReload,
 } from './videoPlayerUtils';
 
+import type { ForYouToVideoLocationState } from '@/constants/foryouRoute';
+
 const VIDEO_RELOAD_LANDING_KEY = 'video-reload-landing';
 
 function isVideoSeriesPathname(pathname: string): boolean {
     return /^\/video\/\d+/.test(pathname);
 }
 
-/** 仅在 `/video/:id` F5：标记冷启动（首页等其它页 reload 不误伤站内跳转有声播） */
+/** 模块 init：F5 落在 `/video` 时标记（mount 时一次性消费，对标 For You） */
+let videoReloadLandingPending = false;
+
 if (
     typeof window !== 'undefined' &&
     isDocumentReload() &&
     isVideoSeriesPathname(window.location.pathname)
 ) {
+    videoReloadLandingPending = true;
     try {
         sessionStorage.setItem(VIDEO_RELOAD_LANDING_KEY, '1');
     } catch {
@@ -22,8 +27,33 @@ if (
     }
 }
 
-/** 本次文档加载后，剧集竖滑是否处于「F5 落页」的一次性冷启动 */
-export function consumeVideoReloadLanding(): boolean {
+/** Swiper 首次 mount 结果缓存（同文档内 remount / 多实例复用，避免重复 consume） */
+let cachedVideoMountAutoplayFlags: {
+    fromHomeVideoPlayback: boolean;
+    videoColdAutoplay: boolean;
+    reloadLanding: boolean;
+} | null = null;
+
+/** 离开 `/video` 路由后清 mount 缓存 */
+export function resetVideoMountAutoplayCache(): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    if (!isVideoSeriesPathname(window.location.pathname)) {
+        cachedVideoMountAutoplayFlags = null;
+    }
+}
+
+function consumeVideoReloadLanding(): boolean {
+    if (videoReloadLandingPending) {
+        videoReloadLandingPending = false;
+        try {
+            sessionStorage.removeItem(VIDEO_RELOAD_LANDING_KEY);
+        } catch {
+            // ignore
+        }
+        return true;
+    }
     try {
         if (sessionStorage.getItem(VIDEO_RELOAD_LANDING_KEY) === '1') {
             sessionStorage.removeItem(VIDEO_RELOAD_LANDING_KEY);
@@ -35,13 +65,18 @@ export function consumeVideoReloadLanding(): boolean {
     return false;
 }
 
-/** 是否从站内首页/底栏等用户点击进入（有声、无冷启动蒙层） */
+function hasExplicitInAppNavigationState(locationState: unknown): boolean {
+    const state = locationState as ForYouToVideoLocationState | null;
+    return Boolean(state?.fromForYouPlayback || state?.fromHomeVideoPlayback);
+}
+
+/** 是否从站内首页/底栏/For You 等用户点击进入（有声、无冷启动蒙层） */
 export function resolveVideoFromHomeVideoPlayback(locationState: unknown): boolean {
-    if (
-        Boolean(
-            (locationState as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
-        )
-    ) {
+    const state = locationState as ForYouToVideoLocationState | null;
+    if (state?.fromHomeVideoPlayback) {
+        return true;
+    }
+    if (state?.fromForYouPlayback) {
         return true;
     }
     if (typeof window === 'undefined') {
@@ -67,6 +102,11 @@ export function isVideoSeriesColdAutoplay(
     return !canNavigateBack();
 }
 
+/** 首条是否应优先「有声」自动播（与 `isVideoSeriesColdAutoplay` 互斥，对标 For You） */
+export function preferVideoSoundAutoplay(isVideoColdAutoplay: boolean): boolean {
+    return !isVideoColdAutoplay;
+}
+
 export function resolveVideoAllowSoundAutoplay(opts: {
     fromHomeVideoPlayback: boolean;
     marketingSoundQuery: boolean;
@@ -75,28 +115,61 @@ export function resolveVideoAllowSoundAutoplay(opts: {
     isVideoColdAutoplay: boolean;
     sessionUnmuted: boolean;
 }): boolean {
-    return (
-        opts.fromHomeVideoPlayback ||
-        !opts.isPcViewport ||
-        opts.marketingSoundQuery ||
-        (opts.isPcViewport && opts.useLegacyEpisodePlayback) ||
-        (opts.isPcViewport && opts.sessionUnmuted && !opts.isVideoColdAutoplay)
-    );
+    if (opts.fromHomeVideoPlayback) {
+        return true;
+    }
+    if (opts.isVideoColdAutoplay) {
+        return false;
+    }
+    if (opts.marketingSoundQuery) {
+        return true;
+    }
+    if (opts.isPcViewport && opts.useLegacyEpisodePlayback) {
+        return true;
+    }
+    if (opts.isPcViewport && opts.sessionUnmuted) {
+        return true;
+    }
+    if (!opts.isPcViewport) {
+        return true;
+    }
+    return false;
 }
 
-/** 在 Swiper mount 时算好 fromHome / 冷启动，避免 F5 残留 state 与 SPA 首页进入冲突 */
-export function resolveVideoMountAutoplayFlags(locationState: unknown): {
+function computeVideoMountAutoplayFlags(locationState: unknown): {
     fromHomeVideoPlayback: boolean;
     videoColdAutoplay: boolean;
     reloadLanding: boolean;
 } {
     const reloadLanding = consumeVideoReloadLanding();
-    const fromHomeVideoPlayback = reloadLanding
-        ? false
-        : resolveVideoFromHomeVideoPlayback(locationState);
-    const videoColdAutoplay = isVideoSeriesColdAutoplay(
-        fromHomeVideoPlayback,
-        reloadLanding,
-    );
-    return { fromHomeVideoPlayback, videoColdAutoplay, reloadLanding };
+    if (reloadLanding) {
+        return {
+            fromHomeVideoPlayback: false,
+            videoColdAutoplay: true,
+            reloadLanding: true,
+        };
+    }
+    if (hasExplicitInAppNavigationState(locationState)) {
+        return {
+            fromHomeVideoPlayback: true,
+            videoColdAutoplay: false,
+            reloadLanding: false,
+        };
+    }
+    const fromHomeVideoPlayback = resolveVideoFromHomeVideoPlayback(locationState);
+    const videoColdAutoplay = isVideoSeriesColdAutoplay(fromHomeVideoPlayback, false);
+    return { fromHomeVideoPlayback, videoColdAutoplay, reloadLanding: false };
+}
+
+/** 在 Swiper mount 时算好 fromHome / 冷启动（对标 `resolveForyouMountAutoplayFlags`） */
+export function resolveVideoMountAutoplayFlags(locationState: unknown): {
+    fromHomeVideoPlayback: boolean;
+    videoColdAutoplay: boolean;
+    reloadLanding: boolean;
+} {
+    if (cachedVideoMountAutoplayFlags !== null) {
+        return cachedVideoMountAutoplayFlags;
+    }
+    cachedVideoMountAutoplayFlags = computeVideoMountAutoplayFlags(locationState);
+    return cachedVideoMountAutoplayFlags;
 }

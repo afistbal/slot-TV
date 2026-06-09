@@ -125,14 +125,23 @@ export async function fetchEpisodeIntoQueues(
 
 /**
  * 同步预加载窗口：仅请求窗口内尚未 cached 的集（滑到第 3 集只补第 4 集，1–3 不重拉）。
+ * @param neighborsOnly 为 true 时跳过当前 active 集（由 VideoPlayer.loadData 负责）
+ * @param sequential 为 true 时逐条预拉，避免 H5 并发回写引发首屏闪
  */
 export async function syncVideoPreloadWindow(
     movieId: number,
     episodes: IPlayerData['episodes'],
     activeIndex: number,
     opts: EpisodeFetchOpts,
+    preloadOpts?: { neighborsOnly?: boolean; sequential?: boolean },
 ): Promise<void> {
-    const windowRowIds = getPreloadWindowRowIds(episodes, activeIndex, opts.viewerIsVip);
+    let windowRowIds = getPreloadWindowRowIds(episodes, activeIndex, opts.viewerIsVip);
+    if (preloadOpts?.neighborsOnly) {
+        const activeRowId = episodes[activeIndex]?.id;
+        if (activeRowId != null) {
+            windowRowIds = windowRowIds.filter((id) => id !== activeRowId);
+        }
+    }
     for (const rowId of windowRowIds) {
         const cached = getEpisodeDetailFromCache(rowId);
         if (cached && isEpisodeDetailReady(cached)) {
@@ -141,6 +150,12 @@ export async function syncVideoPreloadWindow(
     }
     const missing = getMissingPreloadRowIds(windowRowIds);
     if (!missing.length) {
+        return;
+    }
+    if (preloadOpts?.sequential) {
+        for (const rowId of missing) {
+            await fetchEpisodeIntoQueues(movieId, rowId, opts, false);
+        }
         return;
     }
     await Promise.all(
