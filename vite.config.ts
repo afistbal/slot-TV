@@ -210,7 +210,7 @@ export default ({ mode }: { mode: string }) => {
     ],
     build: {
       outDir,
-      // 由 `npm run build` 前置脚本清理 outDir，保留 `.git` / `.well-known`（Apple 域名验证等）
+      // 由 `npm run build` 前置脚本清理 outDir，保留 `.git` / `.well-known` / Google 验证 html 等
       emptyOutDir: false,
       rollupOptions: {
         input: {
