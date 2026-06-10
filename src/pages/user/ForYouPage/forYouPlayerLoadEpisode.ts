@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { getForyouEpisodeFromCache } from './foryouEpisodeCache';
 import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
-import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
+import { applyVideoPlaybackRate, DEFAULT_PLAYBACK_SPEED_INDEX } from '@/pages/user/VideoPage/videoPlayerConstants';
 import {
     applyForyouResumeSeek,
     canForyouWarmStart,
@@ -24,7 +24,6 @@ export type LoadEpisodeRuntime = {
     subtitlesRef: RefObject<VTTCue[]>;
     autoplayKickTimerRef: RefObject<ReturnType<typeof setTimeout> | null>;
     getStaticBase: () => string;
-    speed: number;
     fromHomeVideoPlayback: boolean;
     legacyEpisodeAutoplayRef: RefObject<boolean>;
     /** ????????????????????UI??????????????? */
@@ -200,7 +199,6 @@ export async function runLoadEpisodeForForYouPlayer(
                 el.networkState === HTMLMediaElement.NETWORK_LOADING);
 
         if (rt.suppressPlayback) {
-            el.playbackRate = SPEED[rt.speed];
             el.pause();
             rt.setPlaying(false);
             rt.setWaiting(false);
@@ -210,10 +208,10 @@ export async function runLoadEpisodeForForYouPlayer(
             if (rt.isForYouFeed && rt.primeNeighborBuffer && urls.length > 0) {
                 primeForyouNeighborBuffer(el, urls);
             }
+            applyVideoPlaybackRate(el, DEFAULT_PLAYBACK_SPEED_INDEX);
             return;
         }
 
-        el.playbackRate = SPEED[rt.speed];
         /** For You 用 <source> 即可，勿再 load()（会与挂源重复拉 metadata，出现两次 206） */
         if (!skipReload && !rt.isForYouFeed) {
             if (!sameSources) {
@@ -244,6 +242,8 @@ export async function runLoadEpisodeForForYouPlayer(
         if (rt.isForYouFeed && isForyouIosPlayback()) {
             ensureForyouIosVideoLoad(el);
         }
+
+        applyVideoPlaybackRate(el, DEFAULT_PLAYBACK_SPEED_INDEX);
 
         if (location.search.indexOf('auto_play=0') === -1) {
             const isPcViewport =
@@ -299,7 +299,6 @@ export function tryForyouWarmStartPlayback(
     if (resumeSec > 0) {
         applyForyouResumeSeek(el, resumeSec);
     }
-    el.playbackRate = SPEED[rt.speed];
     if (location.search.indexOf('auto_play=0') === -1) {
         if (urls.length > 0) {
             resyncForyouVideoSources(el, urls);
@@ -307,6 +306,7 @@ export function tryForyouWarmStartPlayback(
         if (isForyouIosPlayback()) {
             ensureForyouIosVideoLoad(el);
         }
+        applyVideoPlaybackRate(el, DEFAULT_PLAYBACK_SPEED_INDEX);
         const isPcViewport =
             typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
         if (rt.isForYouFeed && isForyouIosPlayback() && !isPcViewport) {

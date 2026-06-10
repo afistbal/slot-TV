@@ -29,7 +29,7 @@ import { useRootStore } from '@/stores/root';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 // import UnlockEpisode from '@/widgets/UnlockEpisode';
 // import { useLoadingStore } from "@/stores/loading";
-import { SPEED } from './videoPlayerConstants';
+import { applyVideoPlaybackRate, readStoredPlaybackSpeedIndex, SPEED, writeStoredPlaybackSpeedIndex } from './videoPlayerConstants';
 import { canNavigateBack, formatFavoriteCountK, isPerformanceNavigationReload } from './videoPlayerUtils';
 import { getFullscreenElement } from './videoPlayerFullscreen';
 import { resolveVideoPosterUrl } from './videoPlayerShareUrl';
@@ -199,7 +199,17 @@ export function VideoPlayer({
     const [loading, setLoading] = useState(false);
     const [playbackSources, setPlaybackSources] = useState<string[]>([]);
     const [speedOpen, setSpeedOpen] = useState(false);
-    const [speed, setSpeed] = useState(parseInt(localStorage.getItem('playback_speed') || '1', 10));
+    const [speed, setSpeed] = useState(readStoredPlaybackSpeedIndex);
+    const speedRef = useRef(speed);
+    speedRef.current = speed;
+
+    function syncPlaybackSpeedFromStorage(videoEl?: HTMLVideoElement | null) {
+        const stored = readStoredPlaybackSpeedIndex();
+        speedRef.current = stored;
+        setSpeed((prev) => (prev === stored ? prev : stored));
+        applyVideoPlaybackRate(videoEl ?? videoRef.current, stored);
+    }
+
     const [introduction, setIntroduction] = useState(false);
     const isDesktop = useMinWidth768();
     const isIosH5Vertical = h5VerticalPlayback && isVideoIosPlayback() && !isDesktop;
@@ -447,7 +457,7 @@ export function VideoPlayer({
             subtitlesRef,
             autoplayKickTimerRef,
             getStaticBase: () => String(configStore.config['static'] ?? ''),
-            speed,
+            speedRef,
             fromHomeVideoPlayback,
             legacyEpisodeAutoplayRef,
             suppressPlayback,
@@ -494,6 +504,7 @@ export function VideoPlayer({
     }
 
     async function loadData(episodeId: number, showLoading = false) {
+        syncPlaybackSpeedFromStorage();
         const suppressPlayback = playbackPolicy === 'paused';
         const gen = ++loadGenerationRef.current;
         const resumeTimeSec = consumeForyouResumeTimeSec(data.info.id, episodeId);
@@ -917,8 +928,9 @@ export function VideoPlayer({
         }
         setSpeedOpen(false);
         setSpeed(index);
-        localStorage.setItem('playback_speed', index.toString());
-        videoRef.current.playbackRate = SPEED[index];
+        writeStoredPlaybackSpeedIndex(index);
+        speedRef.current = index;
+        applyVideoPlaybackRate(videoRef.current, index);
     }
 
     function handleSpeedControlClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -1004,6 +1016,30 @@ export function VideoPlayer({
         setCenterPlayUiEngaged(false);
         setVideoFrameReady(false);
     }, [id]);
+
+    /** 竖滑邻格各自 mount，切到当前集时从 localStorage 同步倍速（UI + playbackRate） */
+    useEffect(() => {
+        if (playbackPolicy !== 'autoplay') {
+            return;
+        }
+        syncPlaybackSpeedFromStorage();
+    }, [playbackPolicy, id]);
+
+    /** `video.load()` 会把 playbackRate 重置为 1；片源 reload 后补回用户倍速 */
+    useEffect(() => {
+        const v = videoRef.current;
+        if (!v) {
+            return;
+        }
+        syncPlaybackSpeedFromStorage(v);
+        const reapply = () => syncPlaybackSpeedFromStorage();
+        v.addEventListener('loadedmetadata', reapply);
+        v.addEventListener('canplay', reapply);
+        return () => {
+            v.removeEventListener('loadedmetadata', reapply);
+            v.removeEventListener('canplay', reapply);
+        };
+    }, [speed, id, playbackSources.length]);
 
     /** iOS H5 竖滑：站内进入（For You / 首页等）有声起播；滑切由 legacyEpisodeAutoplayRef 跳过本 effect */
     useEffect(() => {

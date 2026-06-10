@@ -1,7 +1,7 @@
 import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
 import { preferVideoSoundAutoplay } from './videoAutoplayPolicy';
 import { hasVideoSessionUserUnmuted } from './videoSessionMute';
-import { SPEED } from './videoPlayerConstants';
+import { applyVideoPlaybackRate } from './videoPlayerConstants';
 import { resyncVideoSources } from './videoFeedMedia';
 import { ensureVideoIosVideoLoad, isVideoIosPlayback, kickVideoIosAutoplay } from './videoIosPlayback';
 import type { LoadEpisodeRuntime } from './videoPlayerLoadEpisode';
@@ -234,13 +234,13 @@ export function tryVideoWarmStartPlayback(
     if (resumeSec > 0) {
         applyVideoResumeSeek(el, resumeSec);
     }
-    el.playbackRate = SPEED[rt.speed];
     if (urls.length > 0 && !videoSourcesMatch(el, urls)) {
         resyncVideoSources(el, urls);
     }
     if (isVideoIosPlayback()) {
         ensureVideoIosVideoLoad(el);
     }
+    applyVideoPlaybackRate(el, rt.speedRef.current);
     rt.setLoading(false);
     rt.setCanPlay(true);
     if (location.search.indexOf('auto_play=0') === -1) {

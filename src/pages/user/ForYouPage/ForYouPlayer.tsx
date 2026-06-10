@@ -32,7 +32,7 @@ import { useRootStore } from '@/stores/root';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 // import UnlockEpisode from '@/widgets/UnlockEpisode';
 // import { useLoadingStore } from "@/stores/loading";
-import { SPEED } from '@/pages/user/VideoPage/videoPlayerConstants';
+import { applyVideoPlaybackRate, DEFAULT_PLAYBACK_SPEED_INDEX } from '@/pages/user/VideoPage/videoPlayerConstants';
 import {
     canNavigateBack,
     formatFavoriteCountK,
@@ -214,8 +214,6 @@ export function ForYouPlayer({
     // const [unlockEpisodeOpen, setUnlockEpisodeOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [playbackSources, setPlaybackSources] = useState<string[]>([]);
-    const [speedOpen, setSpeedOpen] = useState(false);
-    const [speed, setSpeed] = useState(parseInt(localStorage.getItem('playback_speed') || '1', 10));
     const [introduction, setIntroduction] = useState(false);
     /** For You 打开 info 时 `movie/info` 拉到的完整剧详情 */
     const [feedInfoData, setFeedInfoData] = useState<IPlayerData | null>(null);
@@ -538,7 +536,6 @@ export function ForYouPlayer({
             subtitlesRef,
             autoplayKickTimerRef,
             getStaticBase: () => String(configStore.config['static'] ?? ''),
-            speed,
             fromHomeVideoPlayback,
             legacyEpisodeAutoplayRef,
             suppressPlayback,
@@ -1080,34 +1077,6 @@ export function ForYouPlayer({
         }
     }
 
-    function handleSpeedOpen(open?: boolean) {
-        if (typeof open === 'boolean') {
-            setSpeedOpen(open);
-            return;
-        }
-        setSpeedOpen((prev) => !prev);
-    }
-
-    function handleSelectSpeed(index: number) {
-        if (!videoRef.current) {
-            return;
-        }
-        setSpeedOpen(false);
-        setSpeed(index);
-        localStorage.setItem('playback_speed', index.toString());
-        videoRef.current.playbackRate = SPEED[index];
-    }
-
-    function handleSpeedControlClick(e: React.MouseEvent<HTMLDivElement>) {
-        e.stopPropagation();
-        if (isFullscreenUi) {
-            const next = (speed + 1) % SPEED.length;
-            handleSelectSpeed(next);
-            showController();
-            return;
-        }
-        handleSpeedOpen();
-    }
     function handleTapToUnmute() {
         const v = videoRef.current;
         if (!v) {
@@ -1197,6 +1166,22 @@ export function ForYouPlayer({
         }
         prevForYouEpisodeIdRef.current = id;
     }, [id, isForYouFeed]);
+
+    /** For You 固定 1.0x；`video.load()` 后补回 */
+    useEffect(() => {
+        const v = videoRef.current;
+        if (!v) {
+            return;
+        }
+        applyVideoPlaybackRate(v, DEFAULT_PLAYBACK_SPEED_INDEX);
+        const reapply = () => applyVideoPlaybackRate(videoRef.current, DEFAULT_PLAYBACK_SPEED_INDEX);
+        v.addEventListener('loadedmetadata', reapply);
+        v.addEventListener('canplay', reapply);
+        return () => {
+            v.removeEventListener('loadedmetadata', reapply);
+            v.removeEventListener('canplay', reapply);
+        };
+    }, [id, playbackSources.length]);
 
     /** PC For You：站内从首页等进入时 load 后试有声；刷新/直链仍走静音冷启动 */
     useEffect(() => {
@@ -2121,12 +2106,6 @@ export function ForYouPlayer({
                                         <div className="video-player-h5-toolbar">
                                             <div className="video-player-h5-time">{current} / {duration}</div>
                                             <div className="video-player-h5-toolbar-actions">
-                                                <div
-                                                    className="video-player-h5-speed"
-                                                    onClick={handleSpeedControlClick}
-                                                >
-                                                    {SPEED[speed]}x
-                                                </div>
                                                 <button
                                                     type="button"
                                                     data-vertical-swipe-ignore
@@ -2292,10 +2271,7 @@ export function ForYouPlayer({
                         episode={episode}
                         episodeRef={episodeRef}
                         onSelectEpisodeIndex={handleSetEpisode}
-                        speedOpen={speedOpen}
-                        onSpeedDrawerOpenChange={handleSpeedOpen}
-                        speed={speed}
-                        onSelectSpeed={handleSelectSpeed}
+                        hideSpeedDrawer
                         introduction={introduction}
                         onIntroductionOpenChange={handleIntroductionOpenChange}
                         onCloseIntroductionLinks={() => setIntroduction(false)}
@@ -2628,12 +2604,6 @@ export function ForYouPlayer({
                             <div className="video-player-h5-toolbar">
                                 <div className="video-player-h5-time">{current} / {duration}</div>
                                 <div className="video-player-h5-toolbar-actions">
-                                    <div
-                                        className="video-player-h5-speed"
-                                        onClick={handleSpeedControlClick}
-                                    >
-                                        {SPEED[speed]}x
-                                    </div>
                                     <button
                                         type="button"
                                         data-vertical-swipe-ignore
@@ -2694,10 +2664,7 @@ export function ForYouPlayer({
                     episode={episode}
                     episodeRef={episodeRef}
                     onSelectEpisodeIndex={handleSetEpisode}
-                    speedOpen={speedOpen}
-                    onSpeedDrawerOpenChange={handleSpeedOpen}
-                    speed={speed}
-                    onSelectSpeed={handleSelectSpeed}
+                    hideSpeedDrawer
                     introduction={introduction}
                     onIntroductionOpenChange={handleIntroductionOpenChange}
                     onCloseIntroductionLinks={() => setIntroduction(false)}
