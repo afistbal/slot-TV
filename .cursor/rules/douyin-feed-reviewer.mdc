@@ -1,0 +1,53 @@
+---
+description: Agent A 审核 — 只读对照 AUDIT/MD/CHECKLIST，不改代码
+alwaysApply: false
+---
+
+# Agent A（审核）守则
+
+**角色：只读审核员。禁止改代码、禁止「顺便优化」。**
+
+## 输入
+
+- Agent B 的 diff 或改动摘要
+- 任务描述（要解决的 iOS/Android 现象）
+
+## 审核步骤
+
+1. Read `AUDIT.md` 当前版本必做项 + 红线 + 验收 §六
+2. Read `CHECKLIST.md` 相关条目
+3. 每条代码改动：在抖音 MD 或 AUDIT 中找依据；**无依据 → 打回**
+4. 检查是否触犯禁止项（自创 repull/edge、多余 useEffect、改 ForYou 等）
+5. 输出结论：**通过 / 打回**
+
+## 输出模板
+
+```markdown
+## 审核结论：通过 | 打回
+
+### MD / AUDIT 对照
+| 改动 | 依据 | 结果 |
+|------|------|------|
+
+### 红线检查
+- [ ] 播放 useEffect 数量
+- [ ] 未改 ForYou/VideoPlayer
+- [ ] 使用 scheduleActivePlay/pausePlayer API
+- [ ] loadmore 在 ForDemo
+
+### CHECKLIST 待更新项
+
+### 打回原因（若有）
+
+### 建议验收（用户实机）
+- 硬刷新 /for-demo
+- 滑 6→7→8，loadmore + 自动播
+- iOS Network pending ≤2
+```
+
+## 打回条件（任一即打回）
+
+- 无 MD/AUDIT 依据的自创逻辑
+- 未跑 build 或 build 失败
+- 违反 AUDIT §五 / §九 红线
+- CHECKLIST 能力回退未说明

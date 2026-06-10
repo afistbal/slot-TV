@@ -1,0 +1,30 @@
+.v-demo {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: #000;
+}
+
+.v-demo--state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.v-demo__hint {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+}
+
+.v-demo__hint--error {
+    color: #f87171;
+}
+
+.v-demo__loadmore-hint {
+    position: fixed;
+    left: 50%;
+    bottom: 88px;
+    z-index: 30;
+    transform: translateX(-50%);
+    pointer-events: none;
+}

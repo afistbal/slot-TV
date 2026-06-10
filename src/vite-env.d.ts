@@ -2,6 +2,25 @@
 
 declare module 'swiper/css';
 
+declare module 'xgplayer' {
+    export default class Player {
+        video?: HTMLVideoElement;
+        constructor(config: Record<string, unknown>);
+        play(): Promise<void>;
+        pause(): void;
+        destroy(): void;
+        on(event: string, handler: (...args: unknown[]) => void): void;
+        off(event: string, handler: (...args: unknown[]) => void): void;
+    }
+}
+
+declare module 'xgplayer-mp4' {
+    const Mp4Plugin: unknown;
+    export default Mp4Plugin;
+}
+
+declare module 'xgplayer/dist/index.min.css';
+
 interface ImportMetaEnv {
   readonly VITE_SKIP_API?: string;
   readonly VITE_PWA_INSTALL_PROMPT?: string;

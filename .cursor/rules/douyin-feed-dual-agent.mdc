@@ -1,0 +1,32 @@
+---
+description: 双 Agent 协作流程 — 用户指派实施与审核时使用
+alwaysApply: true
+---
+
+# douyin-feed-player 双 Agent 流程
+
+用户说「Agent A 审核 / Agent B 实施」或改 `douyin-feed-player` 播放/滑动/iOS 问题时，默认走本流程。
+
+## 分工
+
+| 角色 | 做什么 | 用什么 rule |
+|------|--------|-------------|
+| **Agent B** | 读 MD → 改代码 → 交 diff + 交付格式 | `douyin-feed-implementer` + `douyin-feed-knowledge-base` |
+| **Agent A** | 只读 diff → 对照 AUDIT/MD → 通过/打回 | `douyin-feed-reviewer` |
+| **用户** | B 未全 ✅ 不合并；iOS 实机验收 AUDIT §六 |
+
+## 单 Agent 会话时
+
+若只有一个 chat：**先当 B 实施 → 自检 AUDIT 红线 → 再以 A 身份输出审核表**。两步都在同一条回复里完成，并明确标注「自检审核」。
+
+## 知识库不全时
+
+实施前 **必须** Read：`AUDIT.md`、`CHECKLIST.md`、任务相关 MD 段落。  
+不允许「我记得抖音是这样」——必须 cite 文件+章节。
+
+## 用户常用指令（复制）
+
+```
+Agent B：按 AUDIT 当前 P0 实施 xxx，禁止自创，交付 MD 依据 + 自测清单
+Agent A：审核上面 diff，只读，按 douyin-feed-reviewer 模板输出
+```

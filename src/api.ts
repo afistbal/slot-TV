@@ -7,12 +7,7 @@ import { apiBaseURL } from './api/baseURL';
 import { encryptRequestPayload } from './lib/requestEncryption';
 
 /** POST 加密：`VITE_API_REQUEST_ENCRYPTION=true|false` 可覆盖；未设则 dev 加密、打包线上明文 */
-const API_REQUEST_ENCRYPTION_ENABLED =
-    import.meta.env.VITE_API_REQUEST_ENCRYPTION === 'true'
-        ? true
-        : import.meta.env.VITE_API_REQUEST_ENCRYPTION === 'false'
-            ? false
-            : !import.meta.env.PROD;
+const API_REQUEST_ENCRYPTION_ENABLED = false
 
 function resolvePostPayload(
     path: string,
@@ -67,8 +62,9 @@ export async function api<T = TData>(path: string, options?: {
     }
 
     try {
+        const storedToken = localStorage.getItem('token')?.trim();
         const requestHeaders: Record<string, string | undefined> = {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            ...(storedToken ? { Authorization: `Bearer ${storedToken}` } : {}),
             'Accept-Language': localStorage.getItem('locale') ?? 'en',
             Accept: 'application/json',
             'X-Platform': 'web',

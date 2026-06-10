@@ -1,0 +1,17 @@
+.douyin-player-controls {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    pointer-events: auto;
+}
+
+.douyin-player-controls .video-player-h5-bottom {
+    position: relative;
+}
+
+.douyin-player-controls .video-player-h5-play svg {
+    width: 20px;
+    height: 20px;
+}

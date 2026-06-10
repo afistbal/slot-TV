@@ -1,0 +1,66 @@
+.douyin-player-slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+}
+
+.douyin-player-slot__stage {
+    flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+    .douyin-player-slot__stage {
+        border-radius: 8px;
+    }
+}
+
+.douyin-player-slot__mount {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.douyin-player-slot__mount :global(.xgplayer) {
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+/* 竖屏 9:16：cover 铺满（对标 isVertical + cover） */
+.douyin-player-slot--vertical :global(.xgplayer),
+.douyin-player-slot--base-height :global(.xgplayer) {
+    width: 100%;
+    height: 100%;
+}
+
+.douyin-player-slot--vertical :global(.xgplayer video),
+.douyin-player-slot--base-height :global(.xgplayer video) {
+    object-fit: cover;
+    object-position: center center;
+}
+
+/* 横屏 16:9：contain 居中，避免裁切（对标 .LVU2MGlg video contain） */
+.douyin-player-slot--horizontal :global(.xgplayer),
+.douyin-player-slot--base-width :global(.xgplayer) {
+    width: 100%;
+    max-height: 100%;
+}
+
+.douyin-player-slot--horizontal :global(.xgplayer video),
+.douyin-player-slot--base-width :global(.xgplayer video) {
+    object-fit: contain;
+    object-position: center center;
+}
+
+.douyin-player-slot__placeholder {
+    width: 100%;
+    height: 100%;
+}

@@ -28,6 +28,8 @@ import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
 import { messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
+import { isForDemoPathname } from './constants/forDemoRoute';
+import { isVDemoPathname } from './constants/vDemoRoute';
 
 import LayoutUser from './layouts/user';
 import ShareToVideoRedirect from './pages/user/ShareToVideoRedirect';
@@ -57,6 +59,7 @@ import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 import ForYouPage from './pages/user/ForYouPage';
 import ForDemoPage from './pages/user/ForDemo';
+import VDemoPage from './pages/user/VDemo';
 import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
 
 import LayoutAdmin from './layouts/admin';
@@ -240,6 +243,10 @@ const router = createBrowserRouter([
             {
                 path: 'for-demo',
                 element: <ForDemoPage />,
+            },
+            {
+                path: 'v-demo/:id?',
+                element: <VDemoPage />,
             },
             {
                 path: 'for-you',
@@ -459,9 +466,18 @@ function App() {
         }
         const token = tokenFromQuery || localStorage.getItem('token');
 
+        /** for-demo / v-demo 实验壳自举写死 token，不走 login/anonymous，避免与 dev token 冲突 */
+        const isFeedDemoShell =
+            isForDemoPathname(window.location.pathname) ||
+            isVDemoPathname(window.location.pathname);
+
         /** 与会话接口不依赖 `config` 响应体，与 `config` 并行可显著缩短首屏可交互前总等待 */
         void (async () => {
             try {
+                if (isFeedDemoShell) {
+                    useRootStore.getState().setSessionBootstrapReady(true);
+                    return;
+                }
                 if (token) {
                     const ok = await refreshSessionFromStoredToken();
                     if (loadGen !== loadDataGenerationRef.current) {
@@ -471,8 +487,10 @@ function App() {
                         useRootStore.getState().setSessionBootstrapReady(true);
                         return;
                     }
+                    localStorage.removeItem('token');
                     const anon = await api<TData>('login/anonymous', {
                         loading: false,
+                        toastOnError: false,
                     });
                     if (loadGen !== loadDataGenerationRef.current) {
                         return;
@@ -486,8 +504,10 @@ function App() {
                     trackAnonymousCompleteRegistration();
                     return;
                 }
+                localStorage.removeItem('token');
                 const anon = await api<TData>('login/anonymous', {
                     loading: false,
+                    toastOnError: false,
                 });
                 if (loadGen !== loadDataGenerationRef.current) {
                     return;
@@ -665,9 +685,10 @@ function App() {
     }, [checked, sessionBootstrapReady]);
 
     const appPathSegments = pathname.toLowerCase().split('/').filter(Boolean);
-    /** 与 `/zgjdownload` 等工具页：不等全站 config 即可挂载路由（页内自举 config/token） */
+    /** 与 `/zgjdownload`、`/for-demo` 等：不等全站 config 即可挂载路由（页内自举 config/token） */
     const isStandaloneToolPath =
-        appPathSegments.length === 1 && appPathSegments[0] === 'zgjdownload';
+        appPathSegments.length === 1 &&
+        (appPathSegments[0] === 'zgjdownload' || appPathSegments[0] === 'for-demo');
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     /** 全屏竖滑播放：勿挡底部控制条（与 `layouts/user` 中隐藏 iOS 胶囊条一致） */
     const isImmersivePlayerPath =

@@ -1,0 +1,61 @@
+---
+description: Agent B 实施 — douyin-feed-player 必须对齐抖音 MD，禁止自创
+globs: src/components/douyin-feed-player/**,src/pages/user/ForDemo/**
+alwaysApply: false
+---
+
+# Agent B（实施）守则
+
+## 必须先读
+
+`AUDIT.md` → `CHECKLIST.md` → 任务相关 MD 章节（见 `douyin-feed-knowledge-base` rule）
+
+## 抖音主路径（不得替换为自创方案）
+
+```
+切条/滑动 → syncActiveIndex
+  失活: pausePlayer + suspendPlayerLoading
+  激活: resumePlayerLoading + scheduleActivePlay / ensureActivePlay
+末段: loadmore 在 ForDemo（index ≥ len-2），底部 loading
+静音: H.J() / PLAYER_IS_MUTE（§4.3），全局偏好，滑到下一条沿用
+iOS: syncInteraction 等价 = 用户手势内 play（touchend/切条事件）
+```
+
+## 禁止（AUDIT 红线）
+
+- zustand / Context / 自造 EventEmitter 做播放调度
+- 自创：repull 策略、edge overscroll、手势窗口时长、PreloadManager，**除非 AUDIT 已立项**
+- Swiper、改 wheel 40px/400ms、JS 替代 scroll-snap
+- 修改 `ForYouPage` / `VideoPlayer` / `useForyouFeed`
+- render / useMemo 里调用 `play()` / `pause()`
+- 新增 **>2 个** 播放相关 `useEffect`（mount-only + loadmore 补 play 的 1 个 ref 方案除外）
+- 散落 `player.play()`，须用 `scheduleActivePlay` / `pausePlayer` / `ensureActivePlay`
+
+## 允许
+
+- xgplayer npm、`/video` CSS 类名、`config.static` 拼 URL
+- scroll / syncActiveIndex / player.on / touch 事件驱动
+- v4：`suspendNativeVideo`、`preloadGate`（缓冲≥2s 或 playing 再预加载下一条）
+
+## 交付格式（每次必附）
+
+```
+## MD 依据
+- §x.x Lxxxx（说明对应行为）
+
+## CHECKLIST
+- 更新条目 #n 备注
+
+## 未做
+- （及原因）
+
+## 自测
+- [ ] AUDIT §六验收项
+- [ ] npm run build
+```
+
+## 代码规范
+
+- 最小 diff，匹配现有命名与文件结构
+- loadmore **只在 ForDemo**，不在播放器内请求 API
+- 跨域 CDN 默认 native（已有 `pickPlaybackMode`）

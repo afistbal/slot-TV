@@ -1,0 +1,19 @@
+{
+  "terminalAllowlist": [
+    "findstr",
+    "Get-ChildItem",
+    "Select-String",
+    "cmd",
+    "npm",
+    "npx",
+    "node",
+    "git status",
+    "git diff",
+    "git log",
+    "git branch"
+  ],
+  "autoRun": {
+    "allow_instructions": "只读类命令（搜索文件、查看目录、读 git 状态、运行 dev/build/test）可直接执行，无需确认。",
+    "block_instructions": "删除文件、git push、修改 .env、安装全局包、rm -rf 等破坏性操作必须先询问。"
+  }
+}

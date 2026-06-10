@@ -1,0 +1,38 @@
+---
+description: douyin-feed-player 知识库路径与权威来源（改播放器前必读）
+globs: src/components/douyin-feed-player/**,src/pages/user/ForDemo/**
+alwaysApply: false
+---
+
+# 知识库（唯一权威，禁止凭记忆发挥）
+
+改 `douyin-feed-player` 或 `ForDemo` 前，**必须先 Read 下列文件**，并在改动说明里 cite 章节+行号。
+
+## 规范文档（项目内）
+
+| 文件 | 用途 |
+|------|------|
+| `src/components/douyin-feed-player/AUDIT.md` | 必做清单、红线、验收、审核记录 |
+| `src/components/douyin-feed-player/CHECKLIST.md` | 能力对照表，改完更新备注 |
+| `src/components/douyin-feed-player/PLAYBACK-ARCHITECTURE.md` | **队列/窗口/自动播触发点**（改播放前必读） |
+| `src/components/douyin-feed-player/PLAYBACK-ARCHITECTURE.md` | **队列/调度在哪**（无 Play Queue，5 个 play 入口） |
+
+## 抖音 MD（行为真相）
+
+| 文件 | 常用章节 |
+|------|----------|
+| `C:\Users\Administrator\Downloads\www.douyin.com (2)\抖音H5滑动与播放逻辑分析.md` | §2.5 切条 pause/play、§3 静音 H.J()、§8 loadmore |
+| `C:\Users\Administrator\Downloads\www.douyin.com (2)\抖音H5-iOS播放适配分析.md` | §7.3 _setPlayerSrc、§7.5 iOS autoplay |
+
+## 离线源码（查行号）
+
+| 路径 | 常用文件 |
+|------|----------|
+| `douyin/`（项目内） | `libs/pre-build-xgplayer.*.js`、`player-chunks/player-9.*.js` |
+| Downloads 离线包 | `async/routes-route.ceffa524.js`（syncInteraction L3180–3186） |
+
+## 不懂库时的最小读法
+
+1. 读 `AUDIT.md` 当前版本的「必做」与「禁止」
+2. 只 grep MD 里 AUDIT 引用的章节，不要通读整个 `douyin/`
+3. 无 MD 依据 → **不得实现**，先问用户或写进 AUDIT 待审
