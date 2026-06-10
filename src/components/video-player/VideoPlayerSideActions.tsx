@@ -18,7 +18,14 @@ function SideActionItem({
     labelClassName?: string;
 }) {
     return (
-        <div className="flex cursor-pointer flex-col items-center gap-1" onClick={onClick}>
+        <div
+            className="flex cursor-pointer flex-col items-center gap-1"
+            onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onClick(event);
+            }}
+        >
             {icon}
             <div className={cn('h-4 text-center text-xs leading-4', labelClassName)}>{label}</div>
         </div>

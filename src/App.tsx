@@ -244,7 +244,7 @@ const router = createBrowserRouter([
                 element: <ForDemoPage />,
             },
             {
-                path: 'v-demo/:id?',
+                path: 'v-demo/:id/:episode?',
                 element: <VDemoPage />,
             },
             {

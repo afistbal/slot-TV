@@ -6,10 +6,24 @@ import type { IPlayerData } from '@/types/videoPlayer';
 
 import { ensureVDemoBootstrap } from './vDemoBootstrap';
 
+export type VDemoPlayerData = IPlayerData & {
+    info: IPlayerData['info'] & {
+        /** URL 无 `:episode` 时的起播集序号 */
+        play?: number;
+    };
+    episodes: Array<{
+        id: number;
+        episode: number;
+        vip: number;
+        locked: number;
+        image?: string;
+    }>;
+};
+
 export async function fetchVDemoMovieInfo(
     movieId: number,
 ): Promise<
-    | { ok: true; data: IPlayerData }
+    | { ok: true; data: VDemoPlayerData }
     | { ok: false; message: string }
 > {
     try {
@@ -19,7 +33,7 @@ export async function fetchVDemoMovieInfo(
         return { ok: false, message };
     }
 
-    const result = await api<IPlayerData>('movie/info', {
+    const result = await api<VDemoPlayerData>('movie/info', {
         data: { id: movieId },
         loading: false,
     });

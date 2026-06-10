@@ -1,8 +1,10 @@
 .v-demo {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
+    position: relative;
     background: #000;
+}
+
+.v-demo--h5 {
+    touch-action: none;
 }
 
 .v-demo--state {
@@ -27,4 +29,53 @@
     z-index: 30;
     transform: translateX(-50%);
     pointer-events: none;
+}
+
+.v-demo-pc-shell .v-demo-pc-player,
+.v-demo-pc-shell .douyin-feed-player {
+    height: 100%;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .v-demo-pc-shell .v-demo-pc-player.douyin-feed-player {
+        overflow: hidden;
+        scroll-snap-type: none;
+    }
+
+    .v-demo-pc-shell .v-demo-pc-player .douyin-feed-player__slide {
+        height: 100%;
+        min-height: 100%;
+        scroll-snap-align: none;
+        scroll-snap-stop: normal;
+    }
+}
+
+.v-demo-h5-shell {
+    height: 100%;
+    width: 100%;
+}
+
+.v-demo-h5-shell .v-demo-h5-player,
+.v-demo-h5-shell .douyin-feed-player {
+    height: 100%;
+    width: 100%;
+}
+
+.v-demo-h5-shell .video-player-ui .video-player-h5-side-actions {
+    z-index: 20;
+    pointer-events: auto;
+}
+
+.video-player-h5-cold-unmute-overlay {
+    pointer-events: auto;
+}
+
+@media (max-width: 767px) {
+    html:has(.v-demo--h5),
+    body:has(.v-demo--h5) {
+        overflow: hidden;
+        overscroll-behavior: none;
+        background-color: #000;
+    }
 }

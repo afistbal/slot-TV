@@ -1,11 +1,11 @@
 import {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
     type MouseEvent,
 } from 'react';
-import { useNavigate } from 'react-router';
 
 import {
     DouyinFeedPlayer,
@@ -13,7 +13,9 @@ import {
     type FeedNavigateDirection,
 } from '@/components/douyin-feed-player';
 import { bindWheelNavigate } from '@/components/douyin-feed-player/feed/wheelNavigate';
+import { FeedPlayerBottomInfo } from '@/components/feed';
 import {
+    VideoPlayerLockOverlay,
     VideoPlayerPcEpisodeNav,
     VideoPlayerPcUnmuteOverlay,
     VideoPlayerSideActions,
@@ -24,17 +26,19 @@ import { cn } from '@/lib/utils';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
-import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForYouPage/foryouFeedUtils';
-import { buildVDemoPath } from '@/constants/vDemoRoute';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import type { IPlayerEpisode } from '@/types/videoPlayer';
+import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
 import {
-    ForYouPlayerH5CommerceDrawers,
-    ForYouPlayerPcCommerceDialogs,
+    ForYouPlayerPcEpisodeDrawer,
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
 } from '@/pages/user/ForYouPage/forYouPlayerOverlays';
-import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
+import { VideoPlayerPcCommerceDialogs } from '@/pages/user/VideoPage/views/VideoPlayerPcCommerceDialogs';
 import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
+import {
+    buildPcEpisodeTabRanges,
+    pcEpisodeTabIndexForEpisodeNo,
+} from '@/pages/user/VideoPage/videoPlayerPcEpisodeTabs';
 import {
     PC_DRAWER_DURATION_MS,
     schedulePcDrawerEnterFrame,
@@ -42,52 +46,56 @@ import {
 } from '@/pages/user/VideoPage/videoPlayerPcDrawerMotion';
 import { usePcPlayerRightRailAlign } from '@/pages/user/VideoPage/usePcPlayerRightRailAlign';
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
-import type { IForYouFeedItem } from '@/types/foryouFeed';
 
-import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
+import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
+import { useVDemoActiveEpisode } from './vDemoShellEpisode';
+import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked } from './vDemoUnlock';
 
-type ForDemoPcPlayerShellProps = {
+type VDemoPcPlayerShellProps = {
     staticBase: string;
-    feedItem: IForYouFeedItem;
+    playerData: VDemoPlayerData;
     playerItems: DouyinFeedVideoItem[];
     activeIndex: number;
-    hasPrev: boolean;
-    hasNext: boolean;
-    hasMore: boolean;
-    listLength: number;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
-    onLoadMore: () => void;
+    onEpisodeUnlocked: () => void;
 };
 
-export function ForDemoPcPlayerShell({
+export function VDemoPcPlayerShell({
     staticBase,
-    feedItem,
+    playerData,
     playerItems,
     activeIndex,
-    hasPrev,
-    hasNext,
-    hasMore,
-    listLength,
     onIndexChange,
-    onLoadMore,
-}: ForDemoPcPlayerShellProps) {
-    const navigate = useNavigate();
+    onEpisodeUnlocked,
+}: VDemoPcPlayerShellProps) {
     const userStore = useUserStore();
-    const data = buildPlayerDataFromFeedItem(feedItem);
-    const episode = buildEpisodeFromFeedItem(feedItem);
-    const episodeNo = feedItem.episode ?? 1;
-    const feedEpisodeTotal = feedItem.episodes ?? 0;
+    const data = playerData;
+    const activeRow = data.episodes[activeIndex];
+    const episodeNo = activeRow?.episode ?? 1;
+    const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP());
+    const activeLocked = isVDemoEpisodeLocked(activeRow);
     const activePlayerItem = playerItems[activeIndex];
+    const hasPrev = activeIndex > 0;
+    const hasNext = activeIndex < data.episodes.length - 1;
 
-    const [favorite, setFavorite] = useState(
-        feedItem.is_favor === true || feedItem.is_favorite === 1,
-    );
+    const maxEpisode = useMemo(() => {
+        if (!data.episodes.length) {
+            return 1;
+        }
+        return Math.max(...data.episodes.map((row) => Number(row.episode)));
+    }, [data.episodes]);
+
+    const tabRanges = useMemo(() => buildPcEpisodeTabRanges(maxEpisode), [maxEpisode]);
+
+    const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
     const [vip, setVip] = useState(false);
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
+    const [desktopEpisodeTab, setDesktopEpisodeTab] = useState(() =>
+        pcEpisodeTabIndexForEpisodeNo(episodeNo, tabRanges),
+    );
     const pcDrawerClosingRef = useRef(false);
-    const prevListLengthRef = useRef(listLength);
 
     const pcShellRef = useRef<HTMLDivElement>(null);
     const pcStageClusterRef = useRef<HTMLDivElement>(null);
@@ -107,20 +115,20 @@ export function ForDemoPcPlayerShell({
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
 
-    useEffect(() => {
-        setFavorite(feedItem.is_favor === true || feedItem.is_favorite === 1);
-    }, [feedItem.ep_id, feedItem.is_favor, feedItem.is_favorite]);
+    const filteredEpisodes = useMemo(() => {
+        const range = tabRanges[desktopEpisodeTab] ?? { start: 1, end: maxEpisode };
+        return data.episodes.filter(
+            (row) => row.episode >= range.start && row.episode <= range.end,
+        );
+    }, [data.episodes, desktopEpisodeTab, maxEpisode, tabRanges]);
 
     useEffect(() => {
-        if (listLength <= prevListLengthRef.current) {
-            prevListLengthRef.current = listLength;
-            return;
-        }
-        if (activeIndex === prevListLengthRef.current - 1) {
-            onIndexChange(activeIndex + 1, 'next');
-        }
-        prevListLengthRef.current = listLength;
-    }, [activeIndex, listLength, onIndexChange]);
+        setFavorite(data.info.is_favorite === 1);
+    }, [data.info.id, data.info.is_favorite]);
+
+    useEffect(() => {
+        setDesktopEpisodeTab(pcEpisodeTabIndexForEpisodeNo(episodeNo, tabRanges));
+    }, [episodeNo, tabRanges]);
 
     const beginClosePcDrawer = useCallback(() => {
         if (!pcDrawerPanel) {
@@ -152,6 +160,19 @@ export function ForDemoPcPlayerShell({
         [beginClosePcDrawer, pcDrawerPanel],
     );
 
+    const openPcEpisodeDrawer = useCallback(
+        (ev?: MouseEvent) => {
+            ev?.stopPropagation();
+            if (pcDrawerPanel === 'episodes') {
+                beginClosePcDrawer();
+                return;
+            }
+            pcDrawerClosingRef.current = false;
+            setPcDrawerPanel('episodes');
+        },
+        [beginClosePcDrawer, pcDrawerPanel],
+    );
+
     const handleToggleFavorite = useCallback(() => {
         if (!skipRemoteApi) {
             void api('movie/favorite', {
@@ -171,26 +192,43 @@ export function ForDemoPcPlayerShell({
         setVip((open) => !open);
     }, [userStore]);
 
-    const handleFeedPrev = useCallback(() => {
-        if (activeIndex <= 0) return;
-        onIndexChange(activeIndex - 1, 'prev');
-    }, [activeIndex, onIndexChange]);
+    const handleOpenUnlock = useCallback(() => {
+        setVip(true);
+    }, []);
 
-    const handleFeedNext = useCallback(() => {
-        if (activeIndex < playerItems.length - 1) {
-            onIndexChange(activeIndex + 1, 'next');
+    const handleEmbedPaySuccessEpisodeDetail = useCallback(
+        (detail: IPlayerEpisode) => {
+            applyVDemoEpisodeUnlock(detail);
+            setVip(false);
+            onEpisodeUnlocked();
+        },
+        [onEpisodeUnlocked],
+    );
+
+    const handleFeedPrev = useCallback(() => {
+        if (!hasPrev) {
             return;
         }
-        if (hasMore) {
-            onLoadMore();
-        }
-    }, [activeIndex, hasMore, onLoadMore, onIndexChange, playerItems.length]);
+        onIndexChange(activeIndex - 1, 'prev');
+    }, [activeIndex, hasPrev, onIndexChange]);
 
-    const handleWatchFullSeries = useCallback(() => {
-        navigate(buildVDemoPath(feedItem.id, feedItem.episode ?? 1), {
-            state: VIDEO_FROM_HOME_STATE,
-        });
-    }, [feedItem.episode, feedItem.id, navigate]);
+    const handleFeedNext = useCallback(() => {
+        if (!hasNext) {
+            return;
+        }
+        onIndexChange(activeIndex + 1, 'next');
+    }, [activeIndex, hasNext, onIndexChange]);
+
+    const handleSelectEpisodeByListIndex = useCallback(
+        (listIndex: number) => {
+            beginClosePcDrawer();
+            if (listIndex === activeIndex) {
+                return;
+            }
+            onIndexChange(listIndex, listIndex > activeIndex ? 'next' : 'prev');
+        },
+        [activeIndex, beginClosePcDrawer, onIndexChange],
+    );
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
@@ -296,37 +334,42 @@ export function ForDemoPcPlayerShell({
                     >
                         <DouyinFeedPlayer
                             key={String(activePlayerItem?.id ?? activeIndex)}
-                            className="for-demo-pc-player h-full w-full"
+                            className="v-demo-pc-player h-full w-full"
                             items={activePlayerItem ? [activePlayerItem] : []}
                             mediaBaseUrl={staticBase}
                             preloadNext={false}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
-                            fixedPlaybackSpeed
                             controlsTopContent={
-                                <ForDemoFeedControlsTop
+                                <FeedPlayerBottomInfo
                                     title={data.info.title}
                                     introduction={data.info.introduction}
                                     episodeNo={episodeNo}
                                     tags={data.tags}
-                                    feedEpisodeTotal={feedEpisodeTotal}
+                                    maxTags={FORYOU_MAX_VISIBLE_TAGS}
                                     onOpenIntroduction={openPcIntroDrawer}
-                                    onWatchFullSeries={handleWatchFullSeries}
                                 />
                             }
                         />
                         <VideoPlayerPcUnmuteOverlay
-                            visible={coldUnmuteVisible}
+                            visible={coldUnmuteVisible && !activeLocked}
                             onTapToUnmute={handleTapToUnmute}
                         />
+                        {activeLocked ? (
+                            <div className="video-player-ui pointer-events-auto absolute inset-0 z-10">
+                                <VideoPlayerLockOverlay onUnlock={handleOpenUnlock} />
+                            </div>
+                        ) : null}
                     </div>
                     <VideoPlayerSideActions
                         variant="pc"
                         showVip={!userStore.isVIP()}
                         favorite={favorite}
                         favoriteCount={data.info.favorite}
+                        showEpisodeList
                         onVipClick={handleToggleVip}
                         onFavoriteClick={handleToggleFavorite}
+                        onEpisodeListClick={openPcEpisodeDrawer}
                         onShareClick={() => setShareOpen(true)}
                     />
                 </div>
@@ -348,18 +391,35 @@ export function ForDemoPcPlayerShell({
                         tagsFromBackendOnly
                         maxTags={FORYOU_MAX_VISIBLE_TAGS}
                     />
+                    <ForYouPlayerPcEpisodeDrawer
+                        open={pcDrawerPanel === 'episodes'}
+                        entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
+                        onClose={closePcDrawer}
+                        anchorRef={videoStageRef}
+                        currentEpisodeNo={episodeNo}
+                        data={data}
+                        viewerIsVip={userStore.isVIP()}
+                        tabRanges={tabRanges}
+                        activeTab={desktopEpisodeTab}
+                        onSelectEpisodeTab={setDesktopEpisodeTab}
+                        filteredEpisodes={filteredEpisodes}
+                        onSelectEpisodeByListIndex={handleSelectEpisodeByListIndex}
+                    />
                     <VideoPlayerPcEpisodeNav
                         hasPrev={hasPrev}
-                        hasNext={hasNext || hasMore}
+                        hasNext={hasNext}
                         onPrev={handleFeedPrev}
                         onNext={handleFeedNext}
                     />
                 </div>
             </div>
-            <ForYouPlayerPcCommerceDialogs
+            <VideoPlayerPcCommerceDialogs
                 vip={vip}
                 onVipOpenChange={setVip}
                 onVipEmbedClose={() => setVip(false)}
+                embedVideoEpisodeRowId={activeRow?.id ?? 0}
+                onEmbedPaySuccessEpisodeDetail={handleEmbedPaySuccessEpisodeDetail}
+                vipHeaderEpisodeUnlockCoins={episode?.unlock_coins}
                 shareOpen={shareOpen}
                 onShareOpenChange={setShareOpen}
                 shareEmbedCode={shareEmbedCode}

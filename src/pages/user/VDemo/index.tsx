@@ -1,25 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
-import {
-    DouyinFeedPlayer,
-    type DouyinFeedVideoItem,
-    type FeedNavigateDirection,
-} from '@/components/douyin-feed-player';
+import { buildVDemoPath } from '@/constants/vDemoRoute';
+import { type DouyinFeedVideoItem, type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
+import { ReelShortTopNav } from '@/components/ReelShortTopNav';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useConfigStore } from '@/stores/config';
+import { useRootStore } from '@/stores/root';
+import { useUserStore } from '@/stores/user';
 import type { IPlayerData } from '@/types/videoPlayer';
 
+import { clearVDemoActiveEpisodeCache } from './fetchVDemoEpisode';
 import { clearVDemoEpisodeCache } from './fetchVDemoEpisodesBatch';
-import { fetchVDemoMovieInfo } from './fetchVDemoMovieInfo';
-import {
-    buildVDemoFeedItems,
-    syncVDemoPreloadWindow,
-} from './vDemoEpisodeQueue';
+import { fetchVDemoMovieInfo, type VDemoPlayerData } from './fetchVDemoMovieInfo';
+import { buildVDemoFeedItems, syncVDemoOnActiveIndex } from './vDemoEpisodeQueue';
+import { VDemoH5PlayerShell } from './VDemoH5PlayerShell';
+import { VDemoPcPlayerShell } from './VDemoPcPlayerShell';
 
+import '@/pages/user/ForYouPage/foryou-vertical.scss';
+import '@/styles/video-vertical.scss';
 import './v-demo.scss';
 
-const DEFAULT_MOVIE_ID = 1488;
+function parseRouteEpisodeParam(raw: string | undefined): number | undefined {
+    if (raw == null || raw === '') {
+        return undefined;
+    }
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+}
 
 function resolveInitialEpisodeIndex(episodes: IPlayerData['episodes'], playEpisode?: number): number {
     if (!episodes.length) {
@@ -35,13 +44,18 @@ function resolveInitialEpisodeIndex(episodes: IPlayerData['episodes'], playEpiso
 }
 
 /**
- * v-demo：实验壳 — 先 `movie/info`，再按 active±1 走 `movie/episodes/batch`，渲染 douyin-feed-player。
+ * v-demo：数据层 movie/info + batch + episode；播放层复用 for-demo 封装壳 + DouyinFeedPlayer。
  */
 export default function VDemoPage() {
+    const isDesktop = useMinWidth768();
     const params = useParams();
+    const navigate = useNavigate();
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
-    const movieId = Number(params['id']) || DEFAULT_MOVIE_ID;
+    const viewerIsVip = useUserStore((s) => s.isVIP());
+    const movieId = Number(params['id']);
+    const urlEpisode = parseRouteEpisodeParam(params['episode']);
 
+    const [playerData, setPlayerData] = useState<VDemoPlayerData | null>(null);
     const [episodes, setEpisodes] = useState<IPlayerData['episodes']>([]);
     const [items, setItems] = useState<DouyinFeedVideoItem[]>([]);
     const [initialIndex, setInitialIndex] = useState(0);
@@ -54,6 +68,8 @@ export default function VDemoPage() {
     episodesRef.current = episodes;
     const movieIdRef = useRef(movieId);
     movieIdRef.current = movieId;
+    const viewerIsVipRef = useRef(viewerIsVip);
+    viewerIsVipRef.current = viewerIsVip;
     const activeIndexRef = useRef(0);
     const prefetchCountRef = useRef(0);
 
@@ -61,33 +77,55 @@ export default function VDemoPage() {
         setItems(buildVDemoFeedItems(episodesRef.current));
     }, []);
 
-    const syncWindowRef = useRef<(index: number) => Promise<void>>(async () => undefined);
-    syncWindowRef.current = async (index: number) => {
+    const syncWindowRef = useRef<(index: number) => void>(() => undefined);
+    syncWindowRef.current = (index: number) => {
         const list = episodesRef.current;
         if (!list.length) {
             return;
         }
+
+        refreshItems();
+
         prefetchCountRef.current += 1;
         setPrefetching(true);
-        try {
-            await syncVDemoPreloadWindow(movieIdRef.current, list, index);
-            refreshItems();
-        } finally {
-            prefetchCountRef.current -= 1;
-            if (prefetchCountRef.current <= 0) {
-                prefetchCountRef.current = 0;
-                setPrefetching(false);
-            }
-        }
+        void syncVDemoOnActiveIndex(movieIdRef.current, list, index, viewerIsVipRef.current)
+            .then(() => {
+                refreshItems();
+            })
+            .finally(() => {
+                prefetchCountRef.current -= 1;
+                if (prefetchCountRef.current <= 0) {
+                    prefetchCountRef.current = 0;
+                    setPrefetching(false);
+                }
+            });
     };
+
+    useEffect(() => {
+        useRootStore.getState().setTheme('dark');
+        return () => {
+            useRootStore.getState().setTheme('light');
+        };
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
         clearVDemoEpisodeCache();
+        clearVDemoActiveEpisodeCache();
         setLoading(true);
         setError(null);
+        setPlayerData(null);
         setEpisodes([]);
         setItems([]);
+
+        if (!Number.isFinite(movieId) || movieId <= 0) {
+            setError('Invalid movie id in URL');
+            setLoading(false);
+            return () => {
+                cancelled = true;
+            };
+        }
+
         (async () => {
             const result = await fetchVDemoMovieInfo(movieId);
             if (cancelled) {
@@ -100,10 +138,11 @@ export default function VDemoPage() {
             }
 
             const sortedEpisodes = result.data.episodes ?? [];
-            const startIndex = resolveInitialEpisodeIndex(
-                sortedEpisodes,
-                Number((result.data.info as { play?: number }).play),
-            );
+            const infoPlay = Number(result.data.info.play);
+            const startEpisodeNo = urlEpisode ?? (infoPlay > 0 ? infoPlay : 1);
+            const startIndex = resolveInitialEpisodeIndex(sortedEpisodes, startEpisodeNo);
+
+            setPlayerData(result.data);
             setEpisodes(sortedEpisodes);
             setInitialIndex(startIndex);
             setActiveIndex(startIndex);
@@ -111,7 +150,12 @@ export default function VDemoPage() {
             episodesRef.current = sortedEpisodes;
 
             try {
-                await syncVDemoPreloadWindow(movieId, sortedEpisodes, startIndex);
+                await syncVDemoOnActiveIndex(
+                    movieId,
+                    sortedEpisodes,
+                    startIndex,
+                    viewerIsVipRef.current,
+                );
             } catch (e) {
                 if (cancelled) {
                     return;
@@ -132,55 +176,123 @@ export default function VDemoPage() {
         return () => {
             cancelled = true;
             clearVDemoEpisodeCache();
+            clearVDemoActiveEpisodeCache();
         };
     }, [movieId]);
 
-    const handleIndexChange = useCallback((index: number, _direction?: FeedNavigateDirection) => {
-        activeIndexRef.current = index;
-        setActiveIndex(index);
-        void syncWindowRef.current(index);
-    }, []);
+    const handleIndexChange = useCallback(
+        (index: number, _direction?: FeedNavigateDirection) => {
+            activeIndexRef.current = index;
+            setActiveIndex(index);
+
+            const list = episodesRef.current;
+            const row = list[index];
+            if (row) {
+                navigate(buildVDemoPath(movieIdRef.current, Number(row.episode)), { replace: true });
+            }
+
+            syncWindowRef.current(index);
+        },
+        [navigate],
+    );
+
+    const pcTopNav = isDesktop ? (
+        <div className="video-vertical-pc-topnav">
+            <ReelShortTopNav leftAction="none" showSearch />
+        </div>
+    ) : null;
 
     if (loading) {
-        return (
-            <div className="v-demo v-demo--state">
-                <p className="v-demo__hint">Loading movie/info…</p>
+        return isDesktop ? (
+            <div className="video-vertical-pc-shell v-demo-pc-shell foryou-vertical-pc-shell">
+                {pcTopNav}
+                <div className="flex min-h-0 flex-1 items-center justify-center bg-black">
+                    <Loader color="light" />
+                </div>
+            </div>
+        ) : (
+            <div className="v-demo v-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
+                <Loader color="light" />
             </div>
         );
     }
 
     if (error) {
-        return (
-            <div className="v-demo v-demo--state">
-                <p className="v-demo__hint v-demo__hint--error">{error}</p>
+        const errBody = (
+            <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-black p-6 text-center text-sm text-white/70">
+                {error}
+            </div>
+        );
+        return isDesktop ? (
+            <div className="video-vertical-pc-shell v-demo-pc-shell foryou-vertical-pc-shell">
+                {pcTopNav}
+                {errBody}
+            </div>
+        ) : (
+            <div className="v-demo v-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
+                {errBody}
             </div>
         );
     }
 
-    if (!items.length) {
-        return (
-            <div className="v-demo v-demo--state">
+    if (!items.length || !playerData) {
+        return isDesktop ? (
+            <div className="video-vertical-pc-shell v-demo-pc-shell foryou-vertical-pc-shell">
+                {pcTopNav}
+                <div className="flex min-h-0 flex-1 items-center justify-center bg-black text-sm text-white/60">
+                    No episodes in movie/info
+                </div>
+            </div>
+        ) : (
+            <div className="v-demo v-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
                 <p className="v-demo__hint">No episodes in movie/info</p>
             </div>
         );
     }
 
-    const activeHasUrl = Boolean(items[activeIndex]?.url?.trim());
+    const playerBody = isDesktop ? (
+        <VDemoPcPlayerShell
+            staticBase={staticBase}
+            playerData={playerData}
+            playerItems={items}
+            activeIndex={activeIndex}
+            onIndexChange={handleIndexChange}
+            onEpisodeUnlocked={refreshItems}
+        />
+    ) : (
+        <VDemoH5PlayerShell
+            staticBase={staticBase}
+            playerData={playerData}
+            playerItems={items}
+            activeIndex={activeIndex}
+            initialIndex={initialIndex}
+            onIndexChange={handleIndexChange}
+            onEpisodeUnlocked={refreshItems}
+        />
+    );
 
-    return (
-        <div className="v-demo">
-            {prefetching || !activeHasUrl ? (
+    return isDesktop ? (
+        <div className="video-vertical-pc-shell v-demo-pc-shell foryou-vertical-pc-shell">
+            {pcTopNav}
+            <div className="v-demo v-demo--pc relative min-h-0 flex-1 overflow-hidden bg-black">
+                {prefetching ? (
+                    <div className="v-demo__loadmore-hint" aria-live="polite">
+                        <Loader color="light" />
+                    </div>
+                ) : null}
+                <div className="video-fullscreen-target h-full w-full touch-none select-none">
+                    {playerBody}
+                </div>
+            </div>
+        </div>
+    ) : (
+        <div className="v-demo v-demo--h5 foryou-vertical fixed inset-0 z-0 overflow-hidden bg-black">
+            {prefetching ? (
                 <div className="v-demo__loadmore-hint" aria-live="polite">
                     <Loader color="light" />
                 </div>
             ) : null}
-            <DouyinFeedPlayer
-                items={items}
-                mediaBaseUrl={staticBase}
-                preloadNext
-                initialIndex={initialIndex}
-                onIndexChange={handleIndexChange}
-            />
+            {playerBody}
         </div>
     );
 }

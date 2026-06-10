@@ -54,6 +54,10 @@ export default function Component() {
         if (videoMatch?.params?.id != null) {
             return `video:${String(videoMatch.params.id)}${search}`;
         }
+        const vDemoMatch = matchPath({ path: '/v-demo/:id/:episode?', end: true }, pathname);
+        if (vDemoMatch?.params?.id != null) {
+            return `v-demo:${String(vDemoMatch.params.id)}${search}`;
+        }
         return `${pathname}${search}`;
     }, [location]);
     const { isHome, isSearch } = usePrimaryTabKeepAlive();

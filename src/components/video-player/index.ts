@@ -4,5 +4,7 @@ export { VideoPlayerPcEpisodeNav } from './VideoPlayerPcEpisodeNav';
 export type { VideoPlayerPcEpisodeNavProps } from './VideoPlayerPcEpisodeNav';
 export { VideoPlayerPcUnmuteOverlay } from './VideoPlayerPcUnmuteOverlay';
 export { VideoPlayerH5ColdUnmuteOverlay } from './VideoPlayerH5ColdUnmuteOverlay';
+export { VideoPlayerLockOverlay } from './VideoPlayerLockOverlay';
+export type { VideoPlayerLockOverlayProps } from './VideoPlayerLockOverlay';
 export { useFeedPlayerTapToUnmute } from './useFeedPlayerTapToUnmute';
 export { useFeedPlayerColdUnmuteVisible } from './useFeedPlayerColdUnmuteVisible';
