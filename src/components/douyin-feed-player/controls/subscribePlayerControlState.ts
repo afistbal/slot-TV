@@ -1,6 +1,6 @@
 import type Player from 'xgplayer';
 
-import { PLAYBACK_SPEEDS } from '../constants';
+import { FIXED_PLAYBACK_SPEED_INDEX, PLAYBACK_SPEEDS } from '../constants';
 
 import { readMutedPreference } from './mutePreference';
 import {
@@ -26,6 +26,8 @@ export type SubscribePlayerControlStateOptions = {
     onCurrentTimeChange: (time: number) => void;
     onDurationChange: (duration: number) => void;
     onFullscreenChange: (fullscreen: boolean) => void;
+    /** 固定 1.0x，不读 localStorage */
+    fixedPlaybackSpeed?: boolean;
 };
 
 /** MD-ref: 控件状态由 xgplayer 事件驱动，mount 时 on / unmount 时 off */
@@ -33,8 +35,10 @@ export function subscribePlayerControlState(
     player: Player,
     options: SubscribePlayerControlStateOptions,
 ): PlayerControlSubscription {
-    const speedIndex = readSpeedIndexPreference(PLAYBACK_SPEEDS.length - 1);
-    applyPlaybackSpeed(player, speedIndex);
+    const speedIndex = options.fixedPlaybackSpeed
+        ? FIXED_PLAYBACK_SPEED_INDEX
+        : readSpeedIndexPreference(PLAYBACK_SPEEDS.length - 1);
+    applyPlaybackSpeed(player, speedIndex, !options.fixedPlaybackSpeed);
 
     const mutedPref = readMutedPreference();
     applyPlayerMute(player, mutedPref);

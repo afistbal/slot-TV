@@ -41,6 +41,7 @@ import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUr
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
+import { ForDemoColdUnmuteOverlay } from './ForDemoColdUnmuteOverlay';
 import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
 type ForDemoPcPlayerShellProps = {
@@ -278,6 +279,7 @@ export function ForDemoPcPlayerShell({
                             onIndexChange={onIndexChange}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
+                            fixedPlaybackSpeed
                             controlsTopContent={
                                 <ForDemoFeedControlsTop
                                     title={data.info.title}
@@ -290,6 +292,7 @@ export function ForDemoPcPlayerShell({
                                 />
                             }
                         />
+                        <ForDemoColdUnmuteOverlay activeIndex={activeIndex} />
                     </div>
                     <div
                         className="video-player-pc-side-actions flex shrink-0 flex-col gap-4"

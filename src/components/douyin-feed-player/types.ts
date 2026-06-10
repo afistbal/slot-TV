@@ -1,9 +1,11 @@
-/** 单条 Feed 视频（与业务 API 解耦，for-demo 只做 id + mp4 url 映射） */
+/** 单条 Feed 视频（与业务 API 解耦） */
 import type { ReactNode } from 'react';
 
 export type DouyinFeedVideoItem = {
     id: string | number;
     url: string;
+    /** VTT 路径（必填字段；空字符串 = 本条无字幕） */
+    subtitle: string;
 };
 
 export type PlaybackMode = 'mse' | 'native';
@@ -33,6 +35,8 @@ export type DouyinFeedPlayerProps = {
     onNextEpisode?: () => void;
     /** 底栏进度条之上（info / Watch Full 等），与 controls 共用同一 `video-player-h5-bottom` */
     controlsTopContent?: ReactNode;
+    /** for-demo：固定 1.0x，隐藏倍速（/v-demo 等默认 false 仍可变速） */
+    fixedPlaybackSpeed?: boolean;
 };
 export type PlayerSlotState = {
     index: number;

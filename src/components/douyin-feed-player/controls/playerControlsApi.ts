@@ -86,13 +86,19 @@ export function applyPlayerMute(player: Player | null, muted: boolean): void {
     if (xg) xg.muted = muted;
 }
 
-export function applyPlaybackSpeed(player: Player | null, speedIndex: number): number {
+export function applyPlaybackSpeed(
+    player: Player | null,
+    speedIndex: number,
+    persist = true,
+): number {
     const rate = PLAYBACK_SPEEDS[speedIndex] ?? 1;
     const video = getVideoEl(player);
     if (video) video.playbackRate = rate;
     const xg = asXgPlayer(player);
     if (xg) xg.playbackRate = rate;
-    writeSpeedIndexPreference(speedIndex);
+    if (persist) {
+        writeSpeedIndexPreference(speedIndex);
+    }
     return rate;
 }
 

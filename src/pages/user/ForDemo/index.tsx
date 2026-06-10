@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
+import { useLocation } from 'react-router';
 
 import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
@@ -7,10 +8,16 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useRootStore } from '@/stores/root';
 import { useConfigStore } from '@/stores/config';
+import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
 
 import { ForDemoH5PlayerShell } from './ForDemoH5PlayerShell';
 import { ForDemoPcPlayerShell } from './ForDemoPcPlayerShell';
 import { useForDemoFeed } from './useForDemoFeed';
+import { applyForDemoMountMutePolicy } from './forDemoApplyMountMutePolicy';
+import {
+    resolveForDemoMountAutoplayFlags,
+    type ForDemoMountAutoplayFlags,
+} from './forDemoAutoplayPolicy';
 
 import '@/pages/user/ForYouPage/foryou-vertical.scss';
 import './for-demo.scss';
@@ -20,8 +27,17 @@ import './for-demo.scss';
  */
 export default function ForDemoPage() {
     const isDesktop = useMinWidth768();
+    const location = useLocation();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
+
+    const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
+    if (mountFlagsRef.current == null) {
+        const flags = resolveForDemoMountAutoplayFlags(location.state);
+        mountFlagsRef.current = flags;
+        useForDemoColdUnmuteStore.getState().initFromMount(flags);
+        applyForDemoMountMutePolicy(flags);
+    }
 
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -46,6 +62,9 @@ export default function ForDemoPage() {
     const handleIndexChange = useCallback(
         (index: number, _direction?: FeedNavigateDirection) => {
             setActiveIndex(index);
+            if (index > 0) {
+                useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
+            }
             prefetchIfNearEnd(index);
         },
         [prefetchIfNearEnd],

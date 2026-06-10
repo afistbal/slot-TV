@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type Player from 'xgplayer';
 
-import { PLAYBACK_SPEEDS } from '../constants';
+import { FIXED_PLAYBACK_SPEED_INDEX, PLAYBACK_SPEEDS } from '../constants';
 
 import {
     applyPlaybackSpeed,
     cyclePlaybackSpeedIndex,
     formatPlaybackTime,
     getPlayerDuration,
+    getVideoEl,
     seekPlayer,
     togglePlayerFullscreen,
     togglePlayerMute,
@@ -17,11 +18,21 @@ import {
 import { readSpeedIndexPreference } from './speedPreference';
 import { subscribePlayerControlState } from './subscribePlayerControlState';
 
-export function useDouyinPlayerControlState(player: Player | null) {
+type UseDouyinPlayerControlStateOptions = {
+    fixedPlaybackSpeed?: boolean;
+};
+
+export function useDouyinPlayerControlState(
+    player: Player | null,
+    options: UseDouyinPlayerControlStateOptions = {},
+) {
+    const { fixedPlaybackSpeed = false } = options;
     const [playing, setPlaying] = useState(false);
     const [muted, setMuted] = useState(true);
     const [speedIndex, setSpeedIndex] = useState(() =>
-        readSpeedIndexPreference(PLAYBACK_SPEEDS.length - 1),
+        fixedPlaybackSpeed
+            ? FIXED_PLAYBACK_SPEED_INDEX
+            : readSpeedIndexPreference(PLAYBACK_SPEEDS.length - 1),
     );
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -32,7 +43,6 @@ export function useDouyinPlayerControlState(player: Player | null) {
     const progressDraggingRef = useRef(progressDragging);
     progressDraggingRef.current = progressDragging;
 
-    // MD-ref: mount 时 subscribePlayerControlState → player.on/off
     useEffect(() => {
         if (!player) {
             setPlaying(false);
@@ -48,13 +58,37 @@ export function useDouyinPlayerControlState(player: Player | null) {
             onCurrentTimeChange: setCurrentTime,
             onDurationChange: setDuration,
             onFullscreenChange: setIsFullscreen,
+            fixedPlaybackSpeed,
         });
 
-        setSpeedIndex(subscription.speedIndex);
+        setSpeedIndex(
+            fixedPlaybackSpeed ? FIXED_PLAYBACK_SPEED_INDEX : subscription.speedIndex,
+        );
         setMuted(subscription.muted);
 
         return subscription.dispose;
-    }, [player]);
+    }, [player, fixedPlaybackSpeed]);
+
+    /** 固定 1.0x：`load()` 后补回倍速（对标 ForYouPlayer） */
+    useEffect(() => {
+        if (!fixedPlaybackSpeed || !player) {
+            return;
+        }
+        const video = getVideoEl(player);
+        if (!video) {
+            return;
+        }
+        const reapply = () => {
+            applyPlaybackSpeed(player, FIXED_PLAYBACK_SPEED_INDEX, false);
+        };
+        reapply();
+        video.addEventListener('loadedmetadata', reapply);
+        video.addEventListener('canplay', reapply);
+        return () => {
+            video.removeEventListener('loadedmetadata', reapply);
+            video.removeEventListener('canplay', reapply);
+        };
+    }, [player, fixedPlaybackSpeed]);
 
     const onTogglePlay = useCallback(async () => {
         const nowPlaying = await togglePlayerPlay(player);

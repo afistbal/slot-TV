@@ -10,6 +10,7 @@ import {
 
 import {
     fetchVDemoEpisodesBatch,
+    getVDemoEpisodeDetail,
     getVDemoEpisodeVideoUrl,
 } from './fetchVDemoEpisodesBatch';
 
@@ -30,10 +31,14 @@ export function getVDemoPreloadWindowIndices(activeIndex: number, total: number)
 export function buildVDemoFeedItems(
     episodes: IPlayerData['episodes'],
 ): DouyinFeedVideoItem[] {
-    return episodes.map((row) => ({
-        id: row.id,
-        url: getVDemoEpisodeVideoUrl(row.id),
-    }));
+    return episodes.map((row) => {
+        const detail = getVDemoEpisodeDetail(row.id);
+        return {
+            id: row.id,
+            url: getVDemoEpisodeVideoUrl(row.id),
+            subtitle: detail?.subtitle ?? '',
+        };
+    });
 }
 
 /** 同步 active ±1 窗口：缺 media 的集走 batch */

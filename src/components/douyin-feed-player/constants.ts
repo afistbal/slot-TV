@@ -27,3 +27,6 @@ export const WAITING_STUCK_MS = 10000;
 
 /** 倍速档位（UI 对齐 /video SPEED，逻辑独立存储） */
 export const PLAYBACK_SPEEDS = [0.75, 1, 1.25, 1.5, 2] as const;
+
+/** for-demo / For You：固定 1.0x（`PLAYBACK_SPEEDS` 下标） */
+export const FIXED_PLAYBACK_SPEED_INDEX = 1;

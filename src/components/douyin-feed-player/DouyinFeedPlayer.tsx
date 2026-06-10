@@ -47,6 +47,7 @@ export function DouyinFeedPlayer({
     showNextEpisode = false,
     onNextEpisode,
     controlsTopContent,
+    fixedPlaybackSpeed = false,
 }: DouyinFeedPlayerProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -66,6 +67,10 @@ export function DouyinFeedPlayer({
 
     const onIndexChangeRef = useRef(onIndexChange);
     onIndexChangeRef.current = onIndexChange;
+    const onNextEpisodeRef = useRef(onNextEpisode);
+    onNextEpisodeRef.current = onNextEpisode;
+    const showNextEpisodeRef = useRef(showNextEpisode);
+    showNextEpisodeRef.current = showNextEpisode;
     const playbackItemsLengthRef = useRef(items.length);
     const playbackItemsRef = useRef(items);
     const navigateRef = useRef<(direction: FeedNavigateDirection) => void>(() => undefined);
@@ -78,11 +83,21 @@ export function DouyinFeedPlayer({
 
     const playbackItems = useMemo(() => {
         const base = String(mediaBaseUrl ?? '').trim();
-        if (!base) return items;
-        return items.map((item) => ({
-            ...item,
-            url: resolveMediaUrl(item.url, base),
-        }));
+        return items.map((item) => {
+            const subtitleRaw = item.subtitle != null ? String(item.subtitle).trim() : '';
+            const resolvedUrl = base ? resolveMediaUrl(item.url, base) : item.url;
+            const resolvedSubtitle =
+                subtitleRaw && base
+                    ? resolveMediaUrl(subtitleRaw, base)
+                    : subtitleRaw.startsWith('http://') || subtitleRaw.startsWith('https://')
+                      ? subtitleRaw
+                      : subtitleRaw;
+            return {
+                ...item,
+                url: resolvedUrl,
+                subtitle: resolvedSubtitle,
+            };
+        });
     }, [items, mediaBaseUrl]);
 
     const prevPlaybackLen = playbackItemsLengthRef.current;
@@ -361,10 +376,28 @@ export function DouyinFeedPlayer({
         };
     }, []);
 
+    /** 对齐 foryou ForYouPlayer videoEnded：feedHasNext → 切条 / loadMore */
     const onVideoEnded = useCallback(
         (index: number) => {
             if (index !== activeIndexRef.current) return;
-            navigate('auto');
+            const current = activeIndexRef.current;
+            const len = playbackItemsLengthRef.current;
+            if (len === 0) return;
+
+            markUserGesture(3500);
+
+            if (showNextEpisodeRef.current) {
+                if (current < len - 1) {
+                    navigate('auto');
+                } else {
+                    onNextEpisodeRef.current?.();
+                }
+                return;
+            }
+
+            if (current < len - 1) {
+                navigate('auto');
+            }
         },
         [navigate],
     );
@@ -446,6 +479,7 @@ export function DouyinFeedPlayer({
                             <>
                                 <DouyinPlayerSlot
                                     slot={slot}
+                                    subtitleUrl={item.subtitle ?? ''}
                                     hasPreload={
                                         preloadNext && preloadGate && index === activeIndex + 1
                                     }
@@ -460,6 +494,7 @@ export function DouyinFeedPlayer({
                                         showNextEpisode={showNextEpisode}
                                         onNextEpisode={onNextEpisode}
                                         topContent={controlsTopContent}
+                                        fixedPlaybackSpeed={fixedPlaybackSpeed}
                                     />
                                 ) : null}
                             </>

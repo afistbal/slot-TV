@@ -107,14 +107,55 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
         return resolveFeedSlideEl(mountElRef.current);
     }, []);
 
+    /** MSE 偶发不 fire ended；仅片尾极小误差兜底，不对齐「提前 2s 切条」 */
     const bindEndedListener = useCallback((player: Player) => {
         endedDisposeRef.current?.();
 
-        const handler = () => onEndedRef.current?.();
-        player.on('ended', handler);
+        const END_EPSILON = 0.25;
+        let fired = false;
+
+        const fireEnded = () => {
+            if (fired) return;
+            if (!isActiveRef.current) return;
+            fired = true;
+            onEndedRef.current?.();
+        };
+
+        const checkNearEnd = (video: HTMLVideoElement) => {
+            if (fired || !isActiveRef.current) return;
+            const dur = video.duration;
+            if (!Number.isFinite(dur) || dur <= 0) return;
+            if (video.ended || video.currentTime >= dur - END_EPSILON) {
+                fireEnded();
+            }
+        };
+
+        const onPlayerTimeUpdate = () => {
+            const video = player.video as HTMLVideoElement | undefined;
+            if (video) checkNearEnd(video);
+        };
+
+        player.on('ended', fireEnded);
+        player.on('timeupdate', onPlayerTimeUpdate);
+
+        const video = player.video as HTMLVideoElement | undefined;
+        const onVideoTimeUpdate = () => {
+            if (video) checkNearEnd(video);
+        };
+
+        if (video) {
+            video.loop = false;
+            video.addEventListener('ended', fireEnded);
+            video.addEventListener('timeupdate', onVideoTimeUpdate);
+        }
 
         endedDisposeRef.current = () => {
-            player.off('ended', handler);
+            player.off('ended', fireEnded);
+            player.off('timeupdate', onPlayerTimeUpdate);
+            if (video) {
+                video.removeEventListener('ended', fireEnded);
+                video.removeEventListener('timeupdate', onVideoTimeUpdate);
+            }
         };
     }, []);
 
@@ -289,6 +330,7 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
 
             if (ok) {
                 prevUrlRef.current = url;
+                bindEndedListener(handle.player);
                 applyActivePlayback();
                 return;
             }
@@ -302,7 +344,7 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
             }
             applyActivePlayback();
         });
-    }, [initPlayer, teardownPlayer, applyActivePlayback]);
+    }, [initPlayer, teardownPlayer, applyActivePlayback, bindEndedListener]);
 
     const initPlayerRef = useRef(initPlayer);
     initPlayerRef.current = initPlayer;

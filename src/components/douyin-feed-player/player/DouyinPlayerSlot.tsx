@@ -4,6 +4,7 @@ import type Player from 'xgplayer';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 
+import { FeedSubtitleOverlay } from '../controls/FeedSubtitleOverlay';
 import { togglePlayerPlay } from '../controls/playerControlsApi';
 import { getFeedItemDataAttrs } from '../feed/buildPlayerSlots';
 import type { PlaybackMode, PlayerSlotState } from '../types';
@@ -13,6 +14,8 @@ import './douyin-player-slot.scss';
 
 type DouyinPlayerSlotProps = {
     slot: PlayerSlotState;
+    /** VTT 绝对 URL；空字符串表示本条无字幕 */
+    subtitleUrl?: string;
     hasPreload?: boolean;
     onEnded?: () => void;
     onPlayerChange?: (index: number, player: Player | null) => void;
@@ -22,6 +25,7 @@ type DouyinPlayerSlotProps = {
 
 export function DouyinPlayerSlot({
     slot,
+    subtitleUrl = '',
     hasPreload,
     onEnded,
     onPlayerChange,
@@ -29,6 +33,7 @@ export function DouyinPlayerSlot({
     onStall,
 }: DouyinPlayerSlotProps) {
     const [mountEl, setMountEl] = useState<HTMLDivElement | null>(null);
+    const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
     const isDesktop = useMinWidth768();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
@@ -40,6 +45,7 @@ export function DouyinPlayerSlot({
 
     const handlePlayerChange = useCallback(
         (player: Player | null) => {
+            setSlotPlayer(player);
             onPlayerChange?.(slot.index, player);
         },
         [onPlayerChange, slot.index],
@@ -69,6 +75,8 @@ export function DouyinPlayerSlot({
         [handleRef],
     );
 
+    const showSubtitle = slot.isActive && Boolean(subtitleUrl.trim());
+
     return (
         <div
             className="douyin-player-slot"
@@ -84,6 +92,9 @@ export function DouyinPlayerSlot({
                         onClickCapture={onTapVideo}
                         role="presentation"
                     />
+                    {showSubtitle ? (
+                        <FeedSubtitleOverlay player={slotPlayer} subtitleUrl={subtitleUrl} />
+                    ) : null}
                 </div>
             ) : (
                 <div className={cn(stageClassName, 'douyin-player-slot__placeholder')} aria-hidden />

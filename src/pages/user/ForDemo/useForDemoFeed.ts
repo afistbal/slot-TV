@@ -33,7 +33,11 @@ function mapRowsToPlayerItems(rows: IForYouFeedItem[], staticBase: string): Douy
     for (const row of rows) {
         const url = resolveFeedVideoUrl(row, staticBase);
         if (!url) continue;
-        items.push({ id: foryouFeedItemKey(row), url });
+        items.push({
+            id: foryouFeedItemKey(row),
+            url,
+            subtitle: row.subtitle != null ? String(row.subtitle) : '',
+        });
     }
     return items;
 }

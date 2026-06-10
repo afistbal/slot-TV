@@ -38,6 +38,12 @@ export function attachBufferWaterLevel(
 
         if (Date.now() - firstPlayingAt < STARTUP_GRACE_MS) return;
 
+        const dur = video.duration;
+        // 抖音 player-9 L1560：距片尾 ≤ resumePlayWaterLevel 时跳过水位 pause，正常播完
+        if (Number.isFinite(dur) && dur > 0 && dur - video.currentTime <= waterLevel) {
+            return;
+        }
+
         const bufEnd = getBufferedEnd();
         if (bufEnd > 0 && bufEnd - video.currentTime < waterLevel) {
             if (!video.paused) {

@@ -26,6 +26,7 @@ import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUr
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
+import { ForDemoColdUnmuteOverlay } from './ForDemoColdUnmuteOverlay';
 import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
 type ForDemoH5PlayerShellProps = {
@@ -138,6 +139,7 @@ export function ForDemoH5PlayerShell({
                 onIndexChange={onIndexChange}
                 showNextEpisode={hasNext}
                 onNextEpisode={handleFeedNext}
+                fixedPlaybackSpeed
                 controlsTopContent={
                     <ForDemoFeedControlsTop
                         title={data.info.title}
@@ -150,6 +152,7 @@ export function ForDemoH5PlayerShell({
                     />
                 }
             />
+            <ForDemoColdUnmuteOverlay activeIndex={activeIndex} />
             <div className="for-demo-h5-chrome pointer-events-none absolute inset-0 z-10">
                 <div
                     className="video-player-h5-side-actions absolute right-4 flex flex-col gap-4 pointer-events-auto"
@@ -216,10 +219,7 @@ export function ForDemoH5PlayerShell({
                 episode={episode}
                 episodeRef={episodeRef}
                 onSelectEpisodeIndex={() => undefined}
-                speedOpen={false}
-                onSpeedDrawerOpenChange={() => undefined}
-                speed={1}
-                onSelectSpeed={() => undefined}
+                hideSpeedDrawer
                 introduction={introductionOpen}
                 onIntroductionOpenChange={setIntroductionOpen}
                 onCloseIntroductionLinks={() => setIntroductionOpen(false)}

@@ -19,6 +19,8 @@ type DouyinPlayerControlsProps = {
     onNextEpisode?: () => void;
     /** info / Watch Full 等，拼在进度条之上（与 foryou 同一底栏容器） */
     topContent?: ReactNode;
+    /** for-demo / For You：固定 1.0x，隐藏倍速按钮 */
+    fixedPlaybackSpeed?: boolean;
 };
 
 function stopBubble(event: MouseEvent | TouchEvent) {
@@ -31,8 +33,9 @@ export function DouyinPlayerControls({
     showNextEpisode = false,
     onNextEpisode,
     topContent,
+    fixedPlaybackSpeed = false,
 }: DouyinPlayerControlsProps) {
-    const ctl = useDouyinPlayerControlState(player);
+    const ctl = useDouyinPlayerControlState(player, { fixedPlaybackSpeed });
     const feedBottomLayout = Boolean(topContent);
     const progressScrubRef = useRef<HTMLDivElement | null>(null);
 
@@ -136,15 +139,17 @@ export function DouyinPlayerControls({
                         {ctl.currentLabel} / {ctl.durationLabel}
                     </div>
                     <div className="video-player-h5-toolbar-actions">
-                        <div
-                            className="video-player-h5-speed"
-                            onClick={(e) => {
-                                stopBubble(e);
-                                ctl.onCycleSpeed();
-                            }}
-                        >
-                            {ctl.speedLabel}
-                        </div>
+                        {!fixedPlaybackSpeed ? (
+                            <div
+                                className="video-player-h5-speed"
+                                onClick={(e) => {
+                                    stopBubble(e);
+                                    ctl.onCycleSpeed();
+                                }}
+                            >
+                                {ctl.speedLabel}
+                            </div>
+                        ) : null}
                         <button
                             type="button"
                             data-vertical-swipe-ignore
