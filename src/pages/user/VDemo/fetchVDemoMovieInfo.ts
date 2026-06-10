@@ -4,7 +4,7 @@
 import { api } from '@/api';
 import type { IPlayerData } from '@/types/videoPlayer';
 
-import { ensureForDemoBootstrap } from '../ForDemo/forDemoBootstrap';
+import { ensureVDemoBootstrap } from './vDemoBootstrap';
 
 export async function fetchVDemoMovieInfo(
     movieId: number,
@@ -13,7 +13,7 @@ export async function fetchVDemoMovieInfo(
     | { ok: false; message: string }
 > {
     try {
-        await ensureForDemoBootstrap();
+        await ensureVDemoBootstrap();
     } catch (e) {
         const message = e instanceof Error ? e.message : 'bootstrap failed';
         return { ok: false, message };

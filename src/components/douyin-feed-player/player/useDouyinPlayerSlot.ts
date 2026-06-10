@@ -13,7 +13,12 @@ import { attachBufferWaterLevel } from '../playback/bufferWaterLevel';
 import { suspendPlayerLoading } from '../playback/playerLoadingControl';
 import { trySwitchPlayerUrl } from '../playback/playNextSource';
 
-import { attachNativeVideoAspectFit, attachVideoAspectFit } from '../playback/videoAspectFit';
+import {
+    attachNativeVideoAspectFit,
+    attachVideoAspectFit,
+    logAspectWhenActive,
+    logNativeAspectWhenActive,
+} from '../playback/videoAspectFit';
 
 import { resolvePlaybackMode } from '../playback/pickPlaybackMode';
 
@@ -41,6 +46,7 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
     const handleRef = useRef<XgPlayerHandle | null>(null);
     const helpersRef = useRef<(() => void) | null>(null);
     const aspectFitRef = useRef<(() => void) | null>(null);
+    const aspectLogDisposeRef = useRef<(() => void) | null>(null);
     const endedDisposeRef = useRef<(() => void) | null>(null);
     const nativeModeRef = useRef(false);
     const prevUrlRef = useRef<string | null>(null);
@@ -82,6 +88,14 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
         onStallRef.current?.(slotIndexRef.current, reason);
     }, []);
 
+    const getAspectLogCtx = useCallback(
+        () => ({
+            slotIndex: slotIndexRef.current,
+            isActive: () => isActiveRef.current,
+        }),
+        [],
+    );
+
     const getSlotEl = useCallback(() => {
         return (
             (mountElRef.current?.closest('.douyin-player-slot__stage') as HTMLElement | null) ??
@@ -107,6 +121,8 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
     const teardownHelpers = useCallback(() => {
         mseErrorDisposeRef.current?.();
         mseErrorDisposeRef.current = null;
+        aspectLogDisposeRef.current?.();
+        aspectLogDisposeRef.current = null;
         aspectFitRef.current?.();
         aspectFitRef.current = null;
         helpersRef.current?.();
@@ -323,6 +339,33 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
         if (!options.shouldInit || !options.url) return;
         syncPlaybackFromOptions();
     }, [options.url, syncPlaybackFromOptions]);
+
+    // 滑到 active 条：每条只打一条 [douyin-aspect] 日志
+    useEffect(() => {
+        aspectLogDisposeRef.current?.();
+        aspectLogDisposeRef.current = null;
+
+        if (!options.isActive || !options.shouldInit) return;
+
+        const slotEl = getSlotEl();
+        const ctx = getAspectLogCtx();
+
+        if (nativeModeRef.current) {
+            const video = handleRef.current?.player?.video as HTMLVideoElement | undefined;
+            aspectLogDisposeRef.current = logNativeAspectWhenActive(video, slotEl, ctx);
+        } else {
+            aspectLogDisposeRef.current = logAspectWhenActive(
+                handleRef.current?.player ?? null,
+                slotEl,
+                ctx,
+            );
+        }
+
+        return () => {
+            aspectLogDisposeRef.current?.();
+            aspectLogDisposeRef.current = null;
+        };
+    }, [options.isActive, options.shouldInit, getSlotEl, getAspectLogCtx]);
 
     return handleRef;
 }

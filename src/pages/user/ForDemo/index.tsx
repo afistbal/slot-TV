@@ -1,125 +1,172 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { FormattedMessage } from 'react-intl';
 
-import { DouyinFeedPlayer, type DouyinFeedVideoItem, type FeedNavigateDirection } from '@/components/douyin-feed-player';
+import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
+import { ReelShortTopNav } from '@/components/ReelShortTopNav';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { useRootStore } from '@/stores/root';
 import { useConfigStore } from '@/stores/config';
 
-import { fetchForDemoFeedVideos } from './fetchForDemoFeedVideos';
+import { ForDemoH5PlayerShell } from './ForDemoH5PlayerShell';
+import { ForDemoPcPlayerShell } from './ForDemoPcPlayerShell';
+import { useForDemoFeed } from './useForDemoFeed';
 
+import '@/pages/user/ForYouPage/foryou-vertical.scss';
 import './for-demo.scss';
 
-function mergeFeedItems(
-    prev: DouyinFeedVideoItem[],
-    incoming: DouyinFeedVideoItem[],
-): DouyinFeedVideoItem[] {
-    if (!incoming.length) return prev;
-    const seen = new Set(prev.map((item) => String(item.id)));
-    const merged = [...prev];
-    for (const item of incoming) {
-        const key = String(item.id);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        merged.push(item);
-    }
-    return merged;
-}
-
 /**
- * for-demo：实验壳 — 只请求 /api/foryou，渲染 douyin-feed-player。
- * 与 /for-you 路由、ForYou 业务页无关。
+ * for-demo：实验壳 — 与 /foryou 同 API + PC/H5 壳，播放器用 douyin-feed-player。
  */
 export default function ForDemoPage() {
+    const isDesktop = useMinWidth768();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
-    const [items, setItems] = useState<DouyinFeedVideoItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
-    const itemsLengthRef = useRef(items.length);
-    itemsLengthRef.current = items.length;
-    const loadingMoreRef = useRef(false);
-    loadingMoreRef.current = loadingMore;
+    const [activeIndex, setActiveIndex] = useState(0);
 
-    // MD-ref: mount-only — 首次进入 for-demo 拉取 /api/foryou，无 DOM/播放器事件可替代
+    const {
+        list,
+        playerItems,
+        loading,
+        loadError,
+        loadingMore,
+        hasMore,
+        loadMore,
+        prefetchIfNearEnd,
+    } = useForDemoFeed(sessionBootstrapReady, staticBase);
+
     useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            setLoading(true);
-            setError(null);
-            const result = await fetchForDemoFeedVideos();
-            if (cancelled) return;
-            if (!result.ok) {
-                setError(result.message);
-                setItems([]);
-            } else {
-                setItems(result.items);
-            }
-            setLoading(false);
-        })();
+        useRootStore.getState().setTheme('dark');
         return () => {
-            cancelled = true;
+            useRootStore.getState().setTheme('light');
         };
     }, []);
 
-    const fetchMoreRef = useRef<() => Promise<void>>(async () => undefined);
-    fetchMoreRef.current = async () => {
-        if (loadingMoreRef.current) return;
-        loadingMoreRef.current = true;
-        setLoadingMore(true);
-        try {
-            const result = await fetchForDemoFeedVideos();
-            if (result.ok) {
-                setItems((prev) => mergeFeedItems(prev, result.items));
-            }
-        } finally {
-            loadingMoreRef.current = false;
-            setLoadingMore(false);
-        }
-    };
+    const handleIndexChange = useCallback(
+        (index: number, _direction?: FeedNavigateDirection) => {
+            setActiveIndex(index);
+            prefetchIfNearEnd(index);
+        },
+        [prefetchIfNearEnd],
+    );
 
-    const handleIndexChange = useCallback((index: number, _direction?: FeedNavigateDirection) => {
-        if (index >= itemsLengthRef.current - 2) {
-            void fetchMoreRef.current();
-        }
-    }, []);
+    const activeFeedItem = list[activeIndex];
+    const hasPrev = activeIndex > 0;
+    const hasNext = activeIndex < playerItems.length - 1 || hasMore;
+
+    const pcTopNav = isDesktop ? (
+        <div className="video-vertical-pc-topnav">
+            <ReelShortTopNav leftAction="none" showSearch />
+        </div>
+    ) : null;
 
     if (loading) {
-        return (
-            <div className="for-demo for-demo--state">
-                <p className="for-demo__hint">Loading /api/foryou…</p>
+        return isDesktop ? (
+            <div className="video-vertical-pc-shell for-demo-pc-shell foryou-vertical-pc-shell">
+                {pcTopNav}
+                <div className="flex min-h-0 flex-1 items-center justify-center bg-black">
+                    <Loader color="light" />
+                </div>
+            </div>
+        ) : (
+            <div className="for-demo for-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
+                <Loader color="light" />
             </div>
         );
     }
 
-    if (error) {
-        return (
-            <div className="for-demo for-demo--state">
-                <p className="for-demo__hint for-demo__hint--error">{error}</p>
+    if (loadError) {
+        const errBody = (
+            <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-black p-6 text-center text-sm text-white/70">
+                {loadError}
+            </div>
+        );
+        return isDesktop ? (
+            <div className="video-vertical-pc-shell for-demo-pc-shell foryou-vertical-pc-shell">
+                {pcTopNav}
+                {errBody}
+            </div>
+        ) : (
+            <div className="for-demo for-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
+                {errBody}
             </div>
         );
     }
 
-    if (!items.length) {
-        return (
-            <div className="for-demo for-demo--state">
-                <p className="for-demo__hint">No videos in /api/foryou</p>
+    if (!playerItems.length || !activeFeedItem) {
+        const emptyBody = (
+            <div className="flex h-full min-h-0 flex-1 items-center justify-center bg-black text-sm text-white/60">
+                <FormattedMessage id="foryou_no_recommendations" defaultMessage="No videos" />
+            </div>
+        );
+        return isDesktop ? (
+            <div className="video-vertical-pc-shell for-demo-pc-shell foryou-vertical-pc-shell">
+                {pcTopNav}
+                {emptyBody}
+            </div>
+        ) : (
+            <div className="for-demo for-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
+                {emptyBody}
             </div>
         );
     }
 
-    return (
-        <div className="for-demo">
+    const playerBody = isDesktop ? (
+        <ForDemoPcPlayerShell
+            staticBase={staticBase}
+            feedItem={activeFeedItem}
+            playerItems={playerItems}
+            activeIndex={activeIndex}
+            hasPrev={hasPrev}
+            hasNext={hasNext}
+            hasMore={hasMore}
+            listLength={list.length}
+            onIndexChange={handleIndexChange}
+            onLoadMore={() => void loadMore()}
+        />
+    ) : (
+        <ForDemoH5PlayerShell
+            staticBase={staticBase}
+            feedItem={activeFeedItem}
+            playerItems={playerItems}
+            activeIndex={activeIndex}
+            hasNext={hasNext}
+            hasMore={hasMore}
+            listLength={list.length}
+            onIndexChange={handleIndexChange}
+            onLoadMore={() => void loadMore()}
+        />
+    );
+
+    return isDesktop ? (
+        <div className="video-vertical-pc-shell for-demo-pc-shell foryou-vertical-pc-shell">
+            {pcTopNav}
+            <div className="for-demo for-demo--pc relative min-h-0 flex-1 overflow-hidden bg-black">
+                {loadingMore ? (
+                    <div
+                        className="foryou-vertical__edge-hint foryou-vertical__edge-hint--bottom"
+                        aria-live="polite"
+                    >
+                        <Loader color="light" />
+                    </div>
+                ) : null}
+                <div className="video-fullscreen-target h-full w-full touch-none select-none">
+                    {playerBody}
+                </div>
+            </div>
+        </div>
+    ) : (
+        <div className="for-demo for-demo--h5 foryou-vertical fixed inset-0 z-0 overflow-hidden bg-black">
             {loadingMore ? (
-                <div className="for-demo__loadmore-hint" aria-live="polite">
+                <div
+                    className="foryou-vertical__edge-hint foryou-vertical__edge-hint--bottom"
+                    aria-live="polite"
+                >
                     <Loader color="light" />
                 </div>
             ) : null}
-            <DouyinFeedPlayer
-                items={items}
-                mediaBaseUrl={staticBase}
-                preloadNext
-                onIndexChange={handleIndexChange}
-            />
+            {playerBody}
         </div>
     );
 }

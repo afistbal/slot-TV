@@ -1,7 +1,8 @@
-import type { MouseEvent, TouchEvent } from 'react';
-import { Minimize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { useEffect, useRef, type MouseEvent, type ReactNode, type TouchEvent } from 'react';
+import { Minimize, Volume2, VolumeX } from 'lucide-react';
 import type Player from 'xgplayer';
 
+import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
 import fullscreenIcon from '@/assets/video/icon_full@2x.png';
 import { cn } from '@/lib/utils';
 
@@ -14,20 +15,57 @@ import './douyin-player-controls.scss';
 type DouyinPlayerControlsProps = {
     player: Player | null;
     className?: string;
+    showNextEpisode?: boolean;
+    onNextEpisode?: () => void;
+    /** info / Watch Full 等，拼在进度条之上（与 foryou 同一底栏容器） */
+    topContent?: ReactNode;
 };
 
 function stopBubble(event: MouseEvent | TouchEvent) {
     event.stopPropagation();
 }
 
-export function DouyinPlayerControls({ player, className }: DouyinPlayerControlsProps) {
+export function DouyinPlayerControls({
+    player,
+    className,
+    showNextEpisode = false,
+    onNextEpisode,
+    topContent,
+}: DouyinPlayerControlsProps) {
     const ctl = useDouyinPlayerControlState(player);
+    const feedBottomLayout = Boolean(topContent);
+    const progressScrubRef = useRef<HTMLDivElement | null>(null);
 
     const seekFromClientX = (clientX: number, rect: DOMRect) => {
         if (!rect.width) return;
         const ratio = (clientX - rect.left) / rect.width;
         ctl.onSeekRatio(Math.min(Math.max(ratio, 0), 1));
     };
+
+    const seekFromScrubPointer = (clientX: number) => {
+        const el = progressScrubRef.current;
+        if (!el) return;
+        seekFromClientX(clientX, el.getBoundingClientRect());
+    };
+
+    useEffect(() => {
+        if (!ctl.progressDragging) return;
+
+        const onMouseMove = (event: globalThis.MouseEvent) => {
+            seekFromScrubPointer(event.clientX);
+        };
+        const onMouseUp = () => {
+            ctl.setProgressDragging(false);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, [ctl.progressDragging, ctl.onSeekRatio, ctl.setProgressDragging]);
 
     return (
         <div
@@ -39,24 +77,28 @@ export function DouyinPlayerControls({ player, className }: DouyinPlayerControls
             onPointerUp={stopBubble}
             onMouseDown={stopBubble}
         >
-            <div className="video-player-h5-bottom video-player-h5-bottom--fullscreen">
+            <div
+                className={cn(
+                    'video-player-h5-bottom w-full',
+                    !feedBottomLayout && 'video-player-h5-bottom--fullscreen',
+                )}
+            >
+                {topContent}
                 <div className="video-player-h5-progress-row">
                     <div
-                        className="video-player-progress-scrub video-player-h5-progress-track-wrap flex-1 flex items-center justify-center min-w-0"
+                        ref={progressScrubRef}
+                        className="video-player-progress-scrub video-player-h5-progress-track-wrap swiper-no-swiping flex-1 flex items-center justify-center min-w-0"
+                        data-vertical-swipe-ignore
                         onMouseDown={(e) => {
                             stopBubble(e);
                             ctl.setProgressDragging(true);
-                            seekFromClientX(e.clientX, e.currentTarget.getBoundingClientRect());
+                            seekFromScrubPointer(e.clientX);
                         }}
-                        onMouseMove={(e) => {
-                            if (!ctl.progressDragging) return;
-                            seekFromClientX(e.clientX, e.currentTarget.getBoundingClientRect());
-                        }}
-                        onMouseUp={() => ctl.setProgressDragging(false)}
                         onMouseEnter={() => ctl.setProgressHover(true)}
                         onMouseLeave={() => {
-                            ctl.setProgressHover(false);
-                            ctl.setProgressDragging(false);
+                            if (!ctl.progressDragging) {
+                                ctl.setProgressHover(false);
+                            }
                         }}
                         onTouchStart={(e) => {
                             stopBubble(e);
@@ -94,21 +136,6 @@ export function DouyinPlayerControls({ player, className }: DouyinPlayerControls
                         {ctl.currentLabel} / {ctl.durationLabel}
                     </div>
                     <div className="video-player-h5-toolbar-actions">
-                        <button
-                            type="button"
-                            className="video-player-h5-play shrink-0 flex items-center justify-center border-0 bg-transparent p-0 text-white cursor-pointer"
-                            onClick={(e) => {
-                                stopBubble(e);
-                                void ctl.onTogglePlay();
-                            }}
-                            aria-label={ctl.playing ? 'Pause' : 'Play'}
-                        >
-                            {ctl.playing ? (
-                                <Pause className="w-5 h-5" aria-hidden />
-                            ) : (
-                                <Play className="w-5 h-5" aria-hidden />
-                            )}
-                        </button>
                         <div
                             className="video-player-h5-speed"
                             onClick={(e) => {
@@ -120,6 +147,7 @@ export function DouyinPlayerControls({ player, className }: DouyinPlayerControls
                         </div>
                         <button
                             type="button"
+                            data-vertical-swipe-ignore
                             className="video-player-h5-mute shrink-0 flex items-center justify-center border-0 bg-transparent p-0 text-white cursor-pointer"
                             onClick={(e) => {
                                 stopBubble(e);
@@ -133,6 +161,21 @@ export function DouyinPlayerControls({ player, className }: DouyinPlayerControls
                                 <Volume2 className="w-5 h-5" aria-hidden />
                             )}
                         </button>
+                        {showNextEpisode ? (
+                            <div
+                                className="video-player-next-episode-trigger video-player-h5-next text-white flex items-center justify-center cursor-pointer"
+                                onClick={(e) => {
+                                    stopBubble(e);
+                                    onNextEpisode?.();
+                                }}
+                            >
+                                <img
+                                    src={nextEpisodeIcon}
+                                    alt="next episode"
+                                    className="video-player-next-episode-icon"
+                                />
+                            </div>
+                        ) : null}
                         <div
                             className="video-player-h5-fullscreen text-white flex shrink-0 items-center justify-center cursor-pointer"
                             onClick={(e) => {

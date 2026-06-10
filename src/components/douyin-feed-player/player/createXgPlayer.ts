@@ -70,9 +70,11 @@ export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
         url: options.url,
         width: '100%',
         height: '100%',
-        fitVideoSize: 'auto',
+        /** fixed：不让 resize() 按视频比例撑出 1180px 宽根节点（横屏在 375 容器内被 overflow 裁切） */
+        fitVideoSize: 'fixed',
         videoFillMode: 'auto',
-        autoplay: options.autoplay ?? true,
+        /** 起播统一走 scheduleActivePlay，避免 xgplayer 内部 play() 抛未捕获 NotAllowedError */
+        autoplay: false,
         autoplayMuted,
         playsinline: true,
         'webkit-playsinline': true,
@@ -116,6 +118,7 @@ function isRetriablePlayError(err: unknown): boolean {
 }
 
 function restoreMuteAfterIosAutoplay(player: Player, gen: number) {
+    if (!detectPlatform().isIOS) return;
     if (readMutedPreference()) return;
     applyMuted(player, false);
     feedDbg('unmute', { gen });
@@ -163,8 +166,13 @@ function attemptActivePlay(
 ): Promise<void> {
     return runActivePlay(player, gen, forceMute).catch((err: unknown) => {
         const name = playErrorName(err);
+        if (name === 'NotAllowedError') {
+            feedDbg('play blocked until gesture', { gen });
+            return;
+        }
         if (!isRetriablePlayError(err) || attempt >= 2 || gen !== playGeneration) {
             feedDbg('play rejected', { gen, err: name, attempt });
+            if (name === 'AbortError') return;
             throw err;
         }
         feedDbg('play retry', { gen, err: name, attempt: attempt + 1 });
@@ -206,7 +214,9 @@ export function scheduleActivePlay(player: Player) {
     const gesture = isUserGestureActive();
     const wantUnmuted = !readMutedPreference();
     const audioUnlocked = isUserAudioUnlocked();
-    const forceMute = platform.isIOS && wantUnmuted && !audioUnlocked;
+    /** 无手势时 PC/Chrome 也必须静音起播，否则 NotAllowedError */
+    const forceMute =
+        !gesture || (platform.isIOS && wantUnmuted && !audioUnlocked);
     const syncInGesture = platform.isIOS && wantUnmuted && audioUnlocked && gesture;
     feedDbg('schedule', { gen, gesture, muted: !wantUnmuted, audioUnlocked, forceMute });
 
@@ -215,7 +225,7 @@ export function scheduleActivePlay(player: Player) {
             feedDbg('play cancelled', { gen, current: playGeneration });
             return;
         }
-        void attemptActivePlay(player, gen, forceMute, 0);
+        void attemptActivePlay(player, gen, forceMute, 0).catch(() => undefined);
     };
 
     if (syncInGesture) {

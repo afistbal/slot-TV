@@ -1,4 +1,6 @@
 /** 单条 Feed 视频（与业务 API 解耦，for-demo 只做 id + mp4 url 映射） */
+import type { ReactNode } from 'react';
+
 export type DouyinFeedVideoItem = {
     id: string | number;
     url: string;
@@ -23,10 +25,15 @@ export type DouyinFeedPlayerProps = {
     onPlaybackModeChange?: (index: number, mode: PlaybackMode) => void;
     /** iOS MD §9：卡顿 / 降级原因回调 */
     onStall?: (index: number, reason: string) => void;
-    /** 是否展示底部控制条（静音/倍速/播放/全屏），默认 true */
+    /** 是否展示底部控制条（倍速/静音/下一集/全屏），默认 true */
     showControls?: boolean;
+    /** 工具栏「下一集」是否展示（对标 foryou `video-player-h5-next`） */
+    showNextEpisode?: boolean;
+    /** 点击工具栏「下一集」 */
+    onNextEpisode?: () => void;
+    /** 底栏进度条之上（info / Watch Full 等），与 controls 共用同一 `video-player-h5-bottom` */
+    controlsTopContent?: ReactNode;
 };
-
 export type PlayerSlotState = {
     index: number;
     item: DouyinFeedVideoItem;

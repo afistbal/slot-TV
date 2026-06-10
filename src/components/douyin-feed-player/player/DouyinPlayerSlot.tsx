@@ -61,6 +61,8 @@ export function DouyinPlayerSlot({
     const onTapVideo = useCallback(
         (event: MouseEvent) => {
             if ((event.target as HTMLElement).closest('.douyin-player-controls')) return;
+            event.preventDefault();
+            event.stopPropagation();
             const player = handleRef.current?.player ?? null;
             void togglePlayerPlay(player);
         },
@@ -79,7 +81,7 @@ export function DouyinPlayerSlot({
                     <div
                         ref={setMountEl}
                         className="douyin-player-slot__mount"
-                        onClick={onTapVideo}
+                        onClickCapture={onTapVideo}
                         role="presentation"
                     />
                 </div>

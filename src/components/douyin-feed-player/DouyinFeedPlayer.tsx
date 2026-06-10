@@ -44,6 +44,9 @@ export function DouyinFeedPlayer({
     onPlaybackModeChange,
     onStall,
     showControls = true,
+    showNextEpisode = false,
+    onNextEpisode,
+    controlsTopContent,
 }: DouyinFeedPlayerProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -452,7 +455,12 @@ export function DouyinFeedPlayer({
                                     onStall={onStall}
                                 />
                                 {showControls && index === activeIndex ? (
-                                    <DouyinPlayerControls player={activePlayer} />
+                                    <DouyinPlayerControls
+                                        player={activePlayer}
+                                        showNextEpisode={showNextEpisode}
+                                        onNextEpisode={onNextEpisode}
+                                        topContent={controlsTopContent}
+                                    />
                                 ) : null}
                             </>
                         ) : (

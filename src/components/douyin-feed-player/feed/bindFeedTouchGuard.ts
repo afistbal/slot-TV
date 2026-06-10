@@ -12,7 +12,8 @@ export function bindFeedTouchGuard(
     onTouchEnd?: () => void,
     onTouchStart?: () => void,
 ) {
-    const stop = (event: Event) => {
+    const stopUnlessControls = (event: Event) => {
+        if (isControlsTarget(event.target)) return;
         event.stopPropagation();
     };
 
@@ -41,15 +42,15 @@ export function bindFeedTouchGuard(
     element.addEventListener('touchmove', onMove, { passive: true });
     element.addEventListener('touchend', onEnd, { passive: true });
     element.addEventListener('touchcancel', onEnd, { passive: true });
-    element.addEventListener('mousedown', stop);
-    element.addEventListener('pointerdown', stop);
+    element.addEventListener('mousedown', stopUnlessControls);
+    element.addEventListener('pointerdown', stopUnlessControls);
 
     return () => {
         element.removeEventListener('touchstart', onStart);
         element.removeEventListener('touchmove', onMove);
         element.removeEventListener('touchend', onEnd);
         element.removeEventListener('touchcancel', onEnd);
-        element.removeEventListener('mousedown', stop);
-        element.removeEventListener('pointerdown', stop);
+        element.removeEventListener('mousedown', stopUnlessControls);
+        element.removeEventListener('pointerdown', stopUnlessControls);
     };
 }

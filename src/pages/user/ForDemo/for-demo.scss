@@ -1,30 +1,134 @@
-.for-demo {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    background: #000;
+.for-demo--state {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
 }
 
-.for-demo--state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+
 
 .for-demo__hint {
+
     color: rgba(255, 255, 255, 0.75);
+
     font-size: 14px;
+
 }
+
+
 
 .for-demo__hint--error {
+
     color: #f87171;
+
 }
 
-.for-demo__loadmore-hint {
-    position: fixed;
-    left: 50%;
-    bottom: 88px;
-    z-index: 30;
-    transform: translateX(-50%);
-    pointer-events: none;
+
+
+.for-demo--pc {
+
+    position: relative;
+
+    height: 100%;
+
+    width: 100%;
+
 }
+
+
+
+.for-demo--h5 {
+
+    touch-action: none;
+
+}
+
+
+
+.for-demo-pc-shell .for-demo-pc-player,
+
+.for-demo-pc-shell .douyin-feed-player {
+
+    height: 100%;
+
+    width: 100%;
+
+}
+
+
+
+.for-demo-pc-shell .douyin-feed-player__slide {
+
+    height: 100%;
+
+}
+
+
+
+.for-demo-h5-shell {
+
+    height: 100%;
+
+    width: 100%;
+
+}
+
+
+
+.for-demo-h5-shell .for-demo-h5-player,
+
+.for-demo-h5-shell .douyin-feed-player {
+
+    height: 100%;
+
+    width: 100%;
+
+}
+
+
+
+/** H5 侧栏叠在播放器之上 */
+
+.for-demo-h5-chrome .video-player-h5-side-actions {
+
+    z-index: 12;
+
+    pointer-events: auto;
+
+}
+
+
+
+@media (min-width: 768px) {
+
+    .for-demo-pc-shell .for-demo-pc-player .douyin-feed-player__slide {
+
+        height: 100%;
+
+        min-height: 0;
+
+    }
+
+}
+
+
+
+@media (max-width: 767px) {
+
+    html:has(.for-demo--h5),
+
+    body:has(.for-demo--h5) {
+
+        overflow: hidden;
+
+        overscroll-behavior: none;
+
+        background-color: #000;
+
+    }
+
+}
+

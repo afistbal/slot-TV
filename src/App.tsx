@@ -28,7 +28,6 @@ import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
 import { messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
-import { isForDemoPathname } from './constants/forDemoRoute';
 import { isVDemoPathname } from './constants/vDemoRoute';
 
 import LayoutUser from './layouts/user';
@@ -466,10 +465,8 @@ function App() {
         }
         const token = tokenFromQuery || localStorage.getItem('token');
 
-        /** for-demo / v-demo 实验壳自举写死 token，不走 login/anonymous，避免与 dev token 冲突 */
-        const isFeedDemoShell =
-            isForDemoPathname(window.location.pathname) ||
-            isVDemoPathname(window.location.pathname);
+        /** v-demo 实验壳自举写死 token，不走 login/anonymous */
+        const isFeedDemoShell = isVDemoPathname(window.location.pathname);
 
         /** 与会话接口不依赖 `config` 响应体，与 `config` 并行可显著缩短首屏可交互前总等待 */
         void (async () => {
@@ -685,10 +682,9 @@ function App() {
     }, [checked, sessionBootstrapReady]);
 
     const appPathSegments = pathname.toLowerCase().split('/').filter(Boolean);
-    /** 与 `/zgjdownload`、`/for-demo` 等：不等全站 config 即可挂载路由（页内自举 config/token） */
+    /** 与 `/zgjdownload` 等：不等全站 config 即可挂载路由 */
     const isStandaloneToolPath =
-        appPathSegments.length === 1 &&
-        (appPathSegments[0] === 'zgjdownload' || appPathSegments[0] === 'for-demo');
+        appPathSegments.length === 1 && appPathSegments[0] === 'zgjdownload';
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     /** 全屏竖滑播放：勿挡底部控制条（与 `layouts/user` 中隐藏 iOS 胶囊条一致） */
     const isImmersivePlayerPath =
