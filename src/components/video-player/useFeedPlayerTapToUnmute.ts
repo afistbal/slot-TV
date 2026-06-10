@@ -9,12 +9,12 @@ import {
     isPlayerPaused,
     togglePlayerMute,
 } from '@/components/douyin-feed-player/controls/playerControlsApi';
-import { markUserGesture, unlockUserAudio } from '@/components/douyin-feed-player/feed/userGesturePlay';
 import { writeMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
+import { markUserGesture, unlockUserAudio } from '@/components/douyin-feed-player/feed/userGesturePlay';
 import { markVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
 
-export function useForDemoTapToUnmute() {
+export function useFeedPlayerTapToUnmute() {
     return useCallback(() => {
         markUserGesture();
         markVideoSessionUserUnmuted();

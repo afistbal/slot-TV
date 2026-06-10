@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Crown, Star } from 'lucide-react';
-import { FormattedMessage } from 'react-intl';
 import { useNavigate } from 'react-router';
 
-import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import {
     type DouyinFeedVideoItem,
     type FeedNavigateDirection,
     DouyinFeedPlayer,
 } from '@/components/douyin-feed-player';
-import { cn } from '@/lib/utils';
+import {
+    VideoPlayerH5ColdUnmuteOverlay,
+    VideoPlayerSideActions,
+    useFeedPlayerColdUnmuteVisible,
+    useFeedPlayerTapToUnmute,
+} from '@/components/video-player';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
@@ -21,12 +23,10 @@ import {
     useForYouPlayerShare,
 } from '@/pages/user/ForYouPage/forYouPlayerOverlays';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
-import { formatFavoriteCountK } from '@/pages/user/VideoPage/videoPlayerUtils';
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
-import { ForDemoColdUnmuteOverlay } from './ForDemoColdUnmuteOverlay';
 import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
 type ForDemoH5PlayerShellProps = {
@@ -129,6 +129,9 @@ export function ForDemoH5PlayerShell({
         navigateFromForyouToVideo(navigate, feedItem, 0, activeIndex);
     }, [activeIndex, feedItem, navigate]);
 
+    const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
+    const handleTapToUnmute = useFeedPlayerTapToUnmute();
+
     return (
         <div className="for-demo-h5-shell relative h-full w-full">
             <DouyinFeedPlayer
@@ -152,47 +155,20 @@ export function ForDemoH5PlayerShell({
                     />
                 }
             />
-            <ForDemoColdUnmuteOverlay activeIndex={activeIndex} />
+            <VideoPlayerH5ColdUnmuteOverlay
+                visible={coldUnmuteVisible}
+                onTapToUnmute={handleTapToUnmute}
+            />
             <div className="for-demo-h5-chrome pointer-events-none absolute inset-0 z-10">
-                <div
-                    className="video-player-h5-side-actions absolute right-4 flex flex-col gap-4 pointer-events-auto"
-                    data-vertical-swipe-ignore
-                >
-                    {!userStore.isVIP() ? (
-                        <div
-                            className="flex cursor-pointer flex-col items-center gap-1"
-                            onClick={handleToggleVip}
-                        >
-                            <Crown className="h-8 w-8 fill-[#ffd000] text-[#ffd000]" />
-                            <div className="h-4 text-center text-xs leading-4 text-[#ffd000]">
-                                <FormattedMessage id="shopping_vip_fab_label" />
-                            </div>
-                        </div>
-                    ) : null}
-                    <div
-                        className="flex cursor-pointer flex-col items-center gap-1"
-                        onClick={handleToggleFavorite}
-                    >
-                        <Star
-                            className={cn(
-                                'h-8 w-8 fill-white text-white',
-                                favorite && 'fill-[#ffd000] stroke-[#ffd000]',
-                            )}
-                        />
-                        <div className="h-4 text-center text-xs leading-4 text-white">
-                            {formatFavoriteCountK(data.info.favorite)}
-                        </div>
-                    </div>
-                    <div
-                        className="flex cursor-pointer flex-col items-center gap-1"
-                        onClick={() => setShareOpen(true)}
-                    >
-                        <img src={shareEntryIcon} alt="" className="w-8 h-8" />
-                        <div className="h-4 text-center text-xs leading-4 text-white">
-                            <FormattedMessage id="share" />
-                        </div>
-                    </div>
-                </div>
+                <VideoPlayerSideActions
+                    variant="h5"
+                    showVip={!userStore.isVIP()}
+                    favorite={favorite}
+                    favoriteCount={data.info.favorite}
+                    onVipClick={handleToggleVip}
+                    onFavoriteClick={handleToggleFavorite}
+                    onShareClick={() => setShareOpen(true)}
+                />
             </div>
             <ForYouPlayerH5CommerceDrawers
                 vip={vip}

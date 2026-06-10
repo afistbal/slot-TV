@@ -19,5 +19,5 @@ export {
 } from '@/pages/user/VideoPage/views/VideoPlayerPcIntroDrawer';
 export {
     VideoPlayerPcEpisodeNav as ForYouPlayerPcEpisodeNav,
-} from '@/pages/user/VideoPage/views/VideoPlayerPcEpisodeNav';
+} from '@/components/video-player';
 export { VideoPlayerPcBackBar as ForYouPlayerPcBackBar } from '@/pages/user/VideoPage/views/VideoPlayerPcBackBar';

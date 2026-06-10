@@ -5,5 +5,5 @@ export { VideoPlayerH5CommerceDrawers } from './views/VideoPlayerH5CommerceDrawe
 export { VideoPlayerPcCommerceDialogs } from './views/VideoPlayerPcCommerceDialogs';
 export { VideoPlayerPcEpisodeDrawer } from './views/VideoPlayerPcEpisodeDrawer';
 export { VideoPlayerPcIntroDrawer } from './views/VideoPlayerPcIntroDrawer';
-export { VideoPlayerPcEpisodeNav } from './views/VideoPlayerPcEpisodeNav';
+export { VideoPlayerPcEpisodeNav } from '@/components/video-player';
 export { VideoPlayerPcBackBar } from './views/VideoPlayerPcBackBar';

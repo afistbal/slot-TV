@@ -5,16 +5,21 @@ import {
     useState,
     type MouseEvent,
 } from 'react';
-import { Crown, Star } from 'lucide-react';
-import { FormattedMessage } from 'react-intl';
 import { useNavigate } from 'react-router';
 
-import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import {
     DouyinFeedPlayer,
     type DouyinFeedVideoItem,
     type FeedNavigateDirection,
 } from '@/components/douyin-feed-player';
+import { bindWheelNavigate } from '@/components/douyin-feed-player/feed/wheelNavigate';
+import {
+    VideoPlayerPcEpisodeNav,
+    VideoPlayerPcUnmuteOverlay,
+    VideoPlayerSideActions,
+    useFeedPlayerColdUnmuteVisible,
+    useFeedPlayerTapToUnmute,
+} from '@/components/video-player';
 import { cn } from '@/lib/utils';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
@@ -28,8 +33,6 @@ import {
     useForYouPlayerShare,
 } from '@/pages/user/ForYouPage/forYouPlayerOverlays';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
-import { formatFavoriteCountK } from '@/pages/user/VideoPage/videoPlayerUtils';
-import { VideoPlayerPcEpisodeNav } from '@/pages/user/VideoPage/views/VideoPlayerPcEpisodeNav';
 import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
 import {
     PC_DRAWER_DURATION_MS,
@@ -41,8 +44,6 @@ import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUr
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
-import { ForDemoColdUnmuteOverlay } from './ForDemoColdUnmuteOverlay';
-import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
 type ForDemoPcPlayerShellProps = {
     staticBase: string;
@@ -75,6 +76,7 @@ export function ForDemoPcPlayerShell({
     const episode = buildEpisodeFromFeedItem(feedItem);
     const episodeNo = feedItem.episode ?? 1;
     const feedEpisodeTotal = feedItem.episodes ?? 0;
+    const activePlayerItem = playerItems[activeIndex];
 
     const [favorite, setFavorite] = useState(
         feedItem.is_favor === true || feedItem.is_favorite === 1,
@@ -114,12 +116,10 @@ export function ForDemoPcPlayerShell({
             return;
         }
         if (activeIndex === prevListLengthRef.current - 1) {
-            requestAnimationFrame(() => {
-                scrollForDemoFeedToIndex(activeIndex + 1);
-            });
+            onIndexChange(activeIndex + 1, 'next');
         }
         prevListLengthRef.current = listLength;
-    }, [activeIndex, listLength]);
+    }, [activeIndex, listLength, onIndexChange]);
 
     const beginClosePcDrawer = useCallback(() => {
         if (!pcDrawerPanel) {
@@ -172,22 +172,42 @@ export function ForDemoPcPlayerShell({
 
     const handleFeedPrev = useCallback(() => {
         if (activeIndex <= 0) return;
-        scrollForDemoFeedToIndex(activeIndex - 1);
-    }, [activeIndex]);
+        onIndexChange(activeIndex - 1, 'prev');
+    }, [activeIndex, onIndexChange]);
 
     const handleFeedNext = useCallback(() => {
         if (activeIndex < playerItems.length - 1) {
-            scrollForDemoFeedToIndex(activeIndex + 1);
+            onIndexChange(activeIndex + 1, 'next');
             return;
         }
         if (hasMore) {
             onLoadMore();
         }
-    }, [activeIndex, hasMore, onLoadMore, playerItems.length]);
+    }, [activeIndex, hasMore, onLoadMore, onIndexChange, playerItems.length]);
 
     const handleWatchFullSeries = useCallback(() => {
         navigateFromForyouToVideo(navigate, feedItem, 0, activeIndex);
     }, [activeIndex, feedItem, navigate]);
+
+    const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
+    const handleTapToUnmute = useFeedPlayerTapToUnmute();
+
+    useEffect(() => {
+        const stage = videoStageRef.current;
+        if (!stage) {
+            return;
+        }
+        const wheel = bindWheelNavigate(stage, (dir) => {
+            if (dir === 'next') {
+                handleFeedNext();
+            } else {
+                handleFeedPrev();
+            }
+        });
+        return () => {
+            wheel.dispose();
+        };
+    }, [handleFeedNext, handleFeedPrev]);
 
     useEffect(() => {
         if (pcDrawerPanel == null) {
@@ -272,11 +292,11 @@ export function ForDemoPcPlayerShell({
                         className="relative flex h-full max-h-full w-auto max-w-full flex-col aspect-[9/16] overflow-hidden bg-black"
                     >
                         <DouyinFeedPlayer
+                            key={String(activePlayerItem?.id ?? activeIndex)}
                             className="for-demo-pc-player h-full w-full"
-                            items={playerItems}
+                            items={activePlayerItem ? [activePlayerItem] : []}
                             mediaBaseUrl={staticBase}
-                            preloadNext
-                            onIndexChange={onIndexChange}
+                            preloadNext={false}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
                             fixedPlaybackSpeed
@@ -292,47 +312,20 @@ export function ForDemoPcPlayerShell({
                                 />
                             }
                         />
-                        <ForDemoColdUnmuteOverlay activeIndex={activeIndex} />
+                        <VideoPlayerPcUnmuteOverlay
+                            visible={coldUnmuteVisible}
+                            onTapToUnmute={handleTapToUnmute}
+                        />
                     </div>
-                    <div
-                        className="video-player-pc-side-actions flex shrink-0 flex-col gap-4"
-                        data-vertical-swipe-ignore
-                    >
-                        {!userStore.isVIP() ? (
-                            <div
-                                className="flex cursor-pointer flex-col items-center gap-1"
-                                onClick={handleToggleVip}
-                            >
-                                <Crown className="h-8 w-8 fill-[#ffd000] text-[#ffd000]" />
-                                <div className="h-4 text-center text-xs leading-4 text-[#ffd000]">
-                                    <FormattedMessage id="shopping_vip_fab_label" />
-                                </div>
-                            </div>
-                        ) : null}
-                        <div
-                            className="flex cursor-pointer flex-col items-center gap-1"
-                            onClick={handleToggleFavorite}
-                        >
-                            <Star
-                                className={cn(
-                                    'h-8 w-8 fill-white text-white',
-                                    favorite && 'fill-[#ffd000] stroke-[#ffd000]',
-                                )}
-                            />
-                            <div className="h-4 text-center text-xs leading-4 text-white">
-                                {formatFavoriteCountK(data.info.favorite)}
-                            </div>
-                        </div>
-                        <div
-                            className="flex cursor-pointer flex-col items-center gap-1"
-                            onClick={() => setShareOpen(true)}
-                        >
-                            <img src={shareEntryIcon} alt="" className="w-8 h-8" />
-                            <div className="h-4 text-center text-xs leading-4 text-white">
-                                <FormattedMessage id="share" />
-                            </div>
-                        </div>
-                    </div>
+                    <VideoPlayerSideActions
+                        variant="pc"
+                        showVip={!userStore.isVIP()}
+                        favorite={favorite}
+                        favoriteCount={data.info.favorite}
+                        onVipClick={handleToggleVip}
+                        onFavoriteClick={handleToggleFavorite}
+                        onShareClick={() => setShareOpen(true)}
+                    />
                 </div>
                 <div
                     className={cn(

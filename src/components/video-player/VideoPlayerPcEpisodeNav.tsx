@@ -1,9 +1,10 @@
+import type { MouseEvent } from 'react';
+import { useIntl } from 'react-intl';
+
 import btnArrow1 from '@/assets/video/btn_arrow1.webp';
 import btnArrow1Disabled from '@/assets/video/btn_arrow1_disabled.webp';
 import btnArrow2 from '@/assets/video/btn_arrow2.webp';
 import btnArrow2Disabled from '@/assets/video/btn_arrow2_disabled.webp';
-import type { MouseEvent } from 'react';
-import { useIntl } from 'react-intl';
 
 export type VideoPlayerPcEpisodeNavProps = {
     hasPrev: boolean;

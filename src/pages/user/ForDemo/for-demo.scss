@@ -49,24 +49,25 @@
 
 
 .for-demo-pc-shell .for-demo-pc-player,
-
 .for-demo-pc-shell .douyin-feed-player {
-
     height: 100%;
-
     width: 100%;
-
 }
 
+/** PC：壳层管切条，播放器只播当前一条，禁止内部 scroll 露出邻条 */
+@media (min-width: 768px) {
+    .for-demo-pc-shell .for-demo-pc-player.douyin-feed-player {
+        overflow: hidden;
+        scroll-snap-type: none;
+    }
 
-
-.for-demo-pc-shell .douyin-feed-player__slide {
-
-    height: 100%;
-
+    .for-demo-pc-shell .for-demo-pc-player .douyin-feed-player__slide {
+        height: 100%;
+        min-height: 100%;
+        scroll-snap-align: none;
+        scroll-snap-stop: normal;
+    }
 }
-
-
 
 .for-demo-h5-shell {
 
@@ -102,23 +103,9 @@
 
 
 
-.for-demo-cold-unmute-overlay {
+.video-player-h5-cold-unmute-overlay {
 
     pointer-events: auto;
-
-}
-
-
-
-@media (min-width: 768px) {
-
-    .for-demo-pc-shell .for-demo-pc-player .douyin-feed-player__slide {
-
-        height: 100%;
-
-        min-height: 0;
-
-    }
 
 }
 
