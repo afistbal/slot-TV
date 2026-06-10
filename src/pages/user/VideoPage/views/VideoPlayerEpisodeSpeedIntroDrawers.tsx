@@ -38,16 +38,18 @@ type Props = {
     episode: IPlayerEpisode | undefined;
     episodeRef: RefObject<HTMLDivElement | null>;
     onSelectEpisodeIndex: (k: number) => void;
-    speedOpen: boolean;
-    onSpeedDrawerOpenChange: (open?: boolean) => void;
-    speed: number;
-    onSelectSpeed: (k: number) => void;
+    speedOpen?: boolean;
+    onSpeedDrawerOpenChange?: (open?: boolean) => void;
+    speed?: number;
+    onSelectSpeed?: (k: number) => void;
     introduction: boolean;
     onIntroductionOpenChange: (open?: boolean) => void;
     onCloseIntroductionLinks: () => void;
     /** PC 使用独立右侧抽屉，不渲染 H5 分集/简介底栏 */
     hideEpisodeDrawer?: boolean;
     hideIntroDrawer?: boolean;
+    /** For You 等场景：不展示倍速抽屉 */
+    hideSpeedDrawer?: boolean;
     /** For You：仅用接口 tags 字段，不走 tag-labels */
     tagsFromBackendOnly?: boolean;
     /** 最多展示的 tag 数量，超出截断 */
@@ -76,6 +78,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     onCloseIntroductionLinks,
     hideEpisodeDrawer = false,
     hideIntroDrawer = false,
+    hideSpeedDrawer = false,
     tagsFromBackendOnly = false,
     maxTags,
     videoStageRef,
@@ -207,6 +210,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                     </DrawerContent>
                 </Drawer>
             ) : null}
+            {!hideSpeedDrawer ? (
             <Drawer
                 open={speedOpen}
                 onOpenChange={onSpeedDrawerOpenChange}
@@ -224,10 +228,10 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                             className="video-h5-drawer__close"
                             role="button"
                             tabIndex={0}
-                            onClick={() => onSpeedDrawerOpenChange()}
+                            onClick={() => onSpeedDrawerOpenChange?.()}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
-                                    onSpeedDrawerOpenChange();
+                                    onSpeedDrawerOpenChange?.();
                                 }
                             }}
                         >
@@ -243,7 +247,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                                     'video-h5-drawer__speedRow',
                                     speed === k && 'video-h5-drawer__speedRow--active',
                                 )}
-                                onClick={() => onSelectSpeed(k)}
+                                onClick={() => onSelectSpeed?.(k)}
                             >
                                 {formatPlaybackSpeedLabel(v)}
                             </button>
@@ -252,6 +256,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                     <div className="video-h5-drawer__footer video-h5-drawer__footer--speed" aria-hidden />
                 </DrawerContent>
             </Drawer>
+            ) : null}
             {!hideIntroDrawer ? (
                 <Drawer open={introduction} onOpenChange={onIntroductionOpenChange}>
                     <DrawerContent

@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { fetchEpisodeDetailOrNull, type EpisodeFetchOpts } from './episodeDetailCache';
 import { resolveEpisodePlaybackUrls } from './videoPlayerPlaybackUrls';
-import { SPEED } from './videoPlayerConstants';
+import { applyVideoPlaybackRate } from './videoPlayerConstants';
 import { resolveVideoAllowSoundAutoplay } from './videoAutoplayPolicy';
 import { hasVideoSessionUserUnmuted } from './videoSessionMute';
 import { isEpisodeDetailLocked } from './videoPlayerUtils';
@@ -16,7 +16,7 @@ export type LoadEpisodeRuntime = {
     subtitlesRef: RefObject<VTTCue[]>;
     autoplayKickTimerRef: RefObject<ReturnType<typeof setTimeout> | null>;
     getStaticBase: () => string;
-    speed: number;
+    speedRef: RefObject<number>;
     fromHomeVideoPlayback: boolean;
     legacyEpisodeAutoplayRef: RefObject<boolean>;
     /** 竖滑邻居格：挂片与 UI，不自动播放 */
@@ -208,7 +208,6 @@ export async function runLoadEpisodeForPlayer(
                     el.readyState >= HTMLMediaElement.HAVE_METADATA));
 
         if (rt.suppressPlayback) {
-            el.playbackRate = SPEED[rt.speed];
             el.pause();
             rt.setPlaying(false);
             rt.setWaiting(false);
@@ -218,13 +217,14 @@ export async function runLoadEpisodeForPlayer(
             if (rt.primeNeighborBuffer && urls.length > 0) {
                 primeVideoNeighborBuffer(el, urls);
             }
+            applyVideoPlaybackRate(el, rt.speedRef.current);
             return;
         }
 
         /** 竖滑升当前集：同源且已有帧 → 只续播，勿 resync/load/kick 全套（对标 For You warm start） */
         if (skipReload && verticalSeries) {
             rt.setCanPlay(true);
-            el.playbackRate = SPEED[rt.speed];
+            applyVideoPlaybackRate(el, rt.speedRef.current);
             if (rt.resumeTimeSec != null && rt.resumeTimeSec > 0) {
                 applyVideoResumeTime(el, rt.resumeTimeSec);
             }
@@ -247,7 +247,6 @@ export async function runLoadEpisodeForPlayer(
             return;
         }
 
-        el.playbackRate = SPEED[rt.speed];
         /** 竖滑 `<source>` 挂源即可，勿再 load()（重复拉 metadata/首帧，对标 For You） */
         if (!skipReload && !verticalSeries) {
             el.removeAttribute('src');
@@ -271,6 +270,8 @@ export async function runLoadEpisodeForPlayer(
         if (verticalSeries && isVideoIosPlayback() && !skipReload) {
             ensureVideoIosVideoLoad(el);
         }
+
+        applyVideoPlaybackRate(el, rt.speedRef.current);
 
         if (h5Vertical && location.search.indexOf('auto_play=0') === -1) {
             const isPcViewport =
