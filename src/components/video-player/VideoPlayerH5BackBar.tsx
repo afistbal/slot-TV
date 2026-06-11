@@ -1,9 +1,8 @@
-import { ChevronLeft, Home } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { type MouseEvent, type TouchEvent } from 'react';
 import { FormattedMessage } from 'react-intl';
 
 import { cn } from '@/lib/utils';
-import { canNavigateBack } from '@/components/video-player/videoPlayerUtils';
 
 export type VideoPlayerH5BackBarProps = {
     episodeNo?: number;
@@ -15,7 +14,7 @@ function stopBubble(event: MouseEvent | TouchEvent) {
     event.stopPropagation();
 }
 
-/** H5 顶部返回 + Ep（来�?/video�?*/
+/** H5 ???? + Ep????/video??*/
 export function VideoPlayerH5BackBar({ episodeNo, onBack, className }: VideoPlayerH5BackBarProps) {
     return (
         <div
@@ -30,11 +29,7 @@ export function VideoPlayerH5BackBar({ episodeNo, onBack, className }: VideoPlay
                 onClick={onBack}
                 className="video-player-h5-topbar-back flex shrink-0 items-center justify-center text-white"
             >
-                {canNavigateBack() ? (
-                    <ChevronLeft className="h-5 w-5" aria-hidden />
-                ) : (
-                    <Home className="h-5 w-5" aria-hidden />
-                )}
+                <ChevronLeft className="h-5 w-5" aria-hidden />
             </div>
             {episodeNo != null ? (
                 <div className="video-player-h5-topbar-ep shrink-0 font-bold text-white">
