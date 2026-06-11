@@ -54,6 +54,46 @@
     width: 100%;
 }
 
+/** For You 同款顶栏返回：独立 class，避免 foryou-vertical 在 PC 隐藏 .foryou-player-h5-topbar */
+.for-demo-feed-back-topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    padding: 8px 4px 0;
+    padding-top: max(8px, env(safe-area-inset-top));
+    pointer-events: auto;
+}
+
+.for-demo-feed-back-topbar__btn {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 768px) {
+    .for-demo-feed-back-topbar {
+        padding: 16px 8px 0;
+    }
+}
+
+.for-demo-pc-chrome {
+    z-index: 60;
+    pointer-events: none;
+}
+
+.for-demo-pc-chrome .for-demo-feed-back-topbar {
+    pointer-events: auto;
+}
+
 /** PC：壳层管切条，播放器只播当前一条，禁止内部 scroll 露出邻条 */
 @media (min-width: 768px) {
     .for-demo-pc-shell .for-demo-pc-player.douyin-feed-player {

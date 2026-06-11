@@ -36,7 +36,6 @@ import UserMyList from './pages/user/MyList';
 import UserFavorite from './pages/user/Favorite';
 import UserHistory from './pages/user/History';
 import UserProfile from './pages/user/Profile';
-import UserVideo from './pages/user/Video';
 import UserAirwallex from './pages/user/Airwallex';
 import UserTest from './pages/user/Test';
 import UserShelf from './pages/user/Shelf';
@@ -56,7 +55,6 @@ import UserRadixRc from './pages/user/RadixRc';
 import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
 import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
-import ForYouPage from './pages/user/ForYouPage';
 import ForDemoPage from './pages/user/ForDemo';
 import VDemoPage from './pages/user/VDemo';
 import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
@@ -221,7 +219,7 @@ const router = createBrowserRouter([
             /** 须挂在 LayoutUser 下：否则整页离开用户壳子，首页/搜索的 keep-alive 会随 Layout 卸载 */
             {
                 path: 'video/:id/:episode?',
-                element: <UserVideo />,
+                element: <VDemoPage />,
             },
             {
                 path: 'share/:id',
@@ -237,11 +235,11 @@ const router = createBrowserRouter([
             },
             {
                 path: 'foryou',
-                element: <ForYouPage />,
+                element: <ForDemoPage />,
             },
             {
                 path: 'for-demo',
-                element: <ForDemoPage />,
+                element: <Navigate to="/foryou" replace />,
             },
             {
                 path: 'v-demo/:id/:episode?',
@@ -690,7 +688,6 @@ function App() {
     const isImmersivePlayerPath =
         matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null ||
         matchPath({ path: '/foryou', end: true }, pathname) != null ||
-        matchPath({ path: '/for-demo', end: true }, pathname) != null ||
         matchPath({ path: '/for-you', end: true }, pathname) != null;
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =

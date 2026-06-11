@@ -44,6 +44,7 @@ import { usePcPlayerRightRailAlign } from '@/pages/user/VideoPage/usePcPlayerRig
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
+import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
 
 type ForDemoPcPlayerShellProps = {
@@ -319,6 +320,9 @@ export function ForDemoPcPlayerShell({
                             visible={coldUnmuteVisible}
                             onTapToUnmute={handleTapToUnmute}
                         />
+                        <div className="for-demo-pc-chrome pointer-events-none absolute inset-0">
+                            <ForDemoFeedBackTopbar />
+                        </div>
                     </div>
                     <VideoPlayerSideActions
                         variant="pc"

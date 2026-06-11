@@ -27,6 +27,7 @@ import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
+import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
 import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
@@ -163,6 +164,7 @@ export function ForDemoH5PlayerShell({
                 onTapToUnmute={handleTapToUnmute}
             />
             <div className="for-demo-h5-chrome pointer-events-none absolute inset-0 z-10">
+                <ForDemoFeedBackTopbar />
                 <VideoPlayerSideActions
                     variant="h5"
                     showVip={!userStore.isVIP()}
