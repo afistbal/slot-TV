@@ -43,6 +43,7 @@ type VDemoH5PlayerShellProps = {
     foryouResumeEpisodeRowId?: number;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
     onEpisodeUnlocked: () => void;
+    onEpisodeDetailReady: () => void;
 };
 
 export function VDemoH5PlayerShell({
@@ -55,13 +56,23 @@ export function VDemoH5PlayerShell({
     foryouResumeEpisodeRowId,
     onIndexChange,
     onEpisodeUnlocked,
+    onEpisodeDetailReady,
 }: VDemoH5PlayerShellProps) {
     const userStore = useUserStore();
     const data = playerData;
     const activeRow = data.episodes[activeIndex];
     const episodeNo = activeRow?.episode ?? 1;
-    const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP());
+    const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP(), onEpisodeDetailReady);
     const activeLocked = isVDemoEpisodeLocked(activeRow);
+
+    useEffect(() => {
+        if (!activeRow) {
+            return;
+        }
+        if (activeLocked) {
+            setVip(true);
+        }
+    }, [activeLocked, activeRow?.id]);
     const activePlayerItem = playerItems[activeIndex];
     const hasNext = activeIndex < data.episodes.length - 1;
     const episodeRef = useRef<HTMLDivElement>(null);

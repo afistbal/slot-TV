@@ -8,11 +8,8 @@ import type { DouyinFeedVideoItem } from '@/components/douyin-feed-player';
 
 import type { IPlayerData } from '@/types/videoPlayer';
 
-import { isEpisodeDetailLocked } from '@/pages/user/VideoPage/videoPlayerUtils';
-
-
-
 import { fetchVDemoEpisodesBatch, getVDemoEpisodeDetail } from './fetchVDemoEpisodesBatch';
+import { resolveVDemoRowLocked } from './vDemoUnlock';
 
 import { getVDemoPreloadWindowRowIds } from './vDemoPreloadWindow';
 
@@ -73,19 +70,8 @@ export function buildVDemoFeedItems(
 ): DouyinFeedVideoItem[] {
 
     return episodes.map((row) => {
-
+        const locked = resolveVDemoRowLocked(row);
         const batchDetail = getVDemoEpisodeDetail(row.id);
-
-
-
-        const locked = batchDetail != null
-
-            ? isEpisodeDetailLocked(batchDetail.lock)
-
-            : row.locked === 1;
-
-
-
         const video = batchDetail?.video ?? '';
 
         const subtitle = batchDetail?.subtitle ?? '';
@@ -107,3 +93,25 @@ export function buildVDemoFeedItems(
 }
 
 
+
+/** 滑动切条时避免无变化 rebuild items，打断 iOS scroll-snap */
+export function areVDemoFeedItemsEqual(
+    a: DouyinFeedVideoItem[],
+    b: DouyinFeedVideoItem[],
+): boolean {
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let i = 0; i < a.length; i += 1) {
+        const left = a[i];
+        const right = b[i];
+        if (
+            left.id !== right.id ||
+            left.url !== right.url ||
+            (left.subtitle ?? '') !== (right.subtitle ?? '')
+        ) {
+            return false;
+        }
+    }
+    return true;
+}

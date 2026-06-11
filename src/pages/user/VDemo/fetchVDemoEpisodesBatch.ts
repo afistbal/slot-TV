@@ -2,6 +2,7 @@
  * v-demo：`POST movie/episodes/batch` 批量拉 mp4/vtt。
  */
 import { api } from '@/api';
+import { isEpisodeDetailLocked } from '@/pages/user/VideoPage/videoPlayerUtils';
 
 export type VDemoEpisodeDetail = {
     id: number;
@@ -53,7 +54,7 @@ function normalizeBatchDetail(
         subtitle: String(raw.subtitle ?? '').trim(),
         image: String(raw.image ?? '').trim(),
         vip: Number(raw.vip ?? 0),
-        lock: Boolean(raw.lock),
+        lock: isEpisodeDetailLocked(raw.lock),
         unlock_coins: Number(raw.unlock_coins ?? 0),
     };
 }

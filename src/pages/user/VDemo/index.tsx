@@ -22,9 +22,14 @@ import {
 } from '@/pages/user/ForDemo/forDemoAutoplayPolicy';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
 
-import { buildVDemoFeedItems, syncVDemoOnActiveIndex } from './vDemoEpisodeQueue';
+import {
+    areVDemoFeedItemsEqual,
+    buildVDemoFeedItems,
+    syncVDemoOnActiveIndex,
+} from './vDemoEpisodeQueue';
 import { VDemoH5PlayerShell } from './VDemoH5PlayerShell';
 import { VDemoPcPlayerShell } from './VDemoPcPlayerShell';
+import { scheduleVDemoFeedScrollSettled } from './vDemoFeedScroll';
 
 import '@/pages/user/ForYouPage/foryou-vertical.scss';
 import '@/styles/video-vertical.scss';
@@ -71,7 +76,6 @@ export default function VDemoPage() {
     const [initialIndex, setInitialIndex] = useState(0);
     const [activeIndex, setActiveIndex] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [prefetching, setPrefetching] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [foryouResumeTimeSec, setForyouResumeTimeSec] = useState<number | undefined>();
     const [foryouResumeEpisodeRowId, setForyouResumeEpisodeRowId] = useState<number | undefined>();
@@ -83,10 +87,13 @@ export default function VDemoPage() {
     const viewerIsVipRef = useRef(viewerIsVip);
     viewerIsVipRef.current = viewerIsVip;
     const activeIndexRef = useRef(0);
-    const prefetchCountRef = useRef(0);
     const foryouResumeResolvedRef = useRef(false);
     /** 仅首进读一次；切集 replace 导航会清空 location.state，不能放进 effect 依赖 */
     const mountLocationStateRef = useRef(location.state);
+    const locationStateRef = useRef(location.state);
+    locationStateRef.current = location.state;
+    const scrollSettleCancelRef = useRef<(() => void) | null>(null);
+    const scrollSettleGenRef = useRef(0);
     const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
     if (mountFlagsRef.current == null) {
         const flags = resolveForDemoMountAutoplayFlags(location.state);
@@ -95,9 +102,21 @@ export default function VDemoPage() {
         applyForDemoMountMutePolicy(flags);
     }
 
-    const refreshItems = useCallback(() => {
-        setItems(buildVDemoFeedItems(episodesRef.current));
+    const refreshItemsIfChanged = useCallback(() => {
+        setItems((prev) => {
+            const next = buildVDemoFeedItems(episodesRef.current);
+            return areVDemoFeedItemsEqual(prev, next) ? prev : next;
+        });
     }, []);
+
+    /** batch 回填等 DOM 更新推迟到 scroll-snap 落定，避免 iOS 卡在两屏中间 */
+    const refreshItemsAfterScroll = useCallback(() => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                refreshItemsIfChanged();
+            });
+        });
+    }, [refreshItemsIfChanged]);
 
     const syncWindowRef = useRef<(index: number) => void>(() => undefined);
     syncWindowRef.current = (index: number) => {
@@ -106,21 +125,11 @@ export default function VDemoPage() {
             return;
         }
 
-        refreshItems();
-
-        prefetchCountRef.current += 1;
-        setPrefetching(true);
-        void syncVDemoOnActiveIndex(movieIdRef.current, list, index, viewerIsVipRef.current)
-            .then(() => {
-                refreshItems();
-            })
-            .finally(() => {
-                prefetchCountRef.current -= 1;
-                if (prefetchCountRef.current <= 0) {
-                    prefetchCountRef.current = 0;
-                    setPrefetching(false);
-                }
-            });
+        void syncVDemoOnActiveIndex(movieIdRef.current, list, index, viewerIsVipRef.current).then(
+            () => {
+                refreshItemsAfterScroll();
+            },
+        );
     };
 
     useEffect(() => {
@@ -222,27 +231,64 @@ export default function VDemoPage() {
         };
     }, [movieId, sessionBootstrapReady]);
 
-    const handleIndexChange = useCallback(
-        (index: number, _direction?: FeedNavigateDirection) => {
-            activeIndexRef.current = index;
+    const applyIndexSideEffects = useCallback(
+        (index: number) => {
             setActiveIndex(index);
-            if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
-                useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
-            }
-
             const list = episodesRef.current;
             const row = list[index];
             if (row) {
                 navigate(buildVDemoPath(movieIdRef.current, Number(row.episode)), {
                     replace: true,
-                    state: location.state,
+                    state: locationStateRef.current,
                 });
             }
-
             syncWindowRef.current(index);
         },
-        [location.state, navigate],
+        [navigate],
     );
+
+    const applyIndexSideEffectsRef = useRef(applyIndexSideEffects);
+    applyIndexSideEffectsRef.current = applyIndexSideEffects;
+
+    const handleIndexChange = useCallback(
+        (index: number, _direction?: FeedNavigateDirection) => {
+            activeIndexRef.current = index;
+            if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
+                useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
+            }
+
+            if (isDesktop) {
+                applyIndexSideEffectsRef.current(index);
+                return;
+            }
+
+            scrollSettleCancelRef.current?.();
+            scrollSettleGenRef.current += 1;
+            const gen = scrollSettleGenRef.current;
+
+            scrollSettleCancelRef.current = scheduleVDemoFeedScrollSettled(() => {
+                scrollSettleCancelRef.current = null;
+                if (gen !== scrollSettleGenRef.current) {
+                    return;
+                }
+                applyIndexSideEffectsRef.current(index);
+            });
+        },
+        [isDesktop],
+    );
+
+    const handleIndexChangeRef = useRef(handleIndexChange);
+    handleIndexChangeRef.current = handleIndexChange;
+
+    const onFeedIndexChange = useCallback((index: number, direction?: FeedNavigateDirection) => {
+        handleIndexChangeRef.current(index, direction);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            scrollSettleCancelRef.current?.();
+        };
+    }, []);
 
     const pcTopNav = isDesktop ? (
         <div className="video-vertical-pc-topnav">
@@ -306,8 +352,9 @@ export default function VDemoPage() {
             activeIndex={activeIndex}
             foryouResumeTimeSec={foryouResumeTimeSec}
             foryouResumeEpisodeRowId={foryouResumeEpisodeRowId}
-            onIndexChange={handleIndexChange}
-            onEpisodeUnlocked={refreshItems}
+            onIndexChange={onFeedIndexChange}
+            onEpisodeUnlocked={refreshItemsIfChanged}
+            onEpisodeDetailReady={refreshItemsIfChanged}
         />
     ) : (
         <VDemoH5PlayerShell
@@ -318,8 +365,9 @@ export default function VDemoPage() {
             initialIndex={initialIndex}
             foryouResumeTimeSec={foryouResumeTimeSec}
             foryouResumeEpisodeRowId={foryouResumeEpisodeRowId}
-            onIndexChange={handleIndexChange}
-            onEpisodeUnlocked={refreshItems}
+            onIndexChange={onFeedIndexChange}
+            onEpisodeUnlocked={refreshItemsIfChanged}
+            onEpisodeDetailReady={refreshItemsIfChanged}
         />
     );
 
@@ -327,11 +375,6 @@ export default function VDemoPage() {
         <div className="video-vertical-pc-shell v-demo-pc-shell foryou-vertical-pc-shell">
             {pcTopNav}
             <div className="v-demo v-demo--pc relative min-h-0 flex-1 overflow-hidden bg-black">
-                {prefetching ? (
-                    <div className="v-demo__loadmore-hint" aria-live="polite">
-                        <Loader color="light" />
-                    </div>
-                ) : null}
                 <div className="video-fullscreen-target h-full w-full touch-none select-none">
                     {playerBody}
                 </div>
@@ -339,11 +382,6 @@ export default function VDemoPage() {
         </div>
     ) : (
         <div className="v-demo v-demo--h5 foryou-vertical fixed inset-0 z-0 overflow-hidden bg-black">
-            {prefetching ? (
-                <div className="v-demo__loadmore-hint" aria-live="polite">
-                    <Loader color="light" />
-                </div>
-            ) : null}
             {playerBody}
         </div>
     );

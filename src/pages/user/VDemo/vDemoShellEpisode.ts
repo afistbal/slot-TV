@@ -31,6 +31,7 @@ export function resolveVDemoShellEpisode(
 export function useVDemoActiveEpisode(
     row: IPlayerData['episodes'][number] | undefined,
     viewerIsVip: boolean,
+    onEpisodeDetailReady?: () => void,
 ): IPlayerEpisode | undefined {
     const [revision, setRevision] = useState(0);
 
@@ -42,12 +43,13 @@ export function useVDemoActiveEpisode(
         void fetchVDemoActiveEpisode(row.id, viewerIsVip).then(() => {
             if (!cancelled) {
                 setRevision((n) => n + 1);
+                onEpisodeDetailReady?.();
             }
         });
         return () => {
             cancelled = true;
         };
-    }, [row?.id, viewerIsVip]);
+    }, [row?.id, viewerIsVip, onEpisodeDetailReady]);
 
     void revision;
     return resolveVDemoShellEpisode(row);
