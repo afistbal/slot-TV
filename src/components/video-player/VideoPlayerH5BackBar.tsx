@@ -3,7 +3,7 @@ import { type MouseEvent, type TouchEvent } from 'react';
 import { FormattedMessage } from 'react-intl';
 
 import { cn } from '@/lib/utils';
-import { canNavigateBack } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { canNavigateBack } from '@/components/video-player/videoPlayerUtils';
 
 export type VideoPlayerH5BackBarProps = {
     episodeNo?: number;
@@ -15,7 +15,7 @@ function stopBubble(event: MouseEvent | TouchEvent) {
     event.stopPropagation();
 }
 
-/** H5 顶部返回 + Ep（来自 /video） */
+/** H5 顶部返回 + Ep（来�?/video�?*/
 export function VideoPlayerH5BackBar({ episodeNo, onBack, className }: VideoPlayerH5BackBarProps) {
     return (
         <div

@@ -6,7 +6,7 @@ import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import type { ShareAction } from '@/pages/user/VideoPage/videoPlayerConstants';
+import type { ShareAction } from './videoPlayerConstants';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 export type VideoPlayerPcCommerceDialogsProps = {
@@ -28,7 +28,7 @@ export type VideoPlayerPcCommerceDialogsProps = {
     onCopyEmbedCode: () => void | Promise<void>;
 };
 
-/** PCï¼šVIP å……å€¼å¼¹çª—ï¼ˆrs-shoppingï¼‰+ åˆ†äº«å¼¹çª— */
+/** PCï¼?VIP å??å?¼å¼¹çª?ï¼?rs-shoppingï¼? å??äº«å¼¹çª? */
 export function VideoPlayerPcCommerceDialogs({
     vip,
     onVipOpenChange,

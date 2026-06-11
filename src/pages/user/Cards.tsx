@@ -12,7 +12,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 
 /**
- * 仅银行卡 Airwallex Drop-in（逻辑对齐 `/page/demo/airwallex-card`：`pay/create` → singleton `init` → `createElement` → `mount` → `on`）。
+ * 仅银行卡 Airwallex Drop-in：`pay/create` → singleton `init` → `createElement` → `mount` → `on`。
  * @see https://www.airwallex.com/docs/js/payments/dropin/
  */
 export type CardsProps = {
@@ -219,7 +219,7 @@ export function Cards({
         return;
       }
 
-      /** 与当前可工作的 `DemoAirwallexCard` 一致：先 `mount` 再注册 `on` */
+      /** Airwallex Drop-in：先 `mount` 再注册 `on` */
       el.mount(host);
       instanceRef.current = el;
 

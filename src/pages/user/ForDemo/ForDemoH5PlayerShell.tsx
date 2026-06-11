@@ -23,7 +23,7 @@ import {
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
-import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
+import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';

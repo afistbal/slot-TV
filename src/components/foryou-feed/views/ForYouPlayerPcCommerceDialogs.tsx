@@ -6,7 +6,7 @@ import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import type { ShareAction } from '@/pages/user/VideoPage/videoPlayerConstants';
+import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 
 export type ForYouPlayerPcCommerceDialogsProps = {
     vip: boolean;

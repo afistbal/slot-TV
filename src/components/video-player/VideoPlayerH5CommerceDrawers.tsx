@@ -6,7 +6,7 @@ import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
-import type { ShareAction } from '@/pages/user/VideoPage/videoPlayerConstants';
+import type { ShareAction } from './videoPlayerConstants';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 export type VideoPlayerH5CommerceDrawersProps = {
@@ -28,7 +28,7 @@ export type VideoPlayerH5CommerceDrawersProps = {
     onCopyEmbedCode: () => void | Promise<void>;
 };
 
-/** H5ï¼šVIP å……å€¼æŠ½å±‰ï¼ˆrs-shoppingï¼‰+ åˆ†äº«æŠ½å±‰ */
+/** H5ï¼?VIP å??å?¼æ?½å±?ï¼?rs-shoppingï¼? å??äº«æ?½å±? */
 export function VideoPlayerH5CommerceDrawers({
     vip,
     onVipOpenChange,

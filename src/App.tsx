@@ -35,8 +35,6 @@ import UserMyList from './pages/user/MyList';
 import UserFavorite from './pages/user/Favorite';
 import UserHistory from './pages/user/History';
 import UserProfile from './pages/user/Profile';
-import UserAirwallex from './pages/user/Airwallex';
-import UserTest from './pages/user/Test';
 import UserShelf from './pages/user/Shelf';
 import UserEpisodes from './pages/user/Episodes';
 
@@ -51,26 +49,11 @@ import UserMyBalance from './pages/user/MyBanlance';
 import UserWallet from './pages/user/Wallet';
 import UserDetail from './pages/user/UserDetail';
 import UserRadixRc from './pages/user/RadixRc';
-import UserApplePayNativeButtonDemo from './pages/user/ApplePayNativeButtonDemo';
-import UserDemoAirwallexTriple from './pages/user/DemoAirwallexTriple';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 import ForDemoPage from './pages/user/ForDemo';
 import VDemoPage from './pages/user/VDemo';
 import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
 
-import LayoutAdmin from './layouts/admin';
-import AdminHome from './pages/admin/Home';
-import AdminManagement from './pages/admin/Management';
-import AdminMovieDetail from './pages/admin/MovieDetail';
-import AdminMagnet from './pages/admin/Magnet';
-import AdminMovie from './pages/admin/Movie';
-import AdminUser from './pages/admin/User';
-import AdminUserDetail from './pages/admin/UserDetail';
-import AdminSettings from './pages/admin/Settings';
-import AdminAnalysis from './pages/admin/Analysis';
-import AdminOrders from './pages/admin/Order';
-import AdminOrderDetail from './pages/admin/OrderDetail';
-import AdminActivityLog from './pages/admin/ActivityLog';
 import AdminWeeklyUpdateTable from './pages/admin/WeeklyUpdateTable';
 import NotFound from './pages/NotFound';
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
@@ -225,14 +208,6 @@ const router = createBrowserRouter([
                 element: <ShareToVideoRedirect />,
             },
             {
-                path: 'airwallex/:id',
-                element: <UserAirwallex />,
-            },
-            {
-                path: 'test',
-                element: <UserTest />,
-            },
-            {
                 path: 'foryou',
                 element: <ForDemoPage />,
             },
@@ -310,93 +285,8 @@ const router = createBrowserRouter([
                 element: <UserMyBalance />,
             },
             {
-                path: 'demo',
-                element: <UserApplePayNativeButtonDemo />,
-            },
-            {
-                path: 'demo/airwallex-triple',
-                element: <UserDemoAirwallexTriple />,
-            },
-            {
                 path: 'week-data',
                 element: <AdminWeeklyUpdateTable />,
-            },
-        ],
-    },
-    {
-        path: '/z',
-        element:
-            <LayoutAdmin />
-        ,
-        errorElement: <ErrorBoundary />,
-        children: [
-            {
-                index: true,
-                element:
-                    <AdminHome />
-                ,
-            },
-            {
-                path: 'management',
-                element:
-                    <AdminManagement />
-                ,
-            },
-        ],
-    },
-    {
-        path: '/z/page',
-        errorElement: <ErrorBoundary />,
-        children: [
-            {
-                path: 'movie',
-                element:
-                    <AdminMovie />
-                ,
-            },
-            {
-                path: 'movie/detail/:id?',
-                element:
-                    <AdminMovieDetail />
-                ,
-            },
-            {
-                path: 'magnet',
-                element:
-                    <AdminMagnet />
-                ,
-            },
-            {
-                path: 'user',
-                element:
-                    <AdminUser />,
-            },
-            {
-                path: 'user/:id?',
-                element:
-                    <AdminUserDetail />,
-            },
-            {
-                path: 'settings',
-                element:
-                    <AdminSettings />,
-            },
-            {
-                path: 'analysis',
-                element:
-                    <AdminAnalysis />,
-            },
-            {
-                path: 'orders',
-                element: <AdminOrders />,
-            },
-            {
-                path: 'order/:id?',
-                element: <AdminOrderDetail />,
-            },
-            {
-                path: 'user-activity/:id',
-                element: <AdminActivityLog />,
             },
         ],
     },

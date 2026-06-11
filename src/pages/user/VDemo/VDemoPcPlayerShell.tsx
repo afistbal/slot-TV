@@ -37,18 +37,18 @@ import {
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
-import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
+import { measurePcStageShiftPx } from '@/components/video-player/videoPlayerPcDrawerStageShift';
 import {
     buildPcEpisodeTabRanges,
     pcEpisodeTabIndexForEpisodeNo,
-} from '@/pages/user/VideoPage/videoPlayerPcEpisodeTabs';
+} from '@/components/video-player/videoPlayerPcEpisodeTabs';
 import {
     PC_DRAWER_DURATION_MS,
     schedulePcDrawerEnterFrame,
     type PcDrawerPanel,
-} from '@/pages/user/VideoPage/videoPlayerPcDrawerMotion';
-import { usePcPlayerRightRailAlign } from '@/pages/user/VideoPage/usePcPlayerRightRailAlign';
-import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
+} from '@/components/video-player/videoPlayerPcDrawerMotion';
+import { usePcPlayerRightRailAlign } from '@/components/video-player/usePcPlayerRightRailAlign';
+import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';

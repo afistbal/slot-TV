@@ -11,7 +11,7 @@ import {
 } from '@/components/douyin-feed-player/controls/playerControlsApi';
 import { writeMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
 import { markUserGesture, unlockUserAudio } from '@/components/douyin-feed-player/feed/userGesturePlay';
-import { markVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
+import { markVideoSessionUserUnmuted } from '@/components/video-player/videoSessionMute';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
 
 export function useFeedPlayerTapToUnmute() {

@@ -5,7 +5,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
 import { bottomTabAddDesktopIcon, bottomTabIcons } from '@/constants/bottomTabAssets';
 import { FORYOU_PATH, isForYouPathname } from '@/constants/foryouRoute';
-import { markForyouIosTabGesture } from '@/components/foryou-feed/foryouIosPlayback';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
@@ -129,7 +128,6 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                     <NavLink
                         to={FORYOU_PATH}
                         state={VIDEO_FROM_HOME_STATE}
-                        onPointerDown={markForyouIosTabGesture}
                         className={({ isActive }) =>
                             cn('reelshort-bottom-nav__tab', isActive && 'reelshort-bottom-nav__tab--active')
                         }

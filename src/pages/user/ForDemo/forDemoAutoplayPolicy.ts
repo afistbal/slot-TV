@@ -3,7 +3,7 @@ import { isVDemoPathname } from '@/constants/vDemoRoute';
 import {
     canNavigateBack,
     isDocumentReload,
-} from '@/pages/user/VideoPage/videoPlayerUtils';
+} from '@/components/video-player/videoPlayerUtils';
 
 const FOR_DEMO_RELOAD_LANDING_KEY = 'for-demo-reload-landing';
 /** 同文档会话内 for-demo 冷蒙层已展示/离开过，SPA 返回不再当冷启动 */
@@ -25,7 +25,7 @@ export function isForDemoColdSessionConsumed(): boolean {
     }
 }
 
-/** 仅在 /for-demo、/v-demo F5：标记冷启动（其它页 reload 不误伤） */
+/** 仅在 /for-demo�?v-demo F5：标记冷启动（其它页 reload 不误伤） */
 if (
     typeof window !== 'undefined' &&
     isDocumentReload() &&
@@ -65,7 +65,7 @@ export function resolveForDemoFromHomeVideoPlayback(locationState: unknown): boo
     return canNavigateBack();
 }
 
-/** 首条是否静音冷启动（F5 / 广告直链；站内点击进入为 false） */
+/** 首条是否静音冷启动（F5 / 广告直链；站内点击进入为 false�?*/
 export function isForDemoFeedColdAutoplay(
     fromHomeVideoPlayback: boolean,
     reloadLanding: boolean,

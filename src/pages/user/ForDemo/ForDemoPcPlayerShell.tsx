@@ -32,14 +32,14 @@ import {
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
-import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
+import { measurePcStageShiftPx } from '@/components/video-player/videoPlayerPcDrawerStageShift';
 import {
     PC_DRAWER_DURATION_MS,
     schedulePcDrawerEnterFrame,
     type PcDrawerPanel,
-} from '@/pages/user/VideoPage/videoPlayerPcDrawerMotion';
-import { usePcPlayerRightRailAlign } from '@/pages/user/VideoPage/usePcPlayerRightRailAlign';
-import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
+} from '@/components/video-player/videoPlayerPcDrawerMotion';
+import { usePcPlayerRightRailAlign } from '@/components/video-player/usePcPlayerRightRailAlign';
+import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';

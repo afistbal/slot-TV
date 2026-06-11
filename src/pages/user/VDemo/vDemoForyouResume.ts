@@ -1,7 +1,7 @@
 import { useCallback, useRef, type MutableRefObject } from 'react';
 import type { PlaybackMode } from '@/components/douyin-feed-player';
 import * as playerRegistry from '@/components/douyin-feed-player/player/playerRegistry';
-import { applyVideoResumeTime } from '@/pages/user/VideoPage/applyVideoResumeTime';
+import { applyVideoResumeTime } from '@/components/video-player/applyVideoResumeTime';
 
 export function useVDemoForyouResumeHandler(
     resumeTimeSec: number | undefined,

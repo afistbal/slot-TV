@@ -59,17 +59,7 @@ export function isDocumentReload(): boolean {
     return entry?.type === 'reload';
 }
 
-/** 当前导航是否为 reload（For You 冷启动请用 `isDocumentReload`，勿在 SPA 内反复调用本函数） */
-export function isPerformanceNavigationReload() {
-    return isDocumentReload();
-}
-
 /** `movie/episode` 的 lock 可能是 boolean / 0 / 1 */
 export function isEpisodeDetailLocked(lock: unknown): boolean {
     return lock === true || lock === 1 || lock === '1';
-}
-
-/** 写回 `movie/info` 列表的 `locked` 字段 */
-export function episodeListLockedFromDetail(lock: unknown): number {
-    return isEpisodeDetailLocked(lock) ? 1 : 0;
 }

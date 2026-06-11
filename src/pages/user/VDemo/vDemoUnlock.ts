@@ -1,5 +1,5 @@
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
-import { isEpisodeDetailLocked } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { isEpisodeDetailLocked } from '@/components/video-player/videoPlayerUtils';
 
 import { putVDemoActiveEpisodeDetail, getVDemoActiveEpisodeDetail } from './fetchVDemoEpisode';
 import { getVDemoEpisodeDetail, patchVDemoEpisodeDetailUnlock } from './fetchVDemoEpisodesBatch';

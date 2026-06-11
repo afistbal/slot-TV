@@ -7,7 +7,7 @@ import {
 } from '@/constants/foryouRoute';
 import { patchForyouFeedSession } from './foryouFeedSession';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
-import { markVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
+import { markVideoSessionUserUnmuted } from '@/components/video-player/videoSessionMute';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 export function navigateFromForyouToVideo(

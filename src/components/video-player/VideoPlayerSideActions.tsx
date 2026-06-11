@@ -4,7 +4,7 @@ import { FormattedMessage } from 'react-intl';
 
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import { cn } from '@/lib/utils';
-import { formatFavoriteCountK } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { formatFavoriteCountK } from '@/components/video-player/videoPlayerUtils';
 
 function SideActionItem({
     icon,

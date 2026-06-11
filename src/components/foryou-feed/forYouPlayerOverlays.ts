@@ -1,10 +1,9 @@
-/** For You 播放器：商业/抽屉子组件复用 Video 页实现，底部信息用 For You 专用 */
-export { useVideoPlayerShare as useForYouPlayerShare } from '@/pages/user/VideoPage/useVideoPlayerShare';
-export { ForYouPlayerBottomInfo } from './views/ForYouPlayerBottomInfo';
+/** For You ??????/??????? Video ??? */
+export { useVideoPlayerShare as useForYouPlayerShare } from '@/components/video-player/useVideoPlayerShare';
 export { ForYouWatchFullSeriesButton } from './views/ForYouWatchFullSeriesButton';
 export {
     VideoPlayerEpisodeSpeedIntroDrawers as ForYouPlayerEpisodeSpeedIntroDrawers,
-} from '@/pages/user/VideoPage/views/VideoPlayerEpisodeSpeedIntroDrawers';
+} from '@/components/video-player/views/VideoPlayerEpisodeSpeedIntroDrawers';
 export {
     ForYouPlayerH5CommerceDrawers,
 } from './views/ForYouPlayerH5CommerceDrawers';
@@ -13,11 +12,10 @@ export {
 } from './views/ForYouPlayerPcCommerceDialogs';
 export {
     VideoPlayerPcEpisodeDrawer as ForYouPlayerPcEpisodeDrawer,
-} from '@/pages/user/VideoPage/views/VideoPlayerPcEpisodeDrawer';
+} from '@/components/video-player/views/VideoPlayerPcEpisodeDrawer';
 export {
     VideoPlayerPcIntroDrawer as ForYouPlayerPcIntroDrawer,
-} from '@/pages/user/VideoPage/views/VideoPlayerPcIntroDrawer';
+} from '@/components/video-player/views/VideoPlayerPcIntroDrawer';
 export {
     VideoPlayerPcEpisodeNav as ForYouPlayerPcEpisodeNav,
 } from '@/components/video-player';
-export { VideoPlayerPcBackBar as ForYouPlayerPcBackBar } from '@/pages/user/VideoPage/views/VideoPlayerPcBackBar';

@@ -1,9 +1,9 @@
 /**
- * v-demo：active 集每次滑入都打 `movie/episode`，刷新 lock / can_unlock 等展示态。
+ * v-demo：active 集每次滑入都�?`movie/episode`，刷�?lock / can_unlock 等展示态�?
  */
 import { api } from '@/api';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
-import { isEpisodeDetailLocked } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { isEpisodeDetailLocked } from '@/components/video-player/videoPlayerUtils';
 
 const activeEpisodeCache = new Map<number, IPlayerEpisode>();
 const inflightById = new Map<number, Promise<IPlayerEpisode | null>>();

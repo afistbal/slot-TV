@@ -4,8 +4,6 @@ import { WebVTT } from 'videojs-vtt.js';
 import Hls from 'hls.js';
 import { api } from '@/api';
 import { useRootStore } from '@/stores/root';
-import { skipRemoteApi } from '@/env';
-import { offlineEpisodePage } from '@/mocks/episodesOffline';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
@@ -121,27 +119,6 @@ export default function Component() {
         async function load() {
             setLoading(true);
             try {
-                if (skipRemoteApi) {
-                    const d = offlineEpisodePage(slug);
-                    if (!alive) return;
-                    // 假数据规则：前三集免费，第 4 集开始上锁
-                    const epNum = d.serial ?? 1;
-                    setEpisode({
-                        ...d.episode,
-                        episode: epNum,
-                        lock: isLockedByRule(epNum),
-                        unlock_coins: d.unlockPrice ?? d.episode.unlock_coins ?? 12,
-                        can_unlock: !isLockedByRule(epNum) ? true : d.episode.can_unlock,
-                    });
-                    setPlot(d.plot);
-                    setLikeCount(d.likeCount);
-                    setCollectCount(d.collectCount);
-                    setTotalEpisodes(d.totalEpisodes);
-                    setUnlockPrice(d.unlockPrice ?? d.episode.unlock_coins ?? 0);
-                    setCoinBalance(d.coinBalance ?? 0);
-                    return;
-                }
-
                 // 优先按 ReelShort slug 解析到的 bookId/chapterId 请求（用于 1:1 还原 episodes 页面）
                 if (bookId && chapterId) {
                     const res = await api<unknown>('video/book/getChapterContent', {

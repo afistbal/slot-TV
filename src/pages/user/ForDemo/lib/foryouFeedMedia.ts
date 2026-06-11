@@ -1,5 +1,5 @@
 import type { IForYouFeedItem } from '@/types/foryouFeed';
-import { resolveEpisodePlaybackUrls } from '@/pages/user/VideoPage/videoPlayerPlaybackUrls';
+import { resolveEpisodePlaybackUrls } from '@/components/video-player/videoPlayerPlaybackUrls';
 import { buildEpisodeFromFeedItem } from './foryouFeedUtils';
 import { putForyouEpisodeCache } from './foryouEpisodeCache';
 import { evictPrewarmExcept, putPrewarmedVideo } from './foryouPrewarmPool';
@@ -20,7 +20,7 @@ function upsertHeadLink(id: string, rel: string, href: string): void {
     }
 }
 
-/** 提前与 CDN 建连，略减每条 mp4 的 301/首包 RTT 与 TLS 握手 */
+/** 提前�?CDN 建连，略减每�?mp4 �?301/首包 RTT �?TLS 握手 */
 export function ensureForyouMediaPreconnect(staticBase: string): void {
     if (typeof document === 'undefined') {
         return;
@@ -48,10 +48,10 @@ export function resolveFeedPlaybackUrls(item: IForYouFeedItem, staticBase: strin
 }
 
 /**
- * `abortForyouVideoLoad` 会手改 DOM 上的 `<source src>`，React 未必会再写回。
- * 从 paused 回到 autoplay（尤其 PC 向上切条）前需把 src 与 media 拉取对齐。
+ * `abortForyouVideoLoad` 会手�?DOM 上的 `<source src>`，React 未必会再写回�?
+ * �?paused 回到 autoplay（尤�?PC 向上切条）前需�?src �?media 拉取对齐�?
  */
-/** 邻格 paused + preload=auto：对齐源并触发浏览器继续拉媒体（不 play） */
+/** 邻格 paused + preload=auto：对齐源并触发浏览器继续拉媒体（�?play�?*/
 export function primeForyouNeighborBuffer(el: HTMLVideoElement, urls: string[]): void {
     resyncForyouVideoSources(el, urls);
     if (el.preload !== 'auto') {
@@ -103,7 +103,7 @@ export function resyncForyouVideoSources(
     }
 }
 
-/** 取消当前 video 的 media 拉取（避免快速滑走时旧条占满连接队列） */
+/** 取消当前 video �?media 拉取（避免快速滑走时旧条占满连接队列�?*/
 export function abortForyouVideoLoad(el: HTMLVideoElement | null | undefined): void {
     if (!el) {
         return;
@@ -128,8 +128,8 @@ export function resolveFeedVideoUrl(item: IForYouFeedItem, staticBase: string): 
 export type ForyouPrewarmMode = 'metadata' | 'auto';
 
 /**
- * 隐藏 video 预拉（写入 pool，切条时可被播放器 adopt）。
- * @param mode `auto` 用于下一条邻格，多缓冲几秒媒体；`metadata` 用于窗口外再下 1 条。
+ * 隐藏 video 预拉（写�?pool，切条时可被播放�?adopt）�?
+ * @param mode `auto` 用于下一条邻格，多缓冲几秒媒体；`metadata` 用于窗口外再�?1 条�?
  */
 export function prewarmForyouFeedItem(
     item: IForYouFeedItem,

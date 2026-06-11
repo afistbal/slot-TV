@@ -1,8 +1,7 @@
 /**
- * v-demo：`POST movie/episodes/batch` 批量拉 mp4/vtt。
- */
+ * v-demo：`POST movie/episodes/batch` 批量�?mp4/vtt�? */
 import { api } from '@/api';
-import { isEpisodeDetailLocked } from '@/pages/user/VideoPage/videoPlayerUtils';
+import { isEpisodeDetailLocked } from '@/components/video-player/videoPlayerUtils';
 
 export type VDemoEpisodeDetail = {
     id: number;
@@ -63,7 +62,7 @@ export function getVDemoEpisodeDetail(episodeRowId: number): VDemoEpisodeDetail 
     return detailCache.get(Number(episodeRowId));
 }
 
-/** 支付解锁后同步 batch 缓存，供 buildVDemoFeedItems 立即拿到 mp4 */
+/** 支付解锁后同�?batch 缓存，供 buildVDemoFeedItems 立即拿到 mp4 */
 export function patchVDemoEpisodeDetailUnlock(
     episodeRowId: number,
     patch: Pick<VDemoEpisodeDetail, 'video' | 'subtitle' | 'lock' | 'unlock_coins'>,

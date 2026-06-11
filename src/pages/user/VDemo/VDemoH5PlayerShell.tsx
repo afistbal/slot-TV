@@ -26,7 +26,7 @@ import {
     ForYouPlayerEpisodeSpeedIntroDrawers,
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
-import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
+import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { scrollVDemoFeedToIndex } from './vDemoFeedScroll';

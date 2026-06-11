@@ -6,7 +6,7 @@ import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
-import type { ShareAction } from '@/pages/user/VideoPage/videoPlayerConstants';
+import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 
 export type ForYouPlayerH5CommerceDrawersProps = {
     vip: boolean;
