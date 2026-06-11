@@ -25,8 +25,7 @@ import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
 import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForYouPage/foryouFeedUtils';
-import { buildVDemoPath } from '@/constants/vDemoRoute';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { navigateFromForDemoWatchFull } from '@/pages/user/ForYouPage/foryouNavigateToVideo';
 import {
     ForYouPlayerH5CommerceDrawers,
     ForYouPlayerPcCommerceDialogs,
@@ -44,7 +43,6 @@ import { usePcPlayerRightRailAlign } from '@/pages/user/VideoPage/usePcPlayerRig
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
-import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
 
 type ForDemoPcPlayerShellProps = {
@@ -188,10 +186,8 @@ export function ForDemoPcPlayerShell({
     }, [activeIndex, hasMore, onLoadMore, onIndexChange, playerItems.length]);
 
     const handleWatchFullSeries = useCallback(() => {
-        navigate(buildVDemoPath(feedItem.id, feedItem.episode ?? 1), {
-            state: VIDEO_FROM_HOME_STATE,
-        });
-    }, [feedItem.episode, feedItem.id, navigate]);
+        navigateFromForDemoWatchFull(navigate, feedItem, activeIndex);
+    }, [activeIndex, feedItem, navigate]);
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
@@ -320,9 +316,6 @@ export function ForDemoPcPlayerShell({
                             visible={coldUnmuteVisible}
                             onTapToUnmute={handleTapToUnmute}
                         />
-                        <div className="for-demo-pc-chrome pointer-events-none absolute inset-0">
-                            <ForDemoFeedBackTopbar />
-                        </div>
                     </div>
                     <VideoPlayerSideActions
                         variant="pc"

@@ -1,10 +1,13 @@
 import type { NavigateFunction } from 'react-router';
+import { getPlayerCurrentTime } from '@/components/douyin-feed-player/controls/playerControlsApi';
+import * as playerRegistry from '@/components/douyin-feed-player/player/playerRegistry';
 import {
     forYouResumeStorageKey,
     type ForYouToVideoLocationState,
 } from '@/constants/foryouRoute';
 import { patchForyouFeedSession } from './foryouFeedSession';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { markVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 export function navigateFromForyouToVideo(
@@ -34,4 +37,20 @@ export function navigateFromForyouToVideo(
     };
 
     navigate(`/video/${item.id}/${episodeNo}`, { state });
+}
+
+/** for-demo /foryou：取当前 Feed 播放进度后进 /video 续播 */
+export function navigateFromForDemoWatchFull(
+    navigate: NavigateFunction,
+    item: IForYouFeedItem,
+    activeIndex: number,
+): void {
+    const activeId = playerRegistry.getActiveId();
+    const player = activeId != null ? playerRegistry.get(activeId) : undefined;
+    const resume = getPlayerCurrentTime(player ?? null);
+    const video = player?.video as HTMLVideoElement | undefined;
+    if (video && !video.muted) {
+        markVideoSessionUserUnmuted();
+    }
+    navigateFromForyouToVideo(navigate, item, resume, activeIndex);
 }

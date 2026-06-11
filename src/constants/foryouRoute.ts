@@ -19,6 +19,24 @@ export function forYouResumeStorageKey(movieId: number, episodeRowId: number): s
     return `${FORYOU_RESUME_STORAGE_PREFIX}${movieId}:${episodeRowId}`;
 }
 
+/** 从 For You 进 /video：优先 location.state，否则读 sessionStorage 并清除 */
+export function resolveForyouIncomingResumeSec(
+    movieId: number,
+    episodeRowId: number,
+    locationState: unknown,
+): number | undefined {
+    const st = (locationState ?? null) as ForYouToVideoLocationState | null;
+    if (
+        st?.fromForYouPlayback &&
+        st.episodeRowId === episodeRowId &&
+        typeof st.resumeTime === 'number' &&
+        st.resumeTime > 0
+    ) {
+        return st.resumeTime;
+    }
+    return consumeForyouResumeTimeSec(movieId, episodeRowId);
+}
+
 /** 从 For You 进 video 时读取并清除续播进度（秒） */
 export function consumeForyouResumeTimeSec(movieId: number, episodeRowId: number): number | undefined {
     if (typeof sessionStorage === 'undefined') {

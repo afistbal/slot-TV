@@ -52,12 +52,15 @@ import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUr
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked } from './vDemoUnlock';
+import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
 type VDemoPcPlayerShellProps = {
     staticBase: string;
     playerData: VDemoPlayerData;
     playerItems: DouyinFeedVideoItem[];
     activeIndex: number;
+    foryouResumeTimeSec?: number;
+    foryouResumeEpisodeRowId?: number;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
     onEpisodeUnlocked: () => void;
 };
@@ -67,6 +70,8 @@ export function VDemoPcPlayerShell({
     playerData,
     playerItems,
     activeIndex,
+    foryouResumeTimeSec,
+    foryouResumeEpisodeRowId,
     onIndexChange,
     onEpisodeUnlocked,
 }: VDemoPcPlayerShellProps) {
@@ -116,6 +121,12 @@ export function VDemoPcPlayerShell({
     } = useForYouPlayerShare(data, staticBase, episodeNo);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
+    const handleForyouResume = useVDemoForyouResumeHandler(
+        foryouResumeTimeSec,
+        foryouResumeEpisodeRowId,
+        activeRow?.id,
+        activePlayerItem?.id,
+    );
 
     const filteredEpisodes = useMemo(() => {
         const range = tabRanges[desktopEpisodeTab] ?? { start: 1, end: maxEpisode };
@@ -313,7 +324,7 @@ export function VDemoPcPlayerShell({
     }, [pcDrawerPanel, pcDrawerEntered]);
 
     return (
-        <div className="video-player-root foryou-feed-player h-full w-full relative">
+        <div className="video-player-root h-full w-full relative">
             <div
                 ref={pcShellRef}
                 className={cn(
@@ -343,6 +354,7 @@ export function VDemoPcPlayerShell({
                             preloadNext={false}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
+                            onPlaybackModeChange={handleForyouResume}
                             controlsTopContent={
                                 <FeedPlayerBottomInfo
                                     title={data.info.title}

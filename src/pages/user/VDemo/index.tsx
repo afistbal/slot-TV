@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 
+import { resolveForyouIncomingResumeSec } from '@/constants/foryouRoute';
 import { buildVDemoPath } from '@/constants/vDemoRoute';
 import { type DouyinFeedVideoItem, type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
@@ -71,6 +72,8 @@ export default function VDemoPage() {
     const [loading, setLoading] = useState(true);
     const [prefetching, setPrefetching] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [foryouResumeTimeSec, setForyouResumeTimeSec] = useState<number | undefined>();
+    const [foryouResumeEpisodeRowId, setForyouResumeEpisodeRowId] = useState<number | undefined>();
 
     const episodesRef = useRef(episodes);
     episodesRef.current = episodes;
@@ -80,6 +83,7 @@ export default function VDemoPage() {
     viewerIsVipRef.current = viewerIsVip;
     const activeIndexRef = useRef(0);
     const prefetchCountRef = useRef(0);
+    const foryouResumeResolvedRef = useRef(false);
     const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
     if (mountFlagsRef.current == null) {
         const flags = resolveForDemoMountAutoplayFlags(location.state);
@@ -127,6 +131,9 @@ export default function VDemoPage() {
         let cancelled = false;
         clearVDemoEpisodeCache();
         clearVDemoActiveEpisodeCache();
+        foryouResumeResolvedRef.current = false;
+        setForyouResumeTimeSec(undefined);
+        setForyouResumeEpisodeRowId(undefined);
         setLoading(true);
         setError(null);
         setPlayerData(null);
@@ -156,6 +163,14 @@ export default function VDemoPage() {
             const infoPlay = Number(result.data.info.play);
             const startEpisodeNo = urlEpisode ?? (infoPlay > 0 ? infoPlay : 1);
             const startIndex = resolveInitialEpisodeIndex(sortedEpisodes, startEpisodeNo);
+            const startRow = sortedEpisodes[startIndex];
+            if (!foryouResumeResolvedRef.current && startRow != null) {
+                setForyouResumeTimeSec(
+                    resolveForyouIncomingResumeSec(movieId, startRow.id, location.state),
+                );
+                setForyouResumeEpisodeRowId(startRow.id);
+                foryouResumeResolvedRef.current = true;
+            }
 
             setPlayerData(result.data);
             setEpisodes(sortedEpisodes);
@@ -193,7 +208,7 @@ export default function VDemoPage() {
             clearVDemoEpisodeCache();
             clearVDemoActiveEpisodeCache();
         };
-    }, [movieId]);
+    }, [location.state, movieId]);
 
     const handleIndexChange = useCallback(
         (index: number, _direction?: FeedNavigateDirection) => {
@@ -274,6 +289,8 @@ export default function VDemoPage() {
             playerData={playerData}
             playerItems={items}
             activeIndex={activeIndex}
+            foryouResumeTimeSec={foryouResumeTimeSec}
+            foryouResumeEpisodeRowId={foryouResumeEpisodeRowId}
             onIndexChange={handleIndexChange}
             onEpisodeUnlocked={refreshItems}
         />
@@ -284,6 +301,8 @@ export default function VDemoPage() {
             playerItems={items}
             activeIndex={activeIndex}
             initialIndex={initialIndex}
+            foryouResumeTimeSec={foryouResumeTimeSec}
+            foryouResumeEpisodeRowId={foryouResumeEpisodeRowId}
             onIndexChange={handleIndexChange}
             onEpisodeUnlocked={refreshItems}
         />

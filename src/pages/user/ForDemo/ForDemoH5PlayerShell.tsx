@@ -16,8 +16,7 @@ import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
 import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForYouPage/foryouFeedUtils';
-import { buildVDemoPath } from '@/constants/vDemoRoute';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { navigateFromForDemoWatchFull } from '@/pages/user/ForYouPage/foryouNavigateToVideo';
 import {
     ForYouPlayerEpisodeSpeedIntroDrawers,
     ForYouPlayerH5CommerceDrawers,
@@ -128,10 +127,8 @@ export function ForDemoH5PlayerShell({
     }, [activeIndex, hasMore, onLoadMore, playerItems.length]);
 
     const handleWatchFullSeries = useCallback(() => {
-        navigate(buildVDemoPath(feedItem.id, feedItem.episode ?? 1), {
-            state: VIDEO_FROM_HOME_STATE,
-        });
-    }, [feedItem.episode, feedItem.id, navigate]);
+        navigateFromForDemoWatchFull(navigate, feedItem, activeIndex);
+    }, [activeIndex, feedItem, navigate]);
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();

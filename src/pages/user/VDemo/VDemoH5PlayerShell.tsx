@@ -31,6 +31,7 @@ import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { scrollVDemoFeedToIndex } from './vDemoFeedScroll';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked } from './vDemoUnlock';
+import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
 type VDemoH5PlayerShellProps = {
     staticBase: string;
@@ -38,6 +39,8 @@ type VDemoH5PlayerShellProps = {
     playerItems: DouyinFeedVideoItem[];
     activeIndex: number;
     initialIndex: number;
+    foryouResumeTimeSec?: number;
+    foryouResumeEpisodeRowId?: number;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
     onEpisodeUnlocked: () => void;
 };
@@ -48,6 +51,8 @@ export function VDemoH5PlayerShell({
     playerItems,
     activeIndex,
     initialIndex,
+    foryouResumeTimeSec,
+    foryouResumeEpisodeRowId,
     onIndexChange,
     onEpisodeUnlocked,
 }: VDemoH5PlayerShellProps) {
@@ -57,6 +62,7 @@ export function VDemoH5PlayerShell({
     const episodeNo = activeRow?.episode ?? 1;
     const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP());
     const activeLocked = isVDemoEpisodeLocked(activeRow);
+    const activePlayerItem = playerItems[activeIndex];
     const hasNext = activeIndex < data.episodes.length - 1;
     const episodeRef = useRef<HTMLDivElement>(null);
 
@@ -151,6 +157,12 @@ export function VDemoH5PlayerShell({
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
     const handleBack = useVideoPlayerBack();
+    const handleForyouResume = useVDemoForyouResumeHandler(
+        foryouResumeTimeSec,
+        foryouResumeEpisodeRowId,
+        activeRow?.id,
+        activePlayerItem?.id,
+    );
 
     return (
         <div className="v-demo-h5-shell relative h-full w-full">
@@ -164,6 +176,7 @@ export function VDemoH5PlayerShell({
                 onIndexChange={onIndexChange}
                 showNextEpisode={hasNext}
                 onNextEpisode={handleFeedNext}
+                onPlaybackModeChange={handleForyouResume}
                 controlsTopContent={
                     <FeedPlayerBottomInfo
                         title={data.info.title}
