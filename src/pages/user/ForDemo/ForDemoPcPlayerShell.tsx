@@ -24,14 +24,14 @@ import { cn } from '@/lib/utils';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
-import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForYouPage/foryouFeedUtils';
-import { navigateFromForDemoWatchFull } from '@/pages/user/ForYouPage/foryouNavigateToVideo';
+import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForDemo/lib/foryouFeedUtils';
+import { navigateFromForDemoWatchFull } from '@/pages/user/ForDemo/lib/foryouNavigateToVideo';
 import {
     ForYouPlayerPcCommerceDialogs,
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
-} from '@/pages/user/ForYouPage/forYouPlayerOverlays';
-import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
+} from '@/components/foryou-feed/forYouPlayerOverlays';
+import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
 import {
     PC_DRAWER_DURATION_MS,

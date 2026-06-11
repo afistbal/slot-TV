@@ -31,7 +31,7 @@ import { VDemoH5PlayerShell } from './VDemoH5PlayerShell';
 import { VDemoPcPlayerShell } from './VDemoPcPlayerShell';
 import { scheduleVDemoFeedScrollSettled } from './vDemoFeedScroll';
 
-import '@/pages/user/ForYouPage/foryou-vertical.scss';
+import '@/components/foryou-feed/foryou-vertical.scss';
 import '@/styles/video-vertical.scss';
 import './v-demo.scss';
 

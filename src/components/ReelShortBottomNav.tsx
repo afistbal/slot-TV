@@ -5,7 +5,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
 import { bottomTabAddDesktopIcon, bottomTabIcons } from '@/constants/bottomTabAssets';
 import { FORYOU_PATH, isForYouPathname } from '@/constants/foryouRoute';
-import { markForyouIosTabGesture } from '@/pages/user/ForYouPage/foryouIosPlayback';
+import { markForyouIosTabGesture } from '@/components/foryou-feed/foryouIosPlayback';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';

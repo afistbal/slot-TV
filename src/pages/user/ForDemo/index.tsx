@@ -20,7 +20,7 @@ import {
     type ForDemoMountAutoplayFlags,
 } from './forDemoAutoplayPolicy';
 
-import '@/pages/user/ForYouPage/foryou-vertical.scss';
+import '@/components/foryou-feed/foryou-vertical.scss';
 import './for-demo.scss';
 
 /**

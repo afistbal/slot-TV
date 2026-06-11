@@ -1,6 +1,6 @@
 import { FeedPlayerBottomInfo, type FeedPlayerBottomInfoTag } from '@/components/feed';
-import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
-import { ForYouWatchFullSeriesButton } from '@/pages/user/ForYouPage/views/ForYouWatchFullSeriesButton';
+import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
+import { ForYouWatchFullSeriesButton } from '@/components/foryou-feed/views/ForYouWatchFullSeriesButton';
 
 type ForDemoFeedControlsTopProps = {
     title: string;

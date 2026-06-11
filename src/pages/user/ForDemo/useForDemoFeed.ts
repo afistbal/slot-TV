@@ -4,10 +4,10 @@ import type { DouyinFeedVideoItem } from '@/components/douyin-feed-player';
 import {
     FORYOU_DEFAULT_PER_PAGE,
     FORYOU_LOAD_MORE_PREFETCH_FROM_END,
-} from '@/pages/user/ForYouPage/foryouConstants';
-import { fetchForyouList } from '@/pages/user/ForYouPage/fetchForyouList';
-import { foryouFeedItemKey, mergeForyouFeedItems } from '@/pages/user/ForYouPage/foryouFeedMerge';
-import { ensureForyouMediaPreconnect, resolveFeedVideoUrl } from '@/pages/user/ForYouPage/foryouFeedMedia';
+} from '@/components/foryou-feed/foryouConstants';
+import { fetchForyouList } from '@/pages/user/ForDemo/lib/fetchForyouList';
+import { foryouFeedItemKey, mergeForyouFeedItems } from '@/pages/user/ForDemo/lib/foryouFeedMerge';
+import { ensureForyouMediaPreconnect, resolveFeedVideoUrl } from '@/pages/user/ForDemo/lib/foryouFeedMedia';
 import type { IForYouFeedItem, IForYouListPayload } from '@/types/foryouFeed';
 
 function inferHasMore(payload: IForYouListPayload, fallbackPerPage: number): boolean {

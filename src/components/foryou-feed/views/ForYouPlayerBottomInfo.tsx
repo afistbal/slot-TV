@@ -1,5 +1,5 @@
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
-import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
+import { FORYOU_MAX_VISIBLE_TAGS } from '../foryouConstants';
 
 import { FeedPlayerBottomInfo } from '@/components/feed';
 

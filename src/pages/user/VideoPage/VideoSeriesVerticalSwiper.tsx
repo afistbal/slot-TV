@@ -27,7 +27,7 @@ import type { PcDrawerPanel } from './videoPlayerPcDrawerMotion';
 import { abortVideoLoad, ensureVideoMediaPreconnect } from './videoFeedMedia';
 import { isInVideoPlayerWindow } from './videoSeriesConstants';
 import { useVideoSeriesEpisodeQueues } from './useVideoSeriesEpisodeQueues';
-import '@/pages/user/ForYouPage/foryou-vertical.scss';
+import '@/components/foryou-feed/foryou-vertical.scss';
 
 const PC_VERTICAL_EPISODE_NAV_ENABLED = true;
 const SWIPER_SLIDE_SPEED_MS = 280;

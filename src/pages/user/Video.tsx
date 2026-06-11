@@ -1,6 +1,6 @@
 import './VideoPage/videoPage.css';
 
-import '@/pages/user/ForYouPage/foryou-vertical.scss';
+import '@/components/foryou-feed/foryou-vertical.scss';
 
 
 

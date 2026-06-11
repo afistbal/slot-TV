@@ -1,6 +1,6 @@
 import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
-import { preferForyouSoundAutoplay } from '@/pages/user/ForYouPage/foryouAutoplayPolicy';
-import type { LoadEpisodeRuntime } from '@/pages/user/ForYouPage/forYouPlayerLoadEpisode';
+import { preferForyouSoundAutoplay } from './foryouAutoplayPolicy';
+import type { LoadEpisodeRuntime } from './forYouPlayerLoadEpisode';
 import {
     getForyouPlayerMuted,
     setForyouPlayerMuted,

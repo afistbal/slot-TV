@@ -31,12 +31,12 @@ import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
-import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
+import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import {
     ForYouPlayerPcEpisodeDrawer,
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
-} from '@/pages/user/ForYouPage/forYouPlayerOverlays';
+} from '@/components/foryou-feed/forYouPlayerOverlays';
 import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
 import {
     buildPcEpisodeTabRanges,

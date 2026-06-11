@@ -17,13 +17,13 @@ import { bindWheelNavigate } from '@/components/douyin-feed-player/feed/wheelNav
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { cn } from '@/lib/utils';
-import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
+import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import {
     ForYouPlayerPcCommerceDialogs,
     ForYouPlayerPcEpisodeDrawer,
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
-} from '@/pages/user/ForYouPage/forYouPlayerOverlays';
+} from '@/components/foryou-feed/forYouPlayerOverlays';
 import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
 import {
     buildPcEpisodeTabRanges,

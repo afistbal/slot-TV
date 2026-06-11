@@ -15,14 +15,14 @@ import {
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
-import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForYouPage/foryouFeedUtils';
-import { navigateFromForDemoWatchFull } from '@/pages/user/ForYouPage/foryouNavigateToVideo';
+import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForDemo/lib/foryouFeedUtils';
+import { navigateFromForDemoWatchFull } from '@/pages/user/ForDemo/lib/foryouNavigateToVideo';
 import {
     ForYouPlayerEpisodeSpeedIntroDrawers,
     ForYouPlayerH5CommerceDrawers,
     useForYouPlayerShare,
-} from '@/pages/user/ForYouPage/forYouPlayerOverlays';
-import { FORYOU_MAX_VISIBLE_TAGS } from '@/pages/user/ForYouPage/foryouConstants';
+} from '@/components/foryou-feed/forYouPlayerOverlays';
+import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
