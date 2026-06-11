@@ -64,7 +64,7 @@ export default function ForDemoPage() {
     const handleIndexChange = useCallback(
         (index: number, _direction?: FeedNavigateDirection) => {
             setActiveIndex(index);
-            if (index > 0) {
+            if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
                 useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
             }
             prefetchIfNearEnd(index);

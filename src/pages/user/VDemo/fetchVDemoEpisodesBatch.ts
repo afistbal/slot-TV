@@ -115,7 +115,7 @@ export async function fetchVDemoEpisodesBatch(
         const result = await api<{ maps?: BatchMaps; eps?: BatchMaps }>('movie/episodes/batch', {
             data: {
                 movie_id: movieId,
-                id: uniqueIds,
+                id: missingIds,
             },
             loading: false,
         });

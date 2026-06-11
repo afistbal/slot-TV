@@ -189,6 +189,7 @@ export default function VDemoPage() {
             setActiveIndex(startIndex);
             activeIndexRef.current = startIndex;
             episodesRef.current = sortedEpisodes;
+            useForDemoColdUnmuteStore.getState().setColdLandingIndex(startIndex);
 
             try {
                 await syncVDemoOnActiveIndex(
@@ -225,7 +226,7 @@ export default function VDemoPage() {
         (index: number, _direction?: FeedNavigateDirection) => {
             activeIndexRef.current = index;
             setActiveIndex(index);
-            if (index > 0) {
+            if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
                 useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
             }
 
