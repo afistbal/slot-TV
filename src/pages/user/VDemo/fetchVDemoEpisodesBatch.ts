@@ -1,5 +1,5 @@
 /**
- * v-demo：`POST movie/episodes/batch` 批量�?mp4/vtt�? */
+ * v-demo?`POST movie/episodes/batch` ????mp4/vtt?? */
 import { api } from '@/api';
 import { isEpisodeDetailLocked } from '@/components/video-player/videoPlayerUtils';
 
@@ -36,6 +36,8 @@ function extractBatchMaps(data: unknown): BatchMaps {
 }
 
 const detailCache = new Map<number, VDemoEpisodeDetail>();
+/** batch ???? mp4???/?????????? */
+const noVideoRowIds = new Set<number>();
 const inflightByKey = new Map<string, Promise<void>>();
 
 function batchRequestKey(movieId: number, ids: number[]): string {
@@ -62,19 +64,28 @@ export function getVDemoEpisodeDetail(episodeRowId: number): VDemoEpisodeDetail 
     return detailCache.get(Number(episodeRowId));
 }
 
-/** 支付解锁后同�?batch 缓存，供 buildVDemoFeedItems 立即拿到 mp4 */
+/** batch ??? video?????????? */
+export function isVDemoBatchNoVideoRow(episodeRowId: number): boolean {
+    return noVideoRowIds.has(Number(episodeRowId));
+}
+
+/** ??/????? batch ???? mp4 ??? noVideo ?? */
 export function patchVDemoEpisodeDetailUnlock(
     episodeRowId: number,
     patch: Pick<VDemoEpisodeDetail, 'video' | 'subtitle' | 'lock' | 'unlock_coins'>,
 ): void {
     const id = Number(episodeRowId);
     const prev = detailCache.get(id);
+    const video = String(patch.video ?? '').trim();
+    if (video) {
+        noVideoRowIds.delete(id);
+    }
     detailCache.set(id, {
         id,
         episode: prev?.episode ?? 0,
         image: prev?.image ?? '',
         vip: prev?.vip ?? 0,
-        video: patch.video,
+        video,
         subtitle: patch.subtitle,
         lock: patch.lock,
         unlock_coins: patch.unlock_coins,
@@ -91,6 +102,7 @@ export function getVDemoEpisodeVideoUrl(episodeRowId: number): string {
 
 export function clearVDemoEpisodeCache(): void {
     detailCache.clear();
+    noVideoRowIds.clear();
     inflightByKey.clear();
 }
 
@@ -99,7 +111,7 @@ export async function fetchVDemoEpisodesBatch(
     episodeRowIds: number[],
 ): Promise<void> {
     const uniqueIds = [...new Set(episodeRowIds.map((id) => Number(id)).filter((id) => id > 0))];
-    const missingIds = uniqueIds.filter((id) => !detailCache.has(id));
+    const missingIds = uniqueIds.filter((id) => !detailCache.has(id) && !noVideoRowIds.has(id));
     if (!missingIds.length) {
         return;
     }
@@ -128,6 +140,12 @@ export async function fetchVDemoEpisodesBatch(
         for (const rowId of missingIds) {
             const raw = maps[String(rowId)];
             if (!raw) {
+                continue;
+            }
+            const video = String(raw.video ?? '').trim();
+            if (!video) {
+                // ??/??? batch ??? mp4??? movie/episode ??????
+                noVideoRowIds.add(rowId);
                 continue;
             }
             detailCache.set(rowId, normalizeBatchDetail(rowId, raw));

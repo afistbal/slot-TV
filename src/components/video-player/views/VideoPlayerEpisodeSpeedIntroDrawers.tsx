@@ -54,6 +54,8 @@ type Props = {
     tagsFromBackendOnly?: boolean;
     /** 最多展示的 tag 数量，超出截断 */
     maxTags?: number;
+    /** 分集格锁角标；未传则沿用 info 列表 vip/locked */
+    resolveEpisodeCellLocked?: (row: IPlayerData['episodes'][number]) => boolean;
     /** PC：倍速底栏挂到 9:16 视频舞台，宽度与视频一致 */
     videoStageRef?: RefObject<HTMLElement | null>;
     anchorSpeedDrawerToVideoStage?: boolean;
@@ -81,6 +83,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     hideSpeedDrawer = false,
     tagsFromBackendOnly = false,
     maxTags,
+    resolveEpisodeCellLocked,
     videoStageRef,
     anchorSpeedDrawerToVideoStage = false,
 }: Props) {
@@ -174,8 +177,9 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                             {visibleEpisodes.map((v) => {
                                 const listIndex = data.episodes.findIndex((e) => e.id === v.id);
                                 const isCurrent = v.episode === currentEpisodeNo;
-                                const locked =
-                                    !viewerIsVip && v.vip !== 0 && v.locked === 1;
+                                const locked = resolveEpisodeCellLocked
+                                    ? resolveEpisodeCellLocked(v)
+                                    : !viewerIsVip && v.vip !== 0 && v.locked === 1;
                                 return (
                                     <div
                                         data-episode={v.episode}

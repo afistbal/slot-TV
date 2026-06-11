@@ -52,7 +52,7 @@ import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShar
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
-import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked } from './vDemoUnlock';
+import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
 type VDemoPcPlayerShellProps = {
@@ -85,6 +85,10 @@ export function VDemoPcPlayerShell({
     const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP(), onEpisodeDetailReady);
     const activeLocked = isVDemoEpisodeLocked(activeRow, true);
     const viewerIsVip = Boolean(userStore.signed && userStore.isVIP());
+    const resolveEpisodeCellLocked = useCallback(
+        (row: typeof data.episodes[number]) => resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
+        [viewerIsVip, playerItems, episode],
+    );
     const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];
     const hasPrev = activeIndex > 0;
@@ -412,6 +416,7 @@ export function VDemoPcPlayerShell({
                         onSelectEpisodeTab={setDesktopEpisodeTab}
                         filteredEpisodes={filteredEpisodes}
                         onSelectEpisodeByListIndex={handleSelectEpisodeByListIndex}
+                        resolveEpisodeCellLocked={resolveEpisodeCellLocked}
                     />
                     <VideoPlayerPcEpisodeNav
                         hasPrev={hasPrev}

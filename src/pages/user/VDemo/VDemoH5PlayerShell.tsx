@@ -31,7 +31,7 @@ import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShar
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { scrollVDemoFeedToIndex } from './vDemoFeedScroll';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
-import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked } from './vDemoUnlock';
+import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
 type VDemoH5PlayerShellProps = {
@@ -66,6 +66,11 @@ export function VDemoH5PlayerShell({
     const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP(), onEpisodeDetailReady);
     const activeLocked = isVDemoEpisodeLocked(activeRow, true);
     const viewerIsVip = Boolean(userStore.signed && userStore.isVIP());
+    const resolveEpisodeCellLocked = useCallback(
+        (row: VDemoPlayerData['episodes'][number]) =>
+            resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
+        [viewerIsVip, playerItems, episode],
+    );
     const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];
     const hasNext = activeIndex < data.episodes.length - 1;
@@ -234,6 +239,7 @@ export function VDemoH5PlayerShell({
                 onCloseIntroductionLinks={() => setIntroductionOpen(false)}
                 tagsFromBackendOnly
                 maxTags={FORYOU_MAX_VISIBLE_TAGS}
+                resolveEpisodeCellLocked={resolveEpisodeCellLocked}
             />
         </div>
     );

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 
 import { fetchVDemoActiveEpisode, getVDemoActiveEpisodeDetail } from './fetchVDemoEpisode';
-import { resolveVDemoRowLocked } from './vDemoUnlock';
+import { resolveVDemoRowLocked, syncVDemoEpisodeVideoToBatch } from './vDemoUnlock';
 
 /** 抽屉/简介用集元数据：优先 movie/episode 缓存，否则 info 列表行 */
 export function resolveVDemoShellEpisode(
@@ -40,8 +40,9 @@ export function useVDemoActiveEpisode(
             return;
         }
         let cancelled = false;
-        void fetchVDemoActiveEpisode(row.id, viewerIsVip).then(() => {
-            if (!cancelled) {
+        void fetchVDemoActiveEpisode(row.id, viewerIsVip).then((ep) => {
+            if (!cancelled && ep) {
+                syncVDemoEpisodeVideoToBatch(ep);
                 setRevision((n) => n + 1);
                 onEpisodeDetailReady?.();
             }

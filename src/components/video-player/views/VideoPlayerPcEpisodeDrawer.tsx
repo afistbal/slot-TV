@@ -20,6 +20,8 @@ export type VideoPlayerPcEpisodeDrawerProps = {
     onSelectEpisodeTab: (tabIndex: number) => void;
     filteredEpisodes: IPlayerData['episodes'];
     onSelectEpisodeByListIndex: (listIndex: number) => void;
+    /** 分集格锁角标；未传则沿用 info 列表 vip/locked */
+    resolveEpisodeCellLocked?: (row: IPlayerData['episodes'][number]) => boolean;
 };
 
 export function VideoPlayerPcEpisodeDrawer({
@@ -35,6 +37,7 @@ export function VideoPlayerPcEpisodeDrawer({
     onSelectEpisodeTab,
     filteredEpisodes,
     onSelectEpisodeByListIndex,
+    resolveEpisodeCellLocked,
 }: VideoPlayerPcEpisodeDrawerProps) {
     return (
         <VideoPlayerPcRightDrawer
@@ -71,7 +74,9 @@ export function VideoPlayerPcEpisodeDrawer({
                 <div className="video-pc-episode-drawer__grid">
                     {filteredEpisodes.map((v) => {
                         const rawIndex = data.episodes.findIndex((e) => e.id === v.id);
-                        const locked = !viewerIsVip && v.vip !== 0 && v.locked === 1;
+                        const locked = resolveEpisodeCellLocked
+                            ? resolveEpisodeCellLocked(v)
+                            : !viewerIsVip && v.vip !== 0 && v.locked === 1;
                         return (
                             <button
                                 type="button"
