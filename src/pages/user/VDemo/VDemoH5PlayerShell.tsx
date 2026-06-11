@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
     DouyinFeedPlayer,
@@ -11,6 +11,8 @@ import {
     VideoPlayerH5ColdUnmuteOverlay,
     VideoPlayerLockOverlay,
     VideoPlayerSideActions,
+    VideoPlayerVipCommerce,
+    type VideoPlayerVipCommerceHandle,
     useFeedPlayerColdUnmuteVisible,
     useFeedPlayerTapToUnmute,
     useVideoPlayerBack,
@@ -24,7 +26,6 @@ import {
     ForYouPlayerEpisodeSpeedIntroDrawers,
     useForYouPlayerShare,
 } from '@/pages/user/ForYouPage/forYouPlayerOverlays';
-import { VideoPlayerH5CommerceDrawers } from '@/pages/user/VideoPage/views/VideoPlayerH5CommerceDrawers';
 import { resolveVideoPosterUrl } from '@/pages/user/VideoPage/videoPlayerShareUrl';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
@@ -64,21 +65,13 @@ export function VDemoH5PlayerShell({
     const episodeNo = activeRow?.episode ?? 1;
     const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP(), onEpisodeDetailReady);
     const activeLocked = isVDemoEpisodeLocked(activeRow);
-
-    useEffect(() => {
-        if (!activeRow) {
-            return;
-        }
-        if (activeLocked) {
-            setVip(true);
-        }
-    }, [activeLocked, activeRow?.id]);
+    const viewerIsVip = Boolean(userStore.signed && userStore.isVIP());
+    const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];
     const hasNext = activeIndex < data.episodes.length - 1;
     const episodeRef = useRef<HTMLDivElement>(null);
 
     const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
-    const [vip, setVip] = useState(false);
     const [introductionOpen, setIntroductionOpen] = useState(false);
     const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
 
@@ -122,26 +115,9 @@ export function VDemoH5PlayerShell({
         setFavorite((prev) => !prev);
     }, [data.info.id]);
 
-    const handleToggleVip = useCallback(
-        (ev?: MouseEvent) => {
-            ev?.preventDefault();
-            ev?.stopPropagation();
-            if (userStore.signed && userStore.isVIP()) {
-                return;
-            }
-            setVip((open) => !open);
-        },
-        [userStore],
-    );
-
-    const handleOpenUnlock = useCallback(() => {
-        setVip(true);
-    }, []);
-
-    const handleEmbedPaySuccessEpisodeDetail = useCallback(
+    const handlePaySuccessEpisodeDetail = useCallback(
         (detail: IPlayerEpisode) => {
             applyVDemoEpisodeUnlock(detail);
-            setVip(false);
             onEpisodeUnlocked();
         },
         [onEpisodeUnlocked],
@@ -160,9 +136,10 @@ export function VDemoH5PlayerShell({
             if (listIndex === activeIndex) {
                 return;
             }
+            onIndexChange(listIndex, listIndex > activeIndex ? 'next' : 'prev');
             scrollVDemoFeedToIndex(listIndex);
         },
-        [activeIndex],
+        [activeIndex, onIndexChange],
     );
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
@@ -204,7 +181,10 @@ export function VDemoH5PlayerShell({
                 onTapToUnmute={handleTapToUnmute}
             />
             {activeLocked ? (
-                <VideoPlayerLockOverlay variant="h5" onUnlock={handleOpenUnlock} />
+                <VideoPlayerLockOverlay
+                    variant="h5"
+                    onUnlock={() => vipCommerceRef.current?.openVip()}
+                />
             ) : null}
             <div className="v-demo-h5-chrome pointer-events-none absolute inset-0 z-10">
                 <VideoPlayerSideActions
@@ -213,19 +193,20 @@ export function VDemoH5PlayerShell({
                     favorite={favorite}
                     favoriteCount={data.info.favorite}
                     showEpisodeList
-                    onVipClick={handleToggleVip}
+                    onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
                     onFavoriteClick={handleToggleFavorite}
                     onEpisodeListClick={() => setEpisodeDrawerOpen(true)}
                     onShareClick={() => setShareOpen(true)}
                 />
             </div>
-            <VideoPlayerH5CommerceDrawers
-                vip={vip}
-                onVipOpenChange={setVip}
-                onVipEmbedClose={() => setVip(false)}
-                embedVideoEpisodeRowId={activeRow?.id ?? 0}
-                onEmbedPaySuccessEpisodeDetail={handleEmbedPaySuccessEpisodeDetail}
-                vipHeaderEpisodeUnlockCoins={episode?.unlock_coins}
+            <VideoPlayerVipCommerce
+                ref={vipCommerceRef}
+                variant="h5"
+                episodeRowId={activeRow?.id ?? 0}
+                locked={activeLocked}
+                episode={episode}
+                viewerIsVip={viewerIsVip}
+                onPaySuccessEpisodeDetail={handlePaySuccessEpisodeDetail}
                 shareOpen={shareOpen}
                 onShareOpenChange={setShareOpen}
                 shareEmbedCode={shareEmbedCode}

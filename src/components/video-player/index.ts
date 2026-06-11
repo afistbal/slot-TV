@@ -13,3 +13,12 @@ export { VideoPlayerLockOverlay } from './VideoPlayerLockOverlay';
 export type { VideoPlayerLockOverlayProps } from './VideoPlayerLockOverlay';
 export { useFeedPlayerTapToUnmute } from './useFeedPlayerTapToUnmute';
 export { useFeedPlayerColdUnmuteVisible } from './useFeedPlayerColdUnmuteVisible';
+export { VideoPlayerH5CommerceDrawers } from './VideoPlayerH5CommerceDrawers';
+export type { VideoPlayerH5CommerceDrawersProps } from './VideoPlayerH5CommerceDrawers';
+export { VideoPlayerPcCommerceDialogs } from './VideoPlayerPcCommerceDialogs';
+export type { VideoPlayerPcCommerceDialogsProps } from './VideoPlayerPcCommerceDialogs';
+export { VideoPlayerVipCommerce } from './VideoPlayerVipCommerce';
+export type {
+    VideoPlayerVipCommerceHandle,
+    VideoPlayerVipCommerceProps,
+} from './VideoPlayerVipCommerce';

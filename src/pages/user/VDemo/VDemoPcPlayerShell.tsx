@@ -20,6 +20,8 @@ import {
     VideoPlayerPcEpisodeNav,
     VideoPlayerPcUnmuteOverlay,
     VideoPlayerSideActions,
+    VideoPlayerVipCommerce,
+    type VideoPlayerVipCommerceHandle,
     useFeedPlayerColdUnmuteVisible,
     useFeedPlayerTapToUnmute,
     useVideoPlayerBack,
@@ -35,7 +37,6 @@ import {
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
 } from '@/pages/user/ForYouPage/forYouPlayerOverlays';
-import { VideoPlayerPcCommerceDialogs } from '@/pages/user/VideoPage/views/VideoPlayerPcCommerceDialogs';
 import { measurePcStageShiftPx } from '@/pages/user/VideoPage/videoPlayerPcDrawerStageShift';
 import {
     buildPcEpisodeTabRanges,
@@ -83,15 +84,8 @@ export function VDemoPcPlayerShell({
     const episodeNo = activeRow?.episode ?? 1;
     const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP(), onEpisodeDetailReady);
     const activeLocked = isVDemoEpisodeLocked(activeRow);
-
-    useEffect(() => {
-        if (!activeRow) {
-            return;
-        }
-        if (activeLocked) {
-            setVip(true);
-        }
-    }, [activeLocked, activeRow?.id]);
+    const viewerIsVip = Boolean(userStore.signed && userStore.isVIP());
+    const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];
     const hasPrev = activeIndex > 0;
     const hasNext = activeIndex < data.episodes.length - 1;
@@ -106,7 +100,6 @@ export function VDemoPcPlayerShell({
     const tabRanges = useMemo(() => buildPcEpisodeTabRanges(maxEpisode), [maxEpisode]);
 
     const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
-    const [vip, setVip] = useState(false);
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
@@ -208,22 +201,9 @@ export function VDemoPcPlayerShell({
         setFavorite((prev) => !prev);
     }, [data.info.id]);
 
-    const handleToggleVip = useCallback((ev?: MouseEvent) => {
-        ev?.stopPropagation();
-        if (userStore.signed && userStore.isVIP()) {
-            return;
-        }
-        setVip((open) => !open);
-    }, [userStore]);
-
-    const handleOpenUnlock = useCallback(() => {
-        setVip(true);
-    }, []);
-
-    const handleEmbedPaySuccessEpisodeDetail = useCallback(
+    const handlePaySuccessEpisodeDetail = useCallback(
         (detail: IPlayerEpisode) => {
             applyVDemoEpisodeUnlock(detail);
-            setVip(false);
             onEpisodeUnlocked();
         },
         [onEpisodeUnlocked],
@@ -383,7 +363,9 @@ export function VDemoPcPlayerShell({
                         />
                         {activeLocked ? (
                             <div className="video-player-ui pointer-events-auto absolute inset-0 z-10">
-                                <VideoPlayerLockOverlay onUnlock={handleOpenUnlock} />
+                                <VideoPlayerLockOverlay
+                                    onUnlock={() => vipCommerceRef.current?.openVip()}
+                                />
                             </div>
                         ) : null}
                     </div>
@@ -393,7 +375,7 @@ export function VDemoPcPlayerShell({
                         favorite={favorite}
                         favoriteCount={data.info.favorite}
                         showEpisodeList
-                        onVipClick={handleToggleVip}
+                        onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
                         onFavoriteClick={handleToggleFavorite}
                         onEpisodeListClick={openPcEpisodeDrawer}
                         onShareClick={() => setShareOpen(true)}
@@ -440,13 +422,14 @@ export function VDemoPcPlayerShell({
                 </div>
                 <VideoPlayerPcBackBar episodeNo={episodeNo} onBack={handleBack} />
             </div>
-            <VideoPlayerPcCommerceDialogs
-                vip={vip}
-                onVipOpenChange={setVip}
-                onVipEmbedClose={() => setVip(false)}
-                embedVideoEpisodeRowId={activeRow?.id ?? 0}
-                onEmbedPaySuccessEpisodeDetail={handleEmbedPaySuccessEpisodeDetail}
-                vipHeaderEpisodeUnlockCoins={episode?.unlock_coins}
+            <VideoPlayerVipCommerce
+                ref={vipCommerceRef}
+                variant="pc"
+                episodeRowId={activeRow?.id ?? 0}
+                locked={activeLocked}
+                episode={episode}
+                viewerIsVip={viewerIsVip}
+                onPaySuccessEpisodeDetail={handlePaySuccessEpisodeDetail}
                 shareOpen={shareOpen}
                 onShareOpenChange={setShareOpen}
                 shareEmbedCode={shareEmbedCode}
