@@ -1,120 +1,90 @@
 /**
- * 禁止打开开发者工具（对齐 reelshort / netshort 常见 H5 防护）。
- * 在 index.html 最早加载；localhost / 127.0.0.1 / vite 5173 自动跳过，便于本地调试。
+ * 禁止打开开发者工具（对齐 reelshort `_app` 内 Bn 组件）。
+ * 参考：www.reelshort.com/_next/static/chunks/pages/_app-*.js
+ * reelshort 不做 about:blank / outerWidth 检测，避免 iOS Chrome 误杀。
  */
 (function disableDevtools() {
     'use strict';
 
-    var host = location.hostname;
-    var port = location.port;
-    if (host === 'localhost' || host === '127.0.0.1' || port === '5173') {
-        return;
-    }
-    if (location.pathname.indexOf('/z') === 0) {
-        return;
-    }
-
-    var DEVTOOLS_GAP = 160;
-
-    function onDevtoolsOpen() {
+    function getQueryParam(name) {
         try {
-            location.replace('about:blank');
+            var search = location.search || '';
+            if (!search || search.length < 2) {
+                return null;
+            }
+            return new URLSearchParams(search).get(name);
         } catch (e) {
-            /* noop */
+            return null;
         }
     }
 
-    function blockContextMenu() {
-        document.addEventListener(
-            'contextmenu',
-            function (event) {
-                event.preventDefault();
-            },
-            true,
-        );
+    function getStorageItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return null;
+        }
     }
 
-    function blockShortcuts() {
-        document.addEventListener(
-            'keydown',
-            function (event) {
-                var key = (event.key || '').toLowerCase();
-                if (
-                    key === 'f12' ||
-                    (event.ctrlKey &&
-                        event.shiftKey &&
-                        (key === 'i' || key === 'j' || key === 'c')) ||
-                    (event.metaKey &&
-                        event.altKey &&
-                        (key === 'i' || key === 'j' || key === 'c')) ||
-                    (event.ctrlKey && (key === 'u' || key === 's')) ||
-                    (event.metaKey && key === 'u')
-                ) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-            },
-            true,
-        );
+    function shouldSkip() {
+        var host = location.hostname;
+        var port = location.port;
+
+        // 本地 / vite 调试跳过
+        if (host === 'localhost' || host === '127.0.0.1' || port === '5173') {
+            return true;
+        }
+        if (location.pathname.indexOf('/z') === 0) {
+            return true;
+        }
+
+        // reelshort: development / test / gray 环境跳过
+        if (/^(test|dev|gray)/i.test(host) || host.indexOf('testwww') !== -1) {
+            return true;
+        }
+        // reelshort: ?developer_tools=1 或 localStorage developer_tools=1 跳过
+        if (getQueryParam('developer_tools') === '1') {
+            return true;
+        }
+        if (getStorageItem('developer_tools') === '1') {
+            return true;
+        }
+
+        return false;
     }
 
-    function watchDockedDevtools() {
+    // reelshort t(): 每 1s 执行 Function("debugger")()
+    function startAntiDebugger() {
         setInterval(function () {
-            var widthGap = window.outerWidth - window.innerWidth;
-            var heightGap = window.outerHeight - window.innerHeight;
-            if (widthGap > DEVTOOLS_GAP || heightGap > DEVTOOLS_GAP) {
-                onDevtoolsOpen();
-            }
-        }, 500);
-    }
-
-    function watchConsoleInspector() {
-        var bait = new Image();
-        Object.defineProperty(bait, 'id', {
-            get: function () {
-                onDevtoolsOpen();
-            },
-        });
-        setInterval(function () {
-            console.log('%c', bait);
+            Function('debugger')();
         }, 1000);
     }
 
-    function silenceConsole() {
-        var noop = function () {};
-        var methods = [
-            'log',
-            'debug',
-            'info',
-            'warn',
-            'error',
-            'table',
-            'trace',
-            'dir',
-            'group',
-            'groupCollapsed',
-            'groupEnd',
-            'clear',
-        ];
-        for (var i = 0; i < methods.length; i += 1) {
-            try {
-                console[methods[i]] = noop;
-            } catch (e) {
-                /* noop */
+    // reelshort n(): 禁右键 + 拦截 DevTools 快捷键
+    function blockDevtoolsShortcuts() {
+        document.oncontextmenu = function () {
+            return false;
+        };
+        document.addEventListener('keydown', function (event) {
+            if (
+                event.keyCode === 123 ||
+                (event.ctrlKey && event.shiftKey && event.keyCode === 73) ||
+                (event.altKey && event.metaKey && event.keyCode === 73) ||
+                (event.shiftKey && event.keyCode === 121)
+            ) {
+                event.preventDefault();
+                return false;
             }
+        });
+    }
+
+    try {
+        if (shouldSkip()) {
+            return;
         }
+        startAntiDebugger();
+        blockDevtoolsShortcuts();
+    } catch (e) {
+        /* noop */
     }
-
-    function antiDebuggerLoop() {
-        setInterval(function () {
-            (function () {}.constructor('debugger')());
-        }, 50);
-    }
-
-    blockContextMenu();
-    blockShortcuts();
-    watchDockedDevtools();
-    watchConsoleInspector();
-    antiDebuggerLoop();
-    silenceConsole();
 })();
