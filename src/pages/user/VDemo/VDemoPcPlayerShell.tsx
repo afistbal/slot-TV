@@ -83,7 +83,7 @@ export function VDemoPcPlayerShell({
     const activeRow = data.episodes[activeIndex];
     const episodeNo = activeRow?.episode ?? 1;
     const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP(), onEpisodeDetailReady);
-    const activeLocked = isVDemoEpisodeLocked(activeRow);
+    const activeLocked = isVDemoEpisodeLocked(activeRow, true);
     const viewerIsVip = Boolean(userStore.signed && userStore.isVIP());
     const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];

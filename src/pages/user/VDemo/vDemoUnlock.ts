@@ -7,6 +7,8 @@ import { getVDemoEpisodeDetail, patchVDemoEpisodeDetailUnlock } from './fetchVDe
 /** lock 展示：movie/episode > batch > info.locked（与 buildVDemoFeedItems 一致，不用「无 url」推断） */
 export function resolveVDemoRowLocked(
     row: IPlayerData['episodes'][number] | undefined,
+    /** 为 true 时无 API/batch 详情则视为未锁定（避免列表 row.locked 兜底误弹套餐） */
+    confirmedOnly = false,
 ): boolean {
     if (!row) {
         return false;
@@ -19,13 +21,17 @@ export function resolveVDemoRowLocked(
     if (batchDetail != null) {
         return isEpisodeDetailLocked(batchDetail.lock);
     }
+    if (confirmedOnly) {
+        return false;
+    }
     return row.locked === 1;
 }
 
 export function isVDemoEpisodeLocked(
     row: IPlayerData['episodes'][number] | undefined,
+    confirmedOnly = false,
 ): boolean {
-    return resolveVDemoRowLocked(row);
+    return resolveVDemoRowLocked(row, confirmedOnly);
 }
 
 export function applyVDemoEpisodeUnlock(ep: IPlayerEpisode): void {

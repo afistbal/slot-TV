@@ -34,10 +34,13 @@ type ShareProps = {
 
 export type VideoPlayerVipCommerceProps = {
     variant: 'h5' | 'pc';
-    /** ????row id???????? */
+    /** 当前集 episodes 行 id（movie/info） */
     episodeRowId: number;
     /**
-     * ???????????/VIP ??????     * ????????vdemo ??`isVDemoEpisodeLocked(activeRow)`??     * ??true ??`viewerIsVip === false` ?????? VIP/??????     */
+     * 当前集是否锁定（展示锁层 / 禁播）。
+     * vdemo 侧传 `isVDemoEpisodeLocked(activeRow)`；
+     * 为 true 且 `viewerIsVip === false` 时展示 VIP/解锁入口。
+     */
     locked: boolean;
     episode?: IPlayerEpisode;
     viewerIsVip: boolean;
@@ -101,14 +104,14 @@ export const VideoPlayerVipCommerce = forwardRef<
         setVip(false);
     }, [episodeRowId]);
 
-    /** ??VIP ?????? ??????rs-shopping ??????????? VIP ??????*/
+    /** 非 VIP 且 locked 时自动弹出 rs-shopping；VIP 或解锁后关闭 */
     useEffect(() => {
         if (viewerIsVip) {
             setVip(false);
             return;
         }
         setVip(locked);
-    }, [locked, episodeRowId, episode?.id, episode?.lock, viewerIsVip]);
+    }, [locked, episodeRowId, viewerIsVip]);
 
     const handlePaySuccess = useCallback(
         (detail: IPlayerEpisode) => {
