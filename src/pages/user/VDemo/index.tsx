@@ -59,6 +59,7 @@ export default function VDemoPage() {
     const location = useLocation();
     const params = useParams();
     const navigate = useNavigate();
+    const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
     const viewerIsVip = useUserStore((s) => s.isVIP());
     const movieId = Number(params['id']);
@@ -84,6 +85,8 @@ export default function VDemoPage() {
     const activeIndexRef = useRef(0);
     const prefetchCountRef = useRef(0);
     const foryouResumeResolvedRef = useRef(false);
+    /** 仅首进读一次；切集 replace 导航会清空 location.state，不能放进 effect 依赖 */
+    const mountLocationStateRef = useRef(location.state);
     const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
     if (mountFlagsRef.current == null) {
         const flags = resolveForDemoMountAutoplayFlags(location.state);
@@ -128,6 +131,10 @@ export default function VDemoPage() {
     }, []);
 
     useEffect(() => {
+        if (!sessionBootstrapReady) {
+            return;
+        }
+
         let cancelled = false;
         clearVDemoEpisodeCache();
         clearVDemoActiveEpisodeCache();
@@ -166,7 +173,11 @@ export default function VDemoPage() {
             const startRow = sortedEpisodes[startIndex];
             if (!foryouResumeResolvedRef.current && startRow != null) {
                 setForyouResumeTimeSec(
-                    resolveForyouIncomingResumeSec(movieId, startRow.id, location.state),
+                    resolveForyouIncomingResumeSec(
+                        movieId,
+                        startRow.id,
+                        mountLocationStateRef.current,
+                    ),
                 );
                 setForyouResumeEpisodeRowId(startRow.id);
                 foryouResumeResolvedRef.current = true;
@@ -208,7 +219,7 @@ export default function VDemoPage() {
             clearVDemoEpisodeCache();
             clearVDemoActiveEpisodeCache();
         };
-    }, [location.state, movieId]);
+    }, [movieId, sessionBootstrapReady]);
 
     const handleIndexChange = useCallback(
         (index: number, _direction?: FeedNavigateDirection) => {
@@ -221,12 +232,15 @@ export default function VDemoPage() {
             const list = episodesRef.current;
             const row = list[index];
             if (row) {
-                navigate(buildVDemoPath(movieIdRef.current, Number(row.episode)), { replace: true });
+                navigate(buildVDemoPath(movieIdRef.current, Number(row.episode)), {
+                    replace: true,
+                    state: location.state,
+                });
             }
 
             syncWindowRef.current(index);
         },
-        [navigate],
+        [location.state, navigate],
     );
 
     const pcTopNav = isDesktop ? (

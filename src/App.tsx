@@ -28,7 +28,6 @@ import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
 import { messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
-import { isVDemoPathname } from './constants/vDemoRoute';
 
 import LayoutUser from './layouts/user';
 import ShareToVideoRedirect from './pages/user/ShareToVideoRedirect';
@@ -463,16 +462,9 @@ function App() {
         }
         const token = tokenFromQuery || localStorage.getItem('token');
 
-        /** v-demo 实验壳自举写死 token，不走 login/anonymous */
-        const isFeedDemoShell = isVDemoPathname(window.location.pathname);
-
         /** 与会话接口不依赖 `config` 响应体，与 `config` 并行可显著缩短首屏可交互前总等待 */
         void (async () => {
             try {
-                if (isFeedDemoShell) {
-                    useRootStore.getState().setSessionBootstrapReady(true);
-                    return;
-                }
                 if (token) {
                     const ok = await refreshSessionFromStoredToken();
                     if (loadGen !== loadDataGenerationRef.current) {

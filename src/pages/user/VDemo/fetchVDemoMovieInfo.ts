@@ -4,8 +4,6 @@
 import { api } from '@/api';
 import type { IPlayerData } from '@/types/videoPlayer';
 
-import { ensureVDemoBootstrap } from './vDemoBootstrap';
-
 export type VDemoPlayerData = IPlayerData & {
     info: IPlayerData['info'] & {
         /** URL 无 `:episode` 时的起播集序号 */
@@ -26,13 +24,6 @@ export async function fetchVDemoMovieInfo(
     | { ok: true; data: VDemoPlayerData }
     | { ok: false; message: string }
 > {
-    try {
-        await ensureVDemoBootstrap();
-    } catch (e) {
-        const message = e instanceof Error ? e.message : 'bootstrap failed';
-        return { ok: false, message };
-    }
-
     const result = await api<VDemoPlayerData>('movie/info', {
         data: { id: movieId },
         loading: false,

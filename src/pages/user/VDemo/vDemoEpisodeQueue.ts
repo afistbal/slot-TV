@@ -1,6 +1,6 @@
 /**
 
- * v-demo 编排：batch 驱动播放；movie/episode 仅权限/扣费，不阻塞播放。
+ * v-demo 编排：batch 驱动播放；movie/episode 由壳层 useVDemoActiveEpisode 拉取。
 
  */
 
@@ -12,37 +12,9 @@ import { isEpisodeDetailLocked } from '@/pages/user/VideoPage/videoPlayerUtils';
 
 
 
-import { fetchVDemoActiveEpisode } from './fetchVDemoEpisode';
-
 import { fetchVDemoEpisodesBatch, getVDemoEpisodeDetail } from './fetchVDemoEpisodesBatch';
 
 import { getVDemoPreloadWindowRowIds } from './vDemoPreloadWindow';
-
-
-
-/** active 集：movie/episode（lock / auto_unlock），后台执行，不影响 url */
-
-export function syncVDemoPermission(
-
-    episodes: IPlayerData['episodes'],
-
-    activeIndex: number,
-
-    viewerIsVip: boolean,
-
-): void {
-
-    const row = episodes[activeIndex];
-
-    if (!row) {
-
-        return;
-
-    }
-
-    void fetchVDemoActiveEpisode(row.id, viewerIsVip);
-
-}
 
 
 
@@ -74,7 +46,7 @@ export async function syncVDemoBatchPreload(
 
 
 
-/** 滑集：先 batch（await），episode 后台 fire-and-forget */
+/** 滑集：batch 预加载；movie/episode 由壳层 useVDemoActiveEpisode 单独拉取 */
 
 export async function syncVDemoOnActiveIndex(
 
@@ -89,8 +61,6 @@ export async function syncVDemoOnActiveIndex(
 ): Promise<void> {
 
     await syncVDemoBatchPreload(movieId, episodes, activeIndex, viewerIsVip);
-
-    syncVDemoPermission(episodes, activeIndex, viewerIsVip);
 
 }
 

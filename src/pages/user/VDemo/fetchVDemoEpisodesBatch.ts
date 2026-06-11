@@ -99,11 +99,12 @@ export async function fetchVDemoEpisodesBatch(
     episodeRowIds: number[],
 ): Promise<void> {
     const uniqueIds = [...new Set(episodeRowIds.map((id) => Number(id)).filter((id) => id > 0))];
-    if (!uniqueIds.length) {
+    const missingIds = uniqueIds.filter((id) => !detailCache.has(id));
+    if (!missingIds.length) {
         return;
     }
 
-    const requestKey = batchRequestKey(movieId, uniqueIds);
+    const requestKey = batchRequestKey(movieId, missingIds);
     const existing = inflightByKey.get(requestKey);
     if (existing) {
         await existing;
@@ -124,7 +125,7 @@ export async function fetchVDemoEpisodesBatch(
         }
 
         const maps = extractBatchMaps(result.d);
-        for (const rowId of uniqueIds) {
+        for (const rowId of missingIds) {
             const raw = maps[String(rowId)];
             if (!raw) {
                 continue;
