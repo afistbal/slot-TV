@@ -7,7 +7,7 @@ import { apiBaseURL } from './api/baseURL';
 import { encryptRequestPayload } from './lib/requestEncryption';
 
 /** POST 加密：`VITE_API_REQUEST_ENCRYPTION=true|false` 可覆盖；未设则 dev 加密、打包线上明文 */
-const API_REQUEST_ENCRYPTION_ENABLED = false
+const API_REQUEST_ENCRYPTION_ENABLED = true
 
 function resolvePostPayload(
     path: string,
