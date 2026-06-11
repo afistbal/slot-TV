@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 
 import { buildVDemoPath } from '@/constants/vDemoRoute';
 import { type DouyinFeedVideoItem, type FeedNavigateDirection } from '@/components/douyin-feed-player';
@@ -14,6 +14,13 @@ import type { IPlayerData } from '@/types/videoPlayer';
 import { clearVDemoActiveEpisodeCache } from './fetchVDemoEpisode';
 import { clearVDemoEpisodeCache } from './fetchVDemoEpisodesBatch';
 import { fetchVDemoMovieInfo, type VDemoPlayerData } from './fetchVDemoMovieInfo';
+import { applyForDemoMountMutePolicy } from '@/pages/user/ForDemo/forDemoApplyMountMutePolicy';
+import {
+    resolveForDemoMountAutoplayFlags,
+    type ForDemoMountAutoplayFlags,
+} from '@/pages/user/ForDemo/forDemoAutoplayPolicy';
+import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
+
 import { buildVDemoFeedItems, syncVDemoOnActiveIndex } from './vDemoEpisodeQueue';
 import { VDemoH5PlayerShell } from './VDemoH5PlayerShell';
 import { VDemoPcPlayerShell } from './VDemoPcPlayerShell';
@@ -48,6 +55,7 @@ function resolveInitialEpisodeIndex(episodes: IPlayerData['episodes'], playEpiso
  */
 export default function VDemoPage() {
     const isDesktop = useMinWidth768();
+    const location = useLocation();
     const params = useParams();
     const navigate = useNavigate();
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
@@ -72,6 +80,13 @@ export default function VDemoPage() {
     viewerIsVipRef.current = viewerIsVip;
     const activeIndexRef = useRef(0);
     const prefetchCountRef = useRef(0);
+    const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
+    if (mountFlagsRef.current == null) {
+        const flags = resolveForDemoMountAutoplayFlags(location.state);
+        mountFlagsRef.current = flags;
+        useForDemoColdUnmuteStore.getState().initFromMount(flags);
+        applyForDemoMountMutePolicy(flags);
+    }
 
     const refreshItems = useCallback(() => {
         setItems(buildVDemoFeedItems(episodesRef.current));
@@ -184,6 +199,9 @@ export default function VDemoPage() {
         (index: number, _direction?: FeedNavigateDirection) => {
             activeIndexRef.current = index;
             setActiveIndex(index);
+            if (index > 0) {
+                useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
+            }
 
             const list = episodesRef.current;
             const row = list[index];

@@ -1,16 +1,36 @@
 import { isForDemoPathname } from '@/constants/forDemoRoute';
+import { isVDemoPathname } from '@/constants/vDemoRoute';
 import {
     canNavigateBack,
     isDocumentReload,
 } from '@/pages/user/VideoPage/videoPlayerUtils';
 
 const FOR_DEMO_RELOAD_LANDING_KEY = 'for-demo-reload-landing';
+/** 同文档会话内 for-demo 冷蒙层已展示/离开过，SPA 返回不再当冷启动 */
+const FOR_DEMO_COLD_SESSION_CONSUMED_KEY = 'for-demo-cold-session-consumed';
 
-/** 仅在 /for-demo F5：标记冷启动（其它页 reload 不误伤） */
+export function markForDemoColdSessionConsumed(): void {
+    try {
+        sessionStorage.setItem(FOR_DEMO_COLD_SESSION_CONSUMED_KEY, '1');
+    } catch {
+        // ignore
+    }
+}
+
+export function isForDemoColdSessionConsumed(): boolean {
+    try {
+        return sessionStorage.getItem(FOR_DEMO_COLD_SESSION_CONSUMED_KEY) === '1';
+    } catch {
+        return false;
+    }
+}
+
+/** 仅在 /for-demo、/v-demo F5：标记冷启动（其它页 reload 不误伤） */
 if (
     typeof window !== 'undefined' &&
     isDocumentReload() &&
-    isForDemoPathname(window.location.pathname)
+    (isForDemoPathname(window.location.pathname) ||
+        isVDemoPathname(window.location.pathname))
 ) {
     try {
         sessionStorage.setItem(FOR_DEMO_RELOAD_LANDING_KEY, '1');
@@ -57,6 +77,9 @@ export function isForDemoFeedColdAutoplay(
         return true;
     }
     if (fromHomeVideoPlayback) {
+        return false;
+    }
+    if (isForDemoColdSessionConsumed()) {
         return false;
     }
     return !canNavigateBack();

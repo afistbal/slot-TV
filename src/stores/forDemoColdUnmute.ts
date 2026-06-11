@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 
-import type { ForDemoMountAutoplayFlags } from '@/pages/user/ForDemo/forDemoAutoplayPolicy';
+import {
+    markForDemoColdSessionConsumed,
+    type ForDemoMountAutoplayFlags,
+} from '@/pages/user/ForDemo/forDemoAutoplayPolicy';
 
 type ForDemoColdUnmuteState = {
     fromHomeVideoPlayback: boolean;
@@ -27,16 +30,20 @@ export const useForDemoColdUnmuteStore = create<ForDemoColdUnmuteState>((set) =>
             coldUnmuteOverlay: flags.feedColdAutoplay,
             overlayDismissed: false,
         }),
-    dismissOverlay: () =>
+    dismissOverlay: () => {
+        markForDemoColdSessionConsumed();
         set({
             overlayDismissed: true,
             coldUnmuteOverlay: false,
             feedColdAutoplay: false,
-        }),
-    consumeColdAutoplay: () =>
+        });
+    },
+    consumeColdAutoplay: () => {
+        markForDemoColdSessionConsumed();
         set({
             feedColdAutoplay: false,
             coldUnmuteOverlay: false,
             overlayDismissed: true,
-        }),
+        });
+    },
 }));

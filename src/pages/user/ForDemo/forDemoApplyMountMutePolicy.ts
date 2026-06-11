@@ -2,7 +2,10 @@ import { lockUserAudio, unlockUserAudio } from '@/components/douyin-feed-player/
 import { writeMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
 import { hasVideoSessionUserUnmuted } from '@/pages/user/VideoPage/videoSessionMute';
 
-import type { ForDemoMountAutoplayFlags } from './forDemoAutoplayPolicy';
+import {
+    isForDemoColdSessionConsumed,
+    type ForDemoMountAutoplayFlags,
+} from './forDemoAutoplayPolicy';
 
 /** 首 mount 前写入 douyin-feed-player 静音偏好（冷启静音 / 站内进入有声） */
 export function applyForDemoMountMutePolicy(flags: ForDemoMountAutoplayFlags): void {
@@ -11,7 +14,11 @@ export function applyForDemoMountMutePolicy(flags: ForDemoMountAutoplayFlags): v
         lockUserAudio();
         return;
     }
-    if (flags.fromHomeVideoPlayback || hasVideoSessionUserUnmuted()) {
+    if (
+        flags.fromHomeVideoPlayback ||
+        hasVideoSessionUserUnmuted() ||
+        isForDemoColdSessionConsumed()
+    ) {
         writeMutedPreference(false);
         unlockUserAudio();
     }

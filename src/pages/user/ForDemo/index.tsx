@@ -15,6 +15,7 @@ import { ForDemoPcPlayerShell } from './ForDemoPcPlayerShell';
 import { useForDemoFeed } from './useForDemoFeed';
 import { applyForDemoMountMutePolicy } from './forDemoApplyMountMutePolicy';
 import {
+    markForDemoColdSessionConsumed,
     resolveForDemoMountAutoplayFlags,
     type ForDemoMountAutoplayFlags,
 } from './forDemoAutoplayPolicy';
@@ -56,6 +57,7 @@ export default function ForDemoPage() {
         useRootStore.getState().setTheme('dark');
         return () => {
             useRootStore.getState().setTheme('light');
+            markForDemoColdSessionConsumed();
         };
     }, []);
 

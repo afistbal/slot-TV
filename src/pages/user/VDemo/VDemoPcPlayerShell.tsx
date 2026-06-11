@@ -16,11 +16,13 @@ import { bindWheelNavigate } from '@/components/douyin-feed-player/feed/wheelNav
 import { FeedPlayerBottomInfo } from '@/components/feed';
 import {
     VideoPlayerLockOverlay,
+    VideoPlayerPcBackBar,
     VideoPlayerPcEpisodeNav,
     VideoPlayerPcUnmuteOverlay,
     VideoPlayerSideActions,
     useFeedPlayerColdUnmuteVisible,
     useFeedPlayerTapToUnmute,
+    useVideoPlayerBack,
 } from '@/components/video-player';
 import { cn } from '@/lib/utils';
 import { api } from '@/api';
@@ -232,6 +234,7 @@ export function VDemoPcPlayerShell({
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+    const handleBack = useVideoPlayerBack();
 
     useEffect(() => {
         const stage = videoStageRef.current;
@@ -412,6 +415,7 @@ export function VDemoPcPlayerShell({
                         onNext={handleFeedNext}
                     />
                 </div>
+                <VideoPlayerPcBackBar episodeNo={episodeNo} onBack={handleBack} />
             </div>
             <VideoPlayerPcCommerceDialogs
                 vip={vip}

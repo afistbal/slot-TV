@@ -7,11 +7,13 @@ import {
 } from '@/components/douyin-feed-player';
 import { FeedPlayerBottomInfo } from '@/components/feed';
 import {
+    VideoPlayerH5BackBar,
     VideoPlayerH5ColdUnmuteOverlay,
     VideoPlayerLockOverlay,
     VideoPlayerSideActions,
     useFeedPlayerColdUnmuteVisible,
     useFeedPlayerTapToUnmute,
+    useVideoPlayerBack,
 } from '@/components/video-player';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
@@ -148,9 +150,11 @@ export function VDemoH5PlayerShell({
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+    const handleBack = useVideoPlayerBack();
 
     return (
         <div className="v-demo-h5-shell relative h-full w-full">
+            <VideoPlayerH5BackBar episodeNo={episodeNo} onBack={handleBack} />
             <DouyinFeedPlayer
                 className="v-demo-h5-player h-full w-full"
                 items={playerItems}
@@ -175,10 +179,10 @@ export function VDemoH5PlayerShell({
                 visible={coldUnmuteVisible && !activeLocked}
                 onTapToUnmute={handleTapToUnmute}
             />
-            <div className="video-player-ui pointer-events-none absolute inset-0 z-[15] w-full h-full">
-                {activeLocked ? (
-                    <VideoPlayerLockOverlay variant="h5" onUnlock={handleOpenUnlock} />
-                ) : null}
+            {activeLocked ? (
+                <VideoPlayerLockOverlay variant="h5" onUnlock={handleOpenUnlock} />
+            ) : null}
+            <div className="v-demo-h5-chrome pointer-events-none absolute inset-0 z-10">
                 <VideoPlayerSideActions
                     variant="h5"
                     showVip={!userStore.isVIP()}
