@@ -30,6 +30,8 @@ interface ImportMetaEnv {
   readonly VITE_APP_FLAG?: string;
   /** POST 请求加密：`true` / `false`；未设则 dev 加密、build 明文 */
   readonly VITE_API_REQUEST_ENCRYPTION?: string;
+  /** 设为 `true` 在非 localhost 环境也启用 disable-devtools.js（默认 prod 且非 5173 端口已启用） */
+  readonly VITE_DISABLE_DEVTOOLS?: string;
 }
 
 interface ImportMeta {

@@ -151,19 +151,6 @@ export function FeedVerticalPcPlayerShell({
         [beginClosePcDrawer],
     );
 
-    const openPcIntroDrawer = useCallback(
-        (ev?: MouseEvent) => {
-            ev?.stopPropagation();
-            if (pcDrawerPanel === 'intro') {
-                beginClosePcDrawer();
-                return;
-            }
-            pcDrawerClosingRef.current = false;
-            setPcDrawerPanel('intro');
-        },
-        [beginClosePcDrawer, pcDrawerPanel],
-    );
-
     const openPcEpisodeDrawer = useCallback(
         (ev?: MouseEvent) => {
             ev?.stopPropagation();

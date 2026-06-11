@@ -33,5 +33,5 @@
       "vite-plugin-pwa/client"
     ]
   },
-  "include": ["src", "c:/Users/Administrator/Downloads/www.douyin.com (2)/douyin-feed-player"]
+  "include": ["src"]
 }

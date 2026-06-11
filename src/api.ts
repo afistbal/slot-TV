@@ -4,10 +4,21 @@ import { useLoadingStore } from './stores/loading';
 import { useUserStore } from './stores/user';
 import { UAParser } from 'ua-parser-js';
 import { apiBaseURL } from './api/baseURL';
-import { encryptRequestPayload } from './lib/requestEncryption';
+import { encryptRequestPayload, isWebCryptoAvailable } from './lib/requestEncryption';
 
-/** POST 加密：`VITE_API_REQUEST_ENCRYPTION=true|false` 可覆盖；未设则 dev 加密、打包线上明文 */
-const API_REQUEST_ENCRYPTION_ENABLED = true
+/** POST 加密：`VITE_API_REQUEST_ENCRYPTION=true|false` 可覆盖；默认可用 Web Crypto 时加密（localhost/https），局域网 IP http 自动明文 */
+function resolveApiRequestEncryptionEnabled(): boolean {
+    const flag = import.meta.env.VITE_API_REQUEST_ENCRYPTION;
+    if (flag === 'false') {
+        return false;
+    }
+    if (flag === 'true') {
+        return isWebCryptoAvailable();
+    }
+    return isWebCryptoAvailable();
+}
+
+let loggedInsecureCryptoFallback = false;
 
 function resolvePostPayload(
     path: string,
@@ -74,7 +85,13 @@ export async function api<T = TData>(path: string, options?: {
             ...options?.headers,
         };
 
-        const useEncryption = API_REQUEST_ENCRYPTION_ENABLED;
+        const useEncryption = resolveApiRequestEncryptionEnabled();
+        if (!useEncryption && import.meta.env.DEV && !loggedInsecureCryptoFallback) {
+            loggedInsecureCryptoFallback = true;
+            console.warn(
+                '[api] Web Crypto 不可用（常见于 http://局域网IP），POST 请求将以明文发送；localhost 或 https 下会自动加密',
+            );
+        }
         let requestBody: string | undefined;
 
         if (useEncryption) {
@@ -186,12 +203,17 @@ export async function report(content: string) {
 export async function upload(file: File): Promise<string> {
     const form = new FormData();
     const result = await api('oss/form');
-    const buffer = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
-    const hash = Array.from(new Uint8Array(buffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    const suffix = file.name.split('.').pop();
-    const fileName = `${hash}.${suffix}`;
+    let fileName: string;
+    if (isWebCryptoAvailable()) {
+        const buffer = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+        const hash = Array.from(new Uint8Array(buffer))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+        const suffix = file.name.split('.').pop();
+        fileName = `${hash}.${suffix}`;
+    } else {
+        fileName = file.name.replace(/[^\w.-]+/g, '_');
+    }
     form.append('key', fileName);
     form.append('file', file);
 

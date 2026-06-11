@@ -19,8 +19,12 @@ export type EncryptedRequestPayload = {
     body: string;
 };
 
+export function isWebCryptoAvailable(): boolean {
+    return typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle != null;
+}
+
 function browserCrypto(): Crypto {
-    if (!globalThis.crypto?.subtle) {
+    if (!isWebCryptoAvailable()) {
         throw new Error('Web Crypto API is not available');
     }
 

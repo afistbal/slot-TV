@@ -27,7 +27,6 @@ import { useUserStore } from '@/stores/user';
 import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForYouPage/foryouFeedUtils';
 import { navigateFromForDemoWatchFull } from '@/pages/user/ForYouPage/foryouNavigateToVideo';
 import {
-    ForYouPlayerH5CommerceDrawers,
     ForYouPlayerPcCommerceDialogs,
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,

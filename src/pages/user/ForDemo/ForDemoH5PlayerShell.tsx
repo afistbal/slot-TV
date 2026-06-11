@@ -199,7 +199,7 @@ export function ForDemoH5PlayerShell({
                 onSelectEpisodeIndex={() => undefined}
                 hideSpeedDrawer
                 introduction={introductionOpen}
-                onIntroductionOpenChange={setIntroductionOpen}
+                onIntroductionOpenChange={(open) => setIntroductionOpen(open ?? false)}
                 onCloseIntroductionLinks={() => setIntroductionOpen(false)}
                 hideEpisodeDrawer
                 tagsFromBackendOnly
