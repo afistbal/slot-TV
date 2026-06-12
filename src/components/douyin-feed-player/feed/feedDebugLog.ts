@@ -1,5 +1,7 @@
 /** DEV：环形缓冲 + 单行日志；全量导出点页面「日志」或 __douyinFeedLogCopy() */
 
+import { shouldShowFeedLogExportChip } from './feedLogHost';
+
 const ENABLED = import.meta.env.DEV;
 const MAX_ENTRIES = 400;
 
@@ -159,5 +161,7 @@ if (ENABLED && typeof window !== 'undefined') {
     window.__douyinFeedLogCopy = copyFeedDbgLog;
     window.__douyinFeedLogDownload = downloadFeedDbgLog;
     window.__douyinFeedLogExport = exportFeedDbgLog;
-    console.log('[douyin-feed] 日志缓冲已开；点左下角「日志」下载 txt');
+    if (shouldShowFeedLogExportChip()) {
+        console.log('[douyin-feed] 日志缓冲已开；点左下角「日志」下载 txt');
+    }
 }

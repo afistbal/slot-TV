@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { dumpFeedDbgLog, exportFeedDbgLog } from './feedDebugLog';
+import { shouldShowFeedLogExportChip } from './feedLogHost';
 
 /** DEV：下载环形缓冲日志 txt */
 export function FeedLogExportChip() {
@@ -13,7 +14,7 @@ export function FeedLogExportChip() {
         window.setTimeout(() => setHint(null), 2500);
     }, []);
 
-    if (!import.meta.env.DEV) {
+    if (!shouldShowFeedLogExportChip()) {
         return null;
     }
 
