@@ -253,4 +253,4 @@ PC 上 `preferSoundAutoplay` 在 legacy 路径下更容易保持有声。
 | 日期 | 说明 |
 |------|------|
 | 2026-06-12 | 初版：对照 slot-TV ForYouPage + VideoPage 梳理 ended 连播链路 |
-| 2026-06-12 | slot_old：`markChainAutoplayFromEnded` + iOS NotAllowedError 静音重试（`createXgPlayer.ts`） |
+| 2026-06-12 | slot_old：`chainAutoplay.ts` + iOS 有声连播重试（`createXgPlayer.ts` / `iosChainPlayback.ts`） |

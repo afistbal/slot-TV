@@ -20,6 +20,8 @@ import {
     logNativeAspectWhenActive,
 } from '../playback/videoAspectFit';
 
+import { attachFeedVideoMp4Diag } from '../feed/feedVideoMp4Log';
+import { feedDbg } from '../feed/feedDebugLog';
 import { resolvePlaybackMode } from '../playback/pickPlaybackMode';
 
 import {
@@ -58,6 +60,7 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
     const slotIndexRef = useRef(options.slotIndex ?? 0);
     const switchGenerationRef = useRef(0);
     const mseErrorDisposeRef = useRef<(() => void) | null>(null);
+    const videoDiagDisposeRef = useRef<(() => void) | null>(null);
 
     const onPlayerChangeRef = useRef(options.onPlayerChange);
     const onModeChangeRef = useRef(options.onPlaybackModeChange);
@@ -160,6 +163,8 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
     }, []);
 
     const teardownHelpers = useCallback(() => {
+        videoDiagDisposeRef.current?.();
+        videoDiagDisposeRef.current = null;
         mseErrorDisposeRef.current?.();
         mseErrorDisposeRef.current = null;
         aspectLogDisposeRef.current?.();
@@ -262,11 +267,24 @@ export function useDouyinPlayerSlot(options: UseDouyinPlayerSlotOptions) {
             notifyPlayerChange(handle.player);
             bindEndedListener(handle.player);
 
+            feedDbg('player init', {
+                slot: slotIndexRef.current,
+                mode: handle.mode,
+                urlTail: url.slice(-64),
+                active: isActiveRef.current,
+            });
+
             const slotEl = getSlotEl();
             aspectFitRef.current = attachVideoAspectFit(handle.player, slotEl);
 
             const video = handle.player.video as HTMLVideoElement | undefined;
             if (video) {
+                videoDiagDisposeRef.current?.();
+                videoDiagDisposeRef.current = attachFeedVideoMp4Diag(
+                    video,
+                    slotIndexRef.current,
+                    () => isActiveRef.current,
+                );
                 helpersRef.current = attachPlaybackHelpers({
                     video,
                     mode: handle.mode,

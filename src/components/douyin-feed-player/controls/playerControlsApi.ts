@@ -1,7 +1,10 @@
 import type Player from 'xgplayer';
 
 import { PLAYBACK_SPEEDS } from '../constants';
-import { lockUserAudio, markUserGesture, unlockUserAudio } from '../feed/userGesturePlay';
+import { feedDbg } from '../feed/feedDebugLog';
+import { feedVideoMp4FromPlayer } from '../feed/feedVideoMp4Log';
+import { markCodedPlay } from '../feed/feedPlayAttribution';
+import { isUserGestureActive, lockUserAudio, markUserGesture, unlockUserAudio } from '../feed/userGesturePlay';
 import { cancelScheduledActivePlay, setUserHoldPause } from '../player/createXgPlayer';
 import { resolveFeedSlideEl } from './resolveFeedSlideEl';
 import { writeMutedPreference } from './mutePreference';
@@ -51,6 +54,9 @@ export async function togglePlayerPlay(player: Player | null): Promise<boolean> 
     if (isPlayerPaused(player)) {
         setUserHoldPause(false);
         cancelScheduledActivePlay();
+        markCodedPlay('user-tap');
+        feedDbg('user play tap', { gesture: isUserGestureActive() });
+        feedVideoMp4FromPlayer('user play tap mp4', player);
         await player.play().catch(() => undefined);
         return true;
     }

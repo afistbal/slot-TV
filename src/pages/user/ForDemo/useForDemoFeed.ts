@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { DouyinFeedVideoItem } from '@/components/douyin-feed-player';
+import { readMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
+import { feedDbg } from '@/components/douyin-feed-player/feed/feedDebugLog';
+import { detectPlatform } from '@/components/douyin-feed-player/platform/detectPlatform';
+import { isIosChainWantPlay } from '@/components/douyin-feed-player/player/createXgPlayer';
 import {
     FORYOU_DEFAULT_PER_PAGE,
     FORYOU_LOAD_MORE_PREFETCH_FROM_END,
@@ -56,8 +60,25 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
     staticBaseRef.current = staticBase;
 
     const applyList = useCallback((rows: IForYouFeedItem[], nextHasMore: boolean) => {
+        const base = staticBaseRef.current;
+        const items = mapRowsToPlayerItems(rows, base);
+        feedDbg('feed list apply', {
+            count: rows.length,
+            playerItems: items.length,
+            hasMore: nextHasMore,
+        });
+        rows.forEach((row, index) => {
+            const url = resolveFeedVideoUrl(row, base);
+            feedDbg('feed item mp4', {
+                index,
+                ep_id: row.ep_id,
+                hasVideo: Boolean(url),
+                videoTail: url ? url.slice(-48) : '',
+                rawVideo: row.video ? String(row.video).slice(-40) : '',
+            });
+        });
         setList(rows);
-        setPlayerItems(mapRowsToPlayerItems(rows, staticBaseRef.current));
+        setPlayerItems(items);
         setHasMore(nextHasMore);
     }, []);
 
@@ -127,7 +148,24 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
             if (index < Math.max(0, list.length - FORYOU_LOAD_MORE_PREFETCH_FROM_END)) {
                 return;
             }
-            void loadMore();
+
+            const runLoadMore = () => {
+                if (isIosChainWantPlay()) {
+                    feedDbg('loadmore defer chain', { index });
+                    window.setTimeout(runLoadMore, 2000);
+                    return;
+                }
+                void loadMore();
+            };
+
+            const iosUnmuted = detectPlatform().isIOS && !readMutedPreference();
+            if (iosUnmuted) {
+                feedDbg('loadmore defer ios', { index, ms: 5000 });
+                window.setTimeout(runLoadMore, 5000);
+                return;
+            }
+
+            runLoadMore();
         },
         [list.length, loadMore],
     );

@@ -4,6 +4,7 @@ import type Player from 'xgplayer';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 
+import { FeedCenterPlayButton } from '../controls/FeedCenterPlayButton';
 import { FeedSubtitleOverlay } from '../controls/FeedSubtitleOverlay';
 import { togglePlayerPlay } from '../controls/playerControlsApi';
 import { getFeedItemDataAttrs } from '../feed/buildPlayerSlots';
@@ -92,6 +93,7 @@ export function DouyinPlayerSlot({
                         onClickCapture={onTapVideo}
                         role="presentation"
                     />
+                    <FeedCenterPlayButton player={slotPlayer} visible={slot.isActive} />
                     {showSubtitle ? (
                         <FeedSubtitleOverlay player={slotPlayer} subtitleUrl={subtitleUrl} />
                     ) : null}

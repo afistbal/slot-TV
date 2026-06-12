@@ -22,7 +22,7 @@
 | 7 | 当前条 `data-e2e="feed-active-video"` | ✅ | `feed/buildPlayerSlots.ts` `getFeedItemDataAttrs` | 挂在 slide 容器 |
 | 8 | 容器 `id="sliderVideo"` | ✅ | `DouyinFeedPlayer.tsx` L130 | |
 | 9 | touchstart / mousedown / pointerdown 绑定 | ✅ | `feed/bindFeedTouchGuard.ts` + `DouyinFeedPlayer.tsx` | stopPropagation 防干扰 |
-| 10 | 播放结束自动跳下一条 `from: auto` | ✅ | `DouyinFeedPlayer.tsx` `onVideoEnded` | |
+| 10 | 播放结束自动跳下一条 `from: auto` | ✅ | `DouyinFeedPlayer.tsx` `onVideoEnded` + `chainAutoplay.ts` | iOS 有声连播：ended 置 chain + 同步 dispatch |
 | 11 | `mediaBaseUrl` + `resolveMediaUrl` 拼绝对 URL | ✅ | `DouyinFeedPlayer.tsx` L35-42 + `media/resolveMediaUrl.ts` | for-demo 传入 `config.static` |
 | 12 | 触底 loadmore（倒数第 2 条起预拉） | ✅ | `ForDemo/index.tsx` `onIndexChange` + `fetchMoreRef` | 仅 for-demo 外层；播放器不感知 loadmore |
 | 13 | 切条换源 `playNext()` | ✅ | `playback/playNextSource.ts` + `useDouyinPlayerSlot.ts` | 优先 switchURL，失败再 destroy 重建 |
@@ -52,7 +52,7 @@
 | 23 | iOS 额外 `videoPlay()` 双保险 | ✅ | `player/createXgPlayer.ts` L63-66 | |
 | 24 | MSE 分片（Mp4Plugin） | ✅ | `player/createXgPlayer.ts` L58-59 | PC/Android 默认 MSE |
 | 25 | `minBufferLength=5` / `maxBufferLength=60` | ✅ | `playback/bufferConfig.ts` + `constants.ts` | |
-| 26 | `NotAllowedError` 拒播 UI 处理 | ⚠️ | `createXgPlayer.ts` / `setNativeVideoSrc.ts` | 仅 `.catch(() => {})`，无 NOT_ALLOW_AUTOPLAY 样式 |
+| 26 | `NotAllowedError` 拒播 UI 处理 | ⚠️ | `createXgPlayer.ts` / `iosChainPlayback.ts` | 连播路径有声重试；无 NOT_ALLOW_AUTOPLAY 样式 |
 | 27 | 音量 Cookie `H.J()` 全局静音策略 | ❌ | — | 固定 `autoplayMuted: true` |
 
 ---

@@ -35,6 +35,12 @@
     background: #000;
 }
 
+/* 兜底：禁用 xgplayer 内置 start 大三角（已 ignores + 自定义 FeedCenterPlayButton） */
+.douyin-player-slot__mount :global(.xgplayer-start) {
+    display: none !important;
+    pointer-events: none !important;
+}
+
 /* 竖屏 9:16：cover 铺满（对标 isVertical + cover） */
 .douyin-player-slot--vertical :global(.xgplayer),
 .douyin-player-slot--base-height :global(.xgplayer) {

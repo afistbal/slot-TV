@@ -9,19 +9,37 @@ import { buildPlayerSlots, getFeedItemDataAttrs } from './feed/buildPlayerSlots'
 import { bindWheelNavigate } from './feed/wheelNavigate';
 import { resolveMediaUrl } from './media/resolveMediaUrl';
 import { detectPlatform } from './platform/detectPlatform';
-import { RESUME_PLAY_WATER_LEVEL } from './constants';
-import { feedDbg } from './feed/feedDebugLog';
+import { PLAYER_WINDOW_RADIUS, RESUME_PLAY_WATER_LEVEL } from './constants';
+import { readMutedPreference } from './controls/mutePreference';
+import { markChainAutoplay } from './feed/chainAutoplay';
+import { FeedLogExportChip } from './feed/FeedLogExportChip';
+import { feedDbg, setFeedDbgContext } from './feed/feedDebugLog';
+import { markNeighborMount, msSinceChainUnmute } from './feed/feedPlayAttribution';
+import { feedVideoMp4FromPlayer } from './feed/feedVideoMp4Log';
 import {
     isUserGestureActive,
     isUserAudioUnlocked,
     markUserGesture,
     syncAudioUnlockFromPreference,
 } from './feed/userGesturePlay';
+import {
+    bindIosActivePauseRecover,
+    bindIosChainPlayRetry,
+    playIosChainWithSound,
+    recoverIosActiveChainIfPaused,
+    tryPlayIosChainInEndedStack,
+} from './playback/iosChainPlayback';
+import {
+    attachActiveNeighborPrime,
+    primeDouyinNeighborBuffer,
+} from './playback/primeNeighborBuffer';
 import { resumePlayerLoading } from './playback/playerLoadingControl';
 import {
+    isIosChainWantPlay,
     isUserHoldPause,
     pausePlayer,
     scheduleActivePlay,
+    setIosChainWantPlay,
     setUserHoldPause,
 } from './player/createXgPlayer';
 import * as playerRegistry from './player/playerRegistry';
@@ -80,6 +98,10 @@ export function DouyinFeedPlayer({
     const preloadGateAttachedRef = useRef<Player | null>(null);
     const postRenderTransitionRef = useRef<'append-play' | 'shrink-clamp' | null>(null);
     const shrinkTargetRef = useRef<number | null>(null);
+    const endedStackPlayRef = useRef(false);
+    const iosChainRetryDisposeRef = useRef<(() => void) | null>(null);
+    const iosPauseRecoverDisposeRef = useRef<(() => void) | null>(null);
+    const activeNeighborPrimeDisposeRef = useRef<(() => void) | null>(null);
 
     const playbackItems = useMemo(() => {
         const base = String(mediaBaseUrl ?? '').trim();
@@ -178,6 +200,33 @@ export function DouyinFeedPlayer({
         [getBufferedAhead, openPreloadGate],
     );
 
+    const attachActivePlaybackHooks = useCallback(
+        (player: Player) => {
+            attachPreloadGateOnce(player);
+            iosChainRetryDisposeRef.current?.();
+            iosChainRetryDisposeRef.current = bindIosChainPlayRetry(player, () =>
+                isIosChainWantPlay(),
+            );
+            iosPauseRecoverDisposeRef.current?.();
+            const hookedPlayer = player;
+            iosPauseRecoverDisposeRef.current = bindIosActivePauseRecover(hookedPlayer, () => {
+                const idx = activeIndexRef.current;
+                return playerByIndexRef.current.get(idx) === hookedPlayer;
+            });
+            activeNeighborPrimeDisposeRef.current?.();
+            activeNeighborPrimeDisposeRef.current = attachActiveNeighborPrime(
+                () => activeIndexRef.current,
+                (activeIdx) => {
+                    const nextPlayer = playerByIndexRef.current.get(activeIdx + 1);
+                    const nextUrl = playbackItemsRef.current[activeIdx + 1]?.url ?? '';
+                    if (!nextPlayer || !nextUrl) return null;
+                    return { player: nextPlayer, url: nextUrl };
+                },
+            );
+        },
+        [attachPreloadGateOnce],
+    );
+
     const slots = useMemo(
         () => buildPlayerSlots(playbackItems, activeIndex, preloadNext && preloadGate),
         [playbackItems, activeIndex, preloadNext, preloadGate],
@@ -201,6 +250,11 @@ export function DouyinFeedPlayer({
             pending: pendingPlayIndexRef.current,
         });
         if (!player || !url) return;
+        feedVideoMp4FromPlayer('dispatch mp4', player, {
+            source,
+            idx,
+            urlTail: url.slice(-64),
+        });
         resumePlayerLoading(player, url, { autoplay: false });
         scheduleActivePlay(player);
     }, []);
@@ -225,8 +279,11 @@ export function DouyinFeedPlayer({
 
         if (clamped !== prev) {
             setUserHoldPause(false);
+            activeNeighborPrimeDisposeRef.current?.();
+            activeNeighborPrimeDisposeRef.current = null;
             const oldPlayer = playerByIndexRef.current.get(prev);
-            if (oldPlayer) pausePlayer(oldPlayer);
+            const keepScheduled = endedStackPlayRef.current;
+            if (oldPlayer) pausePlayer(oldPlayer, { keepScheduledPlay: keepScheduled });
 
             const newPlayer = playerByIndexRef.current.get(clamped);
             if (newPlayer && playbackItemsRef.current[clamped]?.url) {
@@ -245,15 +302,27 @@ export function DouyinFeedPlayer({
 
         activeIndexRef.current = clamped;
         setActiveIndex(clamped);
+        setFeedDbgContext({ activeIndex: clamped, len });
         const activeItemId = playbackItemsRef.current[clamped]?.id;
         playerRegistry.setActiveId(activeItemId ?? null);
         const currentPlayer = playerByIndexRef.current.get(clamped);
-        if (currentPlayer) setActivePlayer(currentPlayer);
+        if (currentPlayer) {
+            setActivePlayer(currentPlayer);
+            if (clamped !== prev) {
+                attachActivePlaybackHooks(currentPlayer);
+            }
+        }
+
+        const nextNeighbor = playerByIndexRef.current.get(clamped + 1);
+        const nextUrl = playbackItemsRef.current[clamped + 1]?.url ?? '';
+        if (nextNeighbor && nextUrl) {
+            primeDouyinNeighborBuffer(nextNeighbor, nextUrl);
+        }
 
         if (direction !== undefined && clamped !== prev) {
             onIndexChangeRef.current?.(clamped, direction);
         }
-    }, []);
+    }, [attachActivePlaybackHooks]);
 
     const syncActiveIndexRef = useRef(syncActiveIndex);
     syncActiveIndexRef.current = syncActiveIndex;
@@ -279,9 +348,19 @@ export function DouyinFeedPlayer({
             const player =
                 (itemId != null ? playerRegistry.get(itemId) : undefined) ??
                 playerByIndexRef.current.get(idx);
-            if (player) {
-                scheduleActivePlay(player);
+            if (!player) return;
+
+            const video = player.video as HTMLVideoElement | undefined;
+            if (video && !video.paused) {
+                feedDbg('append-play skip playing', { idx });
+                return;
             }
+
+            feedDbg('append-play resume', { idx, paused: video?.paused ?? true });
+            if (detectPlatform().isIOS && !readMutedPreference()) {
+                markChainAutoplay();
+            }
+            scheduleActivePlay(player);
         }
     });
 
@@ -376,6 +455,46 @@ export function DouyinFeedPlayer({
         };
     }, []);
 
+    const advanceAfterEnded = useCallback(
+        (current: number) => {
+            const len = playbackItemsLengthRef.current;
+            if (current >= len - 1) {
+                if (showNextEpisodeRef.current) {
+                    onNextEpisodeRef.current?.();
+                }
+                return;
+            }
+
+            const next = current + 1;
+            const nextPlayer = playerByIndexRef.current.get(next);
+            const nextUrl = playbackItemsRef.current[next]?.url ?? '';
+
+            endedStackPlayRef.current = false;
+            if (detectPlatform().isIOS && !readMutedPreference()) {
+                if (tryPlayIosChainInEndedStack(nextPlayer, nextUrl)) {
+                    endedStackPlayRef.current = true;
+                    setIosChainWantPlay(true);
+                }
+            }
+
+            markUserGesture(3500);
+            scrollSyncLockRef.current = true;
+            syncActiveIndex(next, 'next');
+            scrollToIndex(next, 'auto');
+            feedDbg('advance after ended', {
+                from: current,
+                to: next,
+                endedStack: endedStackPlayRef.current,
+            });
+
+            if (!endedStackPlayRef.current) {
+                markChainAutoplay();
+                dispatchActivePlayRef.current('ended-auto');
+            }
+        },
+        [scrollToIndex, syncActiveIndex],
+    );
+
     /** 对齐 foryou ForYouPlayer videoEnded：feedHasNext → 切条 / loadMore */
     const onVideoEnded = useCallback(
         (index: number) => {
@@ -384,11 +503,14 @@ export function DouyinFeedPlayer({
             const len = playbackItemsLengthRef.current;
             if (len === 0) return;
 
-            markUserGesture(3500);
+            feedDbg('ended', { index, active: current, len });
+            feedVideoMp4FromPlayer('ended mp4', playerByIndexRef.current.get(current), {
+                index,
+            });
 
             if (showNextEpisodeRef.current) {
                 if (current < len - 1) {
-                    navigate('auto');
+                    advanceAfterEnded(current);
                 } else {
                     onNextEpisodeRef.current?.();
                 }
@@ -396,11 +518,19 @@ export function DouyinFeedPlayer({
             }
 
             if (current < len - 1) {
-                navigate('auto');
+                advanceAfterEnded(current);
             }
         },
-        [navigate],
+        [advanceAfterEnded],
     );
+
+    const primeNeighborSlot = useCallback((index: number, player: Player) => {
+        const active = activeIndexRef.current;
+        const url = playbackItemsRef.current[index]?.url ?? '';
+        if (!url || index === active) return;
+        if (Math.abs(index - active) !== 1) return;
+        primeDouyinNeighborBuffer(player, url);
+    }, []);
 
     const handleSlotPlayerChange = useCallback(
         (index: number, player: Player | null) => {
@@ -410,6 +540,43 @@ export function DouyinFeedPlayer({
                 playerByIndexRef.current.set(index, player);
                 if (itemId != null) {
                     playerRegistry.register(itemId, player);
+                }
+                const active = activeIndexRef.current;
+                if (Math.abs(index - active) <= PLAYER_WINDOW_RADIUS) {
+                    if (index !== active) {
+                        markNeighborMount(index);
+                        feedDbg('neighbor mount', {
+                            index,
+                            active,
+                            gesture: isUserGestureActive(),
+                        });
+                        const activeIdx = active;
+                        requestAnimationFrame(() => {
+                            if (activeIndexRef.current !== activeIdx) return;
+                            const ap =
+                                playerByIndexRef.current.get(activeIdx) ??
+                                (() => {
+                                    const id = playbackItemsRef.current[activeIdx]?.id;
+                                    return id != null ? playerRegistry.get(id) : undefined;
+                                })();
+                            const av = ap?.video as HTMLVideoElement | undefined;
+                            if (!av) return;
+                            const snap = {
+                                active: activeIdx,
+                                neighbor: index,
+                                paused: av.paused,
+                                t: Math.round(av.currentTime * 100) / 100,
+                                msSinceChainUnmute: msSinceChainUnmute(),
+                            };
+                            if (av.paused) {
+                                feedDbg('STALL post-neighbor paused', snap);
+                                recoverIosActiveChainIfPaused(av, 'post-neighbor');
+                            } else {
+                                feedDbg('post-neighbor active ok', snap);
+                            }
+                        });
+                    }
+                    primeNeighborSlot(index, player);
                 }
             } else {
                 playerByIndexRef.current.delete(index);
@@ -437,18 +604,46 @@ export function DouyinFeedPlayer({
                     playerRegistry.setActiveId(itemId);
                 }
                 setActivePlayer(player);
+                const skipEndedStack =
+                    endedStackPlayRef.current && index === activeIndexRef.current;
                 if (index === activeIndexRef.current) {
-                    attachPreloadGateOnce(player);
+                    attachActivePlaybackHooks(player);
                 }
                 const url = playbackItemsRef.current[index]?.url ?? '';
-                if (url) {
+                if (url && !skipEndedStack) {
                     resumePlayerLoading(player, url, { autoplay: false });
                 }
-                dispatchActivePlayRef.current('slotChange');
+                if (skipEndedStack) {
+                    endedStackPlayRef.current = false;
+                    const video = player.video as HTMLVideoElement | undefined;
+                    if (video?.paused) {
+                        feedDbg('slotChange ended-stack recover', {
+                            index,
+                            readyState: video.readyState,
+                        });
+                        setIosChainWantPlay(true);
+                        playIosChainWithSound(video, 'slot-ended-recover');
+                    } else {
+                        setIosChainWantPlay(false);
+                    }
+                } else {
+                    dispatchActivePlayRef.current('slotChange');
+                }
             }
         },
-        [attachPreloadGateOnce],
+        [attachActivePlaybackHooks, primeNeighborSlot],
     );
+
+    useEffect(() => {
+        return () => {
+            iosChainRetryDisposeRef.current?.();
+            iosChainRetryDisposeRef.current = null;
+            iosPauseRecoverDisposeRef.current?.();
+            iosPauseRecoverDisposeRef.current = null;
+            activeNeighborPrimeDisposeRef.current?.();
+            activeNeighborPrimeDisposeRef.current = null;
+        };
+    }, []);
 
     const bindSlideRef = useCallback((index: number, el: HTMLDivElement | null) => {
         if (el) itemRefs.current.set(index, el);
@@ -504,6 +699,7 @@ export function DouyinFeedPlayer({
                     </div>
                 );
             })}
+            <FeedLogExportChip />
         </div>
     );
 }

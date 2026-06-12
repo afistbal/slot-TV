@@ -6,8 +6,12 @@ import Player from 'xgplayer';
 import Mp4Plugin from 'xgplayer-mp4';
 import 'xgplayer/dist/index.min.css';
 
+import { consumeChainAutoplay } from '../feed/chainAutoplay';
 import { feedDbg } from '../feed/feedDebugLog';
+import { markCodedPlay, markProgPause } from '../feed/feedPlayAttribution';
+import { feedVideoMp4FromPlayer } from '../feed/feedVideoMp4Log';
 import { isUserAudioUnlocked, isUserGestureActive } from '../feed/userGesturePlay';
+import { playIosChainWithSound } from '../playback/iosChainPlayback';
 import { readMutedPreference } from '../controls/mutePreference';
 import { isCrossOriginMediaUrl } from '../media/isCrossOriginMediaUrl';
 import { detectPlatform } from '../platform/detectPlatform';
@@ -32,9 +36,19 @@ export type XgPlayerHandle = {
 
 let playGeneration = 0;
 let userHoldPause = false;
+let iosChainWantPlay = false;
 
 export function cancelScheduledActivePlay() {
     playGeneration += 1;
+    iosChainWantPlay = false;
+}
+
+export function isIosChainWantPlay() {
+    return iosChainWantPlay;
+}
+
+export function setIosChainWantPlay(value: boolean) {
+    iosChainWantPlay = value;
 }
 
 export function setUserHoldPause(value: boolean) {
@@ -86,7 +100,8 @@ export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
         closeVideoStopPropagation: true,
         cssFullscreen: false,
         fullscreenTarget: options.fullscreenTarget ?? options.el,
-        ignores: ['poster', 'definition', 'mobile', 'progress', 'time', 'play', 'volume'],
+        /** start：中间按钮改由 FeedCenterPlayButton + icon_play1（对标 ForYou） */
+        ignores: ['poster', 'definition', 'mobile', 'progress', 'time', 'play', 'volume', 'start'],
         plugins: useMse ? [Mp4Plugin] : [],
         mp4plugin: useMse ? getMp4PluginConfig() : undefined,
     });
@@ -154,7 +169,38 @@ function runActivePlay(player: Player, gen: number, forceMute: boolean): Promise
     }
     return player.play().then(() => {
         feedDbg('play ok', { gen, forceMute });
+        feedVideoMp4FromPlayer('play ok mp4', player, { gen, forceMute });
         watchPlayStalled(player, gen, forceMute);
+    });
+}
+
+function attemptChainSoundPlay(player: Player, gen: number): Promise<void> {
+    const video = player.video as HTMLVideoElement | undefined;
+    if (!video) return Promise.resolve();
+
+    iosChainWantPlay = true;
+    playIosChainWithSound(video, 'schedule');
+    feedVideoMp4FromPlayer('chain schedule mp4', player, { gen });
+
+    return new Promise<void>((resolve) => {
+        if (!video.paused) {
+            iosChainWantPlay = false;
+            feedDbg('chain play ok', { gen });
+            resolve();
+            return;
+        }
+        const onPlaying = () => {
+            video.removeEventListener('playing', onPlaying);
+            if (gen !== playGeneration) {
+                resolve();
+                return;
+            }
+            iosChainWantPlay = false;
+            feedDbg('chain play ok', { gen });
+            feedVideoMp4FromPlayer('chain play ok mp4', player, { gen });
+            resolve();
+        };
+        video.addEventListener('playing', onPlaying);
     });
 }
 
@@ -163,15 +209,26 @@ function attemptActivePlay(
     gen: number,
     forceMute: boolean,
     attempt: number,
+    chainSound: boolean,
 ): Promise<void> {
+    if (chainSound && detectPlatform().isIOS && !readMutedPreference()) {
+        return attemptChainSoundPlay(player, gen);
+    }
+
     return runActivePlay(player, gen, forceMute).catch((err: unknown) => {
         const name = playErrorName(err);
         if (name === 'NotAllowedError') {
+            if (chainSound && detectPlatform().isIOS) {
+                feedDbg('chain NotAllowed → muted retry', { gen });
+                return attemptChainSoundPlay(player, gen);
+            }
             feedDbg('play blocked until gesture', { gen });
+            feedVideoMp4FromPlayer('play blocked mp4', player, { gen, err: name });
             return;
         }
         if (!isRetriablePlayError(err) || attempt >= 2 || gen !== playGeneration) {
             feedDbg('play rejected', { gen, err: name, attempt });
+            feedVideoMp4FromPlayer('play rejected mp4', player, { gen, err: name, attempt });
             if (name === 'AbortError') return;
             throw err;
         }
@@ -187,13 +244,17 @@ function attemptActivePlay(
                 detectPlatform().isIOS &&
                 !readMutedPreference() &&
                 !isUserAudioUnlocked();
-            return attemptActivePlay(player, gen, retryForceMute, attempt + 1);
+            return attemptActivePlay(player, gen, retryForceMute, attempt + 1, chainSound);
         });
     });
 }
 
 /** 等 slot 提交后再 play，避免下一条 mount 打断（iOS AbortError） */
-function deferActivePlayExecute(fn: () => void) {
+function deferActivePlayExecute(fn: () => void, chainSound: boolean) {
+    if (chainSound) {
+        fn();
+        return;
+    }
     if (detectPlatform().isIOS) {
         requestAnimationFrame(() => {
             requestAnimationFrame(fn);
@@ -209,35 +270,61 @@ export function scheduleActivePlay(player: Player) {
         feedDbg('schedule skip holdPause');
         return;
     }
+    const chainSound = consumeChainAutoplay();
     const gen = ++playGeneration;
     const platform = detectPlatform();
     const gesture = isUserGestureActive();
     const wantUnmuted = !readMutedPreference();
     const audioUnlocked = isUserAudioUnlocked();
-    /** 无手势时 PC/Chrome 也必须静音起播，否则 NotAllowedError */
-    const forceMute =
-        !gesture || (platform.isIOS && wantUnmuted && !audioUnlocked);
-    const syncInGesture = platform.isIOS && wantUnmuted && audioUnlocked && gesture;
-    feedDbg('schedule', { gen, gesture, muted: !wantUnmuted, audioUnlocked, forceMute });
+    /** 连播：有声走 muted bootstrap，不 forceMute */
+    const forceMute = chainSound
+        ? false
+        : !gesture || (platform.isIOS && wantUnmuted && !audioUnlocked);
+    const syncInGesture =
+        !chainSound && platform.isIOS && wantUnmuted && audioUnlocked && gesture;
+    feedDbg('schedule', {
+        gen,
+        gesture,
+        muted: !wantUnmuted,
+        audioUnlocked,
+        forceMute,
+        chainSound,
+    });
+    feedVideoMp4FromPlayer('schedule mp4', player, { gen, chainSound });
 
     const execute = () => {
         if (gen !== playGeneration) {
             feedDbg('play cancelled', { gen, current: playGeneration });
             return;
         }
-        void attemptActivePlay(player, gen, forceMute, 0).catch(() => undefined);
+        markCodedPlay(chainSound ? 'schedule-chain' : 'schedule');
+        void attemptActivePlay(player, gen, forceMute, 0, chainSound).catch(() => undefined);
     };
 
-    if (syncInGesture) {
+    if (syncInGesture || chainSound) {
         execute();
     } else {
-        deferActivePlayExecute(execute);
+        deferActivePlayExecute(execute, chainSound);
     }
 }
 
-export function pausePlayer(player: Player) {
-    playGeneration += 1;
-    feedDbg('pause', { gen: playGeneration });
+export type PausePlayerOptions = {
+    keepScheduledPlay?: boolean;
+};
+
+export function pausePlayer(player: Player, opts?: PausePlayerOptions) {
+    if (!opts?.keepScheduledPlay) {
+        playGeneration += 1;
+        iosChainWantPlay = false;
+    }
+    const keepScheduled = Boolean(opts?.keepScheduledPlay);
+    const video = player.video as HTMLVideoElement | undefined;
+    markProgPause(video, keepScheduled);
+    feedDbg('pause', { gen: playGeneration, keepScheduled });
+    feedVideoMp4FromPlayer('pause mp4', player, {
+        gen: playGeneration,
+        keepScheduled,
+    });
     try {
         player.pause();
     } catch {

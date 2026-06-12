@@ -1,13 +1,13 @@
 /**
- * 对标抖音 Feed playerWrap + ForYouPlayer�?
+ * 对标抖音 Feed playerWrap + ForYouPlayer�?
  * - routes-route.ceffa524.js L4827：`isVertical = video.height > video.width`
- * - ForYouPlayer：`videoWidth > videoHeight` �?landscape �?object-contain，否�?cover
+ * - ForYouPlayer：`videoWidth > videoHeight` �?landscape �?object-contain，否�?cover
  */
 import type Player from 'xgplayer';
 
 import { readVideoOrientation } from '@/components/video-player/videoOrientation';
 
-/** 控制�?filter `[douyin-aspect]`；仅当前 active 条打一�?*/
+/** 控制�?filter `[douyin-aspect]`；仅当前 active 条打一�?*/
 const ASPECT_DEBUG = true;
 
 export type AspectFitLogContext = {
@@ -15,37 +15,16 @@ export type AspectFitLogContext = {
     isActive: () => boolean;
 };
 
-function aspectDbg(message: string, detail: Record<string, unknown>) {
-    if (!ASPECT_DEBUG) return;
-    console.log(`[douyin-aspect] ${message}`, detail);
-}
 
-/** 当前滑到�?active 条：metadata 就绪后打一�?*/
+/** 当前滑到�?active 条：metadata 就绪后打一�?*/
 export function logActiveSlideAspect(
     video: HTMLVideoElement,
-    slotEl: HTMLElement | null,
-    slotIndex: number,
-    player?: Player,
 ): void {
     if (!ASPECT_DEBUG) return;
 
     const { videoWidth, videoHeight } = video;
     if (!videoWidth || !videoHeight) return;
 
-    const orientation = readVideoOrientation(video);
-    const xgRoot = video.closest('.xgplayer') as HTMLElement | null;
-    const rect = slotEl?.getBoundingClientRect();
-
-    aspectDbg(`active #${slotIndex}`, {
-        videoWidth,
-        videoHeight,
-        orientation,
-        objectFit: getComputedStyle(video).objectFit,
-        slot: rect ? `${Math.round(rect.width)}×${Math.round(rect.height)}` : null,
-        xgFill: xgRoot?.getAttribute('data-xgfill'),
-        mode: player ? 'xgplayer' : 'native',
-        srcTail: video.currentSrc ? video.currentSrc.slice(-48) : '',
-    });
 }
 
 export function isVerticalVideo(videoWidth: number, videoHeight: number): boolean {
@@ -82,7 +61,7 @@ export function applyVideoObjectFit(video: HTMLVideoElement): boolean {
     return !landscape;
 }
 
-/** xgplayer resize() 会写 root 内联 width（横�?fixHeight 路径 �?180px），盖过 CSS；Feed �?object-fit 即可 */
+/** xgplayer resize() 会写 root 内联 width（横�?fixHeight 路径 �?180px），盖过 CSS；Feed �?object-fit 即可 */
 function normalizeXgplayerRootLayout(player: Player, video: HTMLVideoElement): void {
     const root = (player as Player & { root?: HTMLElement }).root;
     if (!root) return;
@@ -189,7 +168,7 @@ export function attachNativeVideoAspectFit(
     };
 }
 
-/** 切到 active 条时打一条（metadata 未就绪则�?loadedmetadata�?*/
+/** 切到 active 条时打一条（metadata 未就绪则�?loadedmetadata�?*/
 export function logAspectWhenActive(
     player: Player | null,
     slotEl: HTMLElement | null,
