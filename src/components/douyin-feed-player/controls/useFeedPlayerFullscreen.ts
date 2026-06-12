@@ -7,6 +7,7 @@ import {
     getFullscreenElement,
     IMMERSIVE_FULLSCREEN_CLASS,
     IMMERSIVE_FULLSCREEN_EVENT,
+    isIosNativeVideoFullscreen,
 } from './feedPlayerFullscreen';
 import { getVideoEl } from './playerControlsApi';
 
@@ -37,14 +38,12 @@ function setImmersiveDom(el: HTMLElement | null, active: boolean) {
 
 /** 阻止 iOS 系统 video 全屏（保留自定义底栏） */
 function blockIosNativeVideoFullscreen(video: HTMLVideoElement | null | undefined) {
-    if (!video) return;
+    if (!video || !isIosNativeVideoFullscreen(video)) return;
     const v = video as HTMLVideoElement & { webkitExitFullscreen?: () => void };
-    if (v.webkitDisplayingFullscreen || v.webkitPresentationMode === 'fullscreen') {
-        try {
-            v.webkitExitFullscreen?.();
-        } catch {
-            /* ignore */
-        }
+    try {
+        v.webkitExitFullscreen?.();
+    } catch {
+        /* ignore */
     }
 }
 
