@@ -181,7 +181,7 @@ export function logAspectWhenActive(
         const video = player.video as HTMLVideoElement | undefined;
         if (!video?.videoWidth) return;
         syncPlayerAspectFit(player, slotEl);
-        logActiveSlideAspect(video, slotEl, ctx.slotIndex, player);
+        logActiveSlideAspect(video);
     };
 
     tryLog();
@@ -211,7 +211,7 @@ export function logNativeAspectWhenActive(
         if (!video.videoWidth) return;
         applyVideoObjectFit(video);
         syncSlotAspectClasses(slotEl, video);
-        logActiveSlideAspect(video, slotEl, ctx.slotIndex);
+        logActiveSlideAspect(video);
     };
 
     tryLog();

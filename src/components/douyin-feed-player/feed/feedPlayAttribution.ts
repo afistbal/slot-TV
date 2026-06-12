@@ -26,6 +26,10 @@ export function isProgPauseForVideo(video: HTMLVideoElement): boolean {
     );
 }
 
+export function wasLastProgPauseKeepScheduled(): boolean {
+    return lastProgPauseKeepScheduled;
+}
+
 export function markCodedPlay(source: string) {
     lastCodedPlayAt = Date.now();
     lastCodedPlaySource = source;
