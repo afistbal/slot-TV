@@ -172,3 +172,4 @@ v5 滑离不再 suspend；`suspendPlayerLoading` 仅窗口外 teardown。active 
 | iOS 手势补播 | `syncActivePlayOnGesture` + `userGesturePlay.ts` |
 | 取消拉流 | `suspendPlayerLoading` |
 | 恢复拉流 | `resumePlayerLoading` |
+| slot-TV 播完自动下一集（对照） | `SLOT_TV_AUTO_NEXT_REFERENCE.md` |
