@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type RefObject,
+} from 'react';
 
 import {
     DouyinFeedPlayer,
@@ -27,6 +34,7 @@ import {
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
+import { cn } from '@/lib/utils';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { scrollVDemoFeedToIndex } from './vDemoFeedScroll';
@@ -42,6 +50,8 @@ type VDemoH5PlayerShellProps = {
     initialIndex: number;
     foryouResumeTimeSec?: number;
     foryouResumeEpisodeRowId?: number;
+    fullscreenTargetRef: RefObject<HTMLElement | null>;
+    onFullscreenUiChange?: (active: boolean) => void;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
     onEpisodeUnlocked: () => void;
     onEpisodeDetailReady: () => void;
@@ -55,6 +65,8 @@ export function VDemoH5PlayerShell({
     initialIndex,
     foryouResumeTimeSec,
     foryouResumeEpisodeRowId,
+    fullscreenTargetRef,
+    onFullscreenUiChange,
     onIndexChange,
     onEpisodeUnlocked,
     onEpisodeDetailReady,
@@ -79,6 +91,15 @@ export function VDemoH5PlayerShell({
     const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
     const [introductionOpen, setIntroductionOpen] = useState(false);
     const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
+    const [isFullscreenUi, setIsFullscreenUi] = useState(false);
+
+    const handleFullscreenUiChange = useCallback(
+        (active: boolean) => {
+            setIsFullscreenUi(active);
+            onFullscreenUiChange?.(active);
+        },
+        [onFullscreenUiChange],
+    );
 
     const {
         shareOpen,
@@ -159,13 +180,17 @@ export function VDemoH5PlayerShell({
 
     return (
         <div className="v-demo-h5-shell relative h-full w-full">
-            <VideoPlayerH5BackBar episodeNo={episodeNo} onBack={handleBack} />
+            {!isFullscreenUi ? (
+                <VideoPlayerH5BackBar episodeNo={episodeNo} onBack={handleBack} />
+            ) : null}
             <DouyinFeedPlayer
                 className="v-demo-h5-player h-full w-full"
                 items={playerItems}
                 mediaBaseUrl={staticBase}
                 preloadNext
                 initialIndex={initialIndex}
+                fullscreenTargetRef={fullscreenTargetRef}
+                onFullscreenUiChange={handleFullscreenUiChange}
                 onIndexChange={onIndexChange}
                 showNextEpisode={hasNext}
                 onNextEpisode={handleFeedNext}
@@ -191,7 +216,12 @@ export function VDemoH5PlayerShell({
                     onUnlock={() => vipCommerceRef.current?.openVip()}
                 />
             ) : null}
-            <div className="v-demo-h5-chrome pointer-events-none absolute inset-0 z-10">
+            <div
+                className={cn(
+                    'v-demo-h5-chrome pointer-events-none absolute inset-0 z-10',
+                    isFullscreenUi && 'hidden',
+                )}
+            >
                 <VideoPlayerSideActions
                     variant="h5"
                     showVip={!userStore.isVIP()}

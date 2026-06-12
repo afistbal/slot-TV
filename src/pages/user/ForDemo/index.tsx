@@ -41,6 +41,8 @@ export default function ForDemoPage() {
     }
 
     const [activeIndex, setActiveIndex] = useState(0);
+    const [isFullscreenUi, setIsFullscreenUi] = useState(false);
+    const fullscreenTargetRef = useRef<HTMLDivElement>(null);
 
     const {
         list,
@@ -143,6 +145,9 @@ export default function ForDemoPage() {
             hasNext={hasNext}
             hasMore={hasMore}
             listLength={list.length}
+            fullscreenTargetRef={fullscreenTargetRef}
+            isDesktop
+            onFullscreenUiChange={setIsFullscreenUi}
             onIndexChange={handleIndexChange}
             onLoadMore={() => void loadMore()}
         />
@@ -155,6 +160,8 @@ export default function ForDemoPage() {
             hasNext={hasNext}
             hasMore={hasMore}
             listLength={list.length}
+            fullscreenTargetRef={fullscreenTargetRef}
+            onFullscreenUiChange={setIsFullscreenUi}
             onIndexChange={handleIndexChange}
             onLoadMore={() => void loadMore()}
         />
@@ -162,7 +169,7 @@ export default function ForDemoPage() {
 
     return isDesktop ? (
         <div className="video-vertical-pc-shell for-demo-pc-shell foryou-vertical-pc-shell">
-            {pcTopNav}
+            {!isFullscreenUi ? pcTopNav : null}
             <div className="for-demo for-demo--pc relative min-h-0 flex-1 overflow-hidden bg-black">
                 {loadingMore ? (
                     <div
@@ -172,13 +179,19 @@ export default function ForDemoPage() {
                         <Loader color="light" />
                     </div>
                 ) : null}
-                <div className="video-fullscreen-target h-full w-full touch-none select-none">
+                <div
+                    ref={fullscreenTargetRef}
+                    className="video-fullscreen-target h-full w-full touch-none select-none"
+                >
                     {playerBody}
                 </div>
             </div>
         </div>
     ) : (
-        <div className="for-demo for-demo--h5 foryou-vertical fixed inset-0 z-0 overflow-hidden bg-black">
+        <div
+            ref={fullscreenTargetRef}
+            className="for-demo for-demo--h5 foryou-vertical video-fullscreen-target fixed inset-0 z-0 overflow-hidden bg-black"
+        >
             {loadingMore ? (
                 <div
                     className="foryou-vertical__edge-hint foryou-vertical__edge-hint--bottom"

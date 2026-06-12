@@ -18,15 +18,21 @@ import {
 import { readSpeedIndexPreference } from './speedPreference';
 import { subscribePlayerControlState } from './subscribePlayerControlState';
 
+type FeedFullscreenControls = {
+    isFullscreenUi: boolean;
+    toggleFullscreen: () => Promise<boolean>;
+};
+
 type UseDouyinPlayerControlStateOptions = {
     fixedPlaybackSpeed?: boolean;
+    fullscreen?: FeedFullscreenControls;
 };
 
 export function useDouyinPlayerControlState(
     player: Player | null,
     options: UseDouyinPlayerControlStateOptions = {},
 ) {
-    const { fixedPlaybackSpeed = false } = options;
+    const { fixedPlaybackSpeed = false, fullscreen } = options;
     const [playing, setPlaying] = useState(false);
     const [muted, setMuted] = useState(true);
     const [speedIndex, setSpeedIndex] = useState(() =>
@@ -107,9 +113,13 @@ export function useDouyinPlayerControlState(
     }, [player, speedIndex]);
 
     const onToggleFullscreen = useCallback(async () => {
+        if (fullscreen) {
+            await fullscreen.toggleFullscreen();
+            return;
+        }
         const fs = await togglePlayerFullscreen(player);
         setIsFullscreen(fs);
-    }, [player]);
+    }, [fullscreen, player]);
 
     const onSeekRatio = useCallback(
         (ratio: number) => {
@@ -127,7 +137,7 @@ export function useDouyinPlayerControlState(
         currentLabel: formatPlaybackTime(currentTime),
         durationLabel: formatPlaybackTime(duration),
         progressRatio: duration > 0 ? currentTime / duration : 0,
-        isFullscreen,
+        isFullscreen: fullscreen?.isFullscreenUi ?? isFullscreen,
         progressDragging,
         progressHover,
         setProgressDragging,

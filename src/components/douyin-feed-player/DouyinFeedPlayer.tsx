@@ -1,9 +1,18 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+    type RefObject,
+} from 'react';
 import type Player from 'xgplayer';
 
 import { cn } from '@/lib/utils';
 
 import { DouyinPlayerControls } from './controls/DouyinPlayerControls';
+import { useFeedPlayerFullscreen } from './controls/useFeedPlayerFullscreen';
 import { bindFeedTouchGuard } from './feed/bindFeedTouchGuard';
 import { buildPlayerSlots, getFeedItemDataAttrs } from './feed/buildPlayerSlots';
 import { bindWheelNavigate } from './feed/wheelNavigate';
@@ -66,6 +75,9 @@ export function DouyinFeedPlayer({
     onNextEpisode,
     controlsTopContent,
     fixedPlaybackSpeed = false,
+    fullscreenTargetRef,
+    isDesktop = false,
+    onFullscreenUiChange,
 }: DouyinFeedPlayerProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -102,6 +114,10 @@ export function DouyinFeedPlayer({
     const iosChainRetryDisposeRef = useRef<(() => void) | null>(null);
     const iosPauseRecoverDisposeRef = useRef<(() => void) | null>(null);
     const activeNeighborPrimeDisposeRef = useRef<(() => void) | null>(null);
+    const emptyFullscreenTargetRef = useRef<HTMLElement | null>(null);
+    const resolvedFullscreenTargetRef =
+        fullscreenTargetRef ?? (emptyFullscreenTargetRef as RefObject<HTMLElement | null>);
+    const fullscreenEnabled = Boolean(fullscreenTargetRef);
 
     const playbackItems = useMemo(() => {
         const base = String(mediaBaseUrl ?? '').trim();
@@ -232,6 +248,45 @@ export function DouyinFeedPlayer({
         [playbackItems, activeIndex, preloadNext, preloadGate],
     );
 
+    const activeEpisodeKey = playbackItems[activeIndex]?.id ?? activeIndex;
+    const getActivePlayer = useCallback(
+        () => playerByIndexRef.current.get(activeIndexRef.current) ?? null,
+        [],
+    );
+
+    const feedFullscreen = useFeedPlayerFullscreen({
+        fullscreenTargetRef: resolvedFullscreenTargetRef,
+        isDesktop,
+        activeEpisodeKey,
+        getActivePlayer,
+        onFullscreenUiChange,
+        enabled: fullscreenEnabled,
+    });
+    const feedFullscreenRef = useRef(feedFullscreen);
+    feedFullscreenRef.current = feedFullscreen;
+
+    const fullscreenControls = useMemo(
+        () =>
+            fullscreenEnabled
+                ? {
+                      isFullscreenUi: feedFullscreen.isFullscreenUi,
+                      toggleFullscreen: feedFullscreen.toggleFullscreen,
+                  }
+                : undefined,
+        [
+            fullscreenEnabled,
+            feedFullscreen.isFullscreenUi,
+            feedFullscreen.toggleFullscreen,
+        ],
+    );
+
+    const handleToolbarNextEpisode = useCallback(() => {
+        if (fullscreenEnabled && feedFullscreenRef.current.isFullscreenUi) {
+            feedFullscreenRef.current.markFullscreenTransition();
+        }
+        onNextEpisodeRef.current?.();
+    }, [fullscreenEnabled]);
+
     /** MD §2.5：切条后唯一 play — setTimeout(() => play()) */
     const dispatchActivePlay = useCallback((source: string) => {
         if (isUserHoldPause()) {
@@ -278,6 +333,9 @@ export function DouyinFeedPlayer({
         if (clamped === prev && direction === undefined) return;
 
         if (clamped !== prev) {
+            if (fullscreenEnabled && feedFullscreenRef.current.isFullscreenUi) {
+                feedFullscreenRef.current.markFullscreenTransition();
+            }
             setUserHoldPause(false);
             activeNeighborPrimeDisposeRef.current?.();
             activeNeighborPrimeDisposeRef.current = null;
@@ -687,9 +745,11 @@ export function DouyinFeedPlayer({
                                     <DouyinPlayerControls
                                         player={activePlayer}
                                         showNextEpisode={showNextEpisode}
-                                        onNextEpisode={onNextEpisode}
+                                        onNextEpisode={handleToolbarNextEpisode}
                                         topContent={controlsTopContent}
                                         fixedPlaybackSpeed={fixedPlaybackSpeed}
+                                        isFullscreenUi={feedFullscreen.isFullscreenUi}
+                                        fullscreen={fullscreenControls}
                                     />
                                 ) : null}
                             </>

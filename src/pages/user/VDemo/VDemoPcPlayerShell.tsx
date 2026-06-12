@@ -6,6 +6,7 @@ import {
     useRef,
     useState,
     type MouseEvent,
+    type RefObject,
 } from 'react';
 
 import {
@@ -64,6 +65,9 @@ type VDemoPcPlayerShellProps = {
     initialIndex: number;
     foryouResumeTimeSec?: number;
     foryouResumeEpisodeRowId?: number;
+    fullscreenTargetRef: RefObject<HTMLElement | null>;
+    isDesktop?: boolean;
+    onFullscreenUiChange?: (active: boolean) => void;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
     onEpisodeUnlocked: () => void;
     onEpisodeDetailReady: () => void;
@@ -77,6 +81,9 @@ export function VDemoPcPlayerShell({
     initialIndex,
     foryouResumeTimeSec,
     foryouResumeEpisodeRowId,
+    fullscreenTargetRef,
+    isDesktop = true,
+    onFullscreenUiChange,
     onIndexChange,
     onEpisodeUnlocked,
     onEpisodeDetailReady,
@@ -114,6 +121,15 @@ export function VDemoPcPlayerShell({
         pcEpisodeTabIndexForEpisodeNo(episodeNo, tabRanges),
     );
     const pcDrawerClosingRef = useRef(false);
+    const [isFullscreenUi, setIsFullscreenUi] = useState(false);
+
+    const handleFullscreenUiChange = useCallback(
+        (active: boolean) => {
+            setIsFullscreenUi(active);
+            onFullscreenUiChange?.(active);
+        },
+        [onFullscreenUiChange],
+    );
 
     const pcShellRef = useRef<HTMLDivElement>(null);
     const pcStageClusterRef = useRef<HTMLDivElement>(null);
@@ -345,6 +361,9 @@ export function VDemoPcPlayerShell({
                             mediaBaseUrl={staticBase}
                             initialIndex={initialIndex}
                             preloadNext
+                            fullscreenTargetRef={fullscreenTargetRef}
+                            isDesktop={isDesktop}
+                            onFullscreenUiChange={handleFullscreenUiChange}
                             onIndexChange={onIndexChange}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
@@ -372,59 +391,65 @@ export function VDemoPcPlayerShell({
                             </div>
                         ) : null}
                     </div>
-                    <VideoPlayerSideActions
-                        variant="pc"
-                        showVip={!userStore.isVIP()}
-                        favorite={favorite}
-                        favoriteCount={data.info.favorite}
-                        showEpisodeList
-                        onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
-                        onFavoriteClick={handleToggleFavorite}
-                        onEpisodeListClick={openPcEpisodeDrawer}
-                        onShareClick={() => setShareOpen(true)}
-                    />
+                    {!isFullscreenUi ? (
+                        <VideoPlayerSideActions
+                            variant="pc"
+                            showVip={!userStore.isVIP()}
+                            favorite={favorite}
+                            favoriteCount={data.info.favorite}
+                            showEpisodeList
+                            onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
+                            onFavoriteClick={handleToggleFavorite}
+                            onEpisodeListClick={openPcEpisodeDrawer}
+                            onShareClick={() => setShareOpen(true)}
+                        />
+                    ) : null}
                 </div>
-                <div
-                    className={cn(
-                        'video-player-pc-right-rail',
-                        pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
-                    )}
-                    style={pcRightRailStyle}
-                >
-                    <ForYouPlayerPcIntroDrawer
-                        open={pcDrawerPanel === 'intro'}
-                        entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
-                        onClose={closePcDrawer}
-                        anchorRef={videoStageRef}
-                        data={data}
-                        episode={episode}
-                        staticBase={staticBase}
-                        tagsFromBackendOnly
-                        maxTags={FORYOU_MAX_VISIBLE_TAGS}
-                    />
-                    <ForYouPlayerPcEpisodeDrawer
-                        open={pcDrawerPanel === 'episodes'}
-                        entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
-                        onClose={closePcDrawer}
-                        anchorRef={videoStageRef}
-                        currentEpisodeNo={episodeNo}
-                        data={data}
-                        viewerIsVip={userStore.isVIP()}
-                        tabRanges={tabRanges}
-                        activeTab={desktopEpisodeTab}
-                        onSelectEpisodeTab={setDesktopEpisodeTab}
-                        filteredEpisodes={filteredEpisodes}
-                        onSelectEpisodeByListIndex={handleSelectEpisodeByListIndex}
-                        resolveEpisodeCellLocked={resolveEpisodeCellLocked}
-                    />
-                    <VideoPlayerPcEpisodeNav
-                        hasPrev={hasPrev}
-                        hasNext={hasNext}
-                        onPrev={handleFeedPrev}
-                        onNext={handleFeedNext}
-                    />
-                </div>
-                <VideoPlayerPcBackBar episodeNo={episodeNo} onBack={handleBack} />
+                {!isFullscreenUi ? (
+                    <div
+                        className={cn(
+                            'video-player-pc-right-rail',
+                            pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
+                        )}
+                        style={pcRightRailStyle}
+                    >
+                        <ForYouPlayerPcIntroDrawer
+                            open={pcDrawerPanel === 'intro'}
+                            entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
+                            onClose={closePcDrawer}
+                            anchorRef={videoStageRef}
+                            data={data}
+                            episode={episode}
+                            staticBase={staticBase}
+                            tagsFromBackendOnly
+                            maxTags={FORYOU_MAX_VISIBLE_TAGS}
+                        />
+                        <ForYouPlayerPcEpisodeDrawer
+                            open={pcDrawerPanel === 'episodes'}
+                            entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
+                            onClose={closePcDrawer}
+                            anchorRef={videoStageRef}
+                            currentEpisodeNo={episodeNo}
+                            data={data}
+                            viewerIsVip={userStore.isVIP()}
+                            tabRanges={tabRanges}
+                            activeTab={desktopEpisodeTab}
+                            onSelectEpisodeTab={setDesktopEpisodeTab}
+                            filteredEpisodes={filteredEpisodes}
+                            onSelectEpisodeByListIndex={handleSelectEpisodeByListIndex}
+                            resolveEpisodeCellLocked={resolveEpisodeCellLocked}
+                        />
+                        <VideoPlayerPcEpisodeNav
+                            hasPrev={hasPrev}
+                            hasNext={hasNext}
+                            onPrev={handleFeedPrev}
+                            onNext={handleFeedNext}
+                        />
+                    </div>
+                ) : null}
+                {!isFullscreenUi ? (
+                    <VideoPlayerPcBackBar episodeNo={episodeNo} onBack={handleBack} />
+                ) : null}
             </div>
             <VideoPlayerVipCommerce
                 ref={vipCommerceRef}

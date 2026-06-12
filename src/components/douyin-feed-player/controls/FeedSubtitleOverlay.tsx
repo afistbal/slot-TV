@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 import '@/styles/video-vertical.scss';
 
+import { IMMERSIVE_FULLSCREEN_CLASS, IMMERSIVE_FULLSCREEN_EVENT } from './feedPlayerFullscreen';
 import { useFeedSubtitle } from './useFeedSubtitle';
 
 type FeedSubtitleOverlayProps = {
@@ -25,10 +26,19 @@ export function FeedSubtitleOverlay({ player, subtitleUrl, className }: FeedSubt
     const { text, ready, loading, error } = useFeedSubtitle(player, subtitleUrl);
 
     useEffect(() => {
-        const sync = () => setIsFullscreen(Boolean(document.fullscreenElement));
+        const sync = () => {
+            const immersive = Boolean(
+                document.querySelector(`.${IMMERSIVE_FULLSCREEN_CLASS}`),
+            );
+            setIsFullscreen(Boolean(document.fullscreenElement) || immersive);
+        };
         sync();
         document.addEventListener('fullscreenchange', sync);
-        return () => document.removeEventListener('fullscreenchange', sync);
+        window.addEventListener(IMMERSIVE_FULLSCREEN_EVENT, sync as EventListener);
+        return () => {
+            document.removeEventListener('fullscreenchange', sync);
+            window.removeEventListener(IMMERSIVE_FULLSCREEN_EVENT, sync as EventListener);
+        };
     }, []);
 
     const trimmed = subtitleUrl.trim();

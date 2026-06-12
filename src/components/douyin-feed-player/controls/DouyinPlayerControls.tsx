@@ -21,6 +21,11 @@ type DouyinPlayerControlsProps = {
     topContent?: ReactNode;
     /** for-demo / For You：固定 1.0x，隐藏倍速按钮 */
     fixedPlaybackSpeed?: boolean;
+    isFullscreenUi?: boolean;
+    fullscreen?: {
+        isFullscreenUi: boolean;
+        toggleFullscreen: () => Promise<boolean>;
+    };
 };
 
 function stopBubble(event: MouseEvent | TouchEvent) {
@@ -34,9 +39,11 @@ export function DouyinPlayerControls({
     onNextEpisode,
     topContent,
     fixedPlaybackSpeed = false,
+    isFullscreenUi = false,
+    fullscreen,
 }: DouyinPlayerControlsProps) {
-    const ctl = useDouyinPlayerControlState(player, { fixedPlaybackSpeed });
-    const feedBottomLayout = Boolean(topContent);
+    const ctl = useDouyinPlayerControlState(player, { fixedPlaybackSpeed, fullscreen });
+    const feedBottomLayout = Boolean(topContent) && !isFullscreenUi;
     const progressScrubRef = useRef<HTMLDivElement | null>(null);
 
     const seekFromClientX = (clientX: number, rect: DOMRect) => {
@@ -83,10 +90,10 @@ export function DouyinPlayerControls({
             <div
                 className={cn(
                     'video-player-h5-bottom w-full',
-                    !feedBottomLayout && 'video-player-h5-bottom--fullscreen',
+                    (isFullscreenUi || !feedBottomLayout) && 'video-player-h5-bottom--fullscreen',
                 )}
             >
-                {topContent}
+                {!isFullscreenUi ? topContent : null}
                 <div className="video-player-h5-progress-row">
                     <div
                         ref={progressScrubRef}

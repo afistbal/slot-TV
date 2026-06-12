@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { useNavigate } from 'react-router';
 
 import {
@@ -24,6 +24,7 @@ import {
 } from '@/components/foryou-feed/forYouPlayerOverlays';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
+import { cn } from '@/lib/utils';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
@@ -38,6 +39,8 @@ type ForDemoH5PlayerShellProps = {
     hasNext: boolean;
     hasMore: boolean;
     listLength: number;
+    fullscreenTargetRef: RefObject<HTMLElement | null>;
+    onFullscreenUiChange?: (active: boolean) => void;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
     onLoadMore: () => void;
 };
@@ -50,6 +53,8 @@ export function ForDemoH5PlayerShell({
     hasNext,
     hasMore,
     listLength,
+    fullscreenTargetRef,
+    onFullscreenUiChange,
     onIndexChange,
     onLoadMore,
 }: ForDemoH5PlayerShellProps) {
@@ -66,7 +71,16 @@ export function ForDemoH5PlayerShell({
     );
     const [vip, setVip] = useState(false);
     const [introductionOpen, setIntroductionOpen] = useState(false);
+    const [isFullscreenUi, setIsFullscreenUi] = useState(false);
     const episodeRef = useRef<HTMLDivElement>(null);
+
+    const handleFullscreenUiChange = useCallback(
+        (active: boolean) => {
+            setIsFullscreenUi(active);
+            onFullscreenUiChange?.(active);
+        },
+        [onFullscreenUiChange],
+    );
 
     const {
         shareOpen,
@@ -140,6 +154,8 @@ export function ForDemoH5PlayerShell({
                 items={playerItems}
                 mediaBaseUrl={staticBase}
                 preloadNext
+                fullscreenTargetRef={fullscreenTargetRef}
+                onFullscreenUiChange={handleFullscreenUiChange}
                 onIndexChange={onIndexChange}
                 showNextEpisode={hasNext}
                 onNextEpisode={handleFeedNext}
@@ -160,7 +176,12 @@ export function ForDemoH5PlayerShell({
                 visible={coldUnmuteVisible}
                 onTapToUnmute={handleTapToUnmute}
             />
-            <div className="for-demo-h5-chrome pointer-events-none absolute inset-0 z-10">
+            <div
+                className={cn(
+                    'for-demo-h5-chrome pointer-events-none absolute inset-0 z-10',
+                    isFullscreenUi && 'hidden',
+                )}
+            >
                 <ForDemoFeedBackTopbar />
                 <VideoPlayerSideActions
                     variant="h5"

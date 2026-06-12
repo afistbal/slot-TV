@@ -4,6 +4,7 @@ import {
     useRef,
     useState,
     type MouseEvent,
+    type RefObject,
 } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -53,6 +54,9 @@ type ForDemoPcPlayerShellProps = {
     hasNext: boolean;
     hasMore: boolean;
     listLength: number;
+    fullscreenTargetRef: RefObject<HTMLElement | null>;
+    isDesktop?: boolean;
+    onFullscreenUiChange?: (active: boolean) => void;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
     onLoadMore: () => void;
 };
@@ -66,6 +70,9 @@ export function ForDemoPcPlayerShell({
     hasNext,
     hasMore,
     listLength,
+    fullscreenTargetRef,
+    isDesktop = true,
+    onFullscreenUiChange,
     onIndexChange,
     onLoadMore,
 }: ForDemoPcPlayerShellProps) {
@@ -84,6 +91,15 @@ export function ForDemoPcPlayerShell({
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
     const pcDrawerClosingRef = useRef(false);
     const prevListLengthRef = useRef(listLength);
+    const [isFullscreenUi, setIsFullscreenUi] = useState(false);
+
+    const handleFullscreenUiChange = useCallback(
+        (active: boolean) => {
+            setIsFullscreenUi(active);
+            onFullscreenUiChange?.(active);
+        },
+        [onFullscreenUiChange],
+    );
 
     const pcShellRef = useRef<HTMLDivElement>(null);
     const pcStageClusterRef = useRef<HTMLDivElement>(null);
@@ -278,6 +294,9 @@ export function ForDemoPcPlayerShell({
                             items={playerItems}
                             mediaBaseUrl={staticBase}
                             preloadNext
+                            fullscreenTargetRef={fullscreenTargetRef}
+                            isDesktop={isDesktop}
+                            onFullscreenUiChange={handleFullscreenUiChange}
                             onIndexChange={onIndexChange}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
@@ -299,41 +318,45 @@ export function ForDemoPcPlayerShell({
                             onTapToUnmute={handleTapToUnmute}
                         />
                     </div>
-                    <VideoPlayerSideActions
-                        variant="pc"
-                        showVip={!userStore.isVIP()}
-                        favorite={favorite}
-                        favoriteCount={data.info.favorite}
-                        onVipClick={handleToggleVip}
-                        onFavoriteClick={handleToggleFavorite}
-                        onShareClick={() => setShareOpen(true)}
-                    />
+                    {!isFullscreenUi ? (
+                        <VideoPlayerSideActions
+                            variant="pc"
+                            showVip={!userStore.isVIP()}
+                            favorite={favorite}
+                            favoriteCount={data.info.favorite}
+                            onVipClick={handleToggleVip}
+                            onFavoriteClick={handleToggleFavorite}
+                            onShareClick={() => setShareOpen(true)}
+                        />
+                    ) : null}
                 </div>
-                <div
-                    className={cn(
-                        'video-player-pc-right-rail',
-                        pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
-                    )}
-                    style={pcRightRailStyle}
-                >
-                    <ForYouPlayerPcIntroDrawer
-                        open={pcDrawerPanel === 'intro'}
-                        entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
-                        onClose={closePcDrawer}
-                        anchorRef={videoStageRef}
-                        data={data}
-                        episode={episode}
-                        staticBase={staticBase}
-                        tagsFromBackendOnly
-                        maxTags={FORYOU_MAX_VISIBLE_TAGS}
-                    />
-                    <VideoPlayerPcEpisodeNav
-                        hasPrev={hasPrev}
-                        hasNext={hasNext || hasMore}
-                        onPrev={handleFeedPrev}
-                        onNext={handleFeedNext}
-                    />
-                </div>
+                {!isFullscreenUi ? (
+                    <div
+                        className={cn(
+                            'video-player-pc-right-rail',
+                            pcDrawerPanel != null && 'video-player-pc-right-rail--drawer-open',
+                        )}
+                        style={pcRightRailStyle}
+                    >
+                        <ForYouPlayerPcIntroDrawer
+                            open={pcDrawerPanel === 'intro'}
+                            entered={pcDrawerEntered && pcDrawerPanel === 'intro'}
+                            onClose={closePcDrawer}
+                            anchorRef={videoStageRef}
+                            data={data}
+                            episode={episode}
+                            staticBase={staticBase}
+                            tagsFromBackendOnly
+                            maxTags={FORYOU_MAX_VISIBLE_TAGS}
+                        />
+                        <VideoPlayerPcEpisodeNav
+                            hasPrev={hasPrev}
+                            hasNext={hasNext || hasMore}
+                            onPrev={handleFeedPrev}
+                            onNext={handleFeedNext}
+                        />
+                    </div>
+                ) : null}
             </div>
             <ForYouPlayerPcCommerceDialogs
                 vip={vip}

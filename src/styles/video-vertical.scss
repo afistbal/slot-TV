@@ -53,6 +53,33 @@
     box-sizing: border-box;
 }
 
+/** H5 沉浸全屏：页面内铺满，保留 Safari 底栏 + 自定义控制条（不走 webkitEnterFullscreen） */
+.video-fullscreen-target--immersive {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9998;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    min-height: 100dvh;
+    background: #000;
+    overflow: hidden;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.video-fullscreen-target--immersive .for-demo-h5-shell,
+.video-fullscreen-target--immersive .v-demo-h5-shell,
+.video-fullscreen-target--immersive .douyin-feed-player {
+    height: 100%;
+    min-height: 0;
+}
+
+.video-fullscreen-target--immersive .douyin-feed-player__slide {
+    height: 100dvh;
+}
+
 .video-fullscreen-target:fullscreen>.video-vertical-swiper,
 .video-fullscreen-target:-webkit-full-screen>.video-vertical-swiper,
 .video-fullscreen-target:fullscreen>.foryou-vertical,

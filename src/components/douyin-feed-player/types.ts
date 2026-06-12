@@ -1,5 +1,5 @@
 /** 单条 Feed 视频（与业务 API 解耦） */
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 export type DouyinFeedVideoItem = {
     id: string | number;
@@ -37,6 +37,11 @@ export type DouyinFeedPlayerProps = {
     controlsTopContent?: ReactNode;
     /** for-demo：固定 1.0x，隐藏倍速（/v-demo 等默认 false 仍可变速） */
     fixedPlaybackSpeed?: boolean;
+    /** 容器全屏目标（`.video-fullscreen-target`） */
+    fullscreenTargetRef?: RefObject<HTMLElement | null>;
+    isDesktop?: boolean;
+    /** 全屏 UI 显隐（壳层隐藏顶栏/侧栏） */
+    onFullscreenUiChange?: (active: boolean) => void;
 };
 export type PlayerSlotState = {
     index: number;

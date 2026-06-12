@@ -75,6 +75,8 @@ export default function VDemoPage() {
     const [items, setItems] = useState<DouyinFeedVideoItem[]>([]);
     const [initialIndex, setInitialIndex] = useState(0);
     const [activeIndex, setActiveIndex] = useState(0);
+    const [isFullscreenUi, setIsFullscreenUi] = useState(false);
+    const fullscreenTargetRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [foryouResumeTimeSec, setForyouResumeTimeSec] = useState<number | undefined>();
@@ -353,6 +355,9 @@ export default function VDemoPage() {
             initialIndex={initialIndex}
             foryouResumeTimeSec={foryouResumeTimeSec}
             foryouResumeEpisodeRowId={foryouResumeEpisodeRowId}
+            fullscreenTargetRef={fullscreenTargetRef}
+            isDesktop
+            onFullscreenUiChange={setIsFullscreenUi}
             onIndexChange={onFeedIndexChange}
             onEpisodeUnlocked={refreshItemsIfChanged}
             onEpisodeDetailReady={refreshItemsIfChanged}
@@ -366,6 +371,8 @@ export default function VDemoPage() {
             initialIndex={initialIndex}
             foryouResumeTimeSec={foryouResumeTimeSec}
             foryouResumeEpisodeRowId={foryouResumeEpisodeRowId}
+            fullscreenTargetRef={fullscreenTargetRef}
+            onFullscreenUiChange={setIsFullscreenUi}
             onIndexChange={onFeedIndexChange}
             onEpisodeUnlocked={refreshItemsIfChanged}
             onEpisodeDetailReady={refreshItemsIfChanged}
@@ -374,15 +381,21 @@ export default function VDemoPage() {
 
     return isDesktop ? (
         <div className="video-vertical-pc-shell v-demo-pc-shell foryou-vertical-pc-shell">
-            {pcTopNav}
+            {!isFullscreenUi ? pcTopNav : null}
             <div className="v-demo v-demo--pc relative min-h-0 flex-1 overflow-hidden bg-black">
-                <div className="video-fullscreen-target h-full w-full touch-none select-none">
+                <div
+                    ref={fullscreenTargetRef}
+                    className="video-fullscreen-target h-full w-full touch-none select-none"
+                >
                     {playerBody}
                 </div>
             </div>
         </div>
     ) : (
-        <div className="v-demo v-demo--h5 foryou-vertical fixed inset-0 z-0 overflow-hidden bg-black">
+        <div
+            ref={fullscreenTargetRef}
+            className="v-demo v-demo--h5 foryou-vertical video-fullscreen-target fixed inset-0 z-0 overflow-hidden bg-black"
+        >
             {playerBody}
         </div>
     );
