@@ -94,7 +94,7 @@
     pointer-events: auto;
 }
 
-/** PC：壳层管切条，播放器只播当前一条，禁止内部 scroll 露出邻条 */
+/** PC：overflow 隐藏邻条视觉，仍保留多 slot 供 scroll / preload 复用 */
 @media (min-width: 768px) {
     .for-demo-pc-shell .for-demo-pc-player.douyin-feed-player {
         overflow: hidden;

@@ -350,6 +350,7 @@ export default function VDemoPage() {
             playerData={playerData}
             playerItems={items}
             activeIndex={activeIndex}
+            initialIndex={initialIndex}
             foryouResumeTimeSec={foryouResumeTimeSec}
             foryouResumeEpisodeRowId={foryouResumeEpisodeRowId}
             onIndexChange={onFeedIndexChange}

@@ -12,7 +12,6 @@ import {
     type DouyinFeedVideoItem,
     type FeedNavigateDirection,
 } from '@/components/douyin-feed-player';
-import { bindWheelNavigate } from '@/components/douyin-feed-player/feed/wheelNavigate';
 import {
     VideoPlayerPcEpisodeNav,
     VideoPlayerPcUnmuteOverlay,
@@ -43,6 +42,7 @@ import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShar
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
+import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
 type ForDemoPcPlayerShellProps = {
     staticBase: string;
@@ -75,8 +75,6 @@ export function ForDemoPcPlayerShell({
     const episode = buildEpisodeFromFeedItem(feedItem);
     const episodeNo = feedItem.episode ?? 1;
     const feedEpisodeTotal = feedItem.episodes ?? 0;
-    const activePlayerItem = playerItems[activeIndex];
-
     const [favorite, setFavorite] = useState(
         feedItem.is_favor === true || feedItem.is_favorite === 1,
     );
@@ -115,10 +113,12 @@ export function ForDemoPcPlayerShell({
             return;
         }
         if (activeIndex === prevListLengthRef.current - 1) {
-            onIndexChange(activeIndex + 1, 'next');
+            requestAnimationFrame(() => {
+                scrollForDemoFeedToIndex(activeIndex + 1);
+            });
         }
         prevListLengthRef.current = listLength;
-    }, [activeIndex, listLength, onIndexChange]);
+    }, [activeIndex, listLength]);
 
     const beginClosePcDrawer = useCallback(() => {
         if (!pcDrawerPanel) {
@@ -171,18 +171,18 @@ export function ForDemoPcPlayerShell({
 
     const handleFeedPrev = useCallback(() => {
         if (activeIndex <= 0) return;
-        onIndexChange(activeIndex - 1, 'prev');
-    }, [activeIndex, onIndexChange]);
+        scrollForDemoFeedToIndex(activeIndex - 1);
+    }, [activeIndex]);
 
     const handleFeedNext = useCallback(() => {
         if (activeIndex < playerItems.length - 1) {
-            onIndexChange(activeIndex + 1, 'next');
+            scrollForDemoFeedToIndex(activeIndex + 1);
             return;
         }
         if (hasMore) {
             onLoadMore();
         }
-    }, [activeIndex, hasMore, onLoadMore, onIndexChange, playerItems.length]);
+    }, [activeIndex, hasMore, onLoadMore, playerItems.length]);
 
     const handleWatchFullSeries = useCallback(() => {
         navigateFromForDemoWatchFull(navigate, feedItem, activeIndex);
@@ -190,23 +190,6 @@ export function ForDemoPcPlayerShell({
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
-
-    useEffect(() => {
-        const stage = videoStageRef.current;
-        if (!stage) {
-            return;
-        }
-        const wheel = bindWheelNavigate(stage, (dir) => {
-            if (dir === 'next') {
-                handleFeedNext();
-            } else {
-                handleFeedPrev();
-            }
-        });
-        return () => {
-            wheel.dispose();
-        };
-    }, [handleFeedNext, handleFeedPrev]);
 
     useEffect(() => {
         if (pcDrawerPanel == null) {
@@ -291,11 +274,11 @@ export function ForDemoPcPlayerShell({
                         className="relative flex h-full max-h-full w-auto max-w-full flex-col aspect-[9/16] overflow-hidden bg-black"
                     >
                         <DouyinFeedPlayer
-                            key={String(activePlayerItem?.id ?? activeIndex)}
                             className="for-demo-pc-player h-full w-full"
-                            items={activePlayerItem ? [activePlayerItem] : []}
+                            items={playerItems}
                             mediaBaseUrl={staticBase}
-                            preloadNext={false}
+                            preloadNext
+                            onIndexChange={onIndexChange}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
                             fixedPlaybackSpeed

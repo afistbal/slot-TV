@@ -1,6 +1,7 @@
 import {
     useCallback,
     useEffect,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -12,7 +13,6 @@ import {
     type DouyinFeedVideoItem,
     type FeedNavigateDirection,
 } from '@/components/douyin-feed-player';
-import { bindWheelNavigate } from '@/components/douyin-feed-player/feed/wheelNavigate';
 import { FeedPlayerBottomInfo } from '@/components/feed';
 import {
     VideoPlayerLockOverlay,
@@ -54,12 +54,14 @@ import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
+import { scrollVDemoFeedToIndex } from './vDemoFeedScroll';
 
 type VDemoPcPlayerShellProps = {
     staticBase: string;
     playerData: VDemoPlayerData;
     playerItems: DouyinFeedVideoItem[];
     activeIndex: number;
+    initialIndex: number;
     foryouResumeTimeSec?: number;
     foryouResumeEpisodeRowId?: number;
     onIndexChange: (index: number, direction?: FeedNavigateDirection) => void;
@@ -72,6 +74,7 @@ export function VDemoPcPlayerShell({
     playerData,
     playerItems,
     activeIndex,
+    initialIndex,
     foryouResumeTimeSec,
     foryouResumeEpisodeRowId,
     onIndexChange,
@@ -151,6 +154,18 @@ export function VDemoPcPlayerShell({
         setDesktopEpisodeTab(pcEpisodeTabIndexForEpisodeNo(episodeNo, tabRanges));
     }, [episodeNo, tabRanges]);
 
+    useLayoutEffect(() => {
+        if (initialIndex <= 0) {
+            return;
+        }
+        const scroller = document.querySelector('.v-demo #sliderVideo') as HTMLElement | null;
+        if (!scroller) {
+            return;
+        }
+        const height = scroller.clientHeight || window.innerHeight;
+        scroller.scrollTop = initialIndex * height;
+    }, [initialIndex, playerItems.length]);
+
     const beginClosePcDrawer = useCallback(() => {
         if (!pcDrawerPanel) {
             return;
@@ -217,15 +232,15 @@ export function VDemoPcPlayerShell({
         if (!hasPrev) {
             return;
         }
-        onIndexChange(activeIndex - 1, 'prev');
-    }, [activeIndex, hasPrev, onIndexChange]);
+        scrollVDemoFeedToIndex(activeIndex - 1);
+    }, [activeIndex, hasPrev]);
 
     const handleFeedNext = useCallback(() => {
         if (!hasNext) {
             return;
         }
-        onIndexChange(activeIndex + 1, 'next');
-    }, [activeIndex, hasNext, onIndexChange]);
+        scrollVDemoFeedToIndex(activeIndex + 1);
+    }, [activeIndex, hasNext]);
 
     const handleSelectEpisodeByListIndex = useCallback(
         (listIndex: number) => {
@@ -233,31 +248,14 @@ export function VDemoPcPlayerShell({
             if (listIndex === activeIndex) {
                 return;
             }
-            onIndexChange(listIndex, listIndex > activeIndex ? 'next' : 'prev');
+            scrollVDemoFeedToIndex(listIndex);
         },
-        [activeIndex, beginClosePcDrawer, onIndexChange],
+        [activeIndex, beginClosePcDrawer],
     );
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
     const handleBack = useVideoPlayerBack();
-
-    useEffect(() => {
-        const stage = videoStageRef.current;
-        if (!stage) {
-            return;
-        }
-        const wheel = bindWheelNavigate(stage, (dir) => {
-            if (dir === 'next') {
-                handleFeedNext();
-            } else {
-                handleFeedPrev();
-            }
-        });
-        return () => {
-            wheel.dispose();
-        };
-    }, [handleFeedNext, handleFeedPrev]);
 
     useEffect(() => {
         if (pcDrawerPanel == null) {
@@ -342,11 +340,12 @@ export function VDemoPcPlayerShell({
                         className="relative flex h-full max-h-full w-auto max-w-full flex-col aspect-[9/16] overflow-hidden bg-black"
                     >
                         <DouyinFeedPlayer
-                            key={String(activePlayerItem?.id ?? activeIndex)}
                             className="v-demo-pc-player h-full w-full"
-                            items={activePlayerItem ? [activePlayerItem] : []}
+                            items={playerItems}
                             mediaBaseUrl={staticBase}
-                            preloadNext={false}
+                            initialIndex={initialIndex}
+                            preloadNext
+                            onIndexChange={onIndexChange}
                             showNextEpisode={hasNext}
                             onNextEpisode={handleFeedNext}
                             onPlaybackModeChange={handleForyouResume}
