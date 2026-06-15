@@ -879,6 +879,12 @@ export default function RadixRc({
                         <LegalDocumentLink title="privacy_policy" className="rs-shopping__tipsAgreementLink">
                             <FormattedMessage id="shopping_tips_link_privacy" />
                         </LegalDocumentLink>
+                        <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
+                            |
+                        </span>
+                        <LegalDocumentLink title="pay_service" className="rs-shopping__tipsAgreementLink">
+                            <FormattedMessage id="shopping_paid_service_agreement_title" />
+                        </LegalDocumentLink>
                     </div>
                 </section>
             ) : null}
@@ -1143,13 +1149,12 @@ export default function RadixRc({
                             <div className="rs-shopping__payModalAgreementCopy">
                                 <span className="rs-shopping__payModalAgreementText">
                                     <FormattedMessage id="shopping_pay_agreement_prefix" />
-                                    <button
-                                        type="button"
+                                    <LegalDocumentLink
+                                        title="pay_service"
                                         className="rs-shopping__payModalAgreementLink"
-                                        onClick={() => setShowPaidServiceAgreement(true)}
                                     >
                                         <FormattedMessage id="shopping_pay_agreement_link" />
-                                    </button>
+                                    </LegalDocumentLink>
                                     {/* <FormattedMessage id="shopping_pay_agreement_suffix" /> */}
                                 </span>
                             </div>

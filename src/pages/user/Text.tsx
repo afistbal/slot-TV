@@ -229,7 +229,12 @@ function PrivacyPolicyBody() {
     );
 }
 
-type LegalPageKey = "user_agreement" | "privacy_policy" | "membership_agreement" | "payment_agreement";
+type LegalPageKey =
+    | "user_agreement"
+    | "privacy_policy"
+    | "membership_agreement"
+    | "payment_agreement"
+    | "pay_service";
 
 function parseLegalPageKey(titleParam: string | null): LegalPageKey {
     switch (titleParam) {
@@ -239,6 +244,8 @@ function parseLegalPageKey(titleParam: string | null): LegalPageKey {
             return "membership_agreement";
         case "payment_agreement":
             return "payment_agreement";
+        case "pay_service":
+            return "pay_service";
         default:
             return "user_agreement";
     }
@@ -249,6 +256,7 @@ const LEGAL_PAGE_TITLE_IDS: Record<LegalPageKey, string> = {
     privacy_policy: "privacy_policy",
     membership_agreement: "shopping_tips_link_membership",
     payment_agreement: "shopping_tips_link_payment",
+    pay_service: "shopping_paid_service_agreement_title",
 };
 
 function LegalPageBody({ pageKey }: { pageKey: LegalPageKey }) {
@@ -258,7 +266,7 @@ function LegalPageBody({ pageKey }: { pageKey: LegalPageKey }) {
     if (pageKey === "membership_agreement") {
         return <MemberTerms />;
     }
-    if (pageKey === "payment_agreement") {
+    if (pageKey === "payment_agreement" || pageKey === "pay_service") {
         return <ShoppingPaidServiceAgreementContent />;
     }
     return <UserAgreementBody />;
@@ -286,7 +294,8 @@ export default function Component() {
                 className={cn(
                     "rs-legal-doc",
                     pageKey === "membership_agreement" && "rs-legal-doc--memberTerms",
-                    pageKey === "payment_agreement" && "rs-legal-doc--payment",
+                    (pageKey === "payment_agreement" || pageKey === "pay_service") &&
+                        "rs-legal-doc--payment",
                 )}
             >
                 <LegalPageBody pageKey={pageKey} />
