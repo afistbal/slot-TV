@@ -1,7 +1,6 @@
 import ky from 'ky';
 import { toast } from 'sonner';
 import { useLoadingStore } from './stores/loading';
-import { useUserStore } from './stores/user';
 import { UAParser } from 'ua-parser-js';
 import { apiBaseURL } from './api/baseURL';
 import { encryptRequestPayload, isWebCryptoAvailable } from './lib/requestEncryption';
@@ -64,7 +63,6 @@ export async function api<T = TData>(path: string, options?: {
     data?: { [key: string]: unknown },
     headers?: Record<string, string | undefined>,
     toastOnError?: boolean,
-    persistSessionOn401?: boolean,
 }): Promise<IResult<T>> {
     const { requestPath, payload } = resolvePostPayload(path, options?.data);
 
@@ -123,10 +121,6 @@ export async function api<T = TData>(path: string, options?: {
                 };
                 break;
             case 401:
-                if (!options?.persistSessionOn401) {
-                    localStorage.removeItem('token');
-                    useUserStore.setState({ signed: false });
-                }
                 result = {
                     c: 1,
                     m: 'Authentication Failure.',

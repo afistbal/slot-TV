@@ -1,6 +1,8 @@
 import { api, type TData } from '@/api';
 import { useUserStore } from '@/stores/user';
 
+import { getOrCreateDeviceUuid } from './browserFingerprint';
+
 /**
  * 与 `App.tsx` 初始化里带 `localStorage.token` 的分支一致：`POST login/token` 后写入 `userStore`。
  * 用于支付成功后刷新 VIP 等字段，避免 `location.reload`。
@@ -14,10 +16,9 @@ export async function refreshSessionFromStoredToken(): Promise<boolean> {
     }
     const result = await api<TData>('login/token', {
         method: 'post',
-        data: { token },
+        data: { token, device_uuid: getOrCreateDeviceUuid() },
         loading: false,
         toastOnError: false,
-        persistSessionOn401: true,
     });
     if (result.c === 0) {
         localStorage.setItem('token', token);

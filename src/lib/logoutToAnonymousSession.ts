@@ -1,3 +1,4 @@
+import { loginAnonymous } from '@/lib/anonymousLogin';
 import { api, type TData } from '@/api';
 import { auth } from '@/firebase';
 import { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
@@ -18,10 +19,7 @@ export async function logoutToAnonymousSession(): Promise<boolean> {
             await auth.signOut();
         }
 
-        const result = await api<{ token: string; info: { [key: string]: unknown } }>('login/anonymous', {
-            loading: false,
-            toastOnError: false,
-        });
+        const result = await loginAnonymous({ toastOnError: false });
 
         if (result.c !== 0) {
             localStorage.removeItem('token');

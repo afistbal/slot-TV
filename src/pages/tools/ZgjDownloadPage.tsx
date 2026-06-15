@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { loginAnonymous } from '@/lib/anonymousLogin';
 import { api, type IPagination, type TData } from '@/api';
 import { useConfigStore } from '@/stores/config';
 import { useUserStore } from '@/stores/user';
@@ -30,7 +31,7 @@ async function ensureApiBootstrap() {
     }
     void initPixel(configStore.config);
     if (!localStorage.getItem('token')) {
-        const anon = await api<TData>('login/anonymous', { loading: false });
+        const anon = await loginAnonymous({ loading: false });
         if (anon.c !== 0) {
             throw new Error(anon.m || '匿名登录失败');
         }

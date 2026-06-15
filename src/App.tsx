@@ -14,6 +14,8 @@ import { LoaderCircle } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "./components/ui/dialog";
 import { api, report, type TData } from "./api";
+import { loginAnonymous } from "./lib/anonymousLogin";
+import { getOrCreateDeviceUuid } from "./lib/browserFingerprint";
 import { refreshSessionFromStoredToken } from "./lib/refreshSessionFromStoredToken";
 import { useUserStore } from "./stores/user";
 import { useConfigStore } from "./stores/config";
@@ -346,6 +348,9 @@ function App() {
         const query = new URLSearchParams(window.location.search);
         useRootStore.getState().setSessionBootstrapReady(false);
 
+        /** 设备号尽早写入 localStorage，与 token 一样本地持久化 */
+        getOrCreateDeviceUuid();
+
         const tokenFromQuery = query.get('_token');
         if (tokenFromQuery) {
             localStorage.setItem('token', tokenFromQuery);
@@ -365,10 +370,7 @@ function App() {
                         return;
                     }
                     localStorage.removeItem('token');
-                    const anon = await api<TData>('login/anonymous', {
-                        loading: false,
-                        toastOnError: false,
-                    });
+                    const anon = await loginAnonymous({ toastOnError: false });
                     if (loadGen !== loadDataGenerationRef.current) {
                         return;
                     }
@@ -382,10 +384,7 @@ function App() {
                     return;
                 }
                 localStorage.removeItem('token');
-                const anon = await api<TData>('login/anonymous', {
-                    loading: false,
-                    toastOnError: false,
-                });
+                const anon = await loginAnonymous({ toastOnError: false });
                 if (loadGen !== loadDataGenerationRef.current) {
                     return;
                 }
