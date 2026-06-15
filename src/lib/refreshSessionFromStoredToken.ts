@@ -1,4 +1,5 @@
 import { api, type TData } from '@/api';
+import { initIsAnonymousFromInfo } from '@/lib/clientIsAnonymous';
 import { useUserStore } from '@/stores/user';
 
 import { getOrCreateDeviceUuid } from './browserFingerprint';
@@ -24,6 +25,7 @@ export async function refreshSessionFromStoredToken(): Promise<boolean> {
         localStorage.setItem('token', token);
         const raw = result.d as TData;
         const info = (raw['info'] as TData | undefined) ?? raw;
+        initIsAnonymousFromInfo(info);
         useUserStore.getState().signin(info);
         /** `signin` 不写 balance；`login/token` 的 info 也未必含最新金币，与支付/解锁后一致需再拉 `user/balance` */
         const bal = await api<number>('user/balance', { loading: false, toastOnError: false });

@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 
+import { getClientIsAnonymous } from '@/lib/clientIsAnonymous';
+
 interface IUser {
   signed: boolean,
   info?: { [key: string]: unknown },
@@ -20,10 +22,7 @@ export const useUserStore = create<IUser>((set, get) => ({
   signin: (info) => set({ signed: true, info }),
   signout: () => set({ signed: false, info: undefined }),
   update: (info) => set({ info: { ...get().info, ...info } }),
-  isAnonymous: () => {
-    const data = get();
-    return data.signed && data.info!['anonymous'] === 1
-  },
+  isAnonymous: () => get().signed && getClientIsAnonymous() === 1,
   isVIP: () => get().signed && get().info!['is_vip'] as boolean,
   isAdmin: () => get().signed && get().info!['admin'] as number > 0,
 }));

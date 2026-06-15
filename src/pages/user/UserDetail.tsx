@@ -13,7 +13,7 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
   const navigate = useNavigate();
   const isPc = useMinWidth768();
 
-  const isRealAccount = userStore.signed && userStore.info && userStore.info['anonymous'] !== 1;
+  const isRealAccount = userStore.signed && !userStore.isAnonymous();
 
   function handleCopyId() {
     if (!userStore.info) return;

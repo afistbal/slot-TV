@@ -25,6 +25,7 @@ import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { getAnonymousUniIdPayload } from '@/lib/anonymousUniIdForBinding';
+import { setIsAnonymousFromInfo } from '@/lib/clientIsAnonymous';
 
 type PcLoginStep = 'providers' | 'email';
 
@@ -169,7 +170,9 @@ function useLoginBase(
             localStorage.setItem('email', email.trim());
             localStorage.setItem('login-method', 'email');
             localStorage.removeItem('user-avatar');
-            userStore.signin(result.d['info'] as { [key: string]: unknown });
+            const emailInfo = result.d['info'] as { [key: string]: unknown };
+            setIsAnonymousFromInfo(emailInfo);
+            userStore.signin(emailInfo);
             pixel.track('emailLogin');
 
             closePcLoginModal();
@@ -286,6 +289,7 @@ function useLoginBase(
             info['avatar'] = detail.avatar;
             info['email'] = detail.email;
             info['anonymous'] = detail.anonymous ? 1 : 0;
+            setIsAnonymousFromInfo(info);
             userStore.signin(info);
             toast.success(
                 intl.formatMessage({
@@ -357,6 +361,7 @@ function useLoginBase(
             info['avatar'] = result.user.photoURL || '';
             info['email'] = result.user.email || '';
             info['anonymous'] = result.user.isAnonymous ? 1 : 0;
+            setIsAnonymousFromInfo(info);
             userStore.signin(info);
             toast.success(
                 intl.formatMessage({

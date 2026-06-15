@@ -5,10 +5,11 @@ import { parseCompositeUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay'
  * 游客升级为邮箱/Google 时带给 `login/email`、`login/uid`：传当前匿名会话的 **uid**（`info.uid`，与展示用 composite 解析一致），不再使用 `unique_id`。
  */
 export function getAnonymousUniIdPayload(): { anonymous_id?: string } {
-    const { signed, info } = useUserStore.getState();
-    if (!signed || !info || info['anonymous'] !== 1) {
+    const store = useUserStore.getState();
+    if (!store.signed || !store.info || !store.isAnonymous()) {
         return {};
     }
+    const info = store.info;
     const uidField = info['uid'];
     let s = '';
     if (typeof uidField === 'number' && Number.isFinite(uidField)) {
