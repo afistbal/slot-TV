@@ -33,6 +33,7 @@ import {
     ForYouPlayerEpisodeSpeedIntroDrawers,
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
+import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import { cn } from '@/lib/utils';
 
@@ -177,6 +178,14 @@ export function VDemoH5PlayerShell({
         activeRow?.id,
         activePlayerItem?.id,
     );
+
+    useReportEpProgressAt5s({
+        movieId: data.info.id,
+        epId: activeRow?.id ?? 0,
+        epNo: episodeNo,
+        playerItemId: activePlayerItem?.id ?? activeRow?.id ?? 0,
+        enabled: !activeLocked && Boolean(activeRow?.id),
+    });
 
     return (
         <div className="v-demo-h5-shell relative h-full w-full">

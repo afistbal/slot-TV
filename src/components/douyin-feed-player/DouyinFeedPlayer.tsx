@@ -321,8 +321,66 @@ export function DouyinFeedPlayer({
     openPreloadGateRef.current = openPreloadGate;
 
     const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
-        itemRefs.current.get(index)?.scrollIntoView({ behavior, block: 'start' });
+        const root = scrollerRef.current;
+        const slide = itemRefs.current.get(index);
+        if (!root || !slide) {
+            itemRefs.current.get(index)?.scrollIntoView({ behavior, block: 'start' });
+            return;
+        }
+        const top = slide.offsetTop;
+        scrollSyncLockRef.current = true;
+        if (behavior === 'auto') {
+            root.scrollTop = top;
+            return;
+        }
+        root.scrollTo({ top, behavior });
     }, []);
+
+    const snapScrollerToActive = useCallback(() => {
+        const root = scrollerRef.current;
+        const slide = itemRefs.current.get(activeIndexRef.current);
+        if (!root || !slide) return;
+        scrollSyncLockRef.current = true;
+        root.scrollTop = slide.offsetTop;
+    }, []);
+
+    /** PC：全屏进/出、顶栏显隐后 scroller 高度变化，scrollTop 须重对齐当前条 */
+    useEffect(() => {
+        if (!isDesktop || !fullscreenEnabled) return;
+
+        const scheduleSnap = () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    snapScrollerToActive();
+                });
+            });
+        };
+
+        const root = scrollerRef.current;
+        if (!root) return;
+
+        let lastHeight = root.clientHeight;
+        const ro = new ResizeObserver(() => {
+            const h = root.clientHeight;
+            if (h === lastHeight) return;
+            lastHeight = h;
+            scheduleSnap();
+        });
+        ro.observe(root);
+
+        const onFullscreenChange = () => scheduleSnap();
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange as EventListener);
+
+        return () => {
+            ro.disconnect();
+            document.removeEventListener('fullscreenchange', onFullscreenChange);
+            document.removeEventListener(
+                'webkitfullscreenchange',
+                onFullscreenChange as EventListener,
+            );
+        };
+    }, [isDesktop, fullscreenEnabled, snapScrollerToActive, playbackItems.length]);
 
     const syncActiveIndex = useCallback((next: number, direction?: FeedNavigateDirection) => {
         const len = playbackItemsLengthRef.current;

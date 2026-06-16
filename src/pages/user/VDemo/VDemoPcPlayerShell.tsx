@@ -49,6 +49,7 @@ import {
     type PcDrawerPanel,
 } from '@/components/video-player/videoPlayerPcDrawerMotion';
 import { usePcPlayerRightRailAlign } from '@/components/video-player/usePcPlayerRightRailAlign';
+import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
@@ -272,6 +273,14 @@ export function VDemoPcPlayerShell({
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
     const handleBack = useVideoPlayerBack();
+
+    useReportEpProgressAt5s({
+        movieId: data.info.id,
+        epId: activeRow?.id ?? 0,
+        epNo: episodeNo,
+        playerItemId: activePlayerItem?.id ?? activeRow?.id ?? 0,
+        enabled: !activeLocked && Boolean(activeRow?.id),
+    });
 
     useEffect(() => {
         if (pcDrawerPanel == null) {

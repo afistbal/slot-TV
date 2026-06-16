@@ -24,10 +24,12 @@ import {
 } from '@/components/foryou-feed/forYouPlayerOverlays';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
+import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { cn } from '@/lib/utils';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
+import { foryouFeedItemKey } from './lib/foryouFeedMerge';
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
 import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
@@ -146,6 +148,13 @@ export function ForDemoH5PlayerShell({
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+
+    useReportEpProgressAt5s({
+        movieId: feedItem.id,
+        epId: feedItem.ep_id,
+        epNo: episodeNo,
+        playerItemId: foryouFeedItemKey(feedItem),
+    });
 
     return (
         <div className="for-demo-h5-shell relative h-full w-full">

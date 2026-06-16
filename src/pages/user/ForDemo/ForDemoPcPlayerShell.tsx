@@ -20,6 +20,7 @@ import {
     useFeedPlayerColdUnmuteVisible,
     useFeedPlayerTapToUnmute,
 } from '@/components/video-player';
+import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { cn } from '@/lib/utils';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
@@ -43,6 +44,7 @@ import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShar
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
+import { foryouFeedItemKey } from './lib/foryouFeedMerge';
 import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
 type ForDemoPcPlayerShellProps = {
@@ -206,6 +208,13 @@ export function ForDemoPcPlayerShell({
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+
+    useReportEpProgressAt5s({
+        movieId: feedItem.id,
+        epId: feedItem.ep_id,
+        epNo: episodeNo,
+        playerItemId: foryouFeedItemKey(feedItem),
+    });
 
     useEffect(() => {
         if (pcDrawerPanel == null) {
