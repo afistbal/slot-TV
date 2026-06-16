@@ -518,16 +518,50 @@ function App() {
             },
             loading: false,
         });
-        const timer = window.setInterval(() => {
+
+        let aliveTimer: number | undefined;
+
+        const pingAlive = () => {
             api('alive', {
                 method: 'post',
                 loading: false,
             });
-        }, 30000);
+        };
+
+        const startAlivePolling = () => {
+            if (aliveTimer !== undefined) {
+                return;
+            }
+            pingAlive();
+            aliveTimer = window.setInterval(pingAlive, 30000);
+        };
+
+        const stopAlivePolling = () => {
+            if (aliveTimer === undefined) {
+                return;
+            }
+            window.clearInterval(aliveTimer);
+            aliveTimer = undefined;
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                startAlivePolling();
+            } else {
+                stopAlivePolling();
+            }
+        };
+
+        if (document.visibilityState === 'visible') {
+            startAlivePolling();
+        }
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
-            window.clearInterval(timer);
-        }
+            stopAlivePolling();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, [checked, sessionBootstrapReady]);
 
     useEffect(() => {

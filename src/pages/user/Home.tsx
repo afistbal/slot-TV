@@ -239,6 +239,9 @@ export default function Component() {
     }, [scrollTopForFab]);
 
     function requestLoadMorePage() {
+        if (!isHomeRouteActiveRef.current) {
+            return;
+        }
         const state = useHomeStore.getState();
         if (requesting.current || !state.more) {
             return;
@@ -247,7 +250,14 @@ export default function Component() {
     }
 
     function tryLoadMoreIfNearBottom(el: HTMLElement) {
+        if (!isHomeRouteActiveRef.current) {
+            return;
+        }
         if (requesting.current || !useHomeStore.getState().more) {
+            return;
+        }
+        // keep-alive 离屏时容器 `display:none`，尺寸为 0，距底部恒为 0 会误触发无限分页
+        if (el.clientHeight <= 0) {
             return;
         }
         const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
@@ -265,6 +275,9 @@ export default function Component() {
     async function loadLatest(p = 1) {
         // 首页不再使用离线 mock 数据：skipRemoteApi 时不加载列表，保持空态
         if (skipRemoteApi) return;
+        if (p > 1 && !isHomeRouteActiveRef.current) {
+            return;
+        }
         const state = useHomeStore.getState();
         if (p <= state.page || !state.more || requesting.current) {
             return;
@@ -289,6 +302,9 @@ export default function Component() {
             state.setMore(hasMore);
 
             requestAnimationFrame(() => {
+                if (!isHomeRouteActiveRef.current) {
+                    return;
+                }
                 const root = scrollRef.current;
                 if (root) {
                     tryLoadMoreIfNearBottom(root);
@@ -301,7 +317,7 @@ export default function Component() {
     }
 
     useEffect(() => {
-        if (!sessionBootstrapReady) {
+        if (!sessionBootstrapReady || !isHomeRouteActive) {
             return;
         }
         // 仅在“返回首页且已有缓存列表”时恢复滚动；分页追加时不要反复重置 scrollTop（会跳回某个标题位置）
@@ -313,17 +329,20 @@ export default function Component() {
             return;
         }
         loadLatest();
-    }, [homeStore.list.length, sessionBootstrapReady]);
+    }, [homeStore.list.length, sessionBootstrapReady, isHomeRouteActive]);
 
     useEffect(() => {
         const root = scrollRef.current;
         const target = loadMoreSentinelRef.current;
-        if (!sessionBootstrapReady || !root || !target) {
+        if (!isHomeRouteActive || !sessionBootstrapReady || !root || !target) {
             return;
         }
 
         const observer = new IntersectionObserver(
             (entries) => {
+                if (!isHomeRouteActiveRef.current) {
+                    return;
+                }
                 if (!entries.some((e) => e.isIntersecting)) {
                     return;
                 }
@@ -339,7 +358,7 @@ export default function Component() {
         observer.observe(target);
         requestAnimationFrame(() => tryLoadMoreIfNearBottom(root));
         return () => observer.disconnect();
-    }, [sessionBootstrapReady, homeStore.list.length, homeStore.more]);
+    }, [isHomeRouteActive, sessionBootstrapReady, homeStore.list.length, homeStore.more]);
 
     const topList = useMemo(
         () => filterRenderableTopBannerItems(homeStore.data?.top ?? []),
