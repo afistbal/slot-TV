@@ -11,7 +11,10 @@
     "build:dev": "tsc -b && vite build --mode dev",
     "build:prod": "node ./scripts/clean-movie-www.mjs D:/JJ-TV/movie-www-prod && tsc -b && vite build --mode prod",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "i18n:export": "node scripts/i18n-export-locales.mjs",
+    "i18n:import": "node scripts/i18n-import-locales.mjs",
+    "i18n:scaffold": "node scripts/i18n-scaffold-locale.mjs"
   },
   "dependencies": {
     "@adjustcom/adjust-web-sdk": "^5.7.2",
@@ -81,6 +84,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5",
-    "vite-plugin-pwa": "^1.0.2"
+    "vite-plugin-pwa": "^1.0.2",
+    "xlsx": "^0.18.5"
   }
 }

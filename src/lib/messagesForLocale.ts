@@ -2,7 +2,11 @@ import enMessages from '@/locales/en.json';
 import zhMessages from '@/locales/zh.json';
 import arMessages from '@/locales/ar.json';
 import deMessages from '@/locales/de.json';
+import esMessages from '@/locales/es.json';
+import frMessages from '@/locales/fr.json';
+import hiMessages from '@/locales/hi.json';
 import idMessages from '@/locales/id.json';
+import itMessages from '@/locales/it.json';
 import jaMessages from '@/locales/ja.json';
 import koMessages from '@/locales/ko.json';
 import msMessages from '@/locales/ms.json';
@@ -22,7 +26,11 @@ const MESSAGES_BY_CODE: Record<string, TIntlMessages> = {
     zh: zhMessages as TIntlMessages,
     ar: mergeWithEnglish(arMessages as TIntlMessages),
     de: mergeWithEnglish(deMessages as TIntlMessages),
+    es: mergeWithEnglish(esMessages as TIntlMessages),
+    fr: mergeWithEnglish(frMessages as TIntlMessages),
+    hi: mergeWithEnglish(hiMessages as TIntlMessages),
     id: mergeWithEnglish(idMessages as TIntlMessages),
+    it: mergeWithEnglish(itMessages as TIntlMessages),
     ja: mergeWithEnglish(jaMessages as TIntlMessages),
     ko: mergeWithEnglish(koMessages as TIntlMessages),
     ms: mergeWithEnglish(msMessages as TIntlMessages),
