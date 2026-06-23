@@ -442,8 +442,6 @@ function App() {
     }
 
     useEffect(() => {
-        syncFbAttributionCache();
-        syncAdAttributionCache();
         const query = new URLSearchParams(window.location.search);
         const t = query.get('_t') ?? '';
         const s = query.get('s') ?? '';
@@ -461,6 +459,8 @@ function App() {
         if (!localStorage.getItem('test')) {
             localStorage.setItem('test', '');
         }
+        syncFbAttributionCache();
+        syncAdAttributionCache();
         loadData();
 
     }, []);

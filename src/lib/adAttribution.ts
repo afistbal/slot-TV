@@ -1,4 +1,9 @@
+import { isTikTokAnalytics } from '@/lib/fbAttribution';
+
 const FROM_SOURCE_KEY = 'from_source';
+/** 上次写入 `from_source` 时对应的 `localStorage.source`（用于检测 source 变更） */
+const FROM_SOURCE_SOURCE_ANCHOR_KEY = 'from_source_source_anchor';
+const SOURCE_KEY = 'source';
 const TTCLID_KEY = 'ttclid';
 /** 与 fbc 一致：cookie 兜底 90 天；主存 localStorage 不清除则一直在 */
 const TTCLID_COOKIE_MAX_AGE = 7776000;
@@ -47,20 +52,90 @@ function writeTtclid(ttclid: string): void {
     document.cookie = `${TTCLID_KEY}=${encodeURIComponent(ttclid)}; path=/; max-age=${TTCLID_COOKIE_MAX_AGE}; SameSite=Lax`;
 }
 
+function getStoredSourceAnchor(): string {
+    try {
+        return localStorage.getItem(FROM_SOURCE_SOURCE_ANCHOR_KEY)?.trim() ?? '';
+    } catch {
+        return '';
+    }
+}
+
+function setStoredSourceAnchor(source: string): void {
+    try {
+        localStorage.setItem(FROM_SOURCE_SOURCE_ANCHOR_KEY, source);
+    } catch {
+        /* noop */
+    }
+}
+
+/** URL `s` 优先，否则读 localStorage.source */
+function resolveCurrentSource(): string {
+    if (typeof window === 'undefined') {
+        return '';
+    }
+    const fromUrl = new URLSearchParams(window.location.search).get('s')?.trim();
+    if (fromUrl) {
+        return fromUrl;
+    }
+    try {
+        return localStorage.getItem(SOURCE_KEY)?.trim() ?? '';
+    } catch {
+        return '';
+    }
+}
+
+function isA100CampaignSource(source: string): boolean {
+    return /^A100/i.test(source);
+}
+
+function urlContainsFbOrTiktok(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    const haystack = `${window.location.href}\n${queryStringFromLocation()}`.toLowerCase();
+    return haystack.includes('fb') || haystack.includes('tiktok');
+}
+
+function syncFromSource(): void {
+    const query = queryStringFromLocation();
+    if (!query) {
+        return;
+    }
+
+    try {
+        const currentSource = resolveCurrentSource();
+        const anchorSource = getStoredSourceAnchor();
+        const existingFromSource = localStorage.getItem(FROM_SOURCE_KEY);
+        const sourceChanged = currentSource !== '' && currentSource !== anchorSource;
+        const shouldUpdateOnCampaign =
+            sourceChanged
+            && isA100CampaignSource(currentSource)
+            && urlContainsFbOrTiktok();
+
+        if (!existingFromSource) {
+            localStorage.setItem(FROM_SOURCE_KEY, query);
+            if (currentSource) {
+                setStoredSourceAnchor(currentSource);
+            }
+            return;
+        }
+
+        if (shouldUpdateOnCampaign) {
+            localStorage.setItem(FROM_SOURCE_KEY, query);
+            setStoredSourceAnchor(currentSource);
+        }
+    } catch {
+        /* noop */
+    }
+}
+
 /**
- * 进站 / 路由变化：首触写入 `from_source`、`ttclid`（均不覆盖）；URL 有 `ttclid` 时写入。
+ * 进站 / 路由变化：
+ * - `from_source` 首触写入；source 变为 A100* 且 URL 含 fb/tiktok 时可覆盖
+ * - `ttclid` 首触写入，不覆盖
  */
 export function syncAdAttributionCache(): void {
-    const query = queryStringFromLocation();
-    if (query) {
-        try {
-            if (!localStorage.getItem(FROM_SOURCE_KEY)) {
-                localStorage.setItem(FROM_SOURCE_KEY, query);
-            }
-        } catch {
-            /* noop */
-        }
-    }
+    syncFromSource();
 
     const ttclid = ttclidFromLocation();
     if (ttclid) {
@@ -99,8 +174,6 @@ export function fromSourceForLogin(): Record<string, string> {
     }
     return {};
 }
-
-import { isTikTokAnalytics } from '@/lib/fbAttribution';
 
 /** `pay/create`：TikTok 渠道仅附带 `ttclid` */
 export function ttclidForPayCreate(): Record<string, string> {

@@ -8,7 +8,8 @@ Header: Authorization: Bearer {token}  (login/anonymous 除外，成功后写 to
 
 from_source
   取值: 进站 URL ? 后整段 query（原样）
-  存储: localStorage.from_source（首次有 query 写入，不覆盖）
+  存储: localStorage.from_source
+  规则: 首触写入；若 source 变为 A100* 且 URL 含 fb/tiktok，则覆盖更新
   上报: login/anonymous | login/email | login/uid（有则传）
 
 ttclid
