@@ -7,6 +7,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { useUserStore } from "@/stores/user";
 // import paypal from "@/assets/paypal.svg";
 import { api, type TData } from "@/api";
+import { buildPayCreateData } from "@/lib/payCreateData";
 import Loader from "@/components/Loader";
 import usePixel from "@/hooks/usePixel";
 import { init } from '@airwallex/components-sdk';
@@ -68,11 +69,11 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
     async function handleSubmit() {
         let result = await api<TData>('pay/create', {
             method: 'post',
-            data: {
+            data: buildPayCreateData({
                 payment: 1,
                 product_id: current,
                 redirect: window.location.href,
-            }
+            }),
         });
 
         if (result.c !== 0) {

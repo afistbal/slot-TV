@@ -4,6 +4,7 @@ import { DialogTitle } from '@radix-ui/react-dialog';
 import { useEffect, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { api, type TData } from '@/api';
+import { buildPayCreateData } from '@/lib/payCreateData';
 import Loader from '@/components/Loader';
 import usePixel from '@/hooks/usePixel';
 import { init } from '@airwallex/components-sdk';
@@ -41,11 +42,11 @@ export default function Coin({
     async function handlePaymentSubmit(payment: number) {
         let result = await api<TData>('pay/create', {
             method: 'post',
-            data: {
+            data: buildPayCreateData({
                 payment,
                 product_id: current,
                 redirect: window.location.href,
-            },
+            }),
         });
 
         if (result.c !== 0) {

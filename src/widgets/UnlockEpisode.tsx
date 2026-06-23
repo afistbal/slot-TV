@@ -6,6 +6,7 @@ import gift from '@/assets/gift.svg';
 import gem from '@/assets/gem.svg';
 import { useEffect, useState } from 'react';
 import { api, type TData } from '@/api';
+import { buildPayCreateData } from '@/lib/payCreateData';
 import Loader from '@/components/Loader';
 import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user';
@@ -84,11 +85,11 @@ export default function UnlockEpisode({
     async function handlePaymentSubmit(payment: number) {
         let result = await api<TData>('pay/create', {
             method: 'post',
-            data: {
+            data: buildPayCreateData({
                 payment,
                 product_id: current,
                 redirect: window.location.href,
-            },
+            }),
         });
 
         if (result.c !== 0) {

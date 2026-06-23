@@ -15,6 +15,10 @@ export function isFacebookAnalytics(): boolean {
     return analyticsType === 'facebook';
 }
 
+export function isTikTokAnalytics(): boolean {
+    return analyticsType === 'tiktok';
+}
+
 function readCookie(name: string): string {
     if (typeof document === 'undefined') {
         return '';
@@ -111,19 +115,17 @@ export function getStoredFbc(): string {
     }
 }
 
-/** `pay/create` 请求体：有 fbp / fbc 就附带 */
+/** `pay/create` 请求体：Facebook 渠道仅附带 fbp */
 export function fbAttributionForPayCreate(): Record<string, string> {
+    if (!isFacebookAnalytics()) {
+        return {};
+    }
     syncFbAttributionCache();
-    const payload: Record<string, string> = {};
     const fbp = getStoredFbp();
-    const fbc = getStoredFbc();
     if (fbp) {
-        payload.fbp = fbp;
+        return { fbp };
     }
-    if (fbc) {
-        payload.fbc = fbc;
-    }
-    return payload;
+    return {};
 }
 
 export type FbLogEventName = 'InitiateCheckout' | 'Purchase';

@@ -8,7 +8,7 @@ export type PayCreateRequest = {
     redirect: string;
 };
 
-/** 组装 `pay/create` POST body（附带缓存中的 fbp / fbc / ttclid） */
+/** 组装 `pay/create` POST body（FB 传 fbp / TT 传 ttclid，按 Pixel 渠道互斥） */
 export function buildPayCreateData(data: PayCreateRequest): Record<string, unknown> {
     return {
         ...data,

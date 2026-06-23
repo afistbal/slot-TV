@@ -100,8 +100,13 @@ export function fromSourceForLogin(): Record<string, string> {
     return {};
 }
 
-/** `pay/create`：有 `ttclid` 就附带 */
+import { isTikTokAnalytics } from '@/lib/fbAttribution';
+
+/** `pay/create`：TikTok 渠道仅附带 `ttclid` */
 export function ttclidForPayCreate(): Record<string, string> {
+    if (!isTikTokAnalytics()) {
+        return {};
+    }
     syncAdAttributionCache();
     const ttclid = getStoredTtclid();
     if (ttclid) {

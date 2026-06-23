@@ -6,6 +6,7 @@ import {
   normalizeAirwallexLocale,
 } from "@/lib/airwallexShoppingWalletEmbedSingleton";
 import { isApplePlatform } from "@/lib/isApplePlatform";
+import { buildPayCreateData } from "@/lib/payCreateData";
 import { cn } from "@/lib/utils";
 import { createElement, type ElementTypes, type Payment } from "@airwallex/components-sdk";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -113,11 +114,11 @@ export function Cards({
         result = await api<TData>("pay/create", {
           method: "post",
           loading: false,
-          data: {
+          data: buildPayCreateData({
             payment: payCreatePayment,
             product_id: productId,
             redirect: redirectHref,
-          },
+          }),
         });
       } catch (e) {
         cardDbg("pay/create 异常", e);
