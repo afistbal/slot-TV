@@ -3,11 +3,13 @@ import type Player from 'xgplayer';
 
 import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 
+import { markUserGesture } from '../feed/userGesturePlay';
+import { isUserHoldPause, scheduleActivePlay } from '../player/createXgPlayer';
+
 import {
     getFullscreenElement,
     IMMERSIVE_FULLSCREEN_CLASS,
     IMMERSIVE_FULLSCREEN_EVENT,
-    isIosNativeVideoFullscreen,
 } from './feedPlayerFullscreen';
 import { getVideoEl } from './playerControlsApi';
 
@@ -36,17 +38,6 @@ function setImmersiveDom(el: HTMLElement | null, active: boolean) {
     dispatchImmersiveChange(active);
 }
 
-/** 阻止 iOS 系统 video 全屏（保留自定义底栏） */
-function blockIosNativeVideoFullscreen(video: HTMLVideoElement | null | undefined) {
-    if (!video || !isIosNativeVideoFullscreen(video)) return;
-    const v = video as HTMLVideoElement & { webkitExitFullscreen?: () => void };
-    try {
-        v.webkitExitFullscreen?.();
-    } catch {
-        /* ignore */
-    }
-}
-
 export function useFeedPlayerFullscreen({
     fullscreenTargetRef,
     isDesktop,
@@ -64,9 +55,8 @@ export function useFeedPlayerFullscreen({
     const getActivePlayerRef = useRef(getActivePlayer);
     getActivePlayerRef.current = getActivePlayer;
 
-    /** H5：页面内沉浸全屏；PC：document 全屏 + 沉浸意图 */
-    const isImmersive = !isDesktop && keepFullscreen;
-    const isFullscreenUi = isDesktop ? keepFullscreen || pcFullscreen : keepFullscreen;
+    const isImmersive = !isDesktop && keepFullscreen && !pcFullscreen;
+    const isFullscreenUi = keepFullscreen || pcFullscreen;
 
     useEffect(() => {
         onFullscreenUiChange?.(isFullscreenUi);
@@ -74,9 +64,9 @@ export function useFeedPlayerFullscreen({
 
     useEffect(() => {
         if (!enabled || isDesktop) return;
-        setImmersiveDom(fullscreenTargetRef.current, keepFullscreen);
+        setImmersiveDom(fullscreenTargetRef.current, isImmersive);
         return () => setImmersiveDom(fullscreenTargetRef.current, false);
-    }, [enabled, fullscreenTargetRef, isDesktop, keepFullscreen]);
+    }, [enabled, fullscreenTargetRef, isDesktop, isImmersive]);
 
     const shouldIgnoreFullscreenExit = useCallback(() => {
         return switchingRef.current || Date.now() <= suppressUntilRef.current;
@@ -92,21 +82,32 @@ export function useFeedPlayerFullscreen({
         switchingRef.current = false;
     }, []);
 
+    const resumeIfPaused = useCallback(() => {
+        if (isUserHoldPause()) return;
+        const player = getActivePlayerRef.current();
+        if (!player) return;
+        markUserGesture();
+        scheduleActivePlay(player);
+    }, []);
+
     const forceExitFullscreen = useCallback(async () => {
         const video = getVideoEl(getActivePlayerRef.current()) as
             | (HTMLVideoElement & { webkitExitFullscreen?: () => void })
             | null;
+        const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
 
         if (document.fullscreenElement) {
             await document.exitFullscreen().catch(() => undefined);
         }
-        blockIosNativeVideoFullscreen(video);
         if (video?.webkitExitFullscreen) {
             try {
                 video.webkitExitFullscreen();
             } catch {
                 /* ignore */
             }
+        }
+        if (doc.webkitExitFullscreen) {
+            await Promise.resolve(doc.webkitExitFullscreen()).catch(() => undefined);
         }
 
         setKeepFullscreen(false);
@@ -123,36 +124,31 @@ export function useFeedPlayerFullscreen({
 
         if (isFullscreenUi) {
             await forceExitFullscreen();
+            resumeIfPaused();
             return false;
-        }
-
-        /** iOS / H5：仅沉浸 UI，不走 webkitEnterFullscreen / 浏览器全屏 */
-        if (!isDesktop) {
-            blockIosNativeVideoFullscreen(video);
-            setKeepFullscreen(true);
-            setImmersiveDom(fullscreenTargetRef.current, true);
-            return true;
         }
 
         await toggleVideoFullscreen({ current: video }, fullscreenTargetRef, {
             preferContainer: true,
-            disableNativeVideoFullscreen: true,
+            disableNativeVideoFullscreen: isDesktop,
         });
         const nowFullscreen = Boolean(getFullscreenElement());
-        if (nowFullscreen) {
+        if (nowFullscreen || !isDesktop) {
             setKeepFullscreen(true);
         }
         setPcFullscreen(nowFullscreen);
-        return nowFullscreen;
-    }, [forceExitFullscreen, fullscreenTargetRef, isDesktop, isFullscreenUi]);
+        return nowFullscreen || !isDesktop;
+    }, [forceExitFullscreen, fullscreenTargetRef, isDesktop, isFullscreenUi, resumeIfPaused]);
 
     useEffect(() => {
         if (!enabled) return;
 
         const onFullscreenChange = () => {
-            if (!isDesktop) return;
             const inFullscreen = Boolean(getFullscreenElement());
             setPcFullscreen(inFullscreen);
+            if (!inFullscreen && !isDesktop && keepFullscreen) {
+                return;
+            }
             if (!inFullscreen && shouldIgnoreFullscreenExit()) {
                 return;
             }
@@ -163,17 +159,35 @@ export function useFeedPlayerFullscreen({
             if (!video || isDesktop) return () => undefined;
 
             const onWebkitBeginFullscreen = () => {
-                blockIosNativeVideoFullscreen(video);
+                setPcFullscreen(true);
+                setKeepFullscreen(true);
+            };
+
+            const onWebkitEndFullscreen = () => {
+                setPcFullscreen(false);
+                setKeepFullscreen(false);
+                setImmersiveDom(fullscreenTargetRef.current, false);
+                if (!shouldIgnoreFullscreenExit()) {
+                    resumeIfPaused();
+                }
             };
 
             video.addEventListener(
                 'webkitbeginfullscreen',
                 onWebkitBeginFullscreen as EventListener,
             );
+            video.addEventListener(
+                'webkitendfullscreen',
+                onWebkitEndFullscreen as EventListener,
+            );
             return () => {
                 video.removeEventListener(
                     'webkitbeginfullscreen',
                     onWebkitBeginFullscreen as EventListener,
+                );
+                video.removeEventListener(
+                    'webkitendfullscreen',
+                    onWebkitEndFullscreen as EventListener,
                 );
             };
         };
@@ -192,17 +206,18 @@ export function useFeedPlayerFullscreen({
             );
             detachVideoGuard?.();
         };
-    }, [enabled, isDesktop, shouldIgnoreFullscreenExit, activeEpisodeKey]);
+    }, [
+        activeEpisodeKey,
+        enabled,
+        fullscreenTargetRef,
+        isDesktop,
+        keepFullscreen,
+        resumeIfPaused,
+        shouldIgnoreFullscreenExit,
+    ]);
 
     useEffect(() => {
         if (!enabled || !keepFullscreen) return;
-
-        if (!isDesktop) {
-            restoreEpisodeRef.current = activeEpisodeKey;
-            onEpisodeFullscreenReady();
-            blockIosNativeVideoFullscreen(getVideoEl(getActivePlayerRef.current()));
-            return;
-        }
 
         if (restoreEpisodeRef.current === activeEpisodeKey || restoreInFlightRef.current) {
             return;
@@ -222,12 +237,12 @@ export function useFeedPlayerFullscreen({
             restoreInFlightRef.current = true;
             void toggleVideoFullscreen({ current: video }, fullscreenTargetRef, {
                 preferContainer: true,
-                disableNativeVideoFullscreen: true,
+                disableNativeVideoFullscreen: isDesktop,
             })
                 .then(() => {
                     const inFullscreen = Boolean(getFullscreenElement());
                     setPcFullscreen(inFullscreen);
-                    setKeepFullscreen(inFullscreen);
+                    setKeepFullscreen(inFullscreen || !isDesktop);
                 })
                 .finally(() => {
                     restoreInFlightRef.current = false;
