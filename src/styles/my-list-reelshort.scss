@@ -218,11 +218,11 @@
     color: hsla(0, 0%, 91%, 0.62);
 }
 
-/* 列表行 */
+/* 列表行：允许父级竖滑；长按仍走 useGesture drag */
 .rs-my-list__row {
     display: flex;
     align-items: flex-start;
-    touch-action: none;
+    touch-action: pan-y;
     user-select: none;
 }
 
