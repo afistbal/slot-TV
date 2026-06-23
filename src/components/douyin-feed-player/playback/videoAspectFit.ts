@@ -55,10 +55,9 @@ export function applyVideoObjectFit(video: HTMLVideoElement): boolean {
     const { videoWidth, videoHeight } = video;
     if (!videoWidth || !videoHeight) return false;
 
-    const landscape = isLandscapeVideo(video);
-    video.style.objectFit = landscape ? 'contain' : 'cover';
+    video.style.objectFit = 'contain';
     video.style.objectPosition = 'center center';
-    return !landscape;
+    return !isLandscapeVideo(video);
 }
 
 /** xgplayer resize() 会写 root 内联 width（横�?fixHeight 路径 �?180px），盖过 CSS；Feed �?object-fit 即可 */
@@ -66,14 +65,11 @@ function normalizeXgplayerRootLayout(player: Player, video: HTMLVideoElement): v
     const root = (player as Player & { root?: HTMLElement }).root;
     if (!root) return;
 
-    const landscape = isLandscapeVideo(video);
-    const fill = landscape ? 'contain' : 'cover';
-
     root.style.width = '100%';
     root.style.height = '100%';
     root.style.paddingTop = '0';
-    root.setAttribute('data-xgfill', fill);
-    video.style.objectFit = fill;
+    root.setAttribute('data-xgfill', 'contain');
+    video.style.objectFit = 'contain';
     video.style.objectPosition = 'center center';
 }
 
@@ -100,19 +96,8 @@ export function syncPlayerAspectFit(player: Player, slotEl: HTMLElement | null):
     const video = player.video as HTMLVideoElement | undefined;
     if (!video) return;
 
-    const landscape = isLandscapeVideo(video);
-
     applyVideoObjectFit(video);
     syncSlotAspectClasses(slotEl, video);
-
-    if (!landscape) {
-        try {
-            (player as Player & { resize?: () => void }).resize?.();
-        } catch {
-            /* ignore resize before layout */
-        }
-    }
-
     normalizeXgplayerRootLayout(player, video);
 }
 

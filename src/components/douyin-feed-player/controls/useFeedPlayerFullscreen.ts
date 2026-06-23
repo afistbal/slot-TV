@@ -56,7 +56,7 @@ export function useFeedPlayerFullscreen({
     getActivePlayerRef.current = getActivePlayer;
 
     const isImmersive = !isDesktop && keepFullscreen && !pcFullscreen;
-    const isFullscreenUi = keepFullscreen || pcFullscreen;
+    const isFullscreenUi = isDesktop ? pcFullscreen : keepFullscreen || pcFullscreen;
 
     useEffect(() => {
         onFullscreenUiChange?.(isFullscreenUi);
@@ -146,6 +146,12 @@ export function useFeedPlayerFullscreen({
         const onFullscreenChange = () => {
             const inFullscreen = Boolean(getFullscreenElement());
             setPcFullscreen(inFullscreen);
+            if (isDesktop && !inFullscreen) {
+                setKeepFullscreen(false);
+                switchingRef.current = false;
+                suppressUntilRef.current = 0;
+                return;
+            }
             if (!inFullscreen && !isDesktop && keepFullscreen) {
                 return;
             }
@@ -217,7 +223,7 @@ export function useFeedPlayerFullscreen({
     ]);
 
     useEffect(() => {
-        if (!enabled || !keepFullscreen) return;
+        if (!enabled || !keepFullscreen || isDesktop) return;
 
         if (restoreEpisodeRef.current === activeEpisodeKey || restoreInFlightRef.current) {
             return;

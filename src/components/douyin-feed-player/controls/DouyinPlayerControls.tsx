@@ -14,6 +14,7 @@ import type Player from 'xgplayer';
 import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
 import fullscreenIcon from '@/assets/video/icon_full@2x.png';
 import { cn } from '@/lib/utils';
+import { useMinWidth768 } from '@/hooks/useMinWidth768';
 
 import '@/styles/video-vertical.scss';
 
@@ -80,6 +81,7 @@ export function DouyinPlayerControls({
     chromeTapSuppressRef,
     chromeVisibleRef,
 }: DouyinPlayerControlsProps) {
+    const isDesktop = useMinWidth768();
     const ctl = useDouyinPlayerControlState(player, { fixedPlaybackSpeed, fullscreen });
     const feedBottomLayout = Boolean(topContent) && !isFullscreenUi;
     const progressScrubRef = useRef<HTMLDivElement | null>(null);
@@ -157,9 +159,12 @@ export function DouyinPlayerControls({
 
     useEffect(() => {
         if (!chromeVideoTapRef) return;
-        chromeVideoTapRef.current = isFullscreenUi ? toggleChromeFromTap : null;
+        const handler = isFullscreenUi ? toggleChromeFromTap : null;
+        chromeVideoTapRef.current = handler;
         return () => {
-            chromeVideoTapRef.current = null;
+            if (chromeVideoTapRef.current === handler) {
+                chromeVideoTapRef.current = null;
+            }
         };
     }, [chromeVideoTapRef, isFullscreenUi, toggleChromeFromTap]);
 
@@ -168,13 +173,13 @@ export function DouyinPlayerControls({
             if (!isFullscreenUi) return;
             if (event.type === 'click') {
                 if (chromeTapSuppressRef?.current) return;
-                // 触摸端由 touchend 切换，避免合成 click 把刚隐藏的底栏又唤起
-                if ('ontouchstart' in window) return;
+                // 仅 H5 触摸端走 touchend；PC（含触屏 PC）始终走 click
+                if (!isDesktop && 'ontouchstart' in window) return;
             }
             if (isChromeInteractiveTarget(event.target)) return;
             toggleChromeFromTap(event.target);
         },
-        [chromeTapSuppressRef, isFullscreenUi, toggleChromeFromTap],
+        [chromeTapSuppressRef, isDesktop, isFullscreenUi, toggleChromeFromTap],
     );
 
     const seekFromClientX = (clientX: number, rect: DOMRect) => {

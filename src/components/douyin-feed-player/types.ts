@@ -1,5 +1,5 @@
 /** 单条 Feed 视频（与业务 API 解耦） */
-import type { ReactNode, RefObject } from 'react';
+import type { MutableRefObject, ReactNode, RefObject } from 'react';
 
 export type DouyinFeedVideoItem = {
     id: string | number;
@@ -11,6 +11,13 @@ export type DouyinFeedVideoItem = {
 export type PlaybackMode = 'mse' | 'native';
 
 export type FeedNavigateDirection = 'next' | 'prev' | 'auto';
+
+/** 壳层 PC 上下集 / 选集：须走 feed 内 syncActiveIndex，勿单独 scrollIntoView */
+export type DouyinFeedNavigateHandle = {
+    next: () => void;
+    prev: () => void;
+    goToIndex: (index: number) => void;
+};
 
 export type DouyinFeedPlayerProps = {
     items: DouyinFeedVideoItem[];
@@ -42,6 +49,8 @@ export type DouyinFeedPlayerProps = {
     isDesktop?: boolean;
     /** 全屏 UI 显隐（壳层隐藏顶栏/侧栏） */
     onFullscreenUiChange?: (active: boolean) => void;
+    /** 壳层 PC 导航：prev/next/选集须先 syncActiveIndex 再滚动 */
+    feedNavigateRef?: MutableRefObject<DouyinFeedNavigateHandle | null>;
 };
 export type PlayerSlotState = {
     index: number;

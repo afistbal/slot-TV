@@ -11,6 +11,7 @@ import {
 
 import {
     DouyinFeedPlayer,
+    type DouyinFeedNavigateHandle,
     type DouyinFeedVideoItem,
     type FeedNavigateDirection,
 } from '@/components/douyin-feed-player';
@@ -56,7 +57,6 @@ import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
-import { scrollVDemoFeedToIndex } from './vDemoFeedScroll';
 
 type VDemoPcPlayerShellProps = {
     staticBase: string;
@@ -122,6 +122,7 @@ export function VDemoPcPlayerShell({
         pcEpisodeTabIndexForEpisodeNo(episodeNo, tabRanges),
     );
     const pcDrawerClosingRef = useRef(false);
+    const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
     const [isFullscreenUi, setIsFullscreenUi] = useState(false);
 
     const handleFullscreenUiChange = useCallback(
@@ -249,15 +250,15 @@ export function VDemoPcPlayerShell({
         if (!hasPrev) {
             return;
         }
-        scrollVDemoFeedToIndex(activeIndex - 1);
-    }, [activeIndex, hasPrev]);
+        feedNavigateRef.current?.prev();
+    }, [hasPrev]);
 
     const handleFeedNext = useCallback(() => {
         if (!hasNext) {
             return;
         }
-        scrollVDemoFeedToIndex(activeIndex + 1);
-    }, [activeIndex, hasNext]);
+        feedNavigateRef.current?.next();
+    }, [hasNext]);
 
     const handleSelectEpisodeByListIndex = useCallback(
         (listIndex: number) => {
@@ -265,7 +266,7 @@ export function VDemoPcPlayerShell({
             if (listIndex === activeIndex) {
                 return;
             }
-            scrollVDemoFeedToIndex(listIndex);
+            feedNavigateRef.current?.goToIndex(listIndex);
         },
         [activeIndex, beginClosePcDrawer],
     );
@@ -372,6 +373,7 @@ export function VDemoPcPlayerShell({
                             preloadNext
                             fullscreenTargetRef={fullscreenTargetRef}
                             isDesktop={isDesktop}
+                            feedNavigateRef={feedNavigateRef}
                             onFullscreenUiChange={handleFullscreenUiChange}
                             onIndexChange={onIndexChange}
                             showNextEpisode={hasNext}

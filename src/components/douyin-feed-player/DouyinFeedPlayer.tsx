@@ -77,6 +77,7 @@ export function DouyinFeedPlayer({
     fullscreenTargetRef,
     isDesktop = false,
     onFullscreenUiChange,
+    feedNavigateRef,
 }: DouyinFeedPlayerProps) {
     const isVideoH5Feed = Boolean(className?.includes('v-demo-h5-player'));
     const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -291,6 +292,12 @@ export function DouyinFeedPlayer({
     );
 
     const handleToolbarNextEpisode = useCallback(() => {
+        const current = activeIndexRef.current;
+        const len = playbackItemsLengthRef.current;
+        if (current < len - 1) {
+            navigateRef.current('next');
+            return;
+        }
         if (fullscreenEnabled && feedFullscreenRef.current.isFullscreenUi) {
             feedFullscreenRef.current.markFullscreenTransition();
         }
@@ -364,6 +371,9 @@ export function DouyinFeedPlayer({
         if (!root || !slide) return;
         scrollSyncLockRef.current = true;
         root.scrollTop = slide.offsetTop;
+        requestAnimationFrame(() => {
+            scrollSyncLockRef.current = false;
+        });
     }, []);
 
     /** PC：全屏进/出、顶栏显隐后 scroller 高度变化，scrollTop 须重对齐当前条 */
@@ -545,6 +555,40 @@ export function DouyinFeedPlayer({
         [scrollToIndex, syncActiveIndex],
     );
     navigateRef.current = navigate;
+
+    const goToIndex = useCallback(
+        (target: number) => {
+            const current = activeIndexRef.current;
+            const len = playbackItemsLengthRef.current;
+            const next = Math.min(Math.max(0, target), len - 1);
+            if (next === current) return;
+
+            markUserGesture(3500);
+            scrollSyncLockRef.current = true;
+            const direction: FeedNavigateDirection = next > current ? 'next' : 'prev';
+            syncActiveIndex(next, direction);
+            scrollToIndex(next);
+            feedDbg('goToIndex', { from: current, to: next, direction });
+            requestAnimationFrame(() => {
+                dispatchActivePlayRef.current('navigate');
+            });
+        },
+        [scrollToIndex, syncActiveIndex],
+    );
+    const goToIndexRef = useRef(goToIndex);
+    goToIndexRef.current = goToIndex;
+
+    useEffect(() => {
+        if (!feedNavigateRef) return;
+        feedNavigateRef.current = {
+            next: () => navigateRef.current('next'),
+            prev: () => navigateRef.current('prev'),
+            goToIndex: (index) => goToIndexRef.current(index),
+        };
+        return () => {
+            feedNavigateRef.current = null;
+        };
+    }, [feedNavigateRef]);
 
     // MD-ref: mount-only — wheel/scroll/keyboard 绑定 scroller DOM
     useEffect(() => {

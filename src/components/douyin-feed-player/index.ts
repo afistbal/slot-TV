@@ -1,6 +1,7 @@
 export { DouyinFeedPlayer } from './DouyinFeedPlayer';
 export { DouyinPlayerControls } from './controls/DouyinPlayerControls';
 export type {
+    DouyinFeedNavigateHandle,
     DouyinFeedPlayerProps,
     DouyinFeedVideoItem,
     FeedNavigateDirection,

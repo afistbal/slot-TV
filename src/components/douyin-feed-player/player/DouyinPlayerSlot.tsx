@@ -42,10 +42,12 @@ export function DouyinPlayerSlot({
     const isDesktop = useMinWidth768();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
-    /** 对标 ForYouPlayer：PC 9:16 舞台；H5 铺满 slide */
+    /** PC 9:16 舞台；H5 NetShort 式 9:16 居中露黑边 */
     const stageClassName = cn(
         'douyin-player-slot__stage relative overflow-hidden bg-black',
-        isDesktop ? 'h-full max-h-full w-auto max-w-full aspect-[9/16]' : 'h-full w-full',
+        isDesktop
+            ? 'h-full max-h-full w-auto max-w-full aspect-[9/16]'
+            : 'douyin-player-slot__stage--aspect',
     );
 
     const handlePlayerChange = useCallback(
@@ -75,8 +77,6 @@ export function DouyinPlayerSlot({
     const onTapVideo = useCallback(
         (event: MouseEvent) => {
             if (chromeTapSuppressRef?.current) return;
-            // 触摸端全屏显隐由 feed capture touchend 处理，避免 hide 后合成 click 再次 show
-            if (onFullscreenVideoTap && 'ontouchstart' in window) return;
             event.preventDefault();
             event.stopPropagation();
             if (onFullscreenVideoTap?.(event.target)) return;
