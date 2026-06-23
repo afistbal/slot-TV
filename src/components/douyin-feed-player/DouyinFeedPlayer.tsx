@@ -382,6 +382,24 @@ export function DouyinFeedPlayer({
         };
     }, [isDesktop, fullscreenEnabled, snapScrollerToActive, playbackItems.length]);
 
+    /** H5：沉浸全屏进/出后 scroller 高度变化，scrollTop 须重对齐当前条（避免 snap 回跳旧 index） */
+    useEffect(() => {
+        if (isDesktop || !fullscreenEnabled) return;
+
+        scrollSyncLockRef.current = true;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                snapScrollerToActive();
+            });
+        });
+    }, [
+        isDesktop,
+        fullscreenEnabled,
+        feedFullscreen.isFullscreenUi,
+        snapScrollerToActive,
+        playbackItems.length,
+    ]);
+
     const syncActiveIndex = useCallback((next: number, direction?: FeedNavigateDirection) => {
         const len = playbackItemsLengthRef.current;
         if (len === 0) return;
