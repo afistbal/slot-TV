@@ -165,12 +165,12 @@ export function getStoredTtclid(): string {
     }
 }
 
-/** 登录接口：有 `from_source` 就附带（传递时 urlencode） */
+/** 登录接口：有 `from_source` 就附带 */
 export function fromSourceForLogin(): Record<string, string> {
     syncAdAttributionCache();
     const from_source = getStoredFromSource();
     if (from_source) {
-        return { from_source: encodeURIComponent(from_source) };
+        return { from_source };
     }
     return {};
 }
