@@ -77,7 +77,8 @@
 }
 
 .video-fullscreen-target--immersive .douyin-feed-player__slide {
-    height: 100dvh;
+    height: 100%;
+    min-height: 100%;
 }
 
 .video-fullscreen-target:fullscreen>.video-vertical-swiper,

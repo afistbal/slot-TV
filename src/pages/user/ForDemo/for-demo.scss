@@ -165,5 +165,11 @@
 
     }
 
+    /** slide 与 scroller 同高，避免 100dvh 与容器高度偏差导致 snap 错位、底栏裁切 */
+    .for-demo-h5-shell .douyin-feed-player__slide {
+        height: 100%;
+        min-height: 100%;
+    }
+
 }
 
