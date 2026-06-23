@@ -1,5 +1,6 @@
 import { api, type TData } from '@/api';
 
+import { fromSourceForLogin } from './adAttribution';
 import { getOrCreateDeviceUuid } from './browserFingerprint';
 import { initIsAnonymousFromInfo } from './clientIsAnonymous';
 
@@ -11,7 +12,7 @@ export async function loginAnonymous(options?: {
     const result = await api<TData>('login/anonymous', {
         loading: options?.loading ?? false,
         toastOnError: options?.toastOnError ?? false,
-        data: { device_uuid: getOrCreateDeviceUuid() },
+        data: { device_uuid: getOrCreateDeviceUuid(), ...fromSourceForLogin() },
     });
     if (result.c === 0) {
         initIsAnonymousFromInfo(result.d['info'] as TData);

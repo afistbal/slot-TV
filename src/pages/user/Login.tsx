@@ -25,6 +25,7 @@ import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { getAnonymousUniIdPayload } from '@/lib/anonymousUniIdForBinding';
+import { fromSourceForLogin } from '@/lib/adAttribution';
 import { setIsAnonymousFromInfo } from '@/lib/clientIsAnonymous';
 
 type PcLoginStep = 'providers' | 'email';
@@ -125,6 +126,7 @@ function useLoginBase(
                     email: email.trim(),
                     code: code.trim(),
                     ...getAnonymousUniIdPayload(),
+                    ...fromSourceForLogin(),
                 },
                 loading: false,
             });
@@ -267,6 +269,7 @@ function useLoginBase(
                 data: {
                     uid: detail.uid,
                     ...getAnonymousUniIdPayload(),
+                    ...fromSourceForLogin(),
                 },
                 loading: false,
             });
@@ -339,6 +342,7 @@ function useLoginBase(
                     email: result.user.email,
                     provider: 'google',
                     ...getAnonymousUniIdPayload(),
+                    ...fromSourceForLogin(),
                 },
                 loading: false,
             });

@@ -1,3 +1,4 @@
+import { ttclidForPayCreate } from '@/lib/adAttribution';
 import { fbAttributionForPayCreate } from '@/lib/fbAttribution';
 import { reportPayLog } from '@/lib/payLog';
 
@@ -7,11 +8,12 @@ export type PayCreateRequest = {
     redirect: string;
 };
 
-/** 组装 `pay/create` POST body（附带缓存中的 fbp / fbc） */
+/** 组装 `pay/create` POST body（附带缓存中的 fbp / fbc / ttclid） */
 export function buildPayCreateData(data: PayCreateRequest): Record<string, unknown> {
     return {
         ...data,
         ...fbAttributionForPayCreate(),
+        ...ttclidForPayCreate(),
     };
 }
 

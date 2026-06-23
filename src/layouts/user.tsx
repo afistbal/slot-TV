@@ -12,6 +12,7 @@ import { matchSearchFamilyPath } from "@/lib/searchRoutes";
 import { isForDemoPathname } from "@/constants/forDemoRoute";
 import { isVDemoPathname } from "@/constants/vDemoRoute";
 import { isForYouPathname } from "@/constants/foryouRoute";
+import { syncAdAttributionCache } from "@/lib/adAttribution";
 import { syncFbAttributionCache } from "@/lib/fbAttribution";
 
 /** 与 App 中 `/`、`/search`、`/:locale/search` 占位路由一致；仅这两页做 DOM 级 keep-alive，避免反复卸载导致图片/LazyLoad 重跑 */
@@ -42,6 +43,7 @@ export default function Component() {
 
     useEffect(() => {
         syncFbAttributionCache();
+        syncAdAttributionCache();
     }, [location.search]);
 
     /**

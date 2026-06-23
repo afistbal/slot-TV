@@ -3,11 +3,26 @@
 Header: Authorization: Bearer {token}  (login/anonymous 除外，成功后写 token)
 
 ========================================
+归因字段
+========================================
+
+from_source
+  取值: 进站 URL ? 后整段 query（原样）
+  存储: localStorage.from_source（首次有 query 写入，不覆盖）
+  上报: login/anonymous | login/email | login/uid（有则传）
+
+ttclid
+  取值: URL 参数 ttclid（TikTok 广告点击 ID）
+  存储: localStorage.ttclid（首次写入不覆盖，永久）+ cookie 兜底 90 天
+  上报: pay/create（有则传）
+
+========================================
 登录 / 会话
 ========================================
 
 1. login/anonymous          匿名登录（首访自动注册游客）
    device_uuid               浏览器指纹 MD5
+   from_source               可选
 
 2. login/token              用已有 token 恢复会话
    token                     localStorage.token
@@ -20,10 +35,12 @@ Header: Authorization: Bearer {token}  (login/anonymous 除外，成功后写 to
    email                     邮箱
    code                      6位验证码
    anonymous_id              可选，游客升级时传当前 uid
+   from_source               可选
 
 5. login/uid                Google 登录（新用户自动注册）
    uid                       Firebase uid
    anonymous_id              可选，游客升级时传当前 uid
+   from_source               可选
    --- Web 弹窗 OAuth 额外传 ---
    anonymous                 0|1
    name                      昵称
@@ -49,9 +66,8 @@ Header: Authorization: Bearer {token}  (login/anonymous 除外，成功后写 to
    payment                   1=Apple Pay  2=Google Pay  3=卡(部分页面)
    product_id                商品 id
    redirect                  支付完成回跳 URL
-   --- 仅购物页 RadixRc 额外传 ---
-   fbp                       Facebook 浏览器 id（有则传）
-   fbc                       Facebook 点击 id（有则传）
+   fbp / fbc                 购物页，有则传
+   ttclid                    有则传
 
 3. pay/complete             Airwallex 支付回调确认
    sn                        订单号

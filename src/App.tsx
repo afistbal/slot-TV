@@ -26,6 +26,7 @@ import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
 import Adjust from '@adjustcom/adjust-web-sdk';
 import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/usePixel';
+import { syncAdAttributionCache } from './lib/adAttribution';
 import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
@@ -350,6 +351,7 @@ function App() {
 
         /** 设备号尽早写入 localStorage，与 token 一样本地持久化 */
         getOrCreateDeviceUuid();
+        syncAdAttributionCache();
 
         const tokenFromQuery = query.get('_token');
         if (tokenFromQuery) {
@@ -427,6 +429,7 @@ function App() {
         }
 
         syncFbAttributionCache();
+        syncAdAttributionCache();
         setChecked(true);
         void initPixel(config.d);
 
@@ -440,6 +443,7 @@ function App() {
 
     useEffect(() => {
         syncFbAttributionCache();
+        syncAdAttributionCache();
         const query = new URLSearchParams(window.location.search);
         const t = query.get('_t') ?? '';
         const s = query.get('s') ?? '';
