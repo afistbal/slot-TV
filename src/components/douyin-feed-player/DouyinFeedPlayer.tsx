@@ -21,7 +21,6 @@ import { detectPlatform } from './platform/detectPlatform';
 import { PLAYER_WINDOW_RADIUS, RESUME_PLAY_WATER_LEVEL } from './constants';
 import { readMutedPreference } from './controls/mutePreference';
 import { markChainAutoplay } from './feed/chainAutoplay';
-import { FeedLogExportChip } from './feed/FeedLogExportChip';
 import { feedDbg, setFeedDbgContext } from './feed/feedDebugLog';
 import { markNeighborMount, msSinceChainUnmute } from './feed/feedPlayAttribution';
 import { feedVideoMp4FromPlayer } from './feed/feedVideoMp4Log';
@@ -916,7 +915,6 @@ export function DouyinFeedPlayer({
                     </div>
                 );
             })}
-            <FeedLogExportChip />
         </div>
     );
 }
