@@ -1,0 +1,72 @@
+基础地址: {VITE_API_BASE_URL}/  默认 https://test.yogoshort.com/api/
+方法: 全部 POST
+Header: Authorization: Bearer {token}  (login/anonymous 除外，成功后写 token)
+
+========================================
+登录 / 会话
+========================================
+
+1. login/anonymous          匿名登录（首访自动注册游客）
+   device_uuid               浏览器指纹 MD5
+
+2. login/token              用已有 token 恢复会话
+   token                     localStorage.token
+   device_uuid               浏览器指纹 MD5
+
+3. login/email/code         发送邮箱验证码
+   email                     邮箱
+
+4. login/email              邮箱验证码登录（新用户自动注册）
+   email                     邮箱
+   code                      6位验证码
+   anonymous_id              可选，游客升级时传当前 uid
+
+5. login/uid                Google 登录（新用户自动注册）
+   uid                       Firebase uid
+   anonymous_id              可选，游客升级时传当前 uid
+   --- Web 弹窗 OAuth 额外传 ---
+   anonymous                 0|1
+   name                      昵称
+   email                     邮箱
+   provider                  google
+
+========================================
+注册说明
+========================================
+无独立 register 接口。
+- 首访: login/anonymous 创建游客
+- 邮箱/Google 首次登录: login/email / login/uid 后端自动注册
+
+========================================
+支付
+========================================
+
+1. product                  拉商品列表（支付前）
+   from                      来源: topup / unlock / video 等
+   type                      10 (部分场景)
+
+2. pay/create               创建支付单
+   payment                   1=Apple Pay  2=Google Pay  3=卡(部分页面)
+   product_id                商品 id
+   redirect                  支付完成回跳 URL
+   --- 仅购物页 RadixRc 额外传 ---
+   fbp                       Facebook 浏览器 id（有则传）
+   fbc                       Facebook 点击 id（有则传）
+
+3. pay/complete             Airwallex 支付回调确认
+   sn                        订单号
+
+4. paypal/complete          PayPal 支付回调确认
+   id                        paymentId
+   token                     token
+   payer_id                  PayerID
+
+5. log                      支付归因日志（仅购物页）
+   user                      { uid, email }
+   event                     InitiateCheckout | Purchase
+   eventId                   订单 sn
+   status                    可选: padding | success | error (Purchase)
+   request                   可选: { url, params, response }
+   fb                        可选: { event, eventId, fbp, fbc }  (Facebook 配置时)
+
+6. user/balance             查余额（支付成功后刷新，无 body）

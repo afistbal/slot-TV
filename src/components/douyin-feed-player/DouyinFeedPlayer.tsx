@@ -266,6 +266,16 @@ export function DouyinFeedPlayer({
     const feedFullscreenRef = useRef(feedFullscreen);
     feedFullscreenRef.current = feedFullscreen;
 
+    const chromeVideoTapRef = useRef<((target: EventTarget | null) => boolean) | null>(null);
+    const chromeTapSuppressRef = useRef(false);
+    const chromeVisibleRef = useRef(false);
+    const fullscreenEnabledRef = useRef(fullscreenEnabled);
+    fullscreenEnabledRef.current = fullscreenEnabled;
+    const handleFullscreenVideoTap = useCallback(
+        (target?: EventTarget | null) => chromeVideoTapRef.current?.(target ?? null) ?? false,
+        [],
+    );
+
     const fullscreenControls = useMemo(
         () =>
             fullscreenEnabled
@@ -561,7 +571,50 @@ export function DouyinFeedPlayer({
             },
         );
 
+        const chromeTapStartRef = { current: null as { x: number; y: number } | null };
+
+        const onChromeTouchStart = (event: TouchEvent) => {
+            if (!(event.target instanceof Element)) return;
+            if (event.target.closest('.douyin-player-controls, .video-player-center-play')) return;
+            const touch = event.touches[0];
+            if (!touch) return;
+            chromeTapStartRef.current = { x: touch.clientX, y: touch.clientY };
+        };
+
+        const onChromeTouchEnd = (event: TouchEvent) => {
+            if (!fullscreenEnabledRef.current || !feedFullscreenRef.current.isFullscreenUi) return;
+            if (
+                event.target instanceof Element &&
+                event.target.closest('.douyin-player-controls')
+            ) {
+                return;
+            }
+            const start = chromeTapStartRef.current;
+            chromeTapStartRef.current = null;
+            if (!start) return;
+            const touch = event.changedTouches[0];
+            if (!touch) return;
+            if (
+                Math.abs(touch.clientX - start.x) > 12 ||
+                Math.abs(touch.clientY - start.y) > 12
+            ) {
+                return;
+            }
+            if (!chromeVideoTapRef.current?.(event.target)) return;
+            event.preventDefault();
+        };
+
+        const onChromeTouchCancel = () => {
+            chromeTapStartRef.current = null;
+        };
+
+        const chromeCapture = { capture: true } as const;
+        root.addEventListener('touchstart', onChromeTouchStart, { ...chromeCapture, passive: true });
+        root.addEventListener('touchend', onChromeTouchEnd, { ...chromeCapture, passive: false });
+        root.addEventListener('touchcancel', onChromeTouchCancel, { ...chromeCapture, passive: true });
+
         const onScroll = () => {
+            chromeTapStartRef.current = null;
             const height = root.clientHeight || window.innerHeight;
             const idx = Math.round(root.scrollTop / height);
             const maxIdx = playbackItemsLengthRef.current - 1;
@@ -598,6 +651,9 @@ export function DouyinFeedPlayer({
         return () => {
             wheel.dispose();
             touch();
+            root.removeEventListener('touchstart', onChromeTouchStart, chromeCapture);
+            root.removeEventListener('touchend', onChromeTouchEnd, chromeCapture);
+            root.removeEventListener('touchcancel', onChromeTouchCancel, chromeCapture);
             root.removeEventListener('scroll', onScroll);
             window.removeEventListener('keydown', onKey);
         };
@@ -830,6 +886,12 @@ export function DouyinFeedPlayer({
                                     onPlayerChange={handleSlotPlayerChange}
                                     onPlaybackModeChange={onPlaybackModeChange}
                                     onStall={onStall}
+                                    onFullscreenVideoTap={
+                                        fullscreenEnabled && index === activeIndex
+                                            ? handleFullscreenVideoTap
+                                            : undefined
+                                    }
+                                    chromeTapSuppressRef={chromeTapSuppressRef}
                                 />
                                 {showControls && index === activeIndex ? (
                                     <DouyinPlayerControls
@@ -840,6 +902,11 @@ export function DouyinFeedPlayer({
                                         fixedPlaybackSpeed={fixedPlaybackSpeed}
                                         isFullscreenUi={feedFullscreen.isFullscreenUi}
                                         fullscreen={fullscreenControls}
+                                        chromeVideoTapRef={
+                                            fullscreenEnabled ? chromeVideoTapRef : undefined
+                                        }
+                                        chromeTapSuppressRef={chromeTapSuppressRef}
+                                        chromeVisibleRef={chromeVisibleRef}
                                     />
                                 ) : null}
                             </>

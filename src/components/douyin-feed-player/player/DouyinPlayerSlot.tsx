@@ -1,4 +1,4 @@
-import { useCallback, useState, type MouseEvent } from 'react';
+import { useCallback, useState, type MouseEvent, type MutableRefObject } from 'react';
 import type Player from 'xgplayer';
 
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
@@ -22,6 +22,8 @@ type DouyinPlayerSlotProps = {
     onPlayerChange?: (index: number, player: Player | null) => void;
     onPlaybackModeChange?: (index: number, mode: PlaybackMode) => void;
     onStall?: (index: number, reason: string) => void;
+    onFullscreenVideoTap?: (target?: EventTarget | null) => boolean;
+    chromeTapSuppressRef?: MutableRefObject<boolean>;
 };
 
 export function DouyinPlayerSlot({
@@ -32,6 +34,8 @@ export function DouyinPlayerSlot({
     onPlayerChange,
     onPlaybackModeChange,
     onStall,
+    onFullscreenVideoTap,
+    chromeTapSuppressRef,
 }: DouyinPlayerSlotProps) {
     const [mountEl, setMountEl] = useState<HTMLDivElement | null>(null);
     const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
@@ -65,15 +69,22 @@ export function DouyinPlayerSlot({
         onEnded,
     });
 
+    const isControlsTarget = (target: EventTarget | null) =>
+        target instanceof Element && Boolean(target.closest('.douyin-player-controls'));
+
     const onTapVideo = useCallback(
         (event: MouseEvent) => {
-            if ((event.target as HTMLElement).closest('.douyin-player-controls')) return;
+            if (chromeTapSuppressRef?.current) return;
+            // 触摸端全屏显隐由 feed capture touchend 处理，避免 hide 后合成 click 再次 show
+            if (onFullscreenVideoTap && 'ontouchstart' in window) return;
             event.preventDefault();
             event.stopPropagation();
+            if (onFullscreenVideoTap?.(event.target)) return;
+            if (isControlsTarget(event.target)) return;
             const player = handleRef.current?.player ?? null;
             void togglePlayerPlay(player);
         },
-        [handleRef],
+        [chromeTapSuppressRef, handleRef, onFullscreenVideoTap],
     );
 
     const showSubtitle = slot.isActive && Boolean(subtitleUrl.trim());
@@ -86,11 +97,10 @@ export function DouyinPlayerSlot({
             {...attrs}
         >
             {slot.shouldInitPlayer ? (
-                <div className={stageClassName}>
+                <div className={stageClassName} onClickCapture={onTapVideo}>
                     <div
                         ref={setMountEl}
                         className="douyin-player-slot__mount"
-                        onClickCapture={onTapVideo}
                         role="presentation"
                     />
                     <FeedCenterPlayButton player={slotPlayer} visible={slot.isActive} />

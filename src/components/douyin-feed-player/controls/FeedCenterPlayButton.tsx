@@ -51,7 +51,7 @@ export function FeedCenterPlayButton({ player, visible }: FeedCenterPlayButtonPr
         <button
             type="button"
             className={cn(
-                'video-player-center-play pointer-events-none absolute inset-0 z-[8] m-auto flex h-20 w-20 items-center justify-center border-0 bg-transparent p-0',
+                'video-player-center-play absolute inset-0 z-[8] m-auto flex h-20 w-20 items-center justify-center border-0 bg-transparent p-0 pointer-events-auto',
                 isDesktop && 'video-player-center-play--pc-decor',
             )}
             onClick={onClick}
