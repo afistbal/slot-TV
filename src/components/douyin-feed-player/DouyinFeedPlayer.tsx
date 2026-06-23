@@ -280,12 +280,23 @@ export function DouyinFeedPlayer({
         ],
     );
 
+    /** H5 全屏：禁用手势/滚轮滑动，换条仅走控制条「下一集」（navigate） */
+    const isH5FullscreenScrollLocked =
+        !isDesktop && fullscreenEnabled && feedFullscreen.isFullscreenUi;
+
     const handleToolbarNextEpisode = useCallback(() => {
         if (fullscreenEnabled && feedFullscreenRef.current.isFullscreenUi) {
             feedFullscreenRef.current.markFullscreenTransition();
         }
+        if (!isDesktop && feedFullscreenRef.current.isFullscreenUi) {
+            const current = activeIndexRef.current;
+            if (current < playbackItemsLengthRef.current - 1) {
+                navigateRef.current('next');
+                return;
+            }
+        }
         onNextEpisodeRef.current?.();
-    }, [fullscreenEnabled]);
+    }, [fullscreenEnabled, isDesktop]);
 
     /** MD §2.5：切条后唯一 play — setTimeout(() => play()) */
     const dispatchActivePlay = useCallback((source: string) => {
@@ -390,6 +401,7 @@ export function DouyinFeedPlayer({
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 snapScrollerToActive();
+                scrollSyncLockRef.current = false;
             });
         });
     }, [
@@ -534,6 +546,7 @@ export function DouyinFeedPlayer({
         }
 
         const wheel = bindWheelNavigate(root, (dir) => {
+            if (!isDesktop && feedFullscreenRef.current.isFullscreenUi) return;
             navigateRef.current(dir === 'next' ? 'next' : 'prev');
         });
         const touch = bindFeedTouchGuard(
@@ -548,6 +561,8 @@ export function DouyinFeedPlayer({
         );
 
         const onScroll = () => {
+            if (!isDesktop && feedFullscreenRef.current.isFullscreenUi) return;
+
             const height = root.clientHeight || window.innerHeight;
             const idx = Math.round(root.scrollTop / height);
             const maxIdx = playbackItemsLengthRef.current - 1;
@@ -791,7 +806,11 @@ export function DouyinFeedPlayer({
     return (
         <div
             ref={scrollerRef}
-            className={cn('douyin-feed-player', className)}
+            className={cn(
+                'douyin-feed-player',
+                isH5FullscreenScrollLocked && 'douyin-feed-player--scroll-locked',
+                className,
+            )}
             id="sliderVideo"
         >
             {playbackItems.map((item, index) => {
