@@ -562,7 +562,6 @@ export default function RadixRc({
                 {(loadingProducts ? [] : planProducts).map((p) => {
                     const enableInteraction = true;
                     const planPeriod = resolveSubscriptionPeriod(p.name);
-                    const isWeeklyPlan = planPeriod === 'weekly';
                     const isPlanSelected = currentId === p.id;
                     const planBenefitIcons = isReelshortH5StoreUi
                         ? isPlanSelected
@@ -657,9 +656,12 @@ export default function RadixRc({
                                 <div className="rs-shopping__planBody">
                                     <div className="rs-shopping__planText">
                                         <div className="rs-shopping__planName">
-                                            {isReelshortH5StoreUi && isWeeklyPlan
-                                                ? intl.formatMessage({ id: 'shopping_vip_weekly_special_title' })
-                                                : intl.formatMessage({ id: `${p.name}_subscription` })}
+                                            {intl.formatMessage({
+                                                id:
+                                                    isReelshortH5StoreUi && planPeriod
+                                                        ? `${planPeriod}_subscription`
+                                                        : `${p.name}_subscription`,
+                                            })}
                                         </div>
                                         <div className="rs-shopping__planPriceRow">
                                             <div className="rs-shopping__planPrice">${p.price}</div>

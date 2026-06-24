@@ -115,17 +115,22 @@ export function getStoredFbc(): string {
     }
 }
 
-/** `pay/create` 请求体：Facebook 渠道仅附带 fbp */
+/** `pay/create` 请求体：Facebook 渠道附带 fbp / fbc（与 fbq 归因一致） */
 export function fbAttributionForPayCreate(): Record<string, string> {
     if (!isFacebookAnalytics()) {
         return {};
     }
     syncFbAttributionCache();
+    const out: Record<string, string> = {};
     const fbp = getStoredFbp();
+    const fbc = getStoredFbc();
     if (fbp) {
-        return { fbp };
+        out.fbp = fbp;
     }
-    return {};
+    if (fbc) {
+        out.fbc = fbc;
+    }
+    return out;
 }
 
 export type FbLogEventName = 'AddToCart' | 'InitiateCheckout' | 'Purchase';
