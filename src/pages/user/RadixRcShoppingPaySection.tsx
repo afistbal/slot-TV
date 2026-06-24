@@ -15,7 +15,7 @@ import payMastercard from '@/assets/icons/shopping-pay/mastercard.svg';
 import payAmex from '@/assets/icons/shopping-pay/amex.svg';
 import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
-import { trackFbAddToCart, trackFbInitiateCheckout, trackFbPurchase } from '@/hooks/usePixel';
+import { buildProductPixelPayload, trackFbAddToCart, trackFbInitiateCheckout, trackFbPurchase } from '@/hooks/usePixel';
 import { buildPayCreateData, reportPayCreateSessionLog } from '@/lib/payCreateData';
 import { reportPayLog, type PayLogStatus } from '@/lib/payLog';
 
@@ -318,13 +318,22 @@ export default function RadixRcShoppingPaySection({
     const addToCartTrackedRef = useRef(false);
 
     function buildCheckoutPayload(targetProductId: number, fallbackCurrency = 'USD', fallbackAmount = 0) {
+        const id = checkoutProductMeta?.id ?? targetProductId;
+        const value = toNumericValue(
+            checkoutProductMeta?.price ??
+                sessionRef.current?.amountValue ??
+                fallbackAmount,
+        );
+        const currency = sessionRef.current?.currency || fallbackCurrency;
         return {
-            content_type: 'product',
+            ...buildProductPixelPayload({
+                id,
+                price: value,
+                currency,
+                name: checkoutProductMeta?.name,
+            }),
             quantity: 1,
             description: checkoutProductMeta?.name ?? 'shopping_plan',
-            content_ids: [(checkoutProductMeta?.id ?? targetProductId).toString()],
-            currency: sessionRef.current?.currency || fallbackCurrency,
-            value: toNumericValue(checkoutProductMeta?.price ?? sessionRef.current?.amountValue ?? fallbackAmount),
         };
     }
 
@@ -410,22 +419,16 @@ export default function RadixRcShoppingPaySection({
                 ),
             };
             const orderSn = payCreate.d.sn ?? '';
-            const addToCartData = {
-                content_type: 'product',
-                quantity: 1,
-                description: checkoutProductMeta?.name ?? 'shopping_plan',
-                content_ids: [(checkoutProductMeta?.id ?? targetProductId).toString()],
-                currency: payCreate.d.currency || 'USD',
-                value: toNumericValue(
-                    checkoutProductMeta?.price ??
-                    majorAmount(
-                        payCreate.d.amount ??
-                            payCreate.d.amount_major ??
-                            payCreate.d.pay_amount ??
-                            payCreate.d.price,
-                    ),
+            const addToCartData = buildCheckoutPayload(
+                targetProductId,
+                payCreate.d.currency || 'USD',
+                majorAmount(
+                    payCreate.d.amount ??
+                        payCreate.d.amount_major ??
+                        payCreate.d.pay_amount ??
+                        payCreate.d.price,
                 ),
-            };
+            );
             if (!addToCartTrackedRef.current) {
                 addToCartTrackedRef.current = true;
                 trackFbAddToCart(addToCartData, orderSn || undefined);

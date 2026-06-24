@@ -1,7 +1,7 @@
 
 import { useRef } from 'react';
 import { FacebookPixel, type EventData, type TrackableEventName } from 'react-use-facebook-pixel';
-import { setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
+import { isTikTokAnalytics, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
 
 interface TiktokPixel {
     init(pixelId: string, advancedMatching?: {}, options?: {
@@ -41,8 +41,11 @@ class Pixel {
     }
 
     public track(name: unknown, data?: unknown) {
+        const payload = normalizeCommerceData(
+            (data && typeof data === 'object' ? data : {}) as Record<string, unknown>,
+        );
         this.instance.forEach(instance => {
-            instance.track(name, data);
+            instance.track(name, payload);
         });
     }
 }
@@ -133,22 +136,88 @@ type FbqFn = (...args: unknown[]) => void;
 
 type FbStandardEvent = 'AddToCart' | 'InitiateCheckout' | 'Purchase';
 
+function toNumericValue(value: string | number | undefined | null): number {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+    }
+    const n = parseFloat(String(value ?? ''));
+    return Number.isFinite(n) ? n : 0;
+}
+
+function enrichPixelData(data: Record<string, unknown>): Record<string, unknown> {
+    if (typeof window === 'undefined') {
+        return data;
+    }
+    return { ...data, event_source_url: window.location.href };
+}
+
+/** 补全 contents / 数值 value，兼容旧 checkout 缓存 */
+function normalizeCommerceData(data: Record<string, unknown>): Record<string, unknown> {
+    const out = enrichPixelData({ ...data });
+    if (out.value != null && typeof out.value !== 'number') {
+        out.value = toNumericValue(out.value as string | number);
+    }
+    const ids = out.content_ids as string[] | undefined;
+    if (ids?.length && !out.contents) {
+        const itemPrice = toNumericValue(out.value as string | number | undefined);
+        out.contents = ids.map((id) => ({ id, quantity: 1, item_price: itemPrice }));
+    }
+    if (!out.content_type && ids?.length) {
+        out.content_type = 'product';
+    }
+    return out;
+}
+
+export function buildProductPixelPayload(opts: {
+    id: number | string;
+    price: string | number;
+    currency?: string;
+    name?: string;
+}): Record<string, unknown> {
+    const id = String(opts.id);
+    const value = toNumericValue(opts.price);
+    const currency = opts.currency ?? 'USD';
+    return {
+        content_type: 'product',
+        content_ids: [id],
+        contents: [{ id, quantity: 1, item_price: value }],
+        value,
+        currency,
+        ...(opts.name ? { content_name: opts.name } : {}),
+    };
+}
+
+const viewedProductIds = new Set<string>();
+
+export function trackViewContent(
+    productId: number | string,
+    data: Record<string, unknown>,
+) {
+    const key = String(productId);
+    if (viewedProductIds.has(key)) {
+        return;
+    }
+    viewedProductIds.add(key);
+    singleton.track('ViewContent', data);
+}
+
 /** fbq 第 4 参数传 `eventID`（对应请求里的 `eid`），与 CAPI / 后端 `sn` 去重 */
 function trackFbStandardEvent(
     eventName: FbStandardEvent,
     data: Record<string, unknown>,
     eventId?: string,
 ) {
-    if (eventId && typeof window !== 'undefined') {
+    const payload = normalizeCommerceData(data);
+    if (eventId && typeof window !== 'undefined' && !isTikTokAnalytics()) {
         const fbq = (window as unknown as { fbq?: FbqFn }).fbq;
         if (typeof fbq === 'function') {
-            fbq('track', eventName, data, { eventID: eventId });
+            fbq('track', eventName, payload, { eventID: eventId });
             return;
         }
     }
     singleton.track(
         eventName,
-        eventId ? { ...data, eventID: eventId } : data,
+        eventId ? { ...payload, eventID: eventId } : payload,
     );
 }
 
@@ -170,6 +239,14 @@ export function trackFbPurchase(
     data: Record<string, unknown>,
     eventId?: string,
 ) {
+    if (isTikTokAnalytics()) {
+        const payload = normalizeCommerceData(data);
+        singleton.track(
+            'CompletePayment',
+            eventId ? { ...payload, eventID: eventId } : payload,
+        );
+        return;
+    }
     trackFbStandardEvent('Purchase', data, eventId);
 }
 
