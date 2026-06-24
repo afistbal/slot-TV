@@ -1,7 +1,7 @@
 
 import { useRef } from 'react';
 import { FacebookPixel, type EventData, type TrackableEventName } from 'react-use-facebook-pixel';
-import { isTikTokAnalytics, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
+import { isFacebookAnalytics, isTikTokAnalytics, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
 
 interface TiktokPixel {
     init(pixelId: string, advancedMatching?: {}, options?: {
@@ -52,8 +52,13 @@ class Pixel {
 
 const singleton = new Pixel();
 let initialized = false;
+let fbPixelId: string | null = null;
 let pendingAnonymousCompleteRegistration = false;
+let pendingPageViewUrl: string | null = null;
 let pixelReady = false;
+let lastPageView: { url: string; ts: number } | null = null;
+
+const PAGE_VIEW_DEDUPE_MS = 400;
 
 function flushAnonymousCompleteRegistration() {
     if (!pendingAnonymousCompleteRegistration || !pixelReady) {
@@ -72,11 +77,75 @@ export function trackAnonymousCompleteRegistration() {
 function markPixelReady() {
     pixelReady = true;
     flushAnonymousCompleteRegistration();
+    flushPendingPageView();
+}
+
+function disableFbAutoPageView(pixelId: string) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    const fbq = (window as unknown as { fbq?: FbqFn & { disablePushState?: boolean } }).fbq;
+    if (typeof fbq !== 'function') {
+        return;
+    }
+    fbq.disablePushState = true;
+    fbq('set', 'autoConfig', false, pixelId);
+}
+
+function fireFbPageView(eventSourceUrl: string): boolean {
+    return fireFbEvent('PageView', { event_source_url: eventSourceUrl });
+}
+
+/** 与 PageView 一致：FB 渠道统一走 trackSingle */
+function fireFbEvent(
+    eventName: string,
+    data: Record<string, unknown>,
+    eventId?: string,
+): boolean {
+    if (!fbPixelId || typeof window === 'undefined' || !isFacebookAnalytics()) {
+        return false;
+    }
+    const fbq = (window as unknown as { fbq?: FbqFn }).fbq;
+    if (typeof fbq !== 'function') {
+        return false;
+    }
+    const payload = normalizeCommerceData(data);
+    if (eventId) {
+        fbq('trackSingle', fbPixelId, eventName, payload, { eventID: eventId });
+    } else {
+        fbq('trackSingle', fbPixelId, eventName, payload);
+    }
+    return true;
+}
+
+function flushPendingPageView() {
+    if (!pendingPageViewUrl || !pixelReady) {
+        return;
+    }
+    const url = pendingPageViewUrl;
+    pendingPageViewUrl = null;
+    if (!isFacebookAnalytics() && !isTikTokAnalytics()) {
+        return;
+    }
+    if (isTikTokAnalytics()) {
+        lastPageView = { url, ts: Date.now() };
+        singleton.track('PageView', { event_source_url: url });
+        return;
+    }
+    if (isFacebookAnalytics() && !fbPixelId) {
+        pendingPageViewUrl = url;
+        return;
+    }
+    if (!fireFbPageView(url)) {
+        singleton.track('PageView', { event_source_url: url });
+    }
+    lastPageView = { url, ts: Date.now() };
 }
 
 export async function init(config: { [key: string]: unknown }) {
     if (!config['analyzation']) {
         setAnalyticsType('');
+        initialized = true;
         markPixelReady();
         return;
     }
@@ -86,11 +155,17 @@ export async function init(config: { [key: string]: unknown }) {
     }
 
     const initializeFacebookPixel = async (id: string) => {
+        fbPixelId = id;
         const instance = new FacebookPixel({
             pixelID: id,
+            pageViewOnInit: false,
+            autoConfig: false,
+            debug: false,
         });
 
         instance.init({});
+        disableFbAutoPageView(id);
+        window.setTimeout(() => disableFbAutoPageView(id), 1000);
 
         const facebook = new _Facebook();
         facebook.instance = instance;
@@ -168,6 +243,43 @@ function normalizeCommerceData(data: Record<string, unknown>): Record<string, un
     return out;
 }
 
+/** 手动 PageView（SPA 路由变化）；带 event_source_url，init 前排队补发 */
+export function trackPageView(eventSourceUrl?: string) {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    const url = eventSourceUrl || window.location.href;
+    const now = Date.now();
+
+    if (!pixelReady || (isFacebookAnalytics() && !fbPixelId)) {
+        pendingPageViewUrl = url;
+        return;
+    }
+
+    if (!isFacebookAnalytics() && !isTikTokAnalytics()) {
+        return;
+    }
+
+    if (
+        lastPageView &&
+        lastPageView.url === url &&
+        now - lastPageView.ts < PAGE_VIEW_DEDUPE_MS
+    ) {
+        return;
+    }
+
+    if (isTikTokAnalytics()) {
+        lastPageView = { url, ts: now };
+        singleton.track('PageView', { event_source_url: url });
+        return;
+    }
+
+    if (!fireFbPageView(url)) {
+        singleton.track('PageView', { event_source_url: url });
+    }
+    lastPageView = { url, ts: now };
+}
+
 export function buildProductPixelPayload(opts: {
     id: number | string;
     price: string | number;
@@ -193,12 +305,18 @@ export function trackViewContent(
     productId: number | string,
     data: Record<string, unknown>,
 ) {
-    const key = String(productId);
+    const pageKey =
+        typeof window !== 'undefined'
+            ? `${window.location.pathname}${window.location.search}`
+            : '';
+    const key = `${productId}@${pageKey}`;
     if (viewedProductIds.has(key)) {
         return;
     }
     viewedProductIds.add(key);
-    singleton.track('ViewContent', data);
+    if (!fireFbEvent('ViewContent', data)) {
+        singleton.track('ViewContent', data);
+    }
 }
 
 /** fbq 第 4 参数传 `eventID`（对应请求里的 `eid`），与 CAPI / 后端 `sn` 去重 */
@@ -207,18 +325,20 @@ function trackFbStandardEvent(
     data: Record<string, unknown>,
     eventId?: string,
 ) {
-    const payload = normalizeCommerceData(data);
-    if (eventId && typeof window !== 'undefined' && !isTikTokAnalytics()) {
-        const fbq = (window as unknown as { fbq?: FbqFn }).fbq;
-        if (typeof fbq === 'function') {
-            fbq('track', eventName, payload, { eventID: eventId });
-            return;
-        }
+    if (isTikTokAnalytics()) {
+        singleton.track(
+            eventName,
+            eventId ? { ...normalizeCommerceData(data), eventID: eventId } : normalizeCommerceData(data),
+        );
+        return;
     }
-    singleton.track(
-        eventName,
-        eventId ? { ...payload, eventID: eventId } : payload,
-    );
+    if (!fireFbEvent(eventName, data, eventId)) {
+        const payload = normalizeCommerceData(data);
+        singleton.track(
+            eventName,
+            eventId ? { ...payload, eventID: eventId } : payload,
+        );
+    }
 }
 
 export function trackFbAddToCart(

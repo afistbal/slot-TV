@@ -2,12 +2,12 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { matchPath, Outlet, useLocation, useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
 import { ReelShortBottomNav } from "@/components/ReelShortBottomNav";
 import UserHome from "@/pages/user/Home";
 import UserSearch from "@/pages/user/Search";
-import usePixel from "@/hooks/usePixel";
+import { trackPageView } from "@/hooks/usePixel";
 import { matchSearchFamilyPath } from "@/lib/searchRoutes";
 import { isForDemoPathname } from "@/constants/forDemoRoute";
 import { isVDemoPathname } from "@/constants/vDemoRoute";
@@ -38,7 +38,6 @@ function RouteSuspenseFallback() {
 }
 
 export default function Component() {
-    const pixel = usePixel();
     const location = useLocation();
 
     useEffect(() => {
@@ -80,9 +79,9 @@ export default function Component() {
         return matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null;
     }, [location.pathname, isShoppingRoute]);
 
-    useEffect(() => {
-        pixel.track('PageView');
-    }, [location, pixel]);
+    useLayoutEffect(() => {
+        trackPageView(window.location.href);
+    }, [location.key, location.pathname, location.search, location.hash]);
 
     return <div className="flex h-full min-h-0 flex-col">
         {/* min-h-0 + overflow-hidden：纵滑只发生在各页内层 scroll 容器，避免与首页 home-page__scroll 双轨滚动导致页脚滚不到、顶部 ref 的 scrollTop 恒为 0 */}
