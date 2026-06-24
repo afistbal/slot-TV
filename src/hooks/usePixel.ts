@@ -98,9 +98,9 @@ function buildPageViewEventId(): string {
     return `pv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** 标准 PageView（SPA 路由变化） */
+/** 标准 PageView（SPA 路由变化）；须 trackSingle，与 autoConfig:false 一致 */
 function fireFbPageView(eventSourceUrl?: string): boolean {
-    if (typeof window === 'undefined' || !isFacebookAnalytics()) {
+    if (!fbPixelId || typeof window === 'undefined' || !isFacebookAnalytics()) {
         return false;
     }
     const fbq = (window as unknown as { fbq?: FbqFn }).fbq;
@@ -109,7 +109,7 @@ function fireFbPageView(eventSourceUrl?: string): boolean {
     }
     const url = eventSourceUrl || window.location.href;
     const eventID = buildPageViewEventId();
-    fbq('track', 'PageView', { eventSourceUrl: url }, { eventID });
+    fbq('trackSingle', fbPixelId, 'PageView', { eventSourceUrl: url }, { eventID });
     return true;
 }
 
@@ -155,7 +155,6 @@ function flushPendingPageView() {
     }
     if (!fireFbPageView(url)) {
         pendingPageViewUrl = url;
-        window.setTimeout(() => flushPendingPageView(), 300);
         return;
     }
     lastPageView = { url, ts: Date.now() };
@@ -268,7 +267,7 @@ function applyCommerceFields(data: Record<string, unknown>): Record<string, unkn
     return out;
 }
 
-/** FB：eventSourceUrl（驼峰）；补全 contents / value */
+/** FB：补全 eventSourceUrl / contents / value */
 function normalizeFbCommerceData(data: Record<string, unknown>): Record<string, unknown> {
     return applyCommerceFields(enrichFbPixelData({ ...data }));
 }
@@ -286,12 +285,7 @@ export function trackPageView(eventSourceUrl?: string) {
     const url = eventSourceUrl || window.location.href;
     const now = Date.now();
 
-    if (!pixelReady) {
-        pendingPageViewUrl = url;
-        return;
-    }
-
-    if (isFacebookAnalytics() && !fbPixelId) {
+    if (!pixelReady || (isFacebookAnalytics() && !fbPixelId)) {
         pendingPageViewUrl = url;
         return;
     }
@@ -316,7 +310,6 @@ export function trackPageView(eventSourceUrl?: string) {
 
     if (!fireFbPageView(url)) {
         pendingPageViewUrl = url;
-        window.setTimeout(() => flushPendingPageView(), 300);
         return;
     }
     lastPageView = { url, ts: now };
