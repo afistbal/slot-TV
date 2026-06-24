@@ -15,6 +15,7 @@ import icon1080p from '@/assets/images/icon_1080p.png';
 import { profileH5Assets } from '@/constants/profileAssets';
 import { shoppingVipBenefitIcons } from '@/constants/shoppingVipBenefitAssets';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { buildProductPixelPayload, trackViewContent } from '@/hooks/usePixel';
 import payIconBack from '@/assets/images/pay_icon_back.png';
 import iconSecure from '@/assets/icons/shopping-pay/icon_secure.png';
 import checkboxChecked from '@/assets/icons/shopping-pay/checkbox_checked.png';
@@ -445,6 +446,13 @@ export default function RadixRc({
     const retryAmount = currentCheckoutProduct?.price ? `$${currentCheckoutProduct.price}` : '';
 
     function handleSelectPlan(productId: number) {
+        const p = products.find((item) => item.id === productId);
+        if (p) {
+            trackViewContent(
+                productId,
+                buildProductPixelPayload({ id: p.id, price: p.price, name: p.name }),
+            );
+        }
         clearPayModalOpenTimer();
         setCurrentId(productId);
         setPayModalStatus('idle');

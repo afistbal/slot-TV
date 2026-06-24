@@ -9,7 +9,12 @@ import { useUserStore } from "@/stores/user";
 import { api, type TData } from "@/api";
 import { buildPayCreateData } from "@/lib/payCreateData";
 import Loader from "@/components/Loader";
-import usePixel from "@/hooks/usePixel";
+import {
+    buildProductPixelPayload,
+    trackFbAddToCart,
+    trackFbInitiateCheckout,
+    trackViewContent,
+} from "@/hooks/usePixel";
 import { init } from '@airwallex/components-sdk';
 import { toast } from "sonner";
 // import Adjust from "@adjustcom/adjust-web-sdk";
@@ -26,7 +31,6 @@ interface Product {
 
 export default function Vip({ open, from, onOpenChange }: { open: boolean, from: string, onOpenChange?: (open: boolean) => void }) {
     const isVipUser = useUserStore((s) => s.signed && Boolean(s.info?.['is_vip']));
-    const pixel = usePixel();
     const intl = useIntl();
     const [current, setCurrent] = useState(1);
     const [product, setProduct] = useState<Product[]>([]);
@@ -94,12 +98,15 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
             return;
         }
         const p = product.find(v => v.id === current);
-        const data = {
-            'content_ids': [current.toString()],
-            'currency': result.d['currency'] as string,
-            'value': p?.price,
-        };
-        pixel.track('InitiateCheckout', data);
+        const sn = (result.d['sn'] as string) ?? '';
+        const data = buildProductPixelPayload({
+            id: current,
+            price: p?.price ?? 0,
+            currency: result.d['currency'] as string,
+            name: p?.name,
+        });
+        trackFbAddToCart(data, sn || undefined);
+        trackFbInitiateCheckout(data, sn || undefined);
         // await Adjust.trackEvent({
         //     eventToken: '46xgdh',
         //     revenue: parseFloat(data['value']!),
@@ -170,7 +177,13 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
             <DialogDescription className="text-md text-center text-amber-950/80"><FormattedMessage id="enjoy" /></DialogDescription>
             {loading ? <div className="h-16"><Loader /></div> : <div className="flex flex-col gap-4">
                 <Countdown />
-                {vipPlanRows.map(v => <div key={v.id} onClick={() => setCurrent(v.id)} className={cn("relative overflow-hidden border rounded-md p-4 flex justify-between gap-2 items-center", current === v.id ? 'border-amber-400 bg-amber-200/60' : 'border-amber-400/40 bg-amber-50/20')}>
+                {vipPlanRows.map(v => <div key={v.id} onClick={() => {
+                    trackViewContent(
+                        v.id,
+                        buildProductPixelPayload({ id: v.id, price: v.price, name: v.name }),
+                    );
+                    setCurrent(v.id);
+                }} className={cn("relative overflow-hidden border rounded-md p-4 flex justify-between gap-2 items-center", current === v.id ? 'border-amber-400 bg-amber-200/60' : 'border-amber-400/40 bg-amber-50/20')}>
                     <div>
                         <div className={cn(current === v.id ? "text-amber-800" : 'text-muted-foreground', 'text-sm')}><FormattedMessage id={`${v.name}_subscription`} /></div>
                         <div className="text-xl font-bold text-amber-950"><FormattedMessage id={`${v.name}`} /></div>

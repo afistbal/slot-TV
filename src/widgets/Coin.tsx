@@ -6,7 +6,12 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { api, type TData } from '@/api';
 import { buildPayCreateData } from '@/lib/payCreateData';
 import Loader from '@/components/Loader';
-import usePixel from '@/hooks/usePixel';
+import {
+    buildProductPixelPayload,
+    trackFbAddToCart,
+    trackFbInitiateCheckout,
+    trackViewContent,
+} from '@/hooks/usePixel';
 import { init } from '@airwallex/components-sdk';
 import { toast } from 'sonner';
 import coinIcon from '@/assets/profile/icon_coin@2x.png';
@@ -32,7 +37,6 @@ export default function Coin({
     from: string;
     onOpenChange?: (open: boolean) => void;
 }) {
-    const pixel = usePixel();
     const intl = useIntl();
     const [current, setCurrent] = useState(5);
     const [product, setProduct] = useState<Product[]>([]);
@@ -68,12 +72,15 @@ export default function Coin({
             return;
         }
         const p = product.find((v) => v.id === current);
-        const data = {
-            content_ids: [current.toString()],
+        const sn = (result.d['sn'] as string) ?? '';
+        const data = buildProductPixelPayload({
+            id: current,
+            price: p?.price ?? 0,
             currency: result.d['currency'] as string,
-            value: p?.price,
-        };
-        pixel.track('InitiateCheckout', data);
+            name: p?.name,
+        });
+        trackFbAddToCart(data, sn || undefined);
+        trackFbInitiateCheckout(data, sn || undefined);
         // await Adjust.trackEvent({
         //     eventToken: '46xgdh',
         //     revenue: parseFloat(data['value']!),
@@ -97,6 +104,13 @@ export default function Coin({
     }
 
     function handleSelectProduct(id: number) {
+        const p = product.find((v) => v.id === id);
+        if (p) {
+            trackViewContent(
+                id,
+                buildProductPixelPayload({ id: p.id, price: p.price, name: p.name }),
+            );
+        }
         setCurrent(id);
         setPaymentOpen(true);
     }

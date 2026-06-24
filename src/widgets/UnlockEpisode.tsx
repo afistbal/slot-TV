@@ -14,7 +14,12 @@ import Vip from './Vip';
 import Payment from './Payment';
 import { init } from '@airwallex/components-sdk';
 import { toast } from 'sonner';
-import usePixel from '@/hooks/usePixel';
+import {
+    buildProductPixelPayload,
+    trackFbAddToCart,
+    trackFbInitiateCheckout,
+    trackViewContent,
+} from '@/hooks/usePixel';
 import Countdown from './Countdown';
 
 interface IProduct {
@@ -38,7 +43,6 @@ export default function UnlockEpisode({
 }) {
     const intl = useIntl();
     const userStore = useUserStore();
-    const pixel = usePixel();
     const [balance, setBalance] = useState(0);
     const [loading, setLoading] = useState(true);
     const [product, setProduct] = useState<IProduct[]>([]);
@@ -74,6 +78,13 @@ export default function UnlockEpisode({
     }
 
     function handleSelectProduct(id: number) {
+        const p = product.find((v) => v.id === id);
+        if (p) {
+            trackViewContent(
+                id,
+                buildProductPixelPayload({ id: p.id, price: p.price, name: p.name }),
+            );
+        }
         setCurrent(id);
         setPaymentOpen(true);
     }
@@ -111,12 +122,15 @@ export default function UnlockEpisode({
             return;
         }
         const p = product.find((v) => v.id === current);
-        const data = {
-            content_ids: [current.toString()],
+        const sn = (result.d['sn'] as string) ?? '';
+        const data = buildProductPixelPayload({
+            id: current,
+            price: p?.price ?? 0,
             currency: result.d['currency'] as string,
-            value: p?.price,
-        };
-        pixel.track('InitiateCheckout', data);
+            name: p?.name,
+        });
+        trackFbAddToCart(data, sn || undefined);
+        trackFbInitiateCheckout(data, sn || undefined);
         localStorage.setItem('checkout', JSON.stringify(data));
 
         payments.redirectToCheckout({
