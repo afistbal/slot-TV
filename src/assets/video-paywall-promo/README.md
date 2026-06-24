@@ -4,9 +4,9 @@
 
 | 文件名 | 用途 |
 |--------|------|
-| `bg.webp` | 弹窗卡片背景 |
-| `img.webp` | 顶部 VIP 装饰 |
-| `img1.webp` | CTA 按钮光效 |
+| `bg.webp` | 周卡弹窗卡片背景 |
+| `img1.webp` | 周卡顶部蝴蝶结装饰 |
+| `img.webp` | 年卡顶部 VIP 装饰 |
 | `icon_close.webp` | 底部关闭按钮 |
 
 样式微调：`src/styles/video-paywall-promo.scss`

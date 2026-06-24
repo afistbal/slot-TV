@@ -80,7 +80,7 @@ export function isOfferActive(expiresAt: number | null, nowSec = Math.floor(Date
     return expiresAt != null && expiresAt > nowSec;
 }
 
-/** 整轮复位：年优惠已接受且年倒计时结束；或年未接受且周倒计时结束 */
+/** 整轮复位：年优惠倒计时结束；或周/年优惠均已过期 */
 export function shouldResetPromoCycle(
     data: VideoPaywallPromoPersisted,
     nowSec = Math.floor(Date.now() / 1000),
@@ -92,13 +92,12 @@ export function shouldResetPromoCycle(
         return true;
     }
     if (
-        !data.yearlyAccepted &&
-        !data.weeklyAccepted &&
-        data.openCount > 0 &&
-        data.weeklyExpiresAt == null &&
-        data.yearlyExpiresAt == null
+        data.openCount >= 2 &&
+        data.weeklyExpiresAt != null &&
+        nowSec >= data.weeklyExpiresAt &&
+        (!data.yearlyAccepted || (data.yearlyExpiresAt != null && nowSec >= data.yearlyExpiresAt))
     ) {
-        return false;
+        return true;
     }
     return false;
 }

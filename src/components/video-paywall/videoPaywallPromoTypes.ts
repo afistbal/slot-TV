@@ -27,3 +27,6 @@ export type VideoPaywallModalMode =
     | null;
 
 export const VIDEO_PAYWALL_PROMO_DURATION_SEC = 30 * 60;
+
+/** 本地开发：每次打开付费墙都弹周卡优惠，便于联调 */
+export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY = import.meta.env.DEV;

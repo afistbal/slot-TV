@@ -6,12 +6,12 @@ function assetUrl(file: string): string {
 }
 
 export const videoPaywallPromoAssets = {
-    /** 弹窗卡片背景（橙黄渐变 + 底部黑色） */
+    /** 周卡弹窗卡片背景（黑底 + 顶角渐变） */
     cardBg: assetUrl('bg.webp'),
-    /** 顶部 VIP 装饰 */
-    vipDeco: assetUrl('img.webp'),
-    /** CTA 按钮光效 */
-    ctaGlow: assetUrl('img1.webp'),
+    /** 周卡顶部蝴蝶结装饰 */
+    weeklyRibbon: assetUrl('img1.webp'),
+    /** 年卡顶部 VIP 装饰 */
+    yearlyDeco: assetUrl('img.webp'),
     /** 底部关闭按钮 */
     closeIcon: assetUrl('icon_close.webp'),
 } as const;
