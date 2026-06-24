@@ -4,9 +4,10 @@ import shareFacebookIcon from '@/assets/video/share_icon_facebook@2x.webp';
 import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
-import RadixRc from '@/pages/user/RadixRc';
+import { VideoShoppingEmbedShell } from '@/components/video-paywall/VideoShoppingEmbedShell';
+import { useVideoPanelCloseGuard } from '@/components/video-paywall/useVideoPanelCloseGuard';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import type { ShareAction } from './videoPlayerConstants';
+import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 export type VideoPlayerPcCommerceDialogsProps = {
@@ -28,7 +29,7 @@ export type VideoPlayerPcCommerceDialogsProps = {
     onCopyEmbedCode: () => void | Promise<void>;
 };
 
-/** PCï¼?VIP å??å?¼å¼¹çª?ï¼?rs-shoppingï¼? å??äº«å¼¹çª? */
+/** PC?VIP ???rs-shopping?+ ???? */
 export function VideoPlayerPcCommerceDialogs({
     vip,
     onVipOpenChange,
@@ -48,10 +49,11 @@ export function VideoPlayerPcCommerceDialogs({
     onCopyEmbedCode,
 }: VideoPlayerPcCommerceDialogsProps) {
     const intl = useIntl();
+    const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
 
     return (
         <>
-            <Dialog open={vip} onOpenChange={onVipOpenChange}>
+            <Dialog open={vip} onOpenChange={onVipOpenChangeGuarded}>
                 <DialogContent
                     contentPreset="plain"
                     hideCloseButton
@@ -60,19 +62,15 @@ export function VideoPlayerPcCommerceDialogs({
                     <DialogTitle className="sr-only" unsetTypography>
                         {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
                     </DialogTitle>
-                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
-                        {vip ? (
-                            <RadixRc
-                                layout="embed"
-                                productFrom="video"
-                                checkoutFrom="video"
-                                onEmbedClose={onVipEmbedClose}
-                                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-                                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
-                                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
-                            />
-                        ) : null}
-                    </div>
+                    <VideoShoppingEmbedShell
+                        open={vip}
+                        onForceClose={onVipEmbedClose}
+                        onRegisterPanelClose={registerPanelClose}
+                        embedPresentation="drawer"
+                        headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                        embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                        onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
+                    />
                 </DialogContent>
             </Dialog>
             <Dialog open={shareOpen} onOpenChange={onShareOpenChange}>

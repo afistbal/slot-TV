@@ -28,6 +28,8 @@ import {
     resolveSubscriptionPeriod,
 } from '@/lib/subscriptionPlanRenewText';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
+import { VideoPaywallPlanCountdown } from '@/components/video-paywall/VideoPaywallCountdown';
+import type { VideoPromoPanelState } from '@/components/video-paywall/videoPaywallPromoTypes';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
 import { MembershipInlinePanel } from '@/pages/user/Membership';
 import { refreshSessionFromStoredToken } from '@/lib/refreshSessionFromStoredToken';
@@ -165,6 +167,11 @@ export type RadixRcProps = {
     /** `layout=embed` ??`productFrom=video`???????? token ???? `movie/episode?id=` ?? `d` ??????*/
     embedVideoEpisodeRowId?: number;
     onEmbedPaySuccessEpisodeDetail?: (episode: IPlayerEpisode) => void;
+    /** 视频页优惠浮层写入的套餐选中 / 倒计时状态 */
+    videoPromo?: VideoPromoPanelState | null;
+    /** 优惠弹窗「开通」触发收银 */
+    checkoutRequest?: { productId: number; seq: number } | null;
+    onVideoProductsLoaded?: (products: Product[]) => void;
 };
 
 type ProductFromKey = NonNullable<RadixRcProps['productFrom']>;
@@ -172,6 +179,10 @@ type PayModalStatus = 'idle' | 'processing' | 'checking' | 'success' | 'failed';
 
 /** SPA ?????? / ???????????? `product` ????????*/
 const shoppingProductCache = new Map<ProductFromKey, Product[]>();
+
+export function getCachedShoppingProducts(from: ProductFromKey): Product[] | undefined {
+    return shoppingProductCache.get(from);
+}
 
 export default function RadixRc({
     layout = 'page',
@@ -182,6 +193,9 @@ export default function RadixRc({
     headerEpisodeUnlockCoins,
     embedVideoEpisodeRowId,
     onEmbedPaySuccessEpisodeDetail,
+    videoPromo,
+    checkoutRequest,
+    onVideoProductsLoaded,
 }: RadixRcProps = {}) {
     const intl = useIntl();
     const isPc = useMinWidth768();
@@ -368,6 +382,7 @@ export default function RadixRc({
         const cached = shoppingProductCache.get(productFrom);
         if (cached?.length) {
             setProducts(cached);
+            onVideoProductsLoaded?.(cached);
             setLoadingProducts(false);
             return;
         }
@@ -386,6 +401,7 @@ export default function RadixRc({
                 if (res.c !== 0) return;
                 shoppingProductCache.set(productFrom, res.d);
                 setProducts(res.d);
+                onVideoProductsLoaded?.(res.d);
             })
             .finally(() => {
                 if (!alive) return;
@@ -394,7 +410,7 @@ export default function RadixRc({
         return () => {
             alive = false;
         };
-    }, [productFrom, sessionBootstrapReady]);
+    }, [productFrom, sessionBootstrapReady, onVideoProductsLoaded]);
 
     const planProducts = useMemo(() => {
         const subs = products.filter((p) => p.type === 1);
@@ -415,6 +431,13 @@ export default function RadixRc({
     }, [planProducts]);
     const walletProductId = currentId ?? defaultWalletProductId;
     const checkoutTargetProductId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
+
+    useEffect(() => {
+        const selected = videoPromo?.selectedProductId;
+        if (selected != null && selected !== currentId) {
+            setCurrentId(selected);
+        }
+    }, [videoPromo?.selectedProductId, currentId]);
     const currentCheckoutProduct = useMemo(
         () => products.find((p) => p.id === checkoutTargetProductId) ?? null,
         [products, checkoutTargetProductId],
@@ -432,6 +455,14 @@ export default function RadixRc({
             setShowPayModal(true);
         }, 500);
     }
+
+    useEffect(() => {
+        if (!checkoutRequest?.productId) {
+            return;
+        }
+        handleSelectPlan(checkoutRequest.productId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- seq 变化时触发一次
+    }, [checkoutRequest?.seq]);
 
     const showCountdown = !loadingProducts && products.length > 0;
     const countdownMainEl = showCountdown ? (
@@ -562,7 +593,17 @@ export default function RadixRc({
                 {(loadingProducts ? [] : planProducts).map((p) => {
                     const enableInteraction = true;
                     const planPeriod = resolveSubscriptionPeriod(p.name);
-                    const isPlanSelected = currentId === p.id;
+                    const isWeeklyPlan = planPeriod === 'weekly';
+                    const isYearlyPlan = planPeriod === 'yearly';
+                    const promoOffer =
+                        isWeeklyPlan && videoPromo?.weekly
+                            ? videoPromo.weekly
+                            : isYearlyPlan && videoPromo?.yearly
+                              ? videoPromo.yearly
+                              : null;
+                    const effectiveSelectedId =
+                        videoPromo?.selectedProductId ?? currentId ?? defaultWalletProductId;
+                    const isPlanSelected = effectiveSelectedId === p.id;
                     const planBenefitIcons = isReelshortH5StoreUi
                         ? isPlanSelected
                             ? shoppingVipBenefitIcons.weekly
@@ -618,7 +659,7 @@ export default function RadixRc({
                             }
                             className={cn(
                                 'rs-shopping__plan',
-                                currentId === p.id && 'rs-shopping__plan--selected',
+                                isPlanSelected && 'rs-shopping__plan--selected',
                                 !enableInteraction && 'cursor-default',
                             )}
                         >
@@ -628,9 +669,14 @@ export default function RadixRc({
                                     style={{ backgroundImage: `url(${vipCardBg})` }}
                                 />
 
-                                {isReelshortH5StoreUi &&
-                                showCountdown &&
-                                isWeeklySubscriptionPlan(p.name) ? (
+                                {isReelshortH5StoreUi && promoOffer ? (
+                                    <div className="rs-shopping__planCountdown">
+                                        <VideoPaywallPlanCountdown expiresAt={promoOffer.expiresAt} />
+                                    </div>
+                                ) : isReelshortH5StoreUi &&
+                                  showCountdown &&
+                                  isWeeklySubscriptionPlan(p.name) &&
+                                  !promoOffer ? (
                                     <div className="rs-shopping__planCountdown">
                                         <Countdown variant="planCorner" />
                                     </div>
