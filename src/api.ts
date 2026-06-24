@@ -12,8 +12,10 @@ function resolveApiRequestEncryptionEnabled(): boolean {
         return false;
     }
     if (flag === 'true') {
+        return false;
         return isWebCryptoAvailable();
     }
+    return false;
     return isWebCryptoAvailable();
 }
 

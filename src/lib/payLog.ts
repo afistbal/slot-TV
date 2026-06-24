@@ -15,6 +15,7 @@ export type PayLogStatus = 'success' | 'error' | 'padding';
 export type PayLogEvent =
     | 'pay_create'
     | 'pay_complete'
+    | 'AddToCart'
     | 'InitiateCheckout'
     | 'Purchase';
 
@@ -92,7 +93,7 @@ function fbPayloadForEvent(
     if (!isFacebookAnalytics() || !eventId) {
         return undefined;
     }
-    if (event !== 'InitiateCheckout' && event !== 'Purchase') {
+    if (event !== 'AddToCart' && event !== 'InitiateCheckout' && event !== 'Purchase') {
         return undefined;
     }
     return {

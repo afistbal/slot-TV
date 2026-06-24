@@ -131,7 +131,7 @@ const usePixel = () => {
 
 type FbqFn = (...args: unknown[]) => void;
 
-type FbStandardEvent = 'InitiateCheckout' | 'Purchase';
+type FbStandardEvent = 'AddToCart' | 'InitiateCheckout' | 'Purchase';
 
 /** fbq 第 4 参数传 `eventID`（对应请求里的 `eid`），与 CAPI / 后端 `sn` 去重 */
 function trackFbStandardEvent(
@@ -150,6 +150,13 @@ function trackFbStandardEvent(
         eventName,
         eventId ? { ...data, eventID: eventId } : data,
     );
+}
+
+export function trackFbAddToCart(
+    data: Record<string, unknown>,
+    eventId?: string,
+) {
+    trackFbStandardEvent('AddToCart', data, eventId);
 }
 
 export function trackFbInitiateCheckout(

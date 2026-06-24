@@ -15,7 +15,7 @@ import payMastercard from '@/assets/icons/shopping-pay/mastercard.svg';
 import payAmex from '@/assets/icons/shopping-pay/amex.svg';
 import payDiscover from '@/assets/icons/shopping-pay/discover.svg';
 import { isApplePlatform } from '@/lib/isApplePlatform';
-import { trackFbInitiateCheckout, trackFbPurchase } from '@/hooks/usePixel';
+import { trackFbAddToCart, trackFbInitiateCheckout, trackFbPurchase } from '@/hooks/usePixel';
 import { buildPayCreateData, reportPayCreateSessionLog } from '@/lib/payCreateData';
 import { reportPayLog, type PayLogStatus } from '@/lib/payLog';
 
@@ -315,7 +315,7 @@ export default function RadixRcShoppingPaySection({
     const paymentRef = useRef(payment);
     paymentRef.current = payment;
     const purchaseTrackedRef = useRef(false);
-    const initiateCheckoutTrackedRef = useRef(false);
+    const addToCartTrackedRef = useRef(false);
 
     function buildCheckoutPayload(targetProductId: number, fallbackCurrency = 'USD', fallbackAmount = 0) {
         return {
@@ -354,7 +354,7 @@ export default function RadixRcShoppingPaySection({
         setWalletState({ apple: 'pending', google: 'pending' });
         sessionRef.current = null;
         purchaseTrackedRef.current = false;
-        initiateCheckoutTrackedRef.current = false;
+        addToCartTrackedRef.current = false;
         cleanupElements();
         if (!targetProductId) return;
 
@@ -426,9 +426,9 @@ export default function RadixRcShoppingPaySection({
                     ),
                 ),
             };
-            if (!initiateCheckoutTrackedRef.current) {
-                initiateCheckoutTrackedRef.current = true;
-                trackFbInitiateCheckout(addToCartData, orderSn || undefined);
+            if (!addToCartTrackedRef.current) {
+                addToCartTrackedRef.current = true;
+                trackFbAddToCart(addToCartData, orderSn || undefined);
                 reportPayCreateSessionLog(orderSn || undefined);
             }
             

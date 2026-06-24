@@ -23,7 +23,7 @@ export function reportPayCreateSessionLog(eventId?: string) {
         return;
     }
     void reportPayLog({
-        event: 'InitiateCheckout',
+        event: 'AddToCart',
         eventId,
     });
 }

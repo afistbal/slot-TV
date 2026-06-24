@@ -128,4 +128,4 @@ export function fbAttributionForPayCreate(): Record<string, string> {
     return {};
 }
 
-export type FbLogEventName = 'InitiateCheckout' | 'Purchase';
+export type FbLogEventName = 'AddToCart' | 'InitiateCheckout' | 'Purchase';
