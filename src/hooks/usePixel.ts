@@ -41,10 +41,12 @@ class Pixel {
     }
 
     public track(name: unknown, data?: unknown) {
-        const payload = normalizeCommerceData(
-            (data && typeof data === 'object' ? data : {}) as Record<string, unknown>,
-        );
-        this.instance.forEach(instance => {
+        const raw = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+        this.instance.forEach((instance) => {
+            const payload =
+                instance instanceof _Facebook
+                    ? normalizeFbCommerceData(raw)
+                    : normalizeCommerceData(raw);
             instance.track(name, payload);
         });
     }
@@ -92,11 +94,26 @@ function disableFbAutoPageView(pixelId: string) {
     fbq('set', 'autoConfig', false, pixelId);
 }
 
-function fireFbPageView(eventSourceUrl: string): boolean {
-    return fireFbEvent('PageView', { event_source_url: eventSourceUrl });
+function buildPageViewEventId(): string {
+    return `pv_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** 与 PageView 一致：FB 渠道统一走 trackSingle */
+/** 标准 PageView（SPA 路由变化） */
+function fireFbPageView(eventSourceUrl?: string): boolean {
+    if (typeof window === 'undefined' || !isFacebookAnalytics()) {
+        return false;
+    }
+    const fbq = (window as unknown as { fbq?: FbqFn }).fbq;
+    if (typeof fbq !== 'function') {
+        return false;
+    }
+    const url = eventSourceUrl || window.location.href;
+    const eventID = buildPageViewEventId();
+    fbq('track', 'PageView', { eventSourceUrl: url }, { eventID });
+    return true;
+}
+
+/** FB 渠道统一走 trackSingle */
 function fireFbEvent(
     eventName: string,
     data: Record<string, unknown>,
@@ -109,7 +126,7 @@ function fireFbEvent(
     if (typeof fbq !== 'function') {
         return false;
     }
-    const payload = normalizeCommerceData(data);
+    const payload = normalizeFbCommerceData(data);
     if (eventId) {
         fbq('trackSingle', fbPixelId, eventName, payload, { eventID: eventId });
     } else {
@@ -137,7 +154,9 @@ function flushPendingPageView() {
         return;
     }
     if (!fireFbPageView(url)) {
-        singleton.track('PageView', { event_source_url: url });
+        pendingPageViewUrl = url;
+        window.setTimeout(() => flushPendingPageView(), 300);
+        return;
     }
     lastPageView = { url, ts: Date.now() };
 }
@@ -219,16 +238,22 @@ function toNumericValue(value: string | number | undefined | null): number {
     return Number.isFinite(n) ? n : 0;
 }
 
-function enrichPixelData(data: Record<string, unknown>): Record<string, unknown> {
+function enrichFbPixelData(data: Record<string, unknown>): Record<string, unknown> {
+    if (typeof window === 'undefined') {
+        return data;
+    }
+    return { ...data, eventSourceUrl: window.location.href };
+}
+
+function enrichTikTokPixelData(data: Record<string, unknown>): Record<string, unknown> {
     if (typeof window === 'undefined') {
         return data;
     }
     return { ...data, event_source_url: window.location.href };
 }
 
-/** 补全 contents / 数值 value，兼容旧 checkout 缓存 */
-function normalizeCommerceData(data: Record<string, unknown>): Record<string, unknown> {
-    const out = enrichPixelData({ ...data });
+function applyCommerceFields(data: Record<string, unknown>): Record<string, unknown> {
+    const out = { ...data };
     if (out.value != null && typeof out.value !== 'number') {
         out.value = toNumericValue(out.value as string | number);
     }
@@ -243,7 +268,17 @@ function normalizeCommerceData(data: Record<string, unknown>): Record<string, un
     return out;
 }
 
-/** 手动 PageView（SPA 路由变化）；带 event_source_url，init 前排队补发 */
+/** FB：eventSourceUrl（驼峰）；补全 contents / value */
+function normalizeFbCommerceData(data: Record<string, unknown>): Record<string, unknown> {
+    return applyCommerceFields(enrichFbPixelData({ ...data }));
+}
+
+/** TikTok 等：event_source_url；补全 contents / value */
+function normalizeCommerceData(data: Record<string, unknown>): Record<string, unknown> {
+    return applyCommerceFields(enrichTikTokPixelData({ ...data }));
+}
+
+/** 手动 PageView（SPA 路由变化）；init 前排队补发 */
 export function trackPageView(eventSourceUrl?: string) {
     if (typeof window === 'undefined') {
         return;
@@ -251,7 +286,12 @@ export function trackPageView(eventSourceUrl?: string) {
     const url = eventSourceUrl || window.location.href;
     const now = Date.now();
 
-    if (!pixelReady || (isFacebookAnalytics() && !fbPixelId)) {
+    if (!pixelReady) {
+        pendingPageViewUrl = url;
+        return;
+    }
+
+    if (isFacebookAnalytics() && !fbPixelId) {
         pendingPageViewUrl = url;
         return;
     }
@@ -275,7 +315,9 @@ export function trackPageView(eventSourceUrl?: string) {
     }
 
     if (!fireFbPageView(url)) {
-        singleton.track('PageView', { event_source_url: url });
+        pendingPageViewUrl = url;
+        window.setTimeout(() => flushPendingPageView(), 300);
+        return;
     }
     lastPageView = { url, ts: now };
 }
@@ -333,7 +375,7 @@ function trackFbStandardEvent(
         return;
     }
     if (!fireFbEvent(eventName, data, eventId)) {
-        const payload = normalizeCommerceData(data);
+        const payload = normalizeFbCommerceData(data);
         singleton.track(
             eventName,
             eventId ? { ...payload, eventID: eventId } : payload,
