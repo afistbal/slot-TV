@@ -264,11 +264,12 @@ function useLoginBase(
                 loadingStore.hide();
                 return;
             }
-            const result = await api('login/uid', {
+            const result = await api('login/signin', {
                 method: 'post',
                 data: {
                     uid: detail.uid,
-                    ...getAnonymousUniIdPayload(),
+                    email: detail.email || '',
+                    name: detail.name || '',
                     ...fromSourceForLogin(),
                 },
                 loading: false,
@@ -317,7 +318,7 @@ function useLoginBase(
             const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
 
-            /** 仅以 `result.user` 为准：`credentialFromResult` 在部分环境下可为 null，但仍已登录 Firebase，不应拦截 `login/uid`。 */
+            /** 仅以 `result.user` 为准：`credentialFromResult` 在部分环境下可为 null，但仍已登录 Firebase，不应拦截 `login/signin`。 */
             if (!result.user) {
                 report('google login failed B');
                 toast.error(
@@ -333,15 +334,12 @@ function useLoginBase(
                 return;
             }
 
-            const result2 = await api('login/uid', {
+            const result2 = await api('login/signin', {
                 method: 'post',
                 data: {
                     uid: result.user.uid,
-                    anonymous: result.user.isAnonymous ? 1 : 0,
                     name: result.user.displayName || '',
-                    email: result.user.email,
-                    provider: 'google',
-                    ...getAnonymousUniIdPayload(),
+                    email: result.user.email || '',
                     ...fromSourceForLogin(),
                 },
                 loading: false,
