@@ -13,6 +13,7 @@ import {
     VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY,
     VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY_RETENTION,
     VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY,
+    VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY_RETENTION,
     VIDEO_PAYWALL_PROMO_DURATION_SEC,
     type VideoPaywallModalMode,
     type VideoPaywallProduct,
@@ -197,6 +198,15 @@ export function useVideoPaywallPromo({
             return;
         }
 
+        if (VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY_RETENTION && yearlyProduct) {
+            data = ensureTierActivated(data, 'yearly', now);
+            saveVideoPaywallPromoPersisted(data);
+            syncPanelState(data, now);
+            setModalMode('yearly-retention');
+            sessionOpenedRef.current = true;
+            return;
+        }
+
         const offerTier = decideOfferTier(data, now, Boolean(weeklyProduct), Boolean(yearlyProduct));
 
         if (!offerTier) {
@@ -228,7 +238,8 @@ export function useVideoPaywallPromo({
             ...data,
             openCount: VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY ||
                 VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY_RETENTION ||
-                VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY
+                VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY ||
+                VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY_RETENTION
                 ? data.openCount
                 : data.openCount + 1,
         };

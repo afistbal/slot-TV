@@ -28,7 +28,8 @@
     overflow-y: auto;
 }
 
-.rs-video-promo__card {
+/* —— 周会员 —— */
+.rs-video-promo--weekly.rs-video-promo__card {
     position: relative;
     width: min(100%, 90%);
     margin-top: 30%;
@@ -37,7 +38,6 @@
     text-align: center;
 }
 
-/* —— 周会员 —— */
 .rs-video-promo--weekly {
     color: #fff;
     overflow: visible;
@@ -231,16 +231,60 @@
     cursor: pointer;
 }
 
+.rs-video-promo--weekly .rs-video-promo__countdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.rs-video-promo--weekly .rs-video-promo__countdownLabel {
+    font-weight: 400;
+    font-size: 14px;
+    color: #F1DA97;
+}
+
+.rs-video-promo--weekly .rs-video-promo__countdownBoxes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
 .rs-video-promo--weekly .rs-video-promo__countdownBox {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
     color: #F1DA97;
     background: rgba(255, 245, 228, 0.2);
 }
 
+.rs-video-promo--weekly .rs-video-promo__countdownSep {
+    color: #F1DA97;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+
 /* —— 年会员 —— */
+.rs-video-promo--yearly.rs-video-promo__card {
+    position: relative;
+    width: min(100%, 90%);
+    margin-top: 30%;
+    padding-bottom: 24px;
+    border-radius: 24px;
+    text-align: left;
+}
+
 .rs-video-promo--yearly {
     color: #2a2118;
     overflow: visible;
-    text-align: left;
 }
 
 .rs-video-promo__yearlyBg {
@@ -274,14 +318,14 @@
     position: relative;
     z-index: 1;
     margin: 0 0px -24px;
-    padding: 24px 24px 20px;
+    padding: 24px 24px 16px;
     border-radius: 24px;
     background: linear-gradient(94deg, #ffecd4 0%, #f3cb93 100%);
 }
 
 .rs-video-promo__yearlyDeco {
     position: absolute;
-    top: -8%;
+    top: -7%;
     right: -3%;
     z-index: 2;
     pointer-events: none;
@@ -424,29 +468,20 @@
 }
 
 .rs-video-promo--yearly .rs-video-promo__giveUp {
-    margin-top: 12px;
-    padding: 4px 8px;
+    display: block;
+    width: fit-content;
+    margin: 12px auto 0;
+    padding: 0;
     border: 0;
     background: transparent;
-    color: rgba(42, 33, 24, 0.65);
-    font-size: 13px;
-    text-decoration: underline;
+    font-size: 15px;
+    color: rgba(99, 62, 37, 0.75);
+    line-height: 20px;
+    text-align: center;
     cursor: pointer;
-    opacity: 0.75;
 }
 
-.rs-video-promo--yearly .rs-video-promo__countdownBox {
-    background: rgba(42, 33, 24, 0.08);
-    color: #401a06;
-}
-
-/* —— 共用 —— */
-.rs-video-promo__priceMain {
-    flex: 1;
-    min-width: 0;
-}
-
-.rs-video-promo__countdown {
+.rs-video-promo--yearly .rs-video-promo__countdown {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -454,20 +489,20 @@
     margin-bottom: 14px;
 }
 
-.rs-video-promo__countdownLabel {
+.rs-video-promo--yearly .rs-video-promo__countdownLabel {
     font-weight: 400;
     font-size: 14px;
-    color: #F1DA97;
+    color: #633E25;
 }
 
-.rs-video-promo__countdownBoxes {
+.rs-video-promo--yearly .rs-video-promo__countdownBoxes {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
 }
 
-.rs-video-promo__countdownBox {
+.rs-video-promo--yearly .rs-video-promo__countdownBox {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -476,13 +511,21 @@
     border-radius: 6px;
     font-size: 14px;
     font-weight: 700;
+    background: rgba(255,255,255,0.5);
+    color: #633E25;
 }
 
-.rs-video-promo__countdownSep {
-    color: #F1DA97;
+.rs-video-promo--yearly .rs-video-promo__countdownSep {
+    color: #633E25;
     font-size: 14px;
     font-weight: 700;
     line-height: 1;
+}
+
+/* —— 共用 —— */
+.rs-video-promo__priceMain {
+    flex: 1;
+    min-width: 0;
 }
 
 .rs-video-promo__ctaWrap {

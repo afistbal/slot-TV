@@ -108,12 +108,19 @@ export function VideoPaywallPromoCountdown({ expiresAt }: VideoPaywallPromoCount
     );
 }
 
+function formatSaveAmountValue(diff: number): string {
+    const rounded = Math.round(diff * 100) / 100;
+    if (Number.isInteger(rounded)) {
+        return String(rounded);
+    }
+    return rounded.toFixed(2).replace(/\.?0+$/, '');
+}
+
 export function computeSaveAmount(price: string, renewalPrice: string): string {
     const p = Number.parseFloat(price);
     const r = Number.parseFloat(renewalPrice);
     if (!Number.isFinite(p) || !Number.isFinite(r) || r <= p) {
         return '0';
     }
-    const diff = r - p;
-    return Number.isInteger(diff) ? String(diff) : diff.toFixed(2);
+    return formatSaveAmountValue(r - p);
 }

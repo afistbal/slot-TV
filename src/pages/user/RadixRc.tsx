@@ -274,6 +274,8 @@ export default function RadixRc({
     const onEmbedPaySuccessEpisodeDetailRef = useRef(onEmbedPaySuccessEpisodeDetail);
     onEmbedPaySuccessEpisodeDetailRef.current = onEmbedPaySuccessEpisodeDetail;
     const payModalOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    /** 优惠浮层仅首次写入选中套餐，不覆盖用户后续点击 */
+    const videoPromoInitSeededRef = useRef(false);
 
     function clearPayModalOpenTimer() {
         if (payModalOpenTimerRef.current != null) {
@@ -475,11 +477,16 @@ export default function RadixRc({
     const checkoutTargetProductId = currentId ?? defaultWalletProductId ?? planProducts[0]?.id ?? null;
 
     useEffect(() => {
-        const selected = videoPromo?.selectedProductId;
-        if (selected != null && selected !== currentId) {
-            setCurrentId(selected);
+        if (videoPromoInitSeededRef.current) {
+            return;
         }
-    }, [videoPromo?.selectedProductId, currentId]);
+        const selected = videoPromo?.selectedProductId;
+        if (selected == null) {
+            return;
+        }
+        videoPromoInitSeededRef.current = true;
+        setCurrentId((prev) => prev ?? selected);
+    }, [videoPromo?.selectedProductId]);
     const currentCheckoutProduct = useMemo(
         () => products.find((p) => p.id === checkoutTargetProductId) ?? null,
         [products, checkoutTargetProductId],
@@ -650,8 +657,7 @@ export default function RadixRc({
                             : isYearlyPlan && videoPromo?.yearly
                               ? videoPromo.yearly
                               : null;
-                    const effectiveSelectedId =
-                        videoPromo?.selectedProductId ?? currentId ?? defaultWalletProductId;
+                    const effectiveSelectedId = currentId ?? defaultWalletProductId;
                     const isPlanSelected = effectiveSelectedId === p.id;
                     const planBenefitIcons = isReelshortH5StoreUi
                         ? isPlanSelected
