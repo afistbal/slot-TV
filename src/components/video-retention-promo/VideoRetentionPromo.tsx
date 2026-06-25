@@ -49,6 +49,9 @@ export const retentionPromoAssets = {
     couponBg,
 } as const;
 
+/** bg_coupon@2x.png 票券背景固定高度（px），不随文案撑开 */
+export const RETENTION_COUPON_BG_HEIGHT_PX = 116;
+
 function formatCountdownParts(totalSec: number): { h: string; m: string; s: string } {
     const safe = Math.max(0, totalSec);
     const h = Math.floor(safe / 3600);
@@ -298,14 +301,17 @@ function PromoCouponCardStep12({
     pricingText: string;
 }) {
     return (
-        <div
-            className="rs-retention-promo__coupon"
-            style={
-                {
-                    '--rs-retention-coupon-bg': `url(${retentionPromoAssets.couponBg})`,
-                } as React.CSSProperties
-            }
-        >
+        <div className="rs-retention-promo__coupon">
+            <div
+                className="rs-retention-promo__couponBgFrame"
+                aria-hidden
+                style={{ height: RETENTION_COUPON_BG_HEIGHT_PX }}
+            >
+                <div
+                    className="rs-retention-promo__couponBg"
+                    style={{ backgroundImage: `url(${retentionPromoAssets.couponBg})` }}
+                />
+            </div>
             <div className="rs-retention-promo__couponInner">
                 <div className="rs-retention-promo__couponTop">
                     <span className="rs-retention-promo__couponLabel">

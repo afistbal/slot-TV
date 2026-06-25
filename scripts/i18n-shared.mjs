@@ -52,6 +52,11 @@ export const REGISTERED_LOCALE_CODES = [
 /** 新增待翻译语言；导出脚本默认只导出这些语言的待翻条目 */
 export const NEW_LOCALE_CODES = ["es", "it", "fr", "hi"];
 
+/** 除 en 外全部已接入语言（导出给产品翻译用） */
+export function registeredTargetLocaleCodes() {
+  return REGISTERED_LOCALE_CODES.filter((code) => code !== "en");
+}
+
 export function readJson(relOrAbs) {
   const abs = path.isAbsolute(relOrAbs) ? relOrAbs : path.join(root, relOrAbs);
   let text = fs.readFileSync(abs, "utf8");

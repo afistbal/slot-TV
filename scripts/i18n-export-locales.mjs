@@ -6,7 +6,8 @@
  *   npm run i18n:export
  *   node scripts/i18n-export-locales.mjs --langs es,fr,hi,it
  *   node scripts/i18n-export-locales.mjs --all-keys
- *   node scripts/i18n-export-locales.mjs --out ./dist/i18n-locales.xlsx
+ *   node scripts/i18n-export-locales.mjs --prefix retention_promo_
+ *   node scripts/i18n-export-locales.mjs --all-langs --prefix retention_promo_ --out ./dist/retention-promo-i18n.xlsx
  */
 
 import fs from "node:fs";
@@ -21,6 +22,7 @@ import {
   needsTranslation,
   NEW_LOCALE_CODES,
   parseCommaList,
+  registeredTargetLocaleCodes,
   root,
   sortedKeys,
 } from "./i18n-shared.mjs";
@@ -28,11 +30,20 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function parseArgs() {
-  const out = { file: null, langs: null, pendingOnly: true, allKeys: false };
+  const out = {
+    file: null,
+    langs: null,
+    pendingOnly: true,
+    allKeys: false,
+    prefix: null,
+    allLangs: false,
+  };
   const argv = process.argv.slice(2);
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--out" && argv[i + 1]) out.file = argv[++i];
     if (argv[i] === "--langs" && argv[i + 1]) out.langs = parseCommaList(argv[++i]);
+    if (argv[i] === "--prefix" && argv[i + 1]) out.prefix = argv[++i];
+    if (argv[i] === "--all-langs") out.allLangs = true;
     if (argv[i] === "--all-keys") {
       out.allKeys = true;
       out.pendingOnly = false;
@@ -51,15 +62,26 @@ function defaultLangs() {
 }
 
 function main() {
-  const { file: outArg, langs: langsArg, pendingOnly } = parseArgs();
+  const { file: outArg, langs: langsArg, pendingOnly, prefix, allLangs } = parseArgs();
   const en = loadEnMessages();
-  const allKeys = sortedKeys(en);
+  let allKeys = sortedKeys(en);
+  if (prefix) {
+    allKeys = allKeys.filter((key) => key.startsWith(prefix));
+    if (!allKeys.length) {
+      console.error(`en.json 中无匹配前缀 "${prefix}" 的 key`);
+      process.exit(1);
+    }
+  }
   if (!allKeys.length) {
     console.error("en.json 为空");
     process.exit(1);
   }
 
-  const langs = langsArg?.length ? langsArg : defaultLangs();
+  const langs = langsArg?.length
+    ? langsArg
+    : allLangs
+      ? registeredTargetLocaleCodes()
+      : defaultLangs();
   if (!langs.length) {
     console.error("未指定 --langs，且 locales 目录下无可用目标语言");
     process.exit(1);
@@ -107,10 +129,10 @@ function main() {
     ["说明"],
     ["1. 请勿修改 A 列 key；B 列为 en.json 英文参考。"],
     ["2. 默认仅导出待翻译行（目标语言列为空或与英文相同）。"],
-    ["3. 默认语言列：es / it / fr / hi；可用 --langs 指定其它语言。"],
-    ["4. 导出全部 key：加 --all-keys"],
-    ["5. 导入：npm run i18n:import -- --file ./翻译稿.xlsx"],
-    ["6. 占位符如 {site}、{year}、{n} 请保留。"],
+    ["3. 默认语言列：es / it / fr / hi；--all-langs 导出全部 15 种目标语言。"],
+    ["4. 导出全部 key：加 --all-keys；按前缀：--prefix retention_promo_"],
+    ["5. 导入：npm run i18n:import -- --file ./翻译稿.xlsx（合并写入，不覆盖其它 key）"],
+    ["6. 占位符如 {price}、{renewal}、{percent}、{sec} 请保留。"],
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(readme);
   XLSX.utils.book_append_sheet(wb, ws2, "README");

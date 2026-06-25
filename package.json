@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "i18n:export": "node scripts/i18n-export-locales.mjs",
+    "i18n:export:retention": "node scripts/i18n-export-locales.mjs --prefix retention_promo_ --all-langs --out ./dist/retention-promo-i18n.xlsx",
     "i18n:import": "node scripts/i18n-import-locales.mjs",
     "i18n:scaffold": "node scripts/i18n-scaffold-locale.mjs"
   },

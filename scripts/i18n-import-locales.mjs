@@ -13,10 +13,12 @@ import { fileURLToPath } from "node:url";
 import XLSX from "xlsx";
 import {
   loadEnMessages,
+  loadLocaleMessages,
   localeFilePath,
   parseCommaList,
   parseLangCodeFromHeader,
   root,
+  sortedKeys,
   writeJson,
 } from "./i18n-shared.mjs";
 
@@ -105,8 +107,13 @@ function main() {
       stripIfMatchesEn: !keepEnglish,
     });
     const target = path.join(out, `${code}.json`);
-    writeJson(target, messages);
-    console.log(`已写入 ${target}（${Object.keys(messages).length} 条）`);
+    const existing = loadLocaleMessages(code);
+    const merged = { ...existing, ...messages };
+    const sorted = Object.fromEntries(sortedKeys(merged).map((key) => [key, merged[key]]));
+    writeJson(target, sorted);
+    console.log(
+      `已写入 ${target}（本次 ${Object.keys(messages).length} 条，合计 ${Object.keys(sorted).length} 条）`,
+    );
   }
 }
 
