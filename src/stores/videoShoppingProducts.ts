@@ -45,7 +45,7 @@ function runProductFetch(): Promise<VideoPaywallProduct[]> {
     return inflight;
 }
 
-export const useVideoShoppingProductsStore = create<VideoShoppingProductsState>((set, get) => ({
+export const useVideoShoppingProductsStore = create<VideoShoppingProductsState>((_set, get) => ({
     products: [],
     ready: false,
     loading: false,

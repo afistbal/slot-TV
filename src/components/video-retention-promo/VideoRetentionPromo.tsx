@@ -592,7 +592,10 @@ export function useVideoRetentionCommerce({
     const checkoutFromStepRef = useRef<RetentionPromoStep | null>(null);
     const checkoutViaDismissRef = useRef(false);
     const checkoutViaCountdownRef = useRef(false);
+    const countdownExhaustedRef = useRef(false);
+    const countdownSecRef = useRef(countdownSec);
     stepRef.current = step;
+    countdownSecRef.current = countdownSec;
 
     const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
 
@@ -617,6 +620,7 @@ export function useVideoRetentionCommerce({
         setStep(null);
         setShowCountdown(false);
         flowStartedRef.current = false;
+        countdownExhaustedRef.current = false;
     }, []);
 
     const openStep = useCallback((nextStep: RetentionPromoStep) => {
@@ -628,6 +632,7 @@ export function useVideoRetentionCommerce({
             typeof setTimeout
         >;
         if (nextStep === 3 && !readSkipCountdown()) {
+            countdownExhaustedRef.current = false;
             setShowCountdown(true);
             setCountdownSec(COUNTDOWN_SEC);
         } else {
@@ -644,6 +649,7 @@ export function useVideoRetentionCommerce({
         if (viewerIsVip || flowStartedRef.current) return;
         flowStartedRef.current = true;
         clearSkipCountdown();
+        countdownExhaustedRef.current = false;
         if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
         openTimerRef.current = window.setTimeout(() => openStep(1), OPEN_DELAY_MS) as unknown as ReturnType<
             typeof setTimeout
@@ -709,7 +715,9 @@ export function useVideoRetentionCommerce({
     useEffect(() => {
         if (!showCountdown || step !== 3 || !visible) return;
         if (countdownSec <= 0) {
-            if (readSkipCountdown()) return;
+            if (countdownExhaustedRef.current || readSkipCountdown()) return;
+            countdownExhaustedRef.current = true;
+            markSkipCountdown();
             checkoutViaCountdownRef.current = true;
             openCheckout(3);
             return;
@@ -728,6 +736,8 @@ export function useVideoRetentionCommerce({
     }, []);
 
     const revealStep3AtZero = useCallback(() => {
+        countdownExhaustedRef.current = true;
+        markSkipCountdown();
         setStep(3);
         setVisible(true);
         setAnimateIn(false);
@@ -757,11 +767,14 @@ export function useVideoRetentionCommerce({
         }
         flowStartedRef.current = true;
         if (restoreStep === 3 && viaCountdown) {
-            markSkipCountdown();
             revealStep3AtZero();
             return;
         }
         if (restoreStep === 3) {
+            if (countdownSecRef.current <= 0) {
+                countdownExhaustedRef.current = true;
+                markSkipCountdown();
+            }
             revealPromo();
             return;
         }

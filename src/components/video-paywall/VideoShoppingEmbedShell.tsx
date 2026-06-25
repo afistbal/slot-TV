@@ -61,6 +61,7 @@ export function VideoShoppingEmbedShell({
                         layout="embed"
                         productFrom="video"
                         checkoutFrom="video"
+                        checkoutRequest={checkoutRequest}
                         onEmbedClose={promo.requestPanelClose}
                     />
                     <VideoPaywallPromoLayer
