@@ -75,6 +75,7 @@ export function VideoPlayerH5CommerceDrawers({
                                 embedVideoEpisodeRowId={embedVideoEpisodeRowId}
                                 onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
                                 checkoutRequest={retention?.checkoutRequest}
+                                initialCheckoutPayment={retention?.initialCheckoutPayment}
                                 onPayModalClosed={retention?.onPayModalClosed}
                             />
                         ) : null}

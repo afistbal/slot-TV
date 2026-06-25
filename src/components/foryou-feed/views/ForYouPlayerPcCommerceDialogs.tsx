@@ -69,6 +69,7 @@ export function ForYouPlayerPcCommerceDialogs({
                                 onEmbedClose={vipEmbedClose}
                                 headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
                                 checkoutRequest={retention?.checkoutRequest}
+                                initialCheckoutPayment={retention?.initialCheckoutPayment}
                                 onPayModalClosed={retention?.onPayModalClosed}
                             />
                         ) : null}

@@ -24,6 +24,11 @@ function defaultPayMethodFromUa(): 1 | 2 {
     return isApplePlatform() ? 1 : 2;
 }
 
+/** `pay/create` 仅允许 1 | 2；Card(3) 只用于 UI 展示，不下单 */
+function payCreatePaymentFromUa(): 1 | 2 {
+    return defaultPayMethodFromUa();
+}
+
 type PayCreateResp = {
     pi: string;
     sn?: string;
@@ -79,7 +84,7 @@ export type RadixRcShoppingPaySectionProps = {
     } | null;
     /** 与 `RadixRc` 重试按钮联动：递增后强制重建钱包会话，避免复用失效 intent */
     paySessionSeed?: number;
-    /** 打开收银时默认选中的支付方式（如挽留第三档银行卡 3） */
+    /** 挽留第三档：支付面板 UI 默认选中 Card(3)；`pay/create` 仍只传 1|2 */
     initialCheckoutPayment?: number;
     /** 挽留弹窗：`pay/create` 附带 discount_type */
     payCreateDiscountType?: number;
@@ -376,9 +381,8 @@ export default function RadixRcShoppingPaySection({
         if (!targetProductId) return;
 
         void (async () => {
-            const payMethod = defaultPayMethodFromUa();
             const payCreateParams = buildPayCreateData({
-                payment: payMethod,
+                payment: payCreatePaymentFromUa(),
                 product_id: targetProductId,
                 redirect: window.location.href,
                 ...(payCreateDiscountType != null ? { discount_type: payCreateDiscountType } : {}),

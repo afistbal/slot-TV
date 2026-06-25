@@ -522,6 +522,8 @@ export type RetentionCommerceWire = {
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
     checkoutRequest: { productId: number; seq: number; discount_type?: number; displayPrice?: string } | null;
+    /** 第三档（季卡）挽留：默认银行卡 payment=3 */
+    initialCheckoutPayment?: number;
     onPayModalClosed: () => void;
     promoActive: boolean;
     layer: ReactNode;
@@ -556,6 +558,7 @@ export function useVideoRetentionCommerce({
         discount_type?: number;
         displayPrice?: string;
     } | null>(null);
+    const [initialCheckoutPayment, setInitialCheckoutPayment] = useState<number | undefined>(undefined);
     const [countdownSec, setCountdownSec] = useState(COUNTDOWN_SEC);
     const [showCountdown, setShowCountdown] = useState(false);
 
@@ -656,6 +659,7 @@ export function useVideoRetentionCommerce({
             checkoutViaDismissRef.current = viaDismiss;
             hidePromoForCheckout();
             onVipOpenChange(true);
+            setInitialCheckoutPayment(fromStep === 3 ? 3 : undefined);
             if (productId != null) {
                 setCheckoutRequest({
                     productId,
@@ -737,6 +741,7 @@ export function useVideoRetentionCommerce({
             return;
         }
         setCheckoutRequest(null);
+        setInitialCheckoutPayment(undefined);
         onVipOpenChange(false);
         if (restoreStep === 3 && viaDismiss) {
             clearPromo();
@@ -763,6 +768,7 @@ export function useVideoRetentionCommerce({
         checkoutViaDismissRef.current = false;
         checkoutViaCountdownRef.current = false;
         setCheckoutRequest(null);
+        setInitialCheckoutPayment(undefined);
         clearPromo();
         if (offers.length > 0) {
             startRetentionFlow();
@@ -794,12 +800,14 @@ export function useVideoRetentionCommerce({
             onVipOpenChange: onVipOpenChangeGuarded,
             onVipEmbedClose,
             checkoutRequest,
+            initialCheckoutPayment,
             onPayModalClosed,
             promoActive,
             layer,
         }),
         [
             checkoutRequest,
+            initialCheckoutPayment,
             layer,
             onPayModalClosed,
             onVipEmbedClose,
