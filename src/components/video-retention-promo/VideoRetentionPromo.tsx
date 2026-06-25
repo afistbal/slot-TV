@@ -346,9 +346,11 @@ function PromoOfferCardStep3({
                     </span>
                 </div>
                 <div className="rs-retention-promo__offerCardPriceRow">
-                    <span className="rs-retention-promo__offerCardPrice">{priceLabel}</span>
-                    <span className="rs-retention-promo__offerCardPeriod">
-                        <FormattedMessage id="retention_promo_period_90days" />
+                    <span className="rs-retention-promo__offerCardPriceAnchor">
+                        <span className="rs-retention-promo__offerCardPrice">{priceLabel}</span>
+                        <span className="rs-retention-promo__offerCardPeriod">
+                            <FormattedMessage id="retention_promo_period_90days" />
+                        </span>
                     </span>
                 </div>
                 <p className="rs-retention-promo__offerCardPerDay">
