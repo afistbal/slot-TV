@@ -516,7 +516,7 @@ export function VideoRetentionPromoLayer({
 export type RetentionCommerceWire = {
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
-    checkoutRequest: { productId: number; seq: number; discount_type?: number } | null;
+    checkoutRequest: { productId: number; seq: number; discount_type?: number; displayPrice?: string } | null;
     onPayModalClosed: () => void;
     promoActive: boolean;
     layer: ReactNode;
@@ -549,6 +549,7 @@ export function useVideoRetentionCommerce({
         productId: number;
         seq: number;
         discount_type?: number;
+        displayPrice?: string;
     } | null>(null);
     const [countdownSec, setCountdownSec] = useState(COUNTDOWN_SEC);
     const [showCountdown, setShowCountdown] = useState(false);
@@ -557,6 +558,7 @@ export function useVideoRetentionCommerce({
     const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const flowStartedRef = useRef(false);
     const stepRef = useRef<RetentionPromoStep | null>(null);
+    const checkoutFromStepRef = useRef<RetentionPromoStep | null>(null);
     stepRef.current = step;
 
     const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
@@ -628,6 +630,7 @@ export function useVideoRetentionCommerce({
                     console.warn('[retention-promo] offer id not in video products', productId, offer);
                 }
             }
+            checkoutFromStepRef.current = fromStep;
             clearPromo();
             onVipOpenChange(true);
             if (productId != null) {
@@ -635,6 +638,7 @@ export function useVideoRetentionCommerce({
                     productId,
                     seq: Date.now(),
                     discount_type: offer?.discount_type,
+                    displayPrice: offer?.price,
                 });
             }
         },
@@ -673,13 +677,15 @@ export function useVideoRetentionCommerce({
     }, [countdownSec, openCheckout, showCountdown, step, visible]);
 
     const onPayModalClosed = useCallback(() => {
-        if (step === 3 || flowStartedRef.current) {
+        if (checkoutFromStepRef.current === 3) {
             markSkipCountdown();
         }
-        setCheckoutRequest(null);
-    }, [step]);
+        // 仅关支付面板；保留 checkoutRequest，VIP 抽屉保持打开
+    }, []);
 
     const onVipEmbedClose = useCallback(() => {
+        checkoutFromStepRef.current = null;
+        setCheckoutRequest(null);
         startRetentionFlow();
         onVipOpenChange(false);
     }, [onVipOpenChange, startRetentionFlow]);

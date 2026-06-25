@@ -131,7 +131,7 @@ function main() {
     ["2. 默认仅导出待翻译行（目标语言列为空或与英文相同）。"],
     ["3. 默认语言列：es / it / fr / hi；--all-langs 导出全部 15 种目标语言。"],
     ["4. 导出全部 key：加 --all-keys；按前缀：--prefix retention_promo_"],
-    ["5. 导入：npm run i18n:import -- --file ./翻译稿.xlsx（合并写入，不覆盖其它 key）"],
+    ["5. 导入：npm run i18n:import -- --file ./翻译稿.xlsx（仅 patch Excel 行，保留 json 原 key 顺序）"],
     ["6. 占位符如 {price}、{renewal}、{percent}、{sec} 请保留。"],
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(readme);

@@ -176,7 +176,7 @@ export type RadixRcProps = {
     onEmbedPaySuccessEpisodeDetail?: (episode: IPlayerEpisode) => void;
     onVideoProductsLoaded?: (products: Product[]) => void;
     /** 挽留弹窗 CTA：选中商品并 ~500ms 后打开收银 */
-    checkoutRequest?: { productId: number; seq: number; discount_type?: number } | null;
+    checkoutRequest?: { productId: number; seq: number; discount_type?: number; displayPrice?: string } | null;
     /** 第三档挽留：默认银行卡 payment=3 */
     initialCheckoutPayment?: number;
     /** 用户关闭支付面板（非支付成功） */
@@ -482,7 +482,16 @@ export default function RadixRc({
         () => products.find((p) => p.id === checkoutTargetProductId) ?? null,
         [products, checkoutTargetProductId],
     );
-    const retryAmount = currentCheckoutProduct?.price ? `$${currentCheckoutProduct.price}` : '';
+    const retentionDisplayPrice =
+        checkoutRequest?.displayPrice &&
+        checkoutRequest.productId === checkoutTargetProductId
+            ? checkoutRequest.displayPrice
+            : null;
+    const retryAmount = retentionDisplayPrice
+        ? `$${retentionDisplayPrice}`
+        : currentCheckoutProduct?.price
+          ? `$${currentCheckoutProduct.price}`
+          : '';
 
     function handleSelectPlan(productId: number) {
         const p = products.find((item) => item.id === productId);

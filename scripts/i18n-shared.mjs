@@ -94,6 +94,60 @@ export function sortedKeys(messages) {
   return Object.keys(messages).sort((a, b) => a.localeCompare(b));
 }
 
+/**
+ * 合并翻译 patch，保留 existing 原有 key 顺序；新增 key 按 referenceKeyOrder（通常 en.json）定位插入。
+ */
+export function mergePreservingKeyOrder(existing, updates, referenceKeyOrder = null) {
+  if (!updates || !Object.keys(updates).length) {
+    return { merged: existing, changed: false, updatedCount: 0, addedCount: 0 };
+  }
+
+  const order = Object.keys(existing);
+  const merged = { ...existing };
+  let changed = false;
+  let updatedCount = 0;
+  let addedCount = 0;
+
+  const findInsertIndex = (key) => {
+    if (!referenceKeyOrder?.length) return order.length;
+    const refIdx = referenceKeyOrder.indexOf(key);
+    if (refIdx < 0) return order.length;
+
+    for (let i = refIdx - 1; i >= 0; i--) {
+      const prevIdx = order.indexOf(referenceKeyOrder[i]);
+      if (prevIdx >= 0) return prevIdx + 1;
+    }
+    for (let i = refIdx + 1; i < referenceKeyOrder.length; i++) {
+      const nextIdx = order.indexOf(referenceKeyOrder[i]);
+      if (nextIdx >= 0) return nextIdx;
+    }
+    return order.length;
+  };
+
+  for (const [key, val] of Object.entries(updates)) {
+    if (Object.prototype.hasOwnProperty.call(existing, key)) {
+      if (merged[key] !== val) {
+        merged[key] = val;
+        changed = true;
+        updatedCount++;
+      }
+    } else {
+      const insertIdx = findInsertIndex(key);
+      order.splice(insertIdx, 0, key);
+      merged[key] = val;
+      changed = true;
+      addedCount++;
+    }
+  }
+
+  const ordered =
+    changed && order.length
+      ? Object.fromEntries(order.map((key) => [key, merged[key]]))
+      : merged;
+
+  return { merged: ordered, changed, updatedCount, addedCount };
+}
+
 export function langColumnHeader(code) {
   const meta = LOCALE_META[code];
   return meta ? `${code} (${meta.label})` : code;

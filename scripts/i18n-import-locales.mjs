@@ -14,11 +14,10 @@ import XLSX from "xlsx";
 import {
   loadEnMessages,
   loadLocaleMessages,
-  localeFilePath,
+  mergePreservingKeyOrder,
   parseCommaList,
   parseLangCodeFromHeader,
   root,
-  sortedKeys,
   writeJson,
 } from "./i18n-shared.mjs";
 
@@ -101,6 +100,7 @@ function main() {
     process.exit(1);
   }
 
+  const enKeyOrder = Object.keys(en);
   fs.mkdirSync(out, { recursive: true });
   for (const { code, colIdx } of langColumns) {
     const messages = buildFlatMessages(dataRows, colIdx, en, {
@@ -108,11 +108,18 @@ function main() {
     });
     const target = path.join(out, `${code}.json`);
     const existing = loadLocaleMessages(code);
-    const merged = { ...existing, ...messages };
-    const sorted = Object.fromEntries(sortedKeys(merged).map((key) => [key, merged[key]]));
-    writeJson(target, sorted);
+    const { merged, changed, updatedCount, addedCount } = mergePreservingKeyOrder(
+      existing,
+      messages,
+      enKeyOrder,
+    );
+    if (!changed) {
+      console.log(`跳过 ${target}（Excel 中 ${Object.keys(messages).length} 条，无变化）`);
+      continue;
+    }
+    writeJson(target, merged);
     console.log(
-      `已写入 ${target}（本次 ${Object.keys(messages).length} 条，合计 ${Object.keys(sorted).length} 条）`,
+      `已写入 ${target}（新增 ${addedCount}，更新 ${updatedCount}，合计 ${Object.keys(merged).length} 条，顺序不变）`,
     );
   }
 }
