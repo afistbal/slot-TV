@@ -4,8 +4,7 @@ import shareFacebookIcon from '@/assets/video/share_icon_facebook@2x.webp';
 import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
-import { VideoShoppingEmbedShell } from '@/components/video-paywall/VideoShoppingEmbedShell';
-import { useVideoPanelCloseGuard } from '@/components/video-paywall/useVideoPanelCloseGuard';
+import RadixRc from '@/pages/user/RadixRc';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 
@@ -44,11 +43,10 @@ export function ForYouPlayerPcCommerceDialogs({
     onCopyEmbedCode,
 }: ForYouPlayerPcCommerceDialogsProps) {
     const intl = useIntl();
-    const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
 
     return (
         <>
-            <Dialog open={vip} onOpenChange={onVipOpenChangeGuarded}>
+            <Dialog open={vip} onOpenChange={onVipOpenChange}>
                 <DialogContent
                     contentPreset="plain"
                     hideCloseButton
@@ -57,13 +55,17 @@ export function ForYouPlayerPcCommerceDialogs({
                     <DialogTitle className="sr-only" unsetTypography>
                         {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
                     </DialogTitle>
-                    <VideoShoppingEmbedShell
-                        open={vip}
-                        onForceClose={onVipEmbedClose}
-                        onRegisterPanelClose={registerPanelClose}
-                        embedPresentation="drawer"
-                        headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-                    />
+                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
+                        {vip ? (
+                            <RadixRc
+                                layout="embed"
+                                productFrom="video"
+                                checkoutFrom="video"
+                                onEmbedClose={onVipEmbedClose}
+                                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                            />
+                        ) : null}
+                    </div>
                 </DialogContent>
             </Dialog>
             <Dialog open={shareOpen} onOpenChange={onShareOpenChange}>

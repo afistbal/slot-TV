@@ -4,8 +4,7 @@ import shareFacebookIcon from '@/assets/video/share_icon_facebook@2x.webp';
 import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
-import { VideoShoppingEmbedShell } from '@/components/video-paywall/VideoShoppingEmbedShell';
-import { useVideoPanelCloseGuard } from '@/components/video-paywall/useVideoPanelCloseGuard';
+import RadixRc from '@/pages/user/RadixRc';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
@@ -49,11 +48,10 @@ export function VideoPlayerH5CommerceDrawers({
     onCopyEmbedCode,
 }: VideoPlayerH5CommerceDrawersProps) {
     const intl = useIntl();
-    const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
 
     return (
         <>
-            <Drawer open={vip} onOpenChange={onVipOpenChangeGuarded} disablePreventScroll>
+            <Drawer open={vip} onOpenChange={onVipOpenChange} disablePreventScroll>
                 <DrawerContent
                     handler
                     className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col overflow-hidden border-t border-white/10 p-0 text-white max-h-[min(88vh,1040px)]"
@@ -61,14 +59,19 @@ export function VideoPlayerH5CommerceDrawers({
                     <DrawerTitle className="sr-only">
                         {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
                     </DrawerTitle>
-                    <VideoShoppingEmbedShell
-                        open={vip}
-                        onForceClose={onVipEmbedClose}
-                        onRegisterPanelClose={registerPanelClose}
-                        headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-                        embedVideoEpisodeRowId={embedVideoEpisodeRowId}
-                        onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
-                    />
+                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
+                        {vip ? (
+                            <RadixRc
+                                layout="embed"
+                                productFrom="video"
+                                checkoutFrom="video"
+                                onEmbedClose={onVipEmbedClose}
+                                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
+                            />
+                        ) : null}
+                    </div>
                 </DrawerContent>
             </Drawer>
             <Drawer open={shareOpen} onOpenChange={onShareOpenChange}>

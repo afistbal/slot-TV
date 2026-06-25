@@ -38,4 +38,4 @@ export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY_RETENTION = false;
 export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY = false;
 
 /** 本地开发：每次打开付费墙都弹年卡挽留，便于联调样式（调完改回 false） */
-export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY_RETENTION = true;
+export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY_RETENTION = false;
