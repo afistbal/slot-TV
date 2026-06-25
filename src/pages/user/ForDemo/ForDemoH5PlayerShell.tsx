@@ -22,6 +22,7 @@ import {
     ForYouPlayerH5CommerceDrawers,
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
+import { useVideoRetentionCommerce } from '@/components/video-retention-promo/VideoRetentionPromo';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
@@ -72,6 +73,12 @@ export function ForDemoH5PlayerShell({
         feedItem.is_favor === true || feedItem.is_favorite === 1,
     );
     const [vip, setVip] = useState(false);
+    const retention = useVideoRetentionCommerce({
+        variant: 'h5',
+        vip,
+        onVipOpenChange: setVip,
+        viewerIsVip: userStore.isVIP(),
+    });
     const [introductionOpen, setIntroductionOpen] = useState(false);
     const [isFullscreenUi, setIsFullscreenUi] = useState(false);
     const episodeRef = useRef<HTMLDivElement>(null);
@@ -206,6 +213,7 @@ export function ForDemoH5PlayerShell({
                 vip={vip}
                 onVipOpenChange={setVip}
                 onVipEmbedClose={() => setVip(false)}
+                retention={retention}
                 shareOpen={shareOpen}
                 onShareOpenChange={setShareOpen}
                 shareEmbedCode={shareEmbedCode}

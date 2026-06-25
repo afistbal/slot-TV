@@ -79,6 +79,10 @@ export type RadixRcShoppingPaySectionProps = {
     } | null;
     /** 与 `RadixRc` 重试按钮联动：递增后强制重建钱包会话，避免复用失效 intent */
     paySessionSeed?: number;
+    /** 打开收银时默认选中的支付方式（如挽留第三档银行卡 3） */
+    initialCheckoutPayment?: number;
+    /** 挽留弹窗：`pay/create` 附带 discount_type */
+    payCreateDiscountType?: number;
     /** 支付状态回调（用于外层弹窗展示处理中/成功/失败） */
     onPayStateChange?: (state: 'idle' | 'processing' | 'checking' | 'success' | 'failed') => void;
 };
@@ -283,12 +287,16 @@ export default function RadixRcShoppingPaySection({
     checkoutFrom: _checkoutFrom,
     checkoutProductMeta,
     paySessionSeed = 0,
+    initialCheckoutPayment,
+    payCreateDiscountType,
     onPayStateChange,
 }: RadixRcShoppingPaySectionProps) {
     const intl = useIntl();
     const canPickApple = isApplePlatform();
 
-    const [payment, setPayment] = useState<number>(() => defaultPayMethodFromUa());
+    const [payment, setPayment] = useState<number>(
+        () => initialCheckoutPayment ?? defaultPayMethodFromUa(),
+    );
     const [sessionReady, setSessionReady] = useState(false);
     const [walletState, setWalletState] = useState<{ apple: 'pending' | 'ready' | 'failed'; google: 'pending' | 'ready' | 'failed' }>({
         apple: 'pending',
@@ -369,9 +377,10 @@ export default function RadixRcShoppingPaySection({
 
         void (async () => {
             const payCreateParams = buildPayCreateData({
-                payment: defaultPayMethodFromUa(),
+                payment: initialCheckoutPayment ?? defaultPayMethodFromUa(),
                 product_id: targetProductId,
                 redirect: window.location.href,
+                ...(payCreateDiscountType != null ? { discount_type: payCreateDiscountType } : {}),
             });
 
             let payCreate: Awaited<ReturnType<typeof api<PayCreateResp>>>;
@@ -441,7 +450,7 @@ export default function RadixRcShoppingPaySection({
         return () => {
             alive = false;
         };
-    }, [paySessionSeed, onPayStateChange]);
+    }, [paySessionSeed, onPayStateChange, initialCheckoutPayment, payCreateDiscountType]);
 
     useEffect(() => {
         let cancelled = false;
@@ -653,6 +662,12 @@ export default function RadixRcShoppingPaySection({
             setPayment(2);
         }
     }, [canPickApple, payment]);
+
+    useEffect(() => {
+        if (initialCheckoutPayment != null) {
+            setPayment(initialCheckoutPayment);
+        }
+    }, [paySessionSeed, initialCheckoutPayment]);
 
     return (
         <div className="rs-shopping__pay">

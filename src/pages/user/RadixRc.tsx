@@ -175,6 +175,12 @@ export type RadixRcProps = {
     embedVideoEpisodeRowId?: number;
     onEmbedPaySuccessEpisodeDetail?: (episode: IPlayerEpisode) => void;
     onVideoProductsLoaded?: (products: Product[]) => void;
+    /** 挽留弹窗 CTA：选中商品并 ~500ms 后打开收银 */
+    checkoutRequest?: { productId: number; seq: number; discount_type?: number } | null;
+    /** 第三档挽留：默认银行卡 payment=3 */
+    initialCheckoutPayment?: number;
+    /** 用户关闭支付面板（非支付成功） */
+    onPayModalClosed?: () => void;
 };
 
 type ProductFromKey = NonNullable<RadixRcProps['productFrom']>;
@@ -200,6 +206,9 @@ export default function RadixRc({
     embedVideoEpisodeRowId,
     onEmbedPaySuccessEpisodeDetail,
     onVideoProductsLoaded,
+    checkoutRequest,
+    initialCheckoutPayment,
+    onPayModalClosed,
 }: RadixRcProps = {}) {
     const intl = useIntl();
     const isPc = useMinWidth768();
@@ -265,6 +274,8 @@ export default function RadixRc({
     onEmbedCloseRef.current = onEmbedClose;
     const onEmbedPaySuccessEpisodeDetailRef = useRef(onEmbedPaySuccessEpisodeDetail);
     onEmbedPaySuccessEpisodeDetailRef.current = onEmbedPaySuccessEpisodeDetail;
+    const onPayModalClosedRef = useRef(onPayModalClosed);
+    onPayModalClosedRef.current = onPayModalClosed;
     const payModalOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     function clearPayModalOpenTimer() {
@@ -330,6 +341,7 @@ export default function RadixRc({
         setPayModalStatus('idle');
         setShowPayModal(false);
         setPaySessionSeed((prev) => prev + 1);
+        onPayModalClosedRef.current?.();
     }
 
     useEffect(() => () => clearPayModalOpenTimer(), []);
@@ -490,6 +502,14 @@ export default function RadixRc({
             setShowPayModal(true);
         }, 500);
     }
+
+    useEffect(() => {
+        if (!checkoutRequest?.productId || checkoutRequest.productId <= 0) {
+            return;
+        }
+        handleSelectPlan(checkoutRequest.productId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅 seq 变化时触发收银
+    }, [checkoutRequest?.seq]);
 
     const showCountdown = !loadingProducts && products.length > 0;
     const countdownMainEl = showCountdown ? (
@@ -1083,6 +1103,8 @@ export default function RadixRc({
                                             : null
                                     }
                                     paySessionSeed={paySessionSeed}
+                                    initialCheckoutPayment={initialCheckoutPayment}
+                                    payCreateDiscountType={checkoutRequest?.discount_type}
                                     onPayStateChange={setPayModalStatus}
                                 />
                             </div>

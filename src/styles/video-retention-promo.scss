@@ -1,0 +1,249 @@
+/* 视频页挽留弹窗 v2 — rs-retention-promo__* */
+
+.rs-retention-promo {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.rs-retention-promo--pc {
+    align-items: center;
+    padding: 24px 16px;
+}
+
+.rs-retention-promo__backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.72);
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.rs-retention-promo__sheet {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 100%;
+    min-height: 64vh;
+    padding: 28px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+    border-radius: 20px 20px 0 0;
+    background: linear-gradient(180deg, #1a1a1e 0%, #0d0d10 100%);
+    color: #fff;
+    text-align: center;
+    pointer-events: auto;
+    transform: translateY(100%);
+    opacity: 0;
+    transition:
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.28s ease;
+}
+
+.rs-retention-promo--pc .rs-retention-promo__sheet {
+    width: min(100%, 420px);
+    min-height: 0;
+    max-height: min(88vh, 720px);
+    overflow-y: auto;
+    border-radius: 20px;
+    transform: scale(0.92);
+    transform-origin: center center;
+}
+
+.rs-retention-promo--open .rs-retention-promo__sheet {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.rs-retention-promo--pc.rs-retention-promo--open .rs-retention-promo__sheet {
+    transform: scale(1);
+}
+
+.rs-retention-promo__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+
+    img {
+        width: 14px;
+        height: 14px;
+        opacity: 0.9;
+    }
+}
+
+.rs-retention-promo__confetti {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 80px;
+    pointer-events: none;
+}
+
+.rs-retention-promo__confettiPiece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+    opacity: 0.9;
+}
+
+.rs-retention-promo__title {
+    margin: 8px 0 8px;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1.2;
+    color: #fff;
+}
+
+.rs-retention-promo__subtitle {
+    margin: 0 auto 20px;
+    max-width: 320px;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.rs-retention-promo__coupon {
+    position: relative;
+    margin: 0 auto 18px;
+    max-width: 340px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #f8edd4 0%, #e8d4a8 100%);
+    color: #3b2f1f;
+    overflow: hidden;
+
+    &::before,
+    &::after {
+        content: '';
+        position: absolute;
+        top: 58%;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #141418;
+        transform: translateY(-50%);
+    }
+
+    &::before {
+        left: -7px;
+    }
+
+    &::after {
+        right: -7px;
+    }
+}
+
+.rs-retention-promo__couponTop {
+    padding: 18px 20px 14px;
+}
+
+.rs-retention-promo__couponLabel {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(59, 47, 31, 0.85);
+}
+
+.rs-retention-promo__couponDiscount {
+    display: block;
+    font-weight: 800;
+    font-size: 42px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #2a2015;
+}
+
+.rs-retention-promo__couponDivider {
+    margin: 0 18px;
+    height: 0;
+    border-top: 2px dashed rgba(59, 47, 31, 0.28);
+}
+
+.rs-retention-promo__couponPricing {
+    margin: 0;
+    padding: 12px 16px 16px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: rgba(59, 47, 31, 0.88);
+}
+
+.rs-retention-promo__cta {
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto 22px;
+    padding: 15px 20px;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #ff4d6d 0%, #ff2d55 100%);
+    box-shadow: 0 8px 24px rgba(255, 45, 85, 0.35);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.2;
+    color: #fff;
+    cursor: pointer;
+}
+
+.rs-retention-promo__shorts {
+    text-align: left;
+}
+
+.rs-retention-promo__shortsTitle {
+    margin: 0 0 12px;
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 1.2;
+    color: #fff;
+}
+
+.rs-retention-promo__shortsRow {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.rs-retention-promo__shortsPoster {
+    flex: 0 0 72px;
+    width: 72px;
+    height: 96px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+@media (min-width: 768px) {
+    .rs-retention-promo__shortsPoster {
+        flex-basis: 64px;
+        width: 64px;
+        height: 86px;
+    }
+}

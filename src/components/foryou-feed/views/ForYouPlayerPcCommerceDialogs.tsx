@@ -5,6 +5,7 @@ import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
+import type { RetentionCommerceWire } from '@/components/video-retention-promo/VideoRetentionPromo';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 
@@ -12,6 +13,7 @@ export type ForYouPlayerPcCommerceDialogsProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
+    retention?: RetentionCommerceWire;
     vipHeaderEpisodeUnlockCoins?: number;
     shareOpen: boolean;
     onShareOpenChange: (open: boolean) => void;
@@ -30,6 +32,7 @@ export function ForYouPlayerPcCommerceDialogs({
     vip,
     onVipOpenChange,
     onVipEmbedClose,
+    retention,
     vipHeaderEpisodeUnlockCoins,
     shareOpen,
     onShareOpenChange,
@@ -43,10 +46,12 @@ export function ForYouPlayerPcCommerceDialogs({
     onCopyEmbedCode,
 }: ForYouPlayerPcCommerceDialogsProps) {
     const intl = useIntl();
+    const vipOpenChange = retention?.onVipOpenChange ?? onVipOpenChange;
+    const vipEmbedClose = retention?.onVipEmbedClose ?? onVipEmbedClose;
 
     return (
         <>
-            <Dialog open={vip} onOpenChange={onVipOpenChange}>
+            <Dialog open={vip} onOpenChange={vipOpenChange}>
                 <DialogContent
                     contentPreset="plain"
                     hideCloseButton
@@ -61,13 +66,17 @@ export function ForYouPlayerPcCommerceDialogs({
                                 layout="embed"
                                 productFrom="video"
                                 checkoutFrom="video"
-                                onEmbedClose={onVipEmbedClose}
+                                onEmbedClose={vipEmbedClose}
                                 headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                                checkoutRequest={retention?.checkoutRequest}
+                                initialCheckoutPayment={retention?.initialCheckoutPayment}
+                                onPayModalClosed={retention?.onPayModalClosed}
                             />
                         ) : null}
                     </div>
                 </DialogContent>
             </Dialog>
+            {retention?.layer}
             <Dialog open={shareOpen} onOpenChange={onShareOpenChange}>
                 <DialogContent
                     contentPreset="plain"

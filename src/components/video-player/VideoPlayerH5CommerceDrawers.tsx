@@ -5,6 +5,7 @@ import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
+import type { RetentionCommerceWire } from '@/components/video-retention-promo/VideoRetentionPromo';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
@@ -13,6 +14,7 @@ export type VideoPlayerH5CommerceDrawersProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
+    retention?: RetentionCommerceWire;
     embedVideoEpisodeRowId: number;
     onEmbedPaySuccessEpisodeDetail: (episode: IPlayerEpisode) => void;
     vipHeaderEpisodeUnlockCoins?: number;
@@ -28,11 +30,12 @@ export type VideoPlayerH5CommerceDrawersProps = {
     onCopyEmbedCode: () => void | Promise<void>;
 };
 
-/** H5?VIP ???rs-shopping?+ ???? */
+/** H5：VIP 抽屉 rs-shopping + 分享 */
 export function VideoPlayerH5CommerceDrawers({
     vip,
     onVipOpenChange,
     onVipEmbedClose,
+    retention,
     embedVideoEpisodeRowId,
     onEmbedPaySuccessEpisodeDetail,
     vipHeaderEpisodeUnlockCoins,
@@ -48,10 +51,12 @@ export function VideoPlayerH5CommerceDrawers({
     onCopyEmbedCode,
 }: VideoPlayerH5CommerceDrawersProps) {
     const intl = useIntl();
+    const vipOpenChange = retention?.onVipOpenChange ?? onVipOpenChange;
+    const vipEmbedClose = retention?.onVipEmbedClose ?? onVipEmbedClose;
 
     return (
         <>
-            <Drawer open={vip} onOpenChange={onVipOpenChange} disablePreventScroll>
+            <Drawer open={vip} onOpenChange={vipOpenChange} disablePreventScroll>
                 <DrawerContent
                     handler
                     className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col overflow-hidden border-t border-white/10 p-0 text-white max-h-[min(88vh,1040px)]"
@@ -65,15 +70,19 @@ export function VideoPlayerH5CommerceDrawers({
                                 layout="embed"
                                 productFrom="video"
                                 checkoutFrom="video"
-                                onEmbedClose={onVipEmbedClose}
+                                onEmbedClose={vipEmbedClose}
                                 headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
                                 embedVideoEpisodeRowId={embedVideoEpisodeRowId}
                                 onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
+                                checkoutRequest={retention?.checkoutRequest}
+                                initialCheckoutPayment={retention?.initialCheckoutPayment}
+                                onPayModalClosed={retention?.onPayModalClosed}
                             />
                         ) : null}
                     </div>
                 </DrawerContent>
             </Drawer>
+            {retention?.layer}
             <Drawer open={shareOpen} onOpenChange={onShareOpenChange}>
                 <DrawerContent className="video-share-mobile-drawer border-0 p-0 text-white">
                     <DrawerTitle className="sr-only">
