@@ -73,23 +73,36 @@ export function VideoPaywallPromoCountdown({ expiresAt }: VideoPaywallPromoCount
         parts.minutes.toString().padStart(2, '0'),
         parts.seconds.toString().padStart(2, '0'),
     ];
+    const timeLabel = boxes.join(':');
+    const aria = intl.formatMessage({ id: 'shopping_countdown_aria' }, { time: timeLabel });
 
     return (
         <div className="rs-video-promo__countdown">
             <span className="rs-video-promo__countdownLabel">
                 {intl.formatMessage({ id: 'video_promo_ends_in_label' })}
             </span>
-            <div className="rs-video-promo__countdownBoxes" role="timer" aria-live="polite">
-                {boxes.map((box, index) => (
-                    <span key={`${index}-${box}`} className="rs-video-promo__countdownBox tabular-nums">
-                        {box}
-                        {index < boxes.length - 1 ? (
-                            <span className="rs-video-promo__countdownSep" aria-hidden>
-                                :
-                            </span>
-                        ) : null}
-                    </span>
-                ))}
+            <div
+                className="rs-video-promo__countdownBoxes"
+                role="timer"
+                aria-live="polite"
+                aria-label={aria}
+            >
+                {boxes.flatMap((box, index) => {
+                    const unit = (
+                        <span key={`box-${index}-${box}`} className="rs-video-promo__countdownBox tabular-nums">
+                            {box}
+                        </span>
+                    );
+                    if (index >= boxes.length - 1) {
+                        return [unit];
+                    }
+                    return [
+                        unit,
+                        <span key={`sep-${index}`} className="rs-video-promo__countdownSep" aria-hidden>
+                            :
+                        </span>,
+                    ];
+                })}
             </div>
         </div>
     );

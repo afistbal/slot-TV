@@ -1,5 +1,17 @@
 /* 视频付费优惠 / 挽留浮层 — 周 rs-video-promo--weekly / 年 rs-video-promo--yearly */
 
+/** 仅 .rs-video-promo__priceValue — 独立 font-family，避免影响 rs-shopping__planPrice 等 */
+@font-face {
+    font-family: 'Video Promo DIN Alternate';
+    font-style: normal;
+    font-weight: 700;
+    src:
+        local('DIN Alternate Bold'),
+        local('DINAlternate-Bold'),
+        url('../assets/fonts/din-alternate/DINAlternate-Bold.woff') format('woff');
+    font-display: swap;
+}
+
 .rs-shopping-checkout-drawer__scroll.relative {
     position: relative;
 }
@@ -150,15 +162,19 @@
     }
 }
 
-.rs-video-promo--weekly .rs-video-promo__priceValue {
-    font-family: var(--fontPriceDisplay);
+.rs-video-promo__priceValue {
+    font-family: 'Video Promo DIN Alternate', DIN Alternate, DIN Alternate, var(--fontFamily);
     font-variant-numeric: tabular-nums;
-    font-weight: bold;
+    font-weight: 700;
+    font-synthesis: none;
+    font-style: normal;
+}
+
+.rs-video-promo--weekly .rs-video-promo__priceValue {
     font-size: 36px;
     color: #F1DA97;
     line-height: 44px;
     text-align: center;
-    font-style: normal;
 }
 
 .rs-video-promo--weekly .rs-video-promo__priceHint {
@@ -173,7 +189,7 @@
     font-size: 15px;
     color: #E88E05;
     line-height: 24px;
-    margin-bottom: 3px;
+    margin-bottom: 1px;
 }
 
 .rs-video-promo--weekly .rs-video-promo__limited {
@@ -189,12 +205,12 @@
 .rs-video-promo--weekly .rs-video-promo__cta {
     width: 100%;
     margin: 0;
-    padding: 11px 16px;
+    padding: 11px 6px;
     border: 0;
     border-radius: 999px;
     background: linear-gradient(94deg, #ffecd4 0%, #f3cb93 100%);
     font-weight: 500;
-    font-size: 16px;
+    font-size: 15px;
     color: #633E25;
     line-height: 20px;
     cursor: pointer;
@@ -209,57 +225,71 @@
 
 .rs-video-promo--weekly .rs-video-promo__giveUp {
     margin-top: 12px;
-    padding: 4px 8px;
-    border: 0;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 13px;
-    text-decoration: underline;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 20px;
     cursor: pointer;
-    opacity: 0.75;
 }
 
 .rs-video-promo--weekly .rs-video-promo__countdownBox {
-    color: #fff;
-    background: rgba(0, 0, 0, 0.35);
+    color: #F1DA97;
+    background: rgba(255, 245, 228, 0.2);
 }
 
 /* —— 年会员 —— */
 .rs-video-promo--yearly {
     color: #2a2118;
     overflow: visible;
+    text-align: left;
+}
+
+.rs-video-promo__yearlyBg {
+    --rs-yearly-border: 1px;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: 24px;
+    padding: var(--rs-yearly-border);
+    background: linear-gradient(180deg, rgb(255, 222, 184), rgb(137, 136, 134));
+    pointer-events: none;
+
+    &::before {
+        content: '';
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: calc(24px - var(--rs-yearly-border));
+        background: linear-gradient(94deg, #201816 0%, #3C3427 100%);
+    }
 }
 
 .rs-video-promo__yearlyHeader {
-    position: absolute;
-    inset: 0 0 auto;
-    z-index: 0;
-    height: 132px;
-    border-radius: 24px 24px 0 0;
-    background: linear-gradient(180deg, #2a2118 0%, #1a1410 100%);
-    pointer-events: none;
+    position: relative;
+    z-index: 1;
+    padding: 16px;
+    padding-bottom: 8px;
 }
 
 .rs-video-promo__yearlyBody {
-    position: absolute;
-    inset: 108px 0 0;
-    z-index: 0;
-    border-radius: 0 0 24px 24px;
+    position: relative;
+    z-index: 1;
+    margin: 0 0px -24px;
+    padding: 24px 24px 20px;
+    border-radius: 24px;
     background: linear-gradient(94deg, #ffecd4 0%, #f3cb93 100%);
-    pointer-events: none;
 }
 
 .rs-video-promo__yearlyDeco {
     position: absolute;
-    top: 0;
-    right: 8px;
+    top: -8%;
+    right: -3%;
     z-index: 2;
     pointer-events: none;
 }
 
 .rs-video-promo__yearlyDecoImg {
     display: block;
-    max-height: 88px;
+    max-height: 98px;
     width: auto;
     object-fit: contain;
 }
@@ -267,30 +297,30 @@
 .rs-video-promo__content--yearly {
     position: relative;
     z-index: 1;
-    padding: 30px 24px 0;
+    padding: 0;
     -webkit-font-smoothing: subpixel-antialiased;
     -moz-osx-font-smoothing: auto;
     text-rendering: geometricPrecision;
 }
 
 .rs-video-promo--yearly .rs-video-promo__title {
-    margin: 36px 0 8px;
-    font-weight: bold;
+    margin: 0 0 8px;
+    font-weight: 600;
     font-size: 20px;
-    color: #f1da97;
+    color: #F1DA97;
     line-height: 20px;
-    text-align: center;
+    text-align: left;
     font-style: normal;
     text-transform: none;
 }
 
 .rs-video-promo--yearly .rs-video-promo__subtitle {
-    margin: 0 0 14px;
+    margin: 0;
     font-weight: 400;
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.75);
+    color: rgba(241, 218, 151, 0.75);
     line-height: 16px;
-    text-align: center;
+    text-align: left;
     font-style: normal;
     text-transform: none;
 }
@@ -303,7 +333,7 @@
     padding: 14px 0;
     border-radius: 12px;
     text-align: left;
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255,255,255,0.5);
 }
 
 .rs-video-promo--yearly .rs-video-promo__priceMain {
@@ -339,27 +369,23 @@
 }
 
 .rs-video-promo--yearly .rs-video-promo__priceValue {
-    font-family: var(--fontPriceDisplay);
-    font-variant-numeric: tabular-nums;
-    font-weight: bold;
     font-size: 36px;
-    color: #401a06;
+    color: #633E25;
     line-height: 44px;
     text-align: center;
-    font-style: normal;
 }
 
 .rs-video-promo--yearly .rs-video-promo__priceHint {
     font-weight: 400;
     font-size: 11px;
-    color: rgba(64, 26, 6, 0.75);
+    color: rgba(99,62,37,0.75);
     line-height: 16px;
 }
 
 .rs-video-promo--yearly .rs-video-promo__save {
     font-weight: 500;
     font-size: 15px;
-    color: #e88e05;
+    color: #E86405;
     line-height: 24px;
     margin-bottom: 3px;
 }
@@ -368,7 +394,7 @@
     text-align: center;
     padding: 1px 5px;
     border-radius: 20px;
-    background: #f1da97;
+    background: #F1CD97;
     color: #633e25;
     font-weight: 400;
     font-size: 11px;
@@ -377,22 +403,24 @@
 .rs-video-promo--yearly .rs-video-promo__cta {
     width: 100%;
     margin: 0;
-    padding: 11px 16px;
+    padding: 11px 6px;
     border: 0;
     border-radius: 999px;
-    background: linear-gradient(94deg, #8b5a2b 0%, #5c3a1a 100%);
+    background: linear-gradient( 90deg, #C17846 0%, #603C24 100%);
     font-weight: 500;
-    font-size: 16px;
+    font-size: 15px;
     color: #fff;
     line-height: 20px;
     cursor: pointer;
+    text-align: center;
 }
 
 .rs-video-promo--yearly .rs-video-promo__footnote {
     margin: 12px 0 0;
     font-weight: 400;
     font-size: 12px;
-    color: rgba(42, 33, 24, 0.75);
+    color: rgba(99,62,37,0.75);
+    text-align: center;
 }
 
 .rs-video-promo--yearly .rs-video-promo__giveUp {
@@ -419,14 +447,17 @@
 }
 
 .rs-video-promo__countdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     margin-bottom: 14px;
 }
 
 .rs-video-promo__countdownLabel {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 12px;
-    opacity: 0.8;
+    font-weight: 400;
+    font-size: 14px;
+    color: #F1DA97;
 }
 
 .rs-video-promo__countdownBoxes {
@@ -439,6 +470,7 @@
 .rs-video-promo__countdownBox {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     min-width: 36px;
     padding: 6px 8px;
     border-radius: 6px;
@@ -447,8 +479,10 @@
 }
 
 .rs-video-promo__countdownSep {
-    margin-left: 4px;
-    opacity: 0.7;
+    color: #F1DA97;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .rs-video-promo__ctaWrap {

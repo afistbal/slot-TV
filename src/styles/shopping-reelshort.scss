@@ -434,7 +434,6 @@
     }
 
     .rs-shopping__embedWalletAmount {
-        font-family: DIN Alternate, DIN Alternate;
         margin-left: calc(3 / 375 * var(--app-vw));
         color: #fff;
         font-variant-numeric: tabular-nums;
@@ -697,7 +696,6 @@
 
     .rs-shopping__planPrice {
         font-size: calc(20 / 375 * var(--app-vw));
-        font-weight: 700;
 
         @media (min-width: 768px) {
             font-size: 22px;
@@ -2061,8 +2059,6 @@
             border-radius: 999px;
             background: #3A342F;
             font-size: 15px;
-            font-family: DIN Alternate, DIN Alternate;
-            font-weight: bold;
             color: #F1DA97;
             line-height: 1;
             transition: color 0.1s ease;
@@ -2232,7 +2228,6 @@
             min-height: 36px;
             padding: 8px 10px;
             background: #3d3a37FF;
-            font-family: DIN Alternate, DIN Alternate;
             font-weight: bold;
             font-size: 14px;
             line-height: 1.2;

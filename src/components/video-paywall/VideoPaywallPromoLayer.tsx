@@ -52,25 +52,22 @@ type PromoCardBodyProps = {
     product: VideoPaywallProduct;
     isRetention: boolean;
     modalExpiresAt: number | null;
+    showHeader?: boolean;
     onOfferCta: (tier: VideoPaywallTier) => void;
     onRetentionContinue: (tier: VideoPaywallTier) => void;
     onRetentionGiveUp: () => void;
 };
 
-function PromoCardBody({
+function PromoCardTitleBlock({
     tier,
     product,
     isRetention,
-    modalExpiresAt,
-    onOfferCta,
-    onRetentionContinue,
-    onRetentionGiveUp,
-}: PromoCardBodyProps) {
+}: {
+    tier: VideoPaywallTier;
+    product: VideoPaywallProduct;
+    isRetention: boolean;
+}) {
     const intl = useIntl();
-    const isWeekly = tier === 'weekly';
-    const priceLabel = `$${product.price}`;
-    const saveAmount = computeSaveAmount(product.price, product.renewal_price);
-    const perDayLabel = `$${computePerDayPrice(product.price, tier)}`;
     const renewText = formatSubscriptionPlanRenewText(intl, {
         price: product.price,
         renewal_price: product.renewal_price,
@@ -82,8 +79,31 @@ function PromoCardBody({
             <h2 id="rs-video-promo-title" className="rs-video-promo__title">
                 <FormattedMessage id={offerTitleId(tier, isRetention, product)} />
             </h2>
-
             <p className="rs-video-promo__subtitle">{renewText}</p>
+        </>
+    );
+}
+
+function PromoCardBody({
+    tier,
+    product,
+    isRetention,
+    modalExpiresAt,
+    showHeader = true,
+    onOfferCta,
+    onRetentionContinue,
+    onRetentionGiveUp,
+}: PromoCardBodyProps) {
+    const isWeekly = tier === 'weekly';
+    const priceLabel = `$${product.price}`;
+    const saveAmount = computeSaveAmount(product.price, product.renewal_price);
+    const perDayLabel = `$${computePerDayPrice(product.price, tier)}`;
+
+    return (
+        <>
+            {showHeader ? (
+                <PromoCardTitleBlock tier={tier} product={product} isRetention={isRetention} />
+            ) : null}
 
             <div className="rs-video-promo__priceCard">
                 <div className="rs-video-promo__priceMain">
@@ -249,8 +269,7 @@ function YearlyPromoCard({
             aria-modal="true"
             aria-labelledby="rs-video-promo-title"
         >
-            <div className="rs-video-promo__yearlyHeader" aria-hidden />
-            <div className="rs-video-promo__yearlyBody" aria-hidden />
+            <div className="rs-video-promo__yearlyBg" aria-hidden />
 
             <div className="rs-video-promo__yearlyDeco" aria-hidden>
                 <img
@@ -260,16 +279,23 @@ function YearlyPromoCard({
                 />
             </div>
 
-            <div className="rs-video-promo__content rs-video-promo__content--yearly">
-                <PromoCardBody
-                    tier="yearly"
-                    product={product}
-                    isRetention={isRetention}
-                    modalExpiresAt={modalExpiresAt}
-                    onOfferCta={onOfferCta}
-                    onRetentionContinue={onRetentionContinue}
-                    onRetentionGiveUp={onRetentionGiveUp}
-                />
+            <div className="rs-video-promo__yearlyHeader">
+                <PromoCardTitleBlock product={product} isRetention={isRetention} tier="yearly" />
+            </div>
+
+            <div className="rs-video-promo__yearlyBody">
+                <div className="rs-video-promo__content rs-video-promo__content--yearly">
+                    <PromoCardBody
+                        tier="yearly"
+                        product={product}
+                        isRetention={isRetention}
+                        modalExpiresAt={modalExpiresAt}
+                        showHeader={false}
+                        onOfferCta={onOfferCta}
+                        onRetentionContinue={onRetentionContinue}
+                        onRetentionGiveUp={onRetentionGiveUp}
+                    />
+                </div>
             </div>
 
             <button
