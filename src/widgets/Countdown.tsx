@@ -1,13 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Clock } from 'lucide-react';
-import { FormattedMessage, useIntl } from 'react-intl';
-
-export type CountdownVariant = 'default' | 'planCorner';
-
-type CountdownProps = {
-    /** `planCorner`：购物周卡右上角单条粉徽章（时钟 + HH:MM:SS / DD:HH:MM:SS） */
-    variant?: CountdownVariant;
-};
+import { useEffect, useState } from 'react';
+import { FormattedMessage } from 'react-intl';
 
 function formatCountdownParts(totalSeconds: number) {
     const safe = Math.max(0, totalSeconds);
@@ -18,8 +10,7 @@ function formatCountdownParts(totalSeconds: number) {
     return { days, hours, minutes, seconds };
 }
 
-export default function Countdown({ variant = 'default' }: CountdownProps) {
-    const intl = useIntl();
+export default function Countdown() {
     const [countdown, setCountdown] = useState(0);
 
     useEffect(() => {
@@ -47,34 +38,7 @@ export default function Countdown({ variant = 'default' }: CountdownProps) {
         };
     }, []);
 
-    const { days, hours, minutes, seconds } = formatCountdownParts(countdown);
-
-    const planCornerTime = useMemo(() => {
-        const hh = hours.toString().padStart(2, '0');
-        const mm = minutes.toString().padStart(2, '0');
-        const ss = seconds.toString().padStart(2, '0');
-        if (days > 0) {
-            return `${days.toString().padStart(2, '0')}:${hh}:${mm}:${ss}`;
-        }
-        return `${hh}:${mm}:${ss}`;
-    }, [days, hours, minutes, seconds]);
-
-    if (variant === 'planCorner') {
-        return (
-            <div
-                className="rs-countdown rs-countdown--planCorner"
-                role="timer"
-                aria-live="polite"
-                aria-label={intl.formatMessage(
-                    { id: 'shopping_countdown_aria' },
-                    { time: planCornerTime },
-                )}
-            >
-                <Clock className="rs-countdown__clockIcon" strokeWidth={2} aria-hidden />
-                <span className="rs-countdown__time tabular-nums">{planCornerTime}</span>
-            </div>
-        );
-    }
+    const { hours, minutes, seconds } = formatCountdownParts(countdown);
 
     return (
         <div className="flex gap-1 items-center justify-center">

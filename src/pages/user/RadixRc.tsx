@@ -716,12 +716,6 @@ export default function RadixRc({
                                     style={{ backgroundImage: `url(${vipCardBg})` }}
                                 />
 
-                                {isReelshortH5StoreUi && showCountdown && isWeeklySubscriptionPlan(p.name) ? (
-                                    <div className="rs-shopping__planCountdown">
-                                        <Countdown variant="planCorner" />
-                                    </div>
-                                ) : null}
-
                                 {!isReelshortH5StoreUi && isWeeklySubscriptionPlan(p.name) ? (
                                     <div className="rs-shopping__planOfferBadge">
                                         <FormattedMessage

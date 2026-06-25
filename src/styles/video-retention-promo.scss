@@ -294,7 +294,7 @@
     align-items: baseline;
     justify-content: center;
     gap: 8px;
-    margin: 0 0 2px;
+    margin: 0 0 6px;
     line-height: 1;
 }
 
@@ -307,9 +307,9 @@
 }
 
 .rs-retention-promo__offerCardPeriod {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(59, 47, 31, 0.65);
+    font-weight: 400;
+    font-size: 10px;
+    color: rgba(99, 62, 37, 0.75);
 }
 
 .rs-retention-promo__offerCardPerDay {
@@ -322,15 +322,19 @@
 
 .rs-retention-promo__ctaStack {
     position: relative;
-    margin: 16px 0 12px;
+    margin: 32px 0 12px;
 }
 
 .rs-retention-promo__countdown--step3 {
+    position: absolute;
+    left: 50%;
+    top: -6px;
+    z-index: 2;
     display: flex;
     justify-content: center;
-    margin: 0 0 -13px;
-    position: relative;
-    z-index: 2;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
 }
 
 .rs-retention-promo__countdownPill {
@@ -338,23 +342,19 @@
     align-items: center;
     justify-content: center;
     min-width: 88px;
-    padding: 5px 16px;
+    padding: 2px 16px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #fff86d 0%, #e8a42d 100%);
-    font-weight: 700;
-    font-size: 14px;
-    line-height: 1;
-    letter-spacing: 0.04em;
-    color: #3b2a12;
+    background: #F3CA4B;
+    font-weight: 500;
+    font-size: 16px;
+    color: #633E25;
     font-variant-numeric: tabular-nums;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .rs-retention-promo__sheet--step3 .rs-retention-promo__ctaStack .rs-retention-promo__cta {
     position: relative;
     z-index: 1;
     margin: 0;
-    padding-top: 18px;
 }
 
 /* —— 弹窗 1/2 倒计时 —— */

@@ -1986,41 +1986,6 @@
             }
         }
 
-        .rs-shopping__planCountdown {
-            position: absolute;
-            top: 0;
-            right: 0;
-            z-index: 3;
-            margin: 0;
-            pointer-events: none;
-
-            .rs-countdown--planCorner {
-                display: inline-flex;
-                align-items: center;
-                gap: 5px;
-                padding: 3px 10px;
-                border-radius: 0 12px 0 10px;
-                background: linear-gradient(90deg, #FD36BC 0%, #FD3A5A 100%);
-                color: #fff;
-                font-size: 11px;
-                font-weight: 500;
-                letter-spacing: 0.02em;
-                box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
-            }
-
-            .rs-countdown__clockIcon {
-                width: calc(13 / 375 * var(--app-vw));
-                height: calc(13 / 375 * var(--app-vw));
-                flex-shrink: 0;
-                color: #fff;
-            }
-
-            .rs-countdown__time {
-                font-variant-numeric: tabular-nums;
-                white-space: nowrap;
-            }
-        }
-
         .rs-shopping__planBody {
             align-items: flex-start;
             padding: 22px 110px 10px 16px;
