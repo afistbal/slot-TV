@@ -99,6 +99,13 @@ export function useRetentionPromoStore(): RetentionPromoStore {
     return retentionPromoStore.state;
 }
 
+function parseOffersResponse(res: { c: number; d: unknown }): RetentionOffer[] {
+    if (res.c !== 0 || !Array.isArray(res.d) || res.d.length === 0) {
+        return [];
+    }
+    return res.d as RetentionOffer[];
+}
+
 async function fetchOffersOnce(): Promise<RetentionOffer[]> {
     if (retentionPromoStore.state.offersReady) {
         return retentionPromoStore.state.offers;
@@ -111,51 +118,18 @@ async function fetchOffersOnce(): Promise<RetentionOffer[]> {
         toastOnError: false,
     })
         .then((res) => {
-            const offers =
-                res.c === 0 && Array.isArray(res.d)
-                    ? (res.d as RetentionOffer[])
-                    : fallbackOffers();
+            const offers = parseOffersResponse(res);
             retentionPromoStore.set({ offers, offersReady: true });
             return offers;
         })
         .catch(() => {
-            const offers = fallbackOffers();
-            retentionPromoStore.set({ offers, offersReady: true });
-            return offers;
+            retentionPromoStore.set({ offers: [], offersReady: true });
+            return [];
         })
         .finally(() => {
             offersInflight = null;
         });
     return offersInflight;
-}
-
-function fallbackOffers(): RetentionOffer[] {
-    return [
-        {
-            id: 1,
-            name: 'weekly',
-            type: 1,
-            discount_type: 1,
-            price: '13.99',
-            renewal_price: '24.99',
-        },
-        {
-            id: 1,
-            name: 'weekly',
-            type: 1,
-            discount_type: 2,
-            price: '9.99',
-            renewal_price: '24.99',
-        },
-        {
-            id: 5,
-            name: 'quarterly',
-            type: 1,
-            discount_type: 1,
-            price: '49.99',
-            renewal_price: '99.99',
-        },
-    ];
 }
 
 async function fetchMembershipCoversOnce(staticBase: string): Promise<MembershipCover[]> {
@@ -646,7 +620,7 @@ export function useVideoRetentionCommerce({
     }, []);
 
     const startRetentionFlow = useCallback(() => {
-        if (viewerIsVip || flowStartedRef.current) return;
+        if (viewerIsVip || flowStartedRef.current || offers.length === 0) return;
         flowStartedRef.current = true;
         clearSkipCountdown();
         countdownExhaustedRef.current = false;
@@ -654,12 +628,15 @@ export function useVideoRetentionCommerce({
         openTimerRef.current = window.setTimeout(() => openStep(1), OPEN_DELAY_MS) as unknown as ReturnType<
             typeof setTimeout
         >;
-    }, [openStep, viewerIsVip]);
+    }, [offers.length, openStep, viewerIsVip]);
 
     const requestPanelClose = useCallback((): boolean => {
+        if (offers.length === 0) {
+            return false;
+        }
         startRetentionFlow();
         return true;
-    }, [startRetentionFlow]);
+    }, [offers.length, startRetentionFlow]);
 
     useEffect(() => {
         registerPanelClose(requestPanelClose);
@@ -787,9 +764,11 @@ export function useVideoRetentionCommerce({
         checkoutViaCountdownRef.current = false;
         setCheckoutRequest(null);
         clearPromo();
-        startRetentionFlow();
+        if (offers.length > 0) {
+            startRetentionFlow();
+        }
         onVipOpenChange(false);
-    }, [clearPromo, onVipOpenChange, startRetentionFlow]);
+    }, [clearPromo, offers.length, onVipOpenChange, startRetentionFlow]);
 
     const activeOffer = step != null ? offers[step - 1] : null;
     const promoActive = step != null || checkoutRequest != null;
