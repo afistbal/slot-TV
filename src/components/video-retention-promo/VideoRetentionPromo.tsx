@@ -11,7 +11,6 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { api, type IPagination } from '@/api';
 import shareCloseIcon from '@/assets/icons/share/close.svg';
 import { useVideoPanelCloseGuard } from '@/components/video-paywall/useVideoPanelCloseGuard';
-import type { VideoPaywallProduct } from '@/components/video-paywall/videoPaywallPromoTypes';
 import { movieCoverUrlFromInfo } from '@/lib/movieCoverUrl';
 import { resolveSubscriptionPeriod } from '@/lib/subscriptionPlanRenewText';
 import { useConfigStore } from '@/stores/config';
@@ -40,6 +39,33 @@ const COUNTDOWN_SEC = 30;
 const OPEN_DELAY_MS = 320;
 const ANIM_MS = 20;
 const SKIP_COUNTDOWN_KEY = 'video_retention_promo_skip_countdown';
+
+import headerBg from '@/assets/video-retention-promo/bg@2x.png';
+import couponBg from '@/assets/video-retention-promo/bg_coupon@2x.png';
+
+/** 顶部彩纸背景 / 优惠票券背景 */
+export const retentionPromoAssets = {
+    headerBg,
+    couponBg,
+} as const;
+
+function formatCountdownParts(totalSec: number): { h: string; m: string; s: string } {
+    const safe = Math.max(0, totalSec);
+    const h = Math.floor(safe / 3600);
+    const m = Math.floor((safe % 3600) / 60);
+    const s = safe % 60;
+    return {
+        h: String(h).padStart(2, '0'),
+        m: String(m).padStart(2, '0'),
+        s: String(s).padStart(2, '0'),
+    };
+}
+
+function formatPerDayPrice(price: string, days: number): string {
+    const n = Number.parseFloat(price);
+    if (!Number.isFinite(n) || days <= 0) return '$0.00';
+    return `$${(n / days).toFixed(2)}`;
+}
 
 // —— module store (no separate file) ——
 
@@ -210,29 +236,159 @@ type VideoRetentionPromoLayerProps = {
     onCta: () => void;
 };
 
-function ConfettiDeco() {
-    const pieces = [
-        { left: '8%', top: '6%', color: '#ff5a5a', rot: 12 },
-        { left: '18%', top: '14%', color: '#5ab0ff', rot: -18 },
-        { left: '78%', top: '8%', color: '#ffd45a', rot: 24 },
-        { left: '88%', top: '16%', color: '#5aff8a', rot: -8 },
-        { left: '42%', top: '4%', color: '#ff5a5a', rot: 45 },
-        { left: '62%', top: '12%', color: '#5ab0ff', rot: -30 },
-    ];
+function PromoShortsRow({ covers }: { covers: MembershipCover[] }) {
+    const items =
+        covers.length > 0 ? covers.slice(0, 5) : Array.from({ length: 5 }, (_, i) => ({ id: i, image: '' }));
     return (
-        <div className="rs-retention-promo__confetti" aria-hidden>
-            {pieces.map((p, i) => (
-                <span
-                    key={i}
-                    className="rs-retention-promo__confettiPiece"
-                    style={{
-                        left: p.left,
-                        top: p.top,
-                        backgroundColor: p.color,
-                        transform: `rotate(${p.rot}deg)`,
-                    }}
+        <div className="rs-retention-promo__shorts">
+            <h3 className="rs-retention-promo__shortsTitle">
+                <FormattedMessage id="retention_promo_vip_shorts" />
+            </h3>
+            <div className="rs-retention-promo__shortsRow">
+                {items.map((cover) => (
+                    <div key={cover.id} className="rs-retention-promo__shortsPoster">
+                        {cover.image ? <img src={cover.image} alt="" /> : null}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function PromoHeaderArt({
+    step,
+    subtitleId,
+}: {
+    step: RetentionPromoStep;
+    subtitleId?: string;
+}) {
+    const isStep3 = step === 3;
+    return (
+        <div
+            className="rs-retention-promo__headerArt"
+            style={
+                {
+                    '--rs-retention-header-bg': `url(${retentionPromoAssets.headerBg})`,
+                } as React.CSSProperties
+            }
+        >
+            <h2 id="rs-retention-promo-title" className="rs-retention-promo__title">
+                <FormattedMessage
+                    id={isStep3 ? 'retention_promo_title_step3' : 'retention_promo_title'}
                 />
-            ))}
+            </h2>
+            {isStep3 ? (
+                <span className="rs-retention-promo__badge">
+                    <FormattedMessage id="retention_promo_badge_onetime" />
+                </span>
+            ) : subtitleId ? (
+                <p className="rs-retention-promo__subtitle">
+                    <FormattedMessage id={subtitleId} />
+                </p>
+            ) : null}
+        </div>
+    );
+}
+
+function PromoCouponCardStep12({
+    discount,
+    pricingText,
+}: {
+    discount: number;
+    pricingText: string;
+}) {
+    return (
+        <div
+            className="rs-retention-promo__coupon"
+            style={
+                {
+                    '--rs-retention-coupon-bg': `url(${retentionPromoAssets.couponBg})`,
+                } as React.CSSProperties
+            }
+        >
+            <div className="rs-retention-promo__couponInner">
+                <div className="rs-retention-promo__couponTop">
+                    <span className="rs-retention-promo__couponLabel">
+                        <FormattedMessage id="retention_promo_surprise_discount" />
+                    </span>
+                    <span className="rs-retention-promo__couponDiscount">-{discount}%</span>
+                </div>
+                <div className="rs-retention-promo__couponDivider" aria-hidden />
+                <p className="rs-retention-promo__couponPricing">{pricingText}</p>
+            </div>
+        </div>
+    );
+}
+
+function PromoOfferCardStep3({
+    offer,
+    discount,
+}: {
+    offer: RetentionOffer;
+    discount: number;
+}) {
+    const intl = useIntl();
+    const priceLabel = `$${offer.price}`;
+    const renewalLabel = `$${offer.renewal_price}`;
+    const perDay = formatPerDayPrice(offer.price, 90);
+
+    return (
+        <div
+            className="rs-retention-promo__offerCard"
+            style={
+                {
+                    '--rs-retention-coupon-bg': `url(${retentionPromoAssets.couponBg})`,
+                } as React.CSSProperties
+            }
+        >
+            <div className="rs-retention-promo__offerCardInner">
+                <h3 className="rs-retention-promo__offerCardTitle">
+                    <FormattedMessage id="retention_promo_exclusive_title" />
+                </h3>
+                <p className="rs-retention-promo__offerCardSubtitle">
+                    <FormattedMessage id="retention_promo_exclusive_subtitle" />
+                </p>
+                <div className="rs-retention-promo__offerCardSaveRow">
+                    <span className="rs-retention-promo__offerCardWas">{renewalLabel}</span>
+                    <span className="rs-retention-promo__offerCardOff">
+                        {intl.formatMessage(
+                            { id: 'retention_promo_off_badge' },
+                            { percent: discount },
+                        )}
+                    </span>
+                </div>
+                <div className="rs-retention-promo__offerCardPriceRow">
+                    <span className="rs-retention-promo__offerCardPrice">{priceLabel}</span>
+                    <span className="rs-retention-promo__offerCardPeriod">
+                        <FormattedMessage id="retention_promo_period_90days" />
+                    </span>
+                </div>
+                <p className="rs-retention-promo__offerCardPerDay">
+                    {intl.formatMessage({ id: 'retention_promo_per_day' }, { price: perDay })}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+function PromoCountdownBar({ countdownSec }: { countdownSec: number }) {
+    const { h, m, s } = formatCountdownParts(countdownSec);
+    return (
+        <div className="rs-retention-promo__countdown">
+            <span className="rs-retention-promo__countdownLine" aria-hidden />
+            <div className="rs-retention-promo__countdownCore">
+                <span className="rs-retention-promo__countdownLabel">
+                    <FormattedMessage id="retention_promo_ends_in" />
+                </span>
+                <div className="rs-retention-promo__countdownDigits" aria-live="polite">
+                    <span className="rs-retention-promo__countdownUnit">{h}</span>
+                    <span className="rs-retention-promo__countdownSep">:</span>
+                    <span className="rs-retention-promo__countdownUnit">{m}</span>
+                    <span className="rs-retention-promo__countdownSep">:</span>
+                    <span className="rs-retention-promo__countdownUnit">{s}</span>
+                </div>
+            </div>
+            <span className="rs-retention-promo__countdownLine" aria-hidden />
         </div>
     );
 }
@@ -256,12 +412,10 @@ export function VideoRetentionPromoLayer({
     const priceLabel = `$${offer.price}`;
     const renewalLabel = `$${offer.renewal_price}`;
 
+    const isStep3 = step === 3;
+
     const subtitleId =
-        step === 2
-            ? 'retention_promo_subtitle_step2'
-            : step === 3
-              ? 'retention_promo_subtitle_step3'
-              : 'retention_promo_subtitle_step1';
+        step === 2 ? 'retention_promo_subtitle_step2' : 'retention_promo_subtitle_step1';
 
     const pricingText = isWeekly
         ? intl.formatMessage(
@@ -269,9 +423,14 @@ export function VideoRetentionPromoLayer({
               { price: priceLabel, renewal: renewalLabel },
           )
         : intl.formatMessage(
-              { id: 'retention_promo_terms_90days' },
+              { id: 'retention_promo_terms_quarterly' },
               { price: priceLabel, renewal: renewalLabel },
           );
+
+    const step3LegalText = intl.formatMessage(
+        { id: 'retention_promo_terms_quarterly' },
+        { price: priceLabel, renewal: renewalLabel },
+    );
 
     const ctaText = intl.formatMessage(
         { id: 'retention_promo_cta_sale' },
@@ -285,6 +444,7 @@ export function VideoRetentionPromoLayer({
             className={[
                 'rs-retention-promo',
                 `rs-retention-promo--${variant}`,
+                isStep3 ? 'rs-retention-promo--step3' : '',
                 animateIn ? 'rs-retention-promo--open' : '',
             ]
                 .filter(Boolean)
@@ -299,7 +459,14 @@ export function VideoRetentionPromoLayer({
                 aria-label={intl.formatMessage({ id: 'close' })}
                 onClick={onDismiss}
             />
-            <div className="rs-retention-promo__sheet">
+            <div
+                className={[
+                    'rs-retention-promo__sheet',
+                    isStep3 ? 'rs-retention-promo__sheet--step3' : '',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+            >
                 <button
                     type="button"
                     className="rs-retention-promo__close"
@@ -309,49 +476,27 @@ export function VideoRetentionPromoLayer({
                     <img src={shareCloseIcon} alt="" />
                 </button>
 
-                <ConfettiDeco />
+                <PromoHeaderArt step={step} subtitleId={isStep3 ? undefined : subtitleId} />
 
-                <h2 id="rs-retention-promo-title" className="rs-retention-promo__title">
-                    <FormattedMessage id="retention_promo_title" />
-                </h2>
-                <p className="rs-retention-promo__subtitle">
-                    <FormattedMessage id={subtitleId} />
-                </p>
+                {isStep3 ? (
+                    <PromoOfferCardStep3 offer={offer} discount={discount} />
+                ) : (
+                    <PromoCouponCardStep12 discount={discount} pricingText={pricingText} />
+                )}
 
-                <div className="rs-retention-promo__coupon">
-                    <div className="rs-retention-promo__couponTop">
-                        <span className="rs-retention-promo__couponLabel">
-                            <FormattedMessage id="retention_promo_surprise_discount" />
-                        </span>
-                        <span className="rs-retention-promo__couponDiscount">-{discount}%</span>
-                    </div>
-                    <div className="rs-retention-promo__couponDivider" aria-hidden />
-                    <p className="rs-retention-promo__couponPricing">{pricingText}</p>
-                </div>
+                {isStep3 && showCountdown ? (
+                    <PromoCountdownBar countdownSec={countdownSec} />
+                ) : null}
 
                 <button type="button" className="rs-retention-promo__cta" onClick={onCta}>
-                    {showCountdown
-                        ? intl.formatMessage(
-                              { id: 'retention_promo_cta_countdown' },
-                              { price: priceLabel, sec: countdownSec },
-                          )
-                        : ctaText}
+                    {ctaText}
                 </button>
 
-                <div className="rs-retention-promo__shorts">
-                    <h3 className="rs-retention-promo__shortsTitle">
-                        <FormattedMessage id="retention_promo_vip_shorts" />
-                    </h3>
-                    <div className="rs-retention-promo__shortsRow">
-                        {(covers.length > 0 ? covers.slice(0, 5) : Array.from({ length: 5 }, (_, i) => ({ id: i, image: '' }))).map(
-                            (cover) => (
-                                <div key={cover.id} className="rs-retention-promo__shortsPoster">
-                                    {cover.image ? <img src={cover.image} alt="" /> : null}
-                                </div>
-                            ),
-                        )}
-                    </div>
-                </div>
+                {isStep3 ? (
+                    <p className="rs-retention-promo__legal">{step3LegalText}</p>
+                ) : null}
+
+                <PromoShortsRow covers={covers} />
             </div>
         </div>
     );
@@ -367,7 +512,6 @@ export type RetentionCommerceWire = {
     onVipEmbedClose: () => void;
     checkoutRequest: { productId: number; seq: number; discount_type?: number } | null;
     onPayModalClosed: () => void;
-    initialCheckoutPayment?: number;
     promoActive: boolean;
     layer: ReactNode;
 };
@@ -400,15 +544,14 @@ export function useVideoRetentionCommerce({
         seq: number;
         discount_type?: number;
     } | null>(null);
-    const [initialCheckoutPayment, setInitialCheckoutPayment] = useState<number | undefined>(
-        undefined,
-    );
     const [countdownSec, setCountdownSec] = useState(COUNTDOWN_SEC);
     const [showCountdown, setShowCountdown] = useState(false);
 
     const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const flowStartedRef = useRef(false);
+    const stepRef = useRef<RetentionPromoStep | null>(null);
+    stepRef.current = step;
 
     const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
 
@@ -472,13 +615,14 @@ export function useVideoRetentionCommerce({
     const openCheckout = useCallback(
         (fromStep: RetentionPromoStep) => {
             const offer = offers[fromStep - 1];
-            const productId = resolveCheckoutProductId(offer, products);
-            if (import.meta.env.DEV && productId == null) {
-                console.warn('[retention-promo] no matching product for step', fromStep, offer);
+            const productId = resolveCheckoutProductId(offer);
+            if (import.meta.env.DEV && productId != null) {
+                const inCatalog = products.some((p) => p.id === productId);
+                if (!inCatalog) {
+                    console.warn('[retention-promo] offer id not in video products', productId, offer);
+                }
             }
-            const paymentDefault = fromStep === 3 ? 3 : undefined;
             clearPromo();
-            setInitialCheckoutPayment(paymentDefault);
             onVipOpenChange(true);
             if (productId != null) {
                 setCheckoutRequest({
@@ -492,23 +636,25 @@ export function useVideoRetentionCommerce({
     );
 
     const dismissCurrentStep = useCallback(() => {
-        if (step === 1) {
+        const current = stepRef.current;
+        if (current === 1) {
             openStep(2);
             return;
         }
-        if (step === 2) {
+        if (current === 2) {
             openStep(3);
             return;
         }
-        if (step === 3) {
+        if (current === 3) {
             openCheckout(3);
         }
-    }, [openCheckout, openStep, step]);
+    }, [openCheckout, openStep]);
 
     const handleCta = useCallback(() => {
-        if (!step) return;
-        openCheckout(step);
-    }, [openCheckout, step]);
+        const current = stepRef.current;
+        if (!current) return;
+        openCheckout(current);
+    }, [openCheckout]);
 
     useEffect(() => {
         if (!showCountdown || step !== 3 || !visible) return;
@@ -525,7 +671,6 @@ export function useVideoRetentionCommerce({
             markSkipCountdown();
         }
         setCheckoutRequest(null);
-        setInitialCheckoutPayment(undefined);
     }, [step]);
 
     const onVipEmbedClose = useCallback(() => {
@@ -558,13 +703,11 @@ export function useVideoRetentionCommerce({
             onVipEmbedClose,
             checkoutRequest,
             onPayModalClosed,
-            initialCheckoutPayment,
             promoActive,
             layer,
         }),
         [
             checkoutRequest,
-            initialCheckoutPayment,
             layer,
             onPayModalClosed,
             onVipEmbedClose,

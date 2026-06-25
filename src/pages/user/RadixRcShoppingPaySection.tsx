@@ -376,8 +376,9 @@ export default function RadixRcShoppingPaySection({
         if (!targetProductId) return;
 
         void (async () => {
+            const payMethod = defaultPayMethodFromUa();
             const payCreateParams = buildPayCreateData({
-                payment: initialCheckoutPayment ?? defaultPayMethodFromUa(),
+                payment: payMethod,
                 product_id: targetProductId,
                 redirect: window.location.href,
                 ...(payCreateDiscountType != null ? { discount_type: payCreateDiscountType } : {}),
@@ -450,7 +451,7 @@ export default function RadixRcShoppingPaySection({
         return () => {
             alive = false;
         };
-    }, [paySessionSeed, onPayStateChange, initialCheckoutPayment, payCreateDiscountType]);
+    }, [paySessionSeed, onPayStateChange, payCreateDiscountType]);
 
     useEffect(() => {
         let cancelled = false;
@@ -664,9 +665,7 @@ export default function RadixRcShoppingPaySection({
     }, [canPickApple, payment]);
 
     useEffect(() => {
-        if (initialCheckoutPayment != null) {
-            setPayment(initialCheckoutPayment);
-        }
+        setPayment(initialCheckoutPayment ?? defaultPayMethodFromUa());
     }, [paySessionSeed, initialCheckoutPayment]);
 
     return (
