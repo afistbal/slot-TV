@@ -34,8 +34,16 @@ import type { VideoPromoPanelState } from '@/components/video-paywall/videoPaywa
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
 import { MembershipInlinePanel } from '@/pages/user/Membership';
 import { refreshSessionFromStoredToken } from '@/lib/refreshSessionFromStoredToken';
+import {
+    getShoppingProductCache,
+    hasShoppingProductCache,
+    setShoppingProductCache,
+} from '@/lib/shoppingProductCache';
 import { useRootStore } from '@/stores/root';
 import { useUserStore } from '@/stores/user';
+import {
+    useVideoShoppingProductsStore,
+} from '@/stores/videoShoppingProducts';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 function paywallImage(file: string) {
@@ -178,11 +186,14 @@ export type RadixRcProps = {
 type ProductFromKey = NonNullable<RadixRcProps['productFrom']>;
 type PayModalStatus = 'idle' | 'processing' | 'checking' | 'success' | 'failed';
 
-/** SPA ?????? / ???????????? `product` ????????*/
-const shoppingProductCache = new Map<ProductFromKey, Product[]>();
-
 export function getCachedShoppingProducts(from: ProductFromKey): Product[] | undefined {
-    return shoppingProductCache.get(from);
+    if (from === 'video') {
+        const { products, ready } = useVideoShoppingProductsStore.getState();
+        if (ready && products.length > 0) {
+            return products as Product[];
+        }
+    }
+    return getShoppingProductCache(from) as Product[] | undefined;
 }
 
 export default function RadixRc({
@@ -236,10 +247,18 @@ export default function RadixRc({
         userStore.isVIP() &&
         !forceShowPlans;
 
-    const [products, setProducts] = useState<Product[]>(() => shoppingProductCache.get(productFrom) ?? []);
-    const [loadingProducts, setLoadingProducts] = useState(
-        () => !shoppingProductCache.has(productFrom),
+    const isVideoProductSource = productFrom === 'video';
+    const videoStoreProducts = useVideoShoppingProductsStore((s) => s.products);
+    const videoStoreReady = useVideoShoppingProductsStore((s) => s.ready);
+
+    const [shoppingProducts, setShoppingProducts] = useState<Product[]>(() =>
+        isVideoProductSource ? [] : (getShoppingProductCache(productFrom) as Product[] | undefined) ?? [],
     );
+    const [loadingShoppingProducts, setLoadingShoppingProducts] = useState(
+        () => !isVideoProductSource && !hasShoppingProductCache(productFrom),
+    );
+    const products = isVideoProductSource ? (videoStoreProducts as Product[]) : shoppingProducts;
+    const loadingProducts = isVideoProductSource ? !videoStoreReady : loadingShoppingProducts;
     const [currentId, setCurrentId] = useState<number | null>(null);
     const [showPayModal, setShowPayModal] = useState(false);
     const [showPaidServiceAgreement, setShowPaidServiceAgreement] = useState(false);
@@ -380,17 +399,32 @@ export default function RadixRc({
             return;
         }
 
-        const cached = shoppingProductCache.get(productFrom);
+        if (isVideoProductSource) {
+            if (videoStoreReady) {
+                onVideoProductsLoaded?.(videoStoreProducts as Product[]);
+                return;
+            }
+            let alive = true;
+            void useVideoShoppingProductsStore.getState().fetchOnce().then((list) => {
+                if (!alive) return;
+                onVideoProductsLoaded?.(list as Product[]);
+            });
+            return () => {
+                alive = false;
+            };
+        }
+
+        const cached = getShoppingProductCache(productFrom) as Product[] | undefined;
         if (cached?.length) {
-            setProducts(cached);
+            setShoppingProducts(cached);
             onVideoProductsLoaded?.(cached);
-            setLoadingProducts(false);
+            setLoadingShoppingProducts(false);
             return;
         }
 
         let alive = true;
-        setLoadingProducts(true);
-        setProducts([]);
+        setLoadingShoppingProducts(true);
+        setShoppingProducts([]);
         setCurrentId(null);
         api<Product[]>('product', {
             data: { from: productFrom, type: 10 },
@@ -400,18 +434,25 @@ export default function RadixRc({
             .then((res) => {
                 if (!alive) return;
                 if (res.c !== 0) return;
-                shoppingProductCache.set(productFrom, res.d);
-                setProducts(res.d);
+                setShoppingProductCache(productFrom, res.d);
+                setShoppingProducts(res.d);
                 onVideoProductsLoaded?.(res.d);
             })
             .finally(() => {
                 if (!alive) return;
-                setLoadingProducts(false);
+                setLoadingShoppingProducts(false);
             });
         return () => {
             alive = false;
         };
-    }, [productFrom, sessionBootstrapReady, onVideoProductsLoaded]);
+    }, [
+        isVideoProductSource,
+        productFrom,
+        sessionBootstrapReady,
+        videoStoreReady,
+        videoStoreProducts,
+        onVideoProductsLoaded,
+    ]);
 
     const planProducts = useMemo(() => {
         const subs = products.filter((p) => p.type === 1);

@@ -10,6 +10,7 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useConfigStore } from '@/stores/config';
 import { useRootStore } from '@/stores/root';
 import { useUserStore } from '@/stores/user';
+import { usePrefetchVideoShoppingProducts } from '@/stores/videoShoppingProducts';
 import type { IPlayerData } from '@/types/videoPlayer';
 
 import { clearVDemoActiveEpisodeCache } from './fetchVDemoEpisode';
@@ -67,6 +68,7 @@ export default function VDemoPage() {
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
     const viewerIsVip = useUserStore((s) => s.isVIP());
+    usePrefetchVideoShoppingProducts();
     const movieId = Number(params['id']);
     const urlEpisode = parseRouteEpisodeParam(params['episode']);
 

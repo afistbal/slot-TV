@@ -29,4 +29,10 @@ export type VideoPaywallModalMode =
 export const VIDEO_PAYWALL_PROMO_DURATION_SEC = 30 * 60;
 
 /** 本地开发：每次打开付费墙都弹周卡优惠，便于联调 */
-export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY = import.meta.env.DEV;
+export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY = false;
+
+/** 本地开发：每次打开付费墙都弹周卡挽留，便于联调样式（调完改回 false） */
+export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY_RETENTION = true;
+
+/** 本地开发：每次打开付费墙都弹年卡优惠，便于联调样式（调完改回 false） */
+export const VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY = false;

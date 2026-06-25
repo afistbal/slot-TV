@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import RadixRc, { type RadixRcProps, getCachedShoppingProducts } from '@/pages/user/RadixRc';
+import RadixRc, { type RadixRcProps } from '@/pages/user/RadixRc';
 import { VideoPaywallPromoLayer } from '@/components/video-paywall/VideoPaywallPromoLayer';
 import { useVideoPaywallPromo } from '@/components/video-paywall/useVideoPaywallPromo';
-import type { VideoPaywallProduct } from '@/components/video-paywall/videoPaywallPromoTypes';
+import { useVideoShoppingProductsStore } from '@/stores/videoShoppingProducts';
 import { cn } from '@/lib/utils';
 
 export type VideoShoppingEmbedShellProps = {
@@ -19,27 +19,11 @@ export function VideoShoppingEmbedShell({
     onRegisterPanelClose,
     ...radixProps
 }: VideoShoppingEmbedShellProps) {
-    const [products, setProducts] = useState<VideoPaywallProduct[]>(
-        () => getCachedShoppingProducts('video') ?? [],
-    );
+    const products = useVideoShoppingProductsStore((s) => s.products);
     const [checkoutRequest, setCheckoutRequest] = useState<{
         productId: number;
         seq: number;
     } | null>(null);
-
-    useEffect(() => {
-        if (!open) {
-            return;
-        }
-        const cached = getCachedShoppingProducts('video');
-        if (cached?.length) {
-            setProducts(cached as VideoPaywallProduct[]);
-        }
-    }, [open]);
-
-    const handleProductsLoaded = useCallback((list: VideoPaywallProduct[]) => {
-        setProducts(list);
-    }, []);
 
     const onStartCheckout = useCallback((productId: number) => {
         setCheckoutRequest({ productId, seq: Date.now() });
@@ -80,7 +64,6 @@ export function VideoShoppingEmbedShell({
                         onEmbedClose={promo.requestPanelClose}
                         videoPromo={promo.panelState}
                         checkoutRequest={checkoutRequest}
-                        onVideoProductsLoaded={handleProductsLoaded}
                     />
                     <VideoPaywallPromoLayer
                         modalMode={promo.modalMode}

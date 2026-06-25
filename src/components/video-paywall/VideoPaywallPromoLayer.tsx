@@ -175,7 +175,7 @@ function WeeklyPromoCard({
         >
             <div
                 className="rs-video-promo__weeklyBg"
-                style={{ backgroundImage: `url(${videoPaywallPromoAssets.cardBg})` }}
+                style={{ '--rs-weekly-card-bg': `url(${videoPaywallPromoAssets.cardBg})` } as React.CSSProperties}
                 aria-hidden
             />
 

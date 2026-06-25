@@ -11,6 +11,8 @@ import {
 import { pickVideoPaywallSubscription } from '@/components/video-paywall/videoPaywallPromoProducts';
 import {
     VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY,
+    VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY_RETENTION,
+    VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY,
     VIDEO_PAYWALL_PROMO_DURATION_SEC,
     type VideoPaywallModalMode,
     type VideoPaywallProduct,
@@ -64,7 +66,11 @@ function decideOfferTier(
     data: VideoPaywallPromoPersisted,
     now: number,
     hasWeeklyProduct: boolean,
+    hasYearlyProduct: boolean,
 ): VideoPaywallTier | null {
+    if (VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY && hasYearlyProduct) {
+        return 'yearly';
+    }
     if (VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY && hasWeeklyProduct) {
         return 'weekly';
     }
@@ -181,7 +187,17 @@ export function useVideoPaywallPromo({
 
         let data = refreshFromStorage();
         const now = nowSec();
-        const offerTier = decideOfferTier(data, now, Boolean(weeklyProduct));
+
+        if (VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY_RETENTION && weeklyProduct) {
+            data = ensureTierActivated(data, 'weekly', now);
+            saveVideoPaywallPromoPersisted(data);
+            syncPanelState(data, now);
+            setModalMode('weekly-retention');
+            sessionOpenedRef.current = true;
+            return;
+        }
+
+        const offerTier = decideOfferTier(data, now, Boolean(weeklyProduct), Boolean(yearlyProduct));
 
         if (!offerTier) {
             // 本轮无新优惠可展示；商品未就绪时不标记 session，避免商品到了仍不弹
@@ -210,7 +226,9 @@ export function useVideoPaywallPromo({
 
         const nextData = {
             ...data,
-            openCount: VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY
+            openCount: VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY ||
+                VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_WEEKLY_RETENTION ||
+                VIDEO_PAYWALL_PROMO_DEBUG_ALWAYS_YEARLY
                 ? data.openCount
                 : data.openCount + 1,
         };

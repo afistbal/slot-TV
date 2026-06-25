@@ -9,6 +9,7 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useRootStore } from '@/stores/root';
 import { useConfigStore } from '@/stores/config';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
+import { usePrefetchVideoShoppingProducts } from '@/stores/videoShoppingProducts';
 
 import { ForDemoH5PlayerShell } from './ForDemoH5PlayerShell';
 import { ForDemoPcPlayerShell } from './ForDemoPcPlayerShell';
@@ -31,6 +32,7 @@ export default function ForDemoPage() {
     const location = useLocation();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
+    usePrefetchVideoShoppingProducts();
 
     const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
     if (mountFlagsRef.current == null) {
