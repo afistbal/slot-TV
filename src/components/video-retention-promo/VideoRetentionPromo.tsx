@@ -534,6 +534,8 @@ export type UseVideoRetentionCommerceOptions = {
     viewerIsVip: boolean;
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
+    /** 切集时重置挽留全关态，避免 locked 自动弹 VIP */
+    episodeRowId?: number;
 };
 
 export function useVideoRetentionCommerce({
@@ -541,6 +543,7 @@ export function useVideoRetentionCommerce({
     viewerIsVip,
     vip: _vip,
     onVipOpenChange,
+    episodeRowId,
 }: UseVideoRetentionCommerceOptions): RetentionCommerceWire {
     const products = useVideoShoppingProductsStore((s) => s.products);
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
@@ -561,6 +564,8 @@ export function useVideoRetentionCommerce({
     const [initialCheckoutPayment, setInitialCheckoutPayment] = useState<number | undefined>(undefined);
     const [countdownSec, setCountdownSec] = useState(COUNTDOWN_SEC);
     const [showCountdown, setShowCountdown] = useState(false);
+    /** 用户从弹窗3点X进收银后再关收银：三层全关，阻止 locked effect 再次弹 VIP */
+    const [fullyDismissed, setFullyDismissed] = useState(false);
 
     const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -571,10 +576,20 @@ export function useVideoRetentionCommerce({
     const checkoutViaCountdownRef = useRef(false);
     const countdownExhaustedRef = useRef(false);
     const countdownSecRef = useRef(countdownSec);
+    const checkoutRequestRef = useRef(checkoutRequest);
+    const suppressRetentionOnVipCloseRef = useRef(false);
     stepRef.current = step;
     countdownSecRef.current = countdownSec;
+    checkoutRequestRef.current = checkoutRequest;
 
     const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
+
+    /** guard 约定：handler 返回 true = 允许关抽屉；false = 拦截并保持打开 */
+    const closeVipWithoutRetentionRestart = useCallback(() => {
+        suppressRetentionOnVipCloseRef.current = true;
+        onVipOpenChangeGuarded(false);
+        suppressRetentionOnVipCloseRef.current = false;
+    }, [onVipOpenChangeGuarded]);
 
     useEffect(() => {
         if (!sessionBootstrapReady) return;
@@ -582,6 +597,11 @@ export function useVideoRetentionCommerce({
         void fetchMembershipCoversOnce(staticBase).then(setCovers);
         void useVideoShoppingProductsStore.getState().fetchOnce();
     }, [sessionBootstrapReady, staticBase]);
+
+    useEffect(() => {
+        setFullyDismissed(false);
+        flowStartedRef.current = false;
+    }, [episodeRowId]);
 
     useEffect(
         () => () => {
@@ -624,6 +644,7 @@ export function useVideoRetentionCommerce({
 
     const startRetentionFlow = useCallback(() => {
         if (viewerIsVip || flowStartedRef.current || offers.length === 0) return;
+        setFullyDismissed(false);
         flowStartedRef.current = true;
         clearSkipCountdown();
         countdownExhaustedRef.current = false;
@@ -634,6 +655,12 @@ export function useVideoRetentionCommerce({
     }, [offers.length, openStep, viewerIsVip]);
 
     const requestPanelClose = useCallback((): boolean => {
+        if (suppressRetentionOnVipCloseRef.current) {
+            return true;
+        }
+        if (checkoutFromStepRef.current != null || checkoutRequestRef.current != null) {
+            return true;
+        }
         if (offers.length === 0) {
             return false;
         }
@@ -655,6 +682,7 @@ export function useVideoRetentionCommerce({
                     console.warn('[retention-promo] offer id not in video products', productId, offer);
                 }
             }
+            setFullyDismissed(false);
             checkoutFromStepRef.current = fromStep;
             checkoutViaDismissRef.current = viaDismiss;
             hidePromoForCheckout();
@@ -731,23 +759,36 @@ export function useVideoRetentionCommerce({
     }, []);
 
     const onPayModalClosed = useCallback(() => {
-        const restoreStep = checkoutFromStepRef.current;
+        const restoreStep = checkoutFromStepRef.current ?? stepRef.current;
         const viaDismiss = checkoutViaDismissRef.current;
         const viaCountdown = checkoutViaCountdownRef.current;
+        const hadRetentionCheckout =
+            restoreStep != null || checkoutRequestRef.current != null;
+
         checkoutFromStepRef.current = null;
         checkoutViaDismissRef.current = false;
         checkoutViaCountdownRef.current = false;
-        if (restoreStep == null) {
+
+        if (!hadRetentionCheckout) {
+            if (stepRef.current != null) {
+                flowStartedRef.current = true;
+                closeVipWithoutRetentionRestart();
+            }
             return;
         }
+
         setCheckoutRequest(null);
         setInitialCheckoutPayment(undefined);
-        onVipOpenChange(false);
+        flowStartedRef.current = true;
+        closeVipWithoutRetentionRestart();
+
         if (restoreStep === 3 && viaDismiss) {
             clearPromo();
+            setFullyDismissed(true);
+            flowStartedRef.current = true;
             return;
         }
-        flowStartedRef.current = true;
+
         if (restoreStep === 3 && viaCountdown) {
             revealStep3AtZero();
             return;
@@ -760,24 +801,39 @@ export function useVideoRetentionCommerce({
             revealPromo();
             return;
         }
-        openStep(restoreStep);
-    }, [clearPromo, onVipOpenChange, openStep, revealPromo, revealStep3AtZero]);
+        if (restoreStep != null) {
+            openStep(restoreStep);
+        }
+    }, [clearPromo, closeVipWithoutRetentionRestart, openStep, revealPromo, revealStep3AtZero]);
 
     const onVipEmbedClose = useCallback(() => {
+        const inCheckoutStack =
+            checkoutFromStepRef.current != null || checkoutRequestRef.current != null;
+        const promoInProgress = stepRef.current != null;
+
         checkoutFromStepRef.current = null;
         checkoutViaDismissRef.current = false;
         checkoutViaCountdownRef.current = false;
         setCheckoutRequest(null);
         setInitialCheckoutPayment(undefined);
+
+        if (inCheckoutStack || promoInProgress) {
+            clearPromo();
+            setFullyDismissed(true);
+            flowStartedRef.current = true;
+            closeVipWithoutRetentionRestart();
+            return;
+        }
+
         clearPromo();
         if (offers.length > 0) {
             startRetentionFlow();
         }
         onVipOpenChange(false);
-    }, [clearPromo, offers.length, onVipOpenChange, startRetentionFlow]);
+    }, [clearPromo, closeVipWithoutRetentionRestart, offers.length, onVipOpenChange, startRetentionFlow]);
 
     const activeOffer = step != null ? offers[step - 1] : null;
-    const promoActive = step != null || checkoutRequest != null;
+    const promoActive = step != null || checkoutRequest != null || fullyDismissed;
 
     const layer =
         step != null && activeOffer ? (
