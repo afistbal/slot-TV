@@ -2,6 +2,7 @@ import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import Image from '@/components/Image';
 import { videoIntroTagSearchPath } from '@/lib/videoIntroTagSearch';
+import { resolveVideoPosterUrl } from '../videoPlayerShareUrl';
 import { getBackendTagDisplayText } from '@/lib/normalizePlayerTags';
 import { useMovieTagLabelsReady } from '@/lib/movieTagLabels';
 import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
@@ -52,7 +53,7 @@ export function VideoPlayerPcIntroDrawer({
                     <div className="video-pc-intro-drawer__poster shrink-0">
                         <Image
                             height={1.3325}
-                            src={`${staticBase}/${data.info.image}`}
+                            src={resolveVideoPosterUrl(staticBase, data.info, data.info.id)}
                             alt={data.info.title}
                         />
                     </div>

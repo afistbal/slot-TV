@@ -3,6 +3,7 @@ export interface IPlayerData {
         id: number;
         title: string;
         image: string;
+        is_rename?: number | string;
         favorite: number;
         is_favorite: number;
         introduction: string;

@@ -14,6 +14,8 @@ export interface IForYouFeedItem {
     slot?: string[];
     title: string;
     image: string;
+    /** `1` 时封面走 `movie_images/{id}.webp` */
+    is_rename?: number | string;
     introduction?: string;
     ep_id: number;
     /** 当前推荐集序号 */

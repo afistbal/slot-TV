@@ -42,6 +42,7 @@ function normalizeFeedRow(raw: Record<string, unknown>): IForYouFeedItem {
         slot: Array.isArray(raw['slot']) ? (raw['slot'] as string[]) : undefined,
         title: String(raw['title'] ?? ''),
         image: String(raw['image'] ?? ''),
+        is_rename: raw['is_rename'] as number | string | undefined,
         introduction:
             introRaw != null && String(introRaw).trim()
                 ? String(introRaw).replace(/\s+/g, ' ').trim()

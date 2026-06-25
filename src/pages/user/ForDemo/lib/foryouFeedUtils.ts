@@ -10,6 +10,7 @@ export function buildPlayerDataFromFeedItem(item: IForYouFeedItem): IPlayerData 
             id: item.id,
             title: item.title,
             image: item.image,
+            is_rename: item.is_rename,
             favorite: favor,
             is_favorite: isFavor ? 1 : 0,
             introduction: item.introduction ?? '',

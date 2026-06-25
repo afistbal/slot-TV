@@ -101,7 +101,7 @@ export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
         cssFullscreen: false,
         fullscreenTarget: options.fullscreenTarget ?? options.el,
         /** start：中间按钮改由 FeedCenterPlayButton + icon_play1（对标 ForYou） */
-        ignores: ['poster', 'definition', 'mobile', 'progress', 'time', 'play', 'volume', 'start'],
+        ignores: ['poster', 'definition', 'mobile', 'progress', 'time', 'play', 'volume', 'start', 'replay'],
         plugins: useMse ? [Mp4Plugin] : [],
         mp4plugin: useMse ? getMp4PluginConfig() : undefined,
     });
