@@ -11,6 +11,8 @@
 }
 
 .rs-retention-promo--pc {
+    /* 对齐 9:16 视频舞台中心（stage-cluster gap 24px + side-actions 40px 的一半） */
+    --rs-retention-pc-offset-x: calc(-0.5 * (24px + 40px));
     align-items: center;
     padding: 24px 16px;
 }
@@ -49,7 +51,7 @@
     max-height: min(88vh, 720px);
     overflow-y: auto;
     border-radius: 20px;
-    transform: scale(0.92);
+    transform: translateX(var(--rs-retention-pc-offset-x)) scale(0.92);
     transform-origin: center center;
 }
 
@@ -59,7 +61,7 @@
 }
 
 .rs-retention-promo--pc.rs-retention-promo--open .rs-retention-promo__sheet {
-    transform: scale(1);
+    transform: translateX(var(--rs-retention-pc-offset-x)) scale(1);
 }
 
 .rs-retention-promo__close {
