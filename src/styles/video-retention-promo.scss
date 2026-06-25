@@ -136,8 +136,8 @@
     display: inline-block;
     margin-top: 2px;
     padding: 6px 18px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #ffe566 0%, #ffb347 100%);
+    border-radius: 4px;
+    background: linear-gradient(90deg, #FFF86D 0%, #E8A42D 100%);
     font-weight: 600;
     font-size: 13px;
     line-height: 1.2;
@@ -230,7 +230,20 @@
     color: rgba(99, 62, 37, 0.75);
 }
 
-/* —— 弹窗 3：会员卡 —— */
+/* —— 弹窗 3：会员卡（纯 CSS 渐变，不用票券图） —— */
+
+.rs-retention-promo__sheet--step3 .rs-retention-promo__offerCard--step3 {
+    margin-top: -8px;
+    margin-bottom: 0;
+    background: none;
+    background-image: none;
+}
+
+.rs-retention-promo__sheet--step3 .rs-retention-promo__offerCard--step3 .rs-retention-promo__offerCardInner {
+    border-radius: 16px;
+    background: linear-gradient(94deg, #ffecd4 0%, #f3cb93 100%);
+    padding: 16px 18px 14px;
+}
 
 .rs-retention-promo__offerCardInner {
     padding: 20px 18px 18px;
@@ -239,18 +252,17 @@
 }
 
 .rs-retention-promo__offerCardTitle {
-    margin: 0 0 6px;
-    font-weight: 700;
+    margin: 0;
+    font-weight: 500;
     font-size: 18px;
-    line-height: 1.25;
-    color: #2a2015;
+    color: #633E25;
 }
 
 .rs-retention-promo__offerCardSubtitle {
-    margin: 0 0 14px;
-    font-size: 12px;
-    line-height: 1.4;
-    color: rgba(59, 47, 31, 0.78);
+    margin: 0 0 4px;
+    font-weight: 400;
+    font-size: 10px;
+    color: #633E25;
 }
 
 .rs-retention-promo__offerCardSaveRow {
@@ -258,19 +270,23 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
 }
 
 .rs-retention-promo__offerCardWas {
+    font-weight: 500;
     font-size: 14px;
-    color: rgba(59, 47, 31, 0.55);
-    text-decoration: line-through;
+    color: rgba(99, 62, 37, 0.5);
+}
+
+.rs-retention-promo__sheet--step3 .rs-retention-promo__offerCardWas {
+    text-decoration: none;
 }
 
 .rs-retention-promo__offerCardOff {
-    font-weight: 700;
-    font-size: 14px;
-    color: #e53935;
+    font-weight: 500;
+    font-size: 12px;
+    color: #C90000;
 }
 
 .rs-retention-promo__offerCardPriceRow {
@@ -278,14 +294,16 @@
     align-items: baseline;
     justify-content: center;
     gap: 8px;
-    margin-bottom: 4px;
+    margin: 0 0 2px;
+    line-height: 1;
 }
 
 .rs-retention-promo__offerCardPrice {
-    font-weight: 800;
+    font-weight: bold;
     font-size: 36px;
     line-height: 1;
-    color: #e53935;
+    color: #C90000;
+    font-family: DIN Alternate, DIN Alternate;
 }
 
 .rs-retention-promo__offerCardPeriod {
@@ -295,12 +313,51 @@
 }
 
 .rs-retention-promo__offerCardPerDay {
-    margin: 0;
-    font-size: 12px;
-    color: rgba(59, 47, 31, 0.8);
+    font-weight: 400;
+    font-size: 10px;
+    color: #633E25;
 }
 
-/* —— 弹窗 3：倒计时 —— */
+/* —— 弹窗 3：倒计时胶囊 + CTA 叠层 —— */
+
+.rs-retention-promo__ctaStack {
+    position: relative;
+    margin: 16px 0 12px;
+}
+
+.rs-retention-promo__countdown--step3 {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 -13px;
+    position: relative;
+    z-index: 2;
+}
+
+.rs-retention-promo__countdownPill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 88px;
+    padding: 5px 16px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #fff86d 0%, #e8a42d 100%);
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: #3b2a12;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.rs-retention-promo__sheet--step3 .rs-retention-promo__ctaStack .rs-retention-promo__cta {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding-top: 18px;
+}
+
+/* —— 弹窗 1/2 倒计时 —— */
 
 .rs-retention-promo__countdown {
     display: flex;

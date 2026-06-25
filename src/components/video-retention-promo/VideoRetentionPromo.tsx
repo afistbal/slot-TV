@@ -224,6 +224,14 @@ function markSkipCountdown() {
     }
 }
 
+function clearSkipCountdown() {
+    try {
+        sessionStorage.removeItem(SKIP_COUNTDOWN_KEY);
+    } catch {
+        // noop
+    }
+}
+
 // —— UI ——
 
 type VideoRetentionPromoLayerProps = {
@@ -326,6 +334,13 @@ function PromoCouponCardStep12({
     );
 }
 
+function formatStep3CountdownLabel(totalSec: number): string {
+    const safe = Math.max(0, totalSec);
+    const m = Math.floor(safe / 60);
+    const s = safe % 60;
+    return `${String(m).padStart(2, '0')} : ${String(s).padStart(2, '0')}`;
+}
+
 function PromoOfferCardStep3({
     offer,
     discount,
@@ -339,14 +354,7 @@ function PromoOfferCardStep3({
     const perDay = formatPerDayPrice(offer.price, 90);
 
     return (
-        <div
-            className="rs-retention-promo__offerCard"
-            style={
-                {
-                    '--rs-retention-coupon-bg': `url(${retentionPromoAssets.couponBg})`,
-                } as React.CSSProperties
-            }
-        >
+        <div className="rs-retention-promo__offerCard rs-retention-promo__offerCard--step3">
             <div className="rs-retention-promo__offerCardInner">
                 <h3 className="rs-retention-promo__offerCardTitle">
                     <FormattedMessage id="retention_promo_exclusive_title" />
@@ -377,7 +385,23 @@ function PromoOfferCardStep3({
     );
 }
 
-function PromoCountdownBar({ countdownSec }: { countdownSec: number }) {
+function PromoCountdownBar({
+    countdownSec,
+    variant = 'default',
+}: {
+    countdownSec: number;
+    variant?: 'default' | 'step3';
+}) {
+    if (variant === 'step3') {
+        return (
+            <div className="rs-retention-promo__countdown rs-retention-promo__countdown--step3">
+                <span className="rs-retention-promo__countdownPill" aria-live="polite">
+                    {formatStep3CountdownLabel(countdownSec)}
+                </span>
+            </div>
+        );
+    }
+
     const { h, m, s } = formatCountdownParts(countdownSec);
     return (
         <div className="rs-retention-promo__countdown">
@@ -490,13 +514,20 @@ export function VideoRetentionPromoLayer({
                     <PromoCouponCardStep12 discount={discount} pricingText={pricingText} />
                 )}
 
-                {isStep3 && showCountdown ? (
-                    <PromoCountdownBar countdownSec={countdownSec} />
-                ) : null}
-
-                <button type="button" className="rs-retention-promo__cta" onClick={onCta}>
-                    {ctaText}
-                </button>
+                {isStep3 ? (
+                    <div className="rs-retention-promo__ctaStack">
+                        {showCountdown ? (
+                            <PromoCountdownBar countdownSec={countdownSec} variant="step3" />
+                        ) : null}
+                        <button type="button" className="rs-retention-promo__cta" onClick={onCta}>
+                            {ctaText}
+                        </button>
+                    </div>
+                ) : (
+                    <button type="button" className="rs-retention-promo__cta" onClick={onCta}>
+                        {ctaText}
+                    </button>
+                )}
 
                 {isStep3 ? (
                     <p className="rs-retention-promo__legal">{step3LegalText}</p>
@@ -559,6 +590,8 @@ export function useVideoRetentionCommerce({
     const flowStartedRef = useRef(false);
     const stepRef = useRef<RetentionPromoStep | null>(null);
     const checkoutFromStepRef = useRef<RetentionPromoStep | null>(null);
+    const checkoutViaDismissRef = useRef(false);
+    const checkoutViaCountdownRef = useRef(false);
     stepRef.current = step;
 
     const { registerPanelClose, onVipOpenChangeGuarded } = useVideoPanelCloseGuard(onVipOpenChange);
@@ -602,9 +635,15 @@ export function useVideoRetentionCommerce({
         }
     }, []);
 
+    const hidePromoForCheckout = useCallback(() => {
+        setVisible(false);
+        setAnimateIn(false);
+    }, []);
+
     const startRetentionFlow = useCallback(() => {
         if (viewerIsVip || flowStartedRef.current) return;
         flowStartedRef.current = true;
+        clearSkipCountdown();
         if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
         openTimerRef.current = window.setTimeout(() => openStep(1), OPEN_DELAY_MS) as unknown as ReturnType<
             typeof setTimeout
@@ -621,7 +660,7 @@ export function useVideoRetentionCommerce({
     }, [registerPanelClose, requestPanelClose]);
 
     const openCheckout = useCallback(
-        (fromStep: RetentionPromoStep) => {
+        (fromStep: RetentionPromoStep, viaDismiss = false) => {
             const offer = offers[fromStep - 1];
             const productId = resolveCheckoutProductId(offer);
             if (import.meta.env.DEV && productId != null) {
@@ -631,7 +670,8 @@ export function useVideoRetentionCommerce({
                 }
             }
             checkoutFromStepRef.current = fromStep;
-            clearPromo();
+            checkoutViaDismissRef.current = viaDismiss;
+            hidePromoForCheckout();
             onVipOpenChange(true);
             if (productId != null) {
                 setCheckoutRequest({
@@ -642,7 +682,7 @@ export function useVideoRetentionCommerce({
                 });
             }
         },
-        [clearPromo, offers, onVipOpenChange, products],
+        [hidePromoForCheckout, offers, onVipOpenChange, products],
     );
 
     const dismissCurrentStep = useCallback(() => {
@@ -656,7 +696,7 @@ export function useVideoRetentionCommerce({
             return;
         }
         if (current === 3) {
-            openCheckout(3);
+            openCheckout(3, true);
         }
     }, [openCheckout, openStep]);
 
@@ -669,6 +709,8 @@ export function useVideoRetentionCommerce({
     useEffect(() => {
         if (!showCountdown || step !== 3 || !visible) return;
         if (countdownSec <= 0) {
+            if (readSkipCountdown()) return;
+            checkoutViaCountdownRef.current = true;
             openCheckout(3);
             return;
         }
@@ -676,19 +718,65 @@ export function useVideoRetentionCommerce({
         return () => window.clearTimeout(timer);
     }, [countdownSec, openCheckout, showCountdown, step, visible]);
 
-    const onPayModalClosed = useCallback(() => {
-        if (checkoutFromStepRef.current === 3) {
-            markSkipCountdown();
-        }
-        // 仅关支付面板；保留 checkoutRequest，VIP 抽屉保持打开
+    const revealPromo = useCallback(() => {
+        setVisible(true);
+        setAnimateIn(false);
+        if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
+        animTimerRef.current = window.setTimeout(() => setAnimateIn(true), ANIM_MS) as unknown as ReturnType<
+            typeof setTimeout
+        >;
     }, []);
+
+    const revealStep3AtZero = useCallback(() => {
+        setStep(3);
+        setVisible(true);
+        setAnimateIn(false);
+        setShowCountdown(true);
+        setCountdownSec(0);
+        if (animTimerRef.current) window.clearTimeout(animTimerRef.current);
+        animTimerRef.current = window.setTimeout(() => setAnimateIn(true), ANIM_MS) as unknown as ReturnType<
+            typeof setTimeout
+        >;
+    }, []);
+
+    const onPayModalClosed = useCallback(() => {
+        const restoreStep = checkoutFromStepRef.current;
+        const viaDismiss = checkoutViaDismissRef.current;
+        const viaCountdown = checkoutViaCountdownRef.current;
+        checkoutFromStepRef.current = null;
+        checkoutViaDismissRef.current = false;
+        checkoutViaCountdownRef.current = false;
+        if (restoreStep == null) {
+            return;
+        }
+        setCheckoutRequest(null);
+        onVipOpenChange(false);
+        if (restoreStep === 3 && viaDismiss) {
+            clearPromo();
+            return;
+        }
+        flowStartedRef.current = true;
+        if (restoreStep === 3 && viaCountdown) {
+            markSkipCountdown();
+            revealStep3AtZero();
+            return;
+        }
+        if (restoreStep === 3) {
+            revealPromo();
+            return;
+        }
+        openStep(restoreStep);
+    }, [clearPromo, onVipOpenChange, openStep, revealPromo, revealStep3AtZero]);
 
     const onVipEmbedClose = useCallback(() => {
         checkoutFromStepRef.current = null;
+        checkoutViaDismissRef.current = false;
+        checkoutViaCountdownRef.current = false;
         setCheckoutRequest(null);
+        clearPromo();
         startRetentionFlow();
         onVipOpenChange(false);
-    }, [onVipOpenChange, startRetentionFlow]);
+    }, [clearPromo, onVipOpenChange, startRetentionFlow]);
 
     const activeOffer = step != null ? offers[step - 1] : null;
     const promoActive = step != null || checkoutRequest != null;
