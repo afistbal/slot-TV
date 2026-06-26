@@ -175,10 +175,12 @@ export type RadixRcProps = {
     embedVideoEpisodeRowId?: number;
     onEmbedPaySuccessEpisodeDetail?: (episode: IPlayerEpisode) => void;
     onVideoProductsLoaded?: (products: Product[]) => void;
-    /** 挽留弹窗 CTA：选中商品并 ~500ms 后打开收银 */
+    /** 挽留弹窗 CTA：选中商品并打开收银 */
     checkoutRequest?: { productId: number; seq: number; discount_type?: number; displayPrice?: string } | null;
     /** 第三档挽留：默认银行卡 payment=3 */
     initialCheckoutPayment?: number;
+    /** 挽留 Step3：后台预载收银（隐藏弹层，不阻塞挽留窗） */
+    checkoutModalPrefetch?: boolean;
     /** 用户关闭支付面板（非支付成功） */
     onPayModalClosed?: () => void;
 };
@@ -208,6 +210,7 @@ export default function RadixRc({
     onVideoProductsLoaded,
     checkoutRequest,
     initialCheckoutPayment,
+    checkoutModalPrefetch = false,
     onPayModalClosed,
 }: RadixRcProps = {}) {
     const intl = useIntl();
@@ -277,6 +280,13 @@ export default function RadixRc({
     const onPayModalClosedRef = useRef(onPayModalClosed);
     onPayModalClosedRef.current = onPayModalClosed;
     const payModalOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    /** Step3 预载后 reveal：跳过入场动画，内容已就绪 */
+    const hadCheckoutPrefetchRef = useRef(false);
+    if (checkoutModalPrefetch) {
+        hadCheckoutPrefetchRef.current = true;
+    }
+    const payModalInstantReveal =
+        showPayModal && !checkoutModalPrefetch && hadCheckoutPrefetchRef.current;
 
     function clearPayModalOpenTimer() {
         if (payModalOpenTimerRef.current != null) {
@@ -337,6 +347,7 @@ export default function RadixRc({
 
     function closePayModal() {
         clearPayModalOpenTimer();
+        hadCheckoutPrefetchRef.current = false;
         setShowPaidServiceAgreement(false);
         setPayModalStatus('idle');
         setShowPayModal(false);
@@ -496,10 +507,7 @@ export default function RadixRc({
         setPayModalStatus('idle');
         setShowPaidServiceAgreement(false);
         setPaySessionSeed((prev) => prev + 1);
-        payModalOpenTimerRef.current = setTimeout(() => {
-            payModalOpenTimerRef.current = null;
-            setShowPayModal(true);
-        }, 500);
+        setShowPayModal(true);
     }
 
     useEffect(() => {
@@ -1024,9 +1032,16 @@ export default function RadixRc({
                 className={cn(
                     'rs-shopping__payModalMask',
                     layout === 'embed' && 'rs-shopping__payModalMask--nested',
+                    checkoutModalPrefetch && 'rs-shopping__payModalMask--prefetch',
+                    payModalInstantReveal && 'rs-shopping__payModalMask--instant',
                 )}
+                aria-hidden={checkoutModalPrefetch ? true : undefined}
             >
-                <div className="rs-shopping__payModalPanel" role="dialog" aria-modal="true">
+                <div
+                    className="rs-shopping__payModalPanel"
+                    role="dialog"
+                    aria-modal={checkoutModalPrefetch ? undefined : true}
+                >
                     <div className="rs-shopping__payModalBody">
                         <div
                             className={cn(
