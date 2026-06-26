@@ -44,12 +44,10 @@ export function DouyinPlayerSlot({
     const isDesktop = useVideoPlayerDesktop();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
-    /** PC 9:16 舞台；H5 NetShort 式 9:16 居中露黑边 */
+    /** PC 9:16 由外层 video-player-pc-shell 舞台约束；H5 NetShort 式 9:16 居中露黑边 */
     const stageClassName = cn(
         'douyin-player-slot__stage relative overflow-hidden bg-black',
-        isDesktop
-            ? 'h-full max-h-full w-auto max-w-full aspect-[9/16]'
-            : 'douyin-player-slot__stage--aspect',
+        isDesktop ? 'h-full w-full' : 'douyin-player-slot__stage--aspect',
     );
 
     const handlePlayerChange = useCallback(
