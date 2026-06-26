@@ -596,9 +596,12 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
             if (isPc && scrollRef.current) {
                 if (isCategoriesPage) {
-                    requestAnimationFrame(() => {
-                        scrollPcToShelfHeading();
-                    });
+                    /** 全部劇情（无 tag）不滚到列表区；仅选中具体标签时定位到 rs-shelf__title */
+                    if (state.tag) {
+                        requestAnimationFrame(() => {
+                            scrollPcToShelfHeading();
+                        });
+                    }
                 } else {
                     scrollRef.current.scrollTop = 0;
                     searchStore.setScrollTop(0);
