@@ -237,15 +237,6 @@ export function DouyinPlayerControls({
         };
     }, [bumpChrome, ctl.progressDragging, ctl.onSeekRatio, ctl.setProgressDragging]);
 
-    const onFeedBottomHiddenRevealCapture = useCallback(
-        (event: MouseEvent | TouchEvent) => {
-            if (!feedBottomLayout || infoAutoHide.visible) return;
-            stopBubble(event);
-            infoAutoHide.bump();
-        },
-        [feedBottomLayout, infoAutoHide.bump, infoAutoHide.visible],
-    );
-
     return (
         <div
             className={cn(
@@ -280,10 +271,8 @@ export function DouyinPlayerControls({
                           }
                         : undefined
                 }
-                onPointerDownCapture={onFeedBottomHiddenRevealCapture}
-                onTouchStartCapture={onFeedBottomHiddenRevealCapture}
                 onPointerDown={
-                    feedBottomLayout
+                    feedBottomLayout && infoAutoHide.visible
                         ? (e) => {
                               stopBubble(e);
                               infoAutoHide.bump();
@@ -291,6 +280,14 @@ export function DouyinPlayerControls({
                         : undefined
                 }
             >
+                <div
+                    className={cn(
+                        feedBottomLayout && 'video-player-h5-bottom-body',
+                        feedBottomLayout &&
+                            !infoAutoHide.visible &&
+                            'video-player-h5-bottom-body--feed-hidden',
+                    )}
+                >
                 {feedBottomLayout ? topContent : null}
                 <div className="video-player-h5-progress-row">
                     <div
@@ -299,10 +296,6 @@ export function DouyinPlayerControls({
                         data-vertical-swipe-ignore
                         onMouseDown={(e) => {
                             stopBubble(e);
-                            if (feedBottomLayout && !infoAutoHide.visible) {
-                                infoAutoHide.bump();
-                                return;
-                            }
                             bumpChrome();
                             setScrubbing(true);
                             ctl.setProgressDragging(true);
@@ -318,10 +311,6 @@ export function DouyinPlayerControls({
                             stopBubble(e);
                             const touch = e.touches[0];
                             if (!touch) return;
-                            if (feedBottomLayout && !infoAutoHide.visible) {
-                                infoAutoHide.bump();
-                                return;
-                            }
                             bumpChrome();
                             setScrubbing(true);
                             ctl.setProgressDragging(true);
@@ -420,6 +409,7 @@ export function DouyinPlayerControls({
                             )}
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
         </div>

@@ -803,12 +803,7 @@
     transition: opacity 0.12s ease;
 }
 
-/** Feed 底栏（info + 进度 + 工具栏）：3s 无操作 0.4s 整块淡出；隐藏后仍占位接 tap，不透传到视频 */
-.video-player-h5-bottom--feed-hidden {
-    opacity: 0;
-    pointer-events: auto;
-    transition: opacity 0.4s ease;
-}
+/** Feed 底栏隐藏态见 `douyin-player-controls.scss`（移出视口 + opacity 淡出） */
 
 /** 沉浸态底栏隐藏（PC / H5 共用） */
 .video-player-ui--chrome-hidden .video-player-h5-bottom,
@@ -874,7 +869,10 @@
     pointer-events: auto;
     padding: 12px 16px 18px;
     background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.25) 24%, rgba(0, 0, 0, 0.62) 100%);
-    transition: opacity 0.4s ease;
+}
+
+.douyin-player-controls .video-player-h5-bottom {
+    transition: transform 0s linear 0s;
 }
 
 .video-player-root .video-player-h5-bottom--fullscreen {
