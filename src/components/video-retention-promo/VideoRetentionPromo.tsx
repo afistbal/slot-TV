@@ -189,6 +189,52 @@ function computeOfferDiscountPercent(
     return Math.round(raw / 10) * 10;
 }
 
+const RETENTION_STEP_TARGET_PRICE: Record<RetentionPromoStep, number> = {
+    1: 13.99,
+    2: 9.99,
+    3: 49.99,
+};
+
+function isWeeklyRetentionOffer(offer: RetentionOffer): boolean {
+    const period = resolveSubscriptionPeriod(offer.name);
+    return period === 'weekly' || String(offer.name).toLowerCase().includes('week');
+}
+
+/** 按档位目标价匹配 offer，避免接口数组顺序与弹窗 step 不一致 */
+function resolveRetentionOfferForStep(
+    offers: RetentionOffer[],
+    step: RetentionPromoStep,
+): RetentionOffer | null {
+    if (!offers.length) return null;
+    const pool =
+        step === 3
+            ? offers.filter((offer) => !isWeeklyRetentionOffer(offer))
+            : offers.filter((offer) => isWeeklyRetentionOffer(offer));
+    const candidates = pool.length ? pool : offers;
+    const target = RETENTION_STEP_TARGET_PRICE[step];
+    let best = candidates[0];
+    let bestDelta = Infinity;
+    for (const offer of candidates) {
+        const price = Number.parseFloat(offer.price);
+        if (!Number.isFinite(price)) continue;
+        const delta = Math.abs(price - target);
+        if (delta < bestDelta) {
+            bestDelta = delta;
+            best = offer;
+        }
+    }
+    return best;
+}
+
+function withCatalogRenewalPrice(
+    offer: RetentionOffer,
+    products: { id: number; renewal_price?: string }[],
+): RetentionOffer {
+    const product = products.find((item) => item.id === offer.id);
+    if (!product?.renewal_price) return offer;
+    return { ...offer, renewal_price: product.renewal_price };
+}
+
 function resolveCheckoutProductId(offer: RetentionOffer | undefined): number | null {
     if (!offer?.id) return null;
     return offer.id;
@@ -308,23 +354,34 @@ function PromoCouponCardStep12({
             </div>
             <div className="rs-retention-promo__couponInner">
                 <div className="rs-retention-promo__couponTop">
-                    <span className="rs-retention-promo__couponLabel">
+                    <span className="rs-retention-promo__couponLabel notranslate" translate="no">
                         <FormattedMessage id="retention_promo_surprise_discount" />
                     </span>
-                    <span className="rs-retention-promo__couponDiscount">{discount}%</span>
+                    <span
+                        className="rs-retention-promo__couponDiscount notranslate"
+                        translate="no"
+                        aria-label={`${discount}%`}
+                    >
+                        {discount}
+                    </span>
                 </div>
                 <div className="rs-retention-promo__couponDivider" aria-hidden />
-                <div className="rs-retention-promo__couponPricing">{pricingContent}</div>
+                <div className="rs-retention-promo__couponPricing notranslate" translate="no">
+                    {pricingContent}
+                </div>
             </div>
         </div>
     );
 }
 
-function formatStep3CountdownLabel(totalSec: number): string {
+function formatStep3CountdownParts(totalSec: number): { m: string; s: string } {
     const safe = Math.max(0, totalSec);
     const m = Math.floor(safe / 60);
     const s = safe % 60;
-    return `${String(m).padStart(2, '0')} : ${String(s).padStart(2, '0')}`;
+    return {
+        m: String(m).padStart(2, '0'),
+        s: String(s).padStart(2, '0'),
+    };
 }
 
 function PromoOfferCardStep3({
@@ -381,10 +438,15 @@ function PromoCountdownBar({
     variant?: 'default' | 'step3';
 }) {
     if (variant === 'step3') {
+        const { m, s } = formatStep3CountdownParts(countdownSec);
         return (
             <div className="rs-retention-promo__countdown rs-retention-promo__countdown--step3">
-                <span className="rs-retention-promo__countdownPill" aria-live="polite">
-                    {formatStep3CountdownLabel(countdownSec)}
+                <span className="rs-retention-promo__countdownPill notranslate" translate="no">
+                    <span className="rs-retention-promo__countdownPillPart">{m}</span>
+                    <span className="rs-retention-promo__countdownPillSep" aria-hidden>
+                        :
+                    </span>
+                    <span className="rs-retention-promo__countdownPillPart">{s}</span>
                 </span>
             </div>
         );
@@ -454,8 +516,8 @@ export function VideoRetentionPromoLayer({
         ) : step === 2 ? (
             <p className="rs-retention-promo__couponPricingLine">
                 {intl.formatMessage(
-                    { id: 'retention_promo_terms_step2' },
-                    { renewal: renewalLabel },
+                    { id: 'retention_promo_coupon_pricing_step2' },
+                    { price: priceLabel },
                 )}
             </p>
         ) : isWeekly ? (
@@ -759,8 +821,8 @@ export function useVideoRetentionCommerce({
 
     const openCheckout = useCallback(
         (fromStep: RetentionPromoStep, viaDismiss = false) => {
-            const offer = offers[fromStep - 1];
-            const productId = resolveCheckoutProductId(offer);
+            const offer = resolveRetentionOfferForStep(offers, fromStep);
+            const productId = resolveCheckoutProductId(offer ?? undefined);
             if (import.meta.env.DEV && productId != null) {
                 const inCatalog = products.some((p) => p.id === productId);
                 if (!inCatalog) {
@@ -916,7 +978,9 @@ export function useVideoRetentionCommerce({
         onVipOpenChange(false);
     }, [clearPromo, closeVipWithoutRetentionRestart, offers.length, onVipOpenChange, startRetentionFlow]);
 
-    const activeOffer = step != null ? offers[step - 1] : null;
+    const activeOfferRaw = step != null ? resolveRetentionOfferForStep(offers, step) : null;
+    const activeOffer =
+        activeOfferRaw != null ? withCatalogRenewalPrice(activeOfferRaw, products) : null;
     const promoActive = step != null || checkoutRequest != null || fullyDismissed;
 
     const layer =

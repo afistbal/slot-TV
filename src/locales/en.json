@@ -460,6 +460,7 @@
     "retention_promo_badge_onetime": "One-time Offer",
     "retention_promo_subtitle_step1": "Get limited time discounts",
     "retention_promo_subtitle_step2": "Top up now to unlock Weekly Membership and get an extra discount!",
+    "retention_promo_coupon_pricing_step2": "Limited-time offer — only {price}! Don't miss out, subscribe now!",
     "retention_promo_exclusive_title": "Exclusive Membership",
     "retention_promo_exclusive_subtitle": "Limited-time offer - Join now and save big!",
     "retention_promo_off_badge": "{percent}% OFF",

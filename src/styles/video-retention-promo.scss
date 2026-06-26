@@ -224,6 +224,11 @@
     line-height: 1;
     color: #633E25;
     letter-spacing: -0.02em;
+    white-space: nowrap;
+
+    &::after {
+        content: '%';
+    }
 }
 
 .rs-retention-promo__couponDivider {
@@ -385,14 +390,31 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 88px;
+    gap: 0;
+    min-width: 72px;
     padding: 2px 16px;
     border-radius: 999px;
     background: #F3CA4B;
     font-weight: 500;
     font-size: 16px;
+    line-height: 1;
     color: #633E25;
+    /* 中文 locale 下继承 PingFang 时数字宽度不稳；倒计时固定用西文等宽数字 */
+    font-family: 'DIN Alternate', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+}
+
+.rs-retention-promo__countdownPillPart {
+    display: inline-block;
+    min-width: 1.25em;
+    text-align: center;
+}
+
+.rs-retention-promo__countdownPillSep {
+    display: inline-block;
+    width: 0.45em;
+    text-align: center;
 }
 
 .rs-retention-promo__sheet--step3 .rs-retention-promo__ctaStack .rs-retention-promo__cta {
@@ -407,7 +429,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 0 auto 14px;
+    margin: 0 auto 12px;
     max-width: 340px;
 }
 

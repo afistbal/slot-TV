@@ -937,10 +937,10 @@
     }
 
     .rs-shopping__pay {
-        margin-top: calc(12 / 375 * var(--app-vw));
+        margin-top: calc(18 / 375 * var(--app-vw));
 
         @media (min-width: 768px) {
-            margin-top: 14px;
+            margin-top: 20px;
         }
     }
 
@@ -1285,8 +1285,8 @@
             border-radius: 16px;
             margin-bottom: 24px;
             width: min(100%, 620px);
-            min-height: min(88vh, 840px);
-            max-height: min(88vh, 840px);
+            min-height: 33vh;
+            max-height: 70vh;
             padding: 22px 24px 24px;
         }
     }
@@ -2454,10 +2454,10 @@
     }
 
     .rs-shopping__pay {
-        margin-top: calc(12 / 375 * var(--app-vw));
+        margin-top: calc(18 / 375 * var(--app-vw));
 
         @media (min-width: 768px) {
-            margin-top: 14px;
+            margin-top: 20px;
         }
     }
 
