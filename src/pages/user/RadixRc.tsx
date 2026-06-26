@@ -1057,39 +1057,7 @@ export default function RadixRc({
                                     <FormattedMessage id="payment_processing_title" />
                                 </div>
                             </div>
-                            <div className="rs-shopping__payModalCopy">
-                                {currentCheckoutProduct?.type === 2 &&
-                                totalCoinsForCoinProduct(currentCheckoutProduct) > 0 ? (
-                                    <p className="mb-2 flex items-center justify-center gap-1.5 text-sm font-semibold text-white">
-                                        <img src={coinIcon} alt="" width={16} height={16} />
-                                        <span>
-                                            {intl.formatNumber(
-                                                totalCoinsForCoinProduct(currentCheckoutProduct),
-                                            )}
-                                        </span>
-                                        <span className="text-white/70" aria-hidden>
-                                            ·
-                                        </span>
-                                        <span>${currentCheckoutProduct.price}</span>
-                                    </p>
-                                ) : null}
-                                <p>
-                                    <FormattedMessage id="payment_processing_line_1" />
-                                </p>
-                                <p>
-                                    <FormattedMessage id="payment_processing_line_2" />
-                                </p>
-                                <p>
-                                    <FormattedMessage id="payment_processing_line_3" />
-                                </p>
-                                <p>
-                                    <span>
-                                        <FormattedMessage id="payment_processing_line_4" />
-                                    </span>
-                                    {/* <span className="rs-shopping__payModalCopyAmount">{retryAmount}</span> */}
-                                </p>
-                            </div>
-                            {/* ????????key ??????????destroy ??on('success')/on('error')???? paySessionSeed prop ???? effect?redirectToCheckout ????Webhook/??????*/}
+                            
                             <div className="rs-shopping__payStack">
                                 <RadixRcShoppingPaySection
                                     key={String(walletProductId ?? 'wallet')}

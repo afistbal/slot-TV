@@ -52,7 +52,7 @@ export const retentionPromoAssets = {
 } as const;
 
 /** bg_coupon@2x.png 票券背景固定高度（px），不随文案撑开 */
-export const RETENTION_COUPON_BG_HEIGHT_PX = 116;
+export const RETENTION_COUPON_BG_HEIGHT_PX = 126;
 
 function formatCountdownParts(totalSec: number): { h: string; m: string; s: string } {
     const safe = Math.max(0, totalSec);
@@ -289,10 +289,10 @@ function PromoHeaderArt({
 
 function PromoCouponCardStep12({
     discount,
-    pricingText,
+    pricingContent,
 }: {
     discount: number;
-    pricingText: string;
+    pricingContent: ReactNode;
 }) {
     return (
         <div className="rs-retention-promo__coupon">
@@ -314,7 +314,7 @@ function PromoCouponCardStep12({
                     <span className="rs-retention-promo__couponDiscount">{discount}%</span>
                 </div>
                 <div className="rs-retention-promo__couponDivider" aria-hidden />
-                <p className="rs-retention-promo__couponPricing">{pricingText}</p>
+                <div className="rs-retention-promo__couponPricing">{pricingContent}</div>
             </div>
         </div>
     );
@@ -435,20 +435,52 @@ export function VideoRetentionPromoLayer({
     const subtitleId =
         step === 2 ? 'retention_promo_subtitle_step2' : 'retention_promo_subtitle_step1';
 
-    const pricingText = isWeekly
-        ? intl.formatMessage(
-              { id: 'retention_promo_terms_weekly' },
-              { price: priceLabel, renewal: renewalLabel },
-          )
-        : intl.formatMessage(
-              { id: 'retention_promo_terms_quarterly' },
-              { price: priceLabel, renewal: renewalLabel },
-          );
+    const pricingContent =
+        step === 1 ? (
+            <>
+                <p className="rs-retention-promo__couponPricingLine">
+                    {intl.formatMessage(
+                        { id: 'retention_promo_terms_step1_line1' },
+                        { price: priceLabel },
+                    )}
+                </p>
+                <p className="rs-retention-promo__couponPricingLine">
+                    {intl.formatMessage(
+                        { id: 'retention_promo_terms_step1_line2' },
+                        { renewal: renewalLabel },
+                    )}
+                </p>
+            </>
+        ) : step === 2 ? (
+            <p className="rs-retention-promo__couponPricingLine">
+                {intl.formatMessage(
+                    { id: 'retention_promo_terms_step2' },
+                    { renewal: renewalLabel },
+                )}
+            </p>
+        ) : isWeekly ? (
+            <p className="rs-retention-promo__couponPricingLine">
+                {intl.formatMessage(
+                    { id: 'retention_promo_terms_weekly' },
+                    { price: priceLabel, renewal: renewalLabel },
+                )}
+            </p>
+        ) : (
+            <p className="rs-retention-promo__couponPricingLine">
+                {intl.formatMessage(
+                    { id: 'retention_promo_terms_quarterly' },
+                    { price: priceLabel, renewal: renewalLabel },
+                )}
+            </p>
+        );
 
-    const step3LegalText = intl.formatMessage(
-        { id: 'retention_promo_terms_quarterly' },
-        { price: priceLabel, renewal: renewalLabel },
-    );
+    const step2Disclaimer =
+        step === 2
+            ? intl.formatMessage(
+                  { id: 'retention_promo_terms_step2' },
+                  { renewal: renewalLabel },
+              )
+            : null;
 
     const ctaText = intl.formatMessage(
         { id: 'retention_promo_cta_sale' },
@@ -499,7 +531,7 @@ export function VideoRetentionPromoLayer({
                 {isStep3 ? (
                     <PromoOfferCardStep3 offer={offer} discount={discount} />
                 ) : (
-                    <PromoCouponCardStep12 discount={discount} pricingText={pricingText} />
+                    <PromoCouponCardStep12 discount={discount} pricingContent={pricingContent} />
                 )}
 
                 {isStep3 ? (
@@ -512,9 +544,14 @@ export function VideoRetentionPromoLayer({
                         </button>
                     </div>
                 ) : (
-                    <button type="button" className="rs-retention-promo__cta" onClick={onCta}>
-                        {ctaText}
-                    </button>
+                    <>
+                        <button type="button" className="rs-retention-promo__cta" onClick={onCta}>
+                            {ctaText}
+                        </button>
+                        {step2Disclaimer ? (
+                            <p className="rs-retention-promo__ctaDisclaimer">{step2Disclaimer}</p>
+                        ) : null}
+                    </>
                 )}
 
                 <PromoShortsRow covers={covers} />

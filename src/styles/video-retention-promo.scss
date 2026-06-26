@@ -177,7 +177,11 @@
     position: absolute;
     inset: 0;
     z-index: 1;
+    display: grid;
+    /* 与 bg_coupon@2x（252px 高，虚线约在 182px）对齐：182/252 ≈ 72% / 28% */
+    grid-template-rows: minmax(0, 91fr) minmax(0, 35fr);
     background: transparent;
+    transform: translateY(-3px);
 }
 
 .rs-retention-promo__offerCard {
@@ -197,8 +201,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    padding: 14px 20px 14px;
+    min-height: 0;
+    padding: 0 20px;
 }
 
 .rs-retention-promo__couponLabel {
@@ -225,11 +231,36 @@
 }
 
 .rs-retention-promo__couponPricing {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
     margin: 0;
-    padding: 7px 16px 7px;
+    padding: 0 16px;
     font-weight: 400;
     font-size: 10px;
     color: rgba(99, 62, 37, 0.75);
+    text-align: center;
+}
+
+.rs-retention-promo__couponPricingLine {
+    margin: 0;
+    line-height: 1.4;
+
+    & + & {
+        margin-top: 2px;
+    }
+}
+
+.rs-retention-promo__ctaDisclaimer {
+    margin: -12px 0 10px;
+    padding: 0 8px;
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
 }
 
 /* —— 弹窗 3：会员卡（纯 CSS 渐变，不用票券图） —— */
