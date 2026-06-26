@@ -168,6 +168,7 @@ export function ForDemoH5PlayerShell({
             <DouyinFeedPlayer
                 className="for-demo-h5-player h-full w-full"
                 items={playerItems}
+                initialIndex={activeIndex}
                 mediaBaseUrl={staticBase}
                 preloadNext
                 fullscreenTargetRef={fullscreenTargetRef}

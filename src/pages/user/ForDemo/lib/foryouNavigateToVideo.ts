@@ -5,7 +5,7 @@ import {
     forYouResumeStorageKey,
     type ForYouToVideoLocationState,
 } from '@/constants/foryouRoute';
-import { patchForyouFeedSession } from './foryouFeedSession';
+import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { markVideoSessionUserUnmuted } from '@/components/video-player/videoSessionMute';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
@@ -18,8 +18,8 @@ export function navigateFromForyouToVideo(
 ): void {
     const episodeNo = item.episode ?? 1;
 
-    if (activeIndex != null && activeIndex >= 0) {
-        patchForyouFeedSession({ activeIndex });
+    if (activeIndex != null && activeIndex >= 0 && useForyouFeedStore.getState().list.length) {
+        useForyouFeedStore.getState().setActiveIndex(activeIndex);
     }
 
     if (resumeTimeSec > 0) {

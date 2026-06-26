@@ -12,6 +12,7 @@ import {
 import { fetchForyouList } from '@/pages/user/ForDemo/lib/fetchForyouList';
 import { foryouFeedItemKey, mergeForyouFeedItems } from '@/pages/user/ForDemo/lib/foryouFeedMerge';
 import { ensureForyouMediaPreconnect, resolveFeedVideoUrl } from '@/pages/user/ForDemo/lib/foryouFeedMedia';
+import { getForyouFeedAudienceKey, useForyouFeedStore } from '@/stores/foryouFeed';
 import type { IForYouFeedItem, IForYouListPayload } from '@/types/foryouFeed';
 
 function inferHasMore(payload: IForYouListPayload, fallbackPerPage: number): boolean {
@@ -77,6 +78,11 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
                 rawVideo: row.video ? String(row.video).slice(-40) : '',
             });
         });
+        useForyouFeedStore.getState().setFeed({
+            list: rows,
+            hasMore: nextHasMore,
+            audienceKey: getForyouFeedAudienceKey(),
+        });
         setList(rows);
         setPlayerItems(items);
         setHasMore(nextHasMore);
@@ -91,6 +97,14 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
             return;
         }
         let cancelled = false;
+        const feedStore = useForyouFeedStore.getState();
+        if (feedStore.isCacheValid()) {
+            applyList(feedStore.list, feedStore.hasMore);
+            setLoadError(null);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         setLoadError(null);
         void fetchForyouList({ mode: 'initial' }).then((res) => {

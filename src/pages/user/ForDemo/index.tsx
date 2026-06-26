@@ -9,6 +9,7 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useRootStore } from '@/stores/root';
 import { useConfigStore } from '@/stores/config';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
+import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { usePrefetchVideoShoppingProducts } from '@/stores/videoShoppingProducts';
 
 import { ForDemoH5PlayerShell } from './ForDemoH5PlayerShell';
@@ -42,7 +43,18 @@ export default function ForDemoPage() {
         applyForDemoMountMutePolicy(flags);
     }
 
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(() => {
+        const flags = mountFlagsRef.current;
+        if (flags?.feedColdAutoplay) {
+            return 0;
+        }
+        const feedStore = useForyouFeedStore.getState();
+        if (!feedStore.isCacheValid()) {
+            return 0;
+        }
+        const idx = feedStore.activeIndex ?? 0;
+        return Math.min(Math.max(0, idx), feedStore.list.length - 1);
+    });
     const [isFullscreenUi, setIsFullscreenUi] = useState(false);
     const fullscreenTargetRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +80,7 @@ export default function ForDemoPage() {
     const handleIndexChange = useCallback(
         (index: number, _direction?: FeedNavigateDirection) => {
             setActiveIndex(index);
+            useForyouFeedStore.getState().setActiveIndex(index);
             if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
                 useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
             }

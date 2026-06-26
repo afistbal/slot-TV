@@ -309,6 +309,7 @@ export function ForDemoPcPlayerShell({
                         <DouyinFeedPlayer
                             className="for-demo-pc-player h-full w-full"
                             items={playerItems}
+                            initialIndex={activeIndex}
                             mediaBaseUrl={staticBase}
                             preloadNext
                             fullscreenTargetRef={fullscreenTargetRef}

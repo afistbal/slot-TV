@@ -4,6 +4,7 @@ import { api, type TData } from '@/api';
 import { auth } from '@/firebase';
 import { trackAnonymousCompleteRegistration } from '@/hooks/usePixel';
 import { useLoadingStore } from '@/stores/loading';
+import { clearForyouFeedStore } from '@/stores/foryouFeed';
 import {
     refreshVideoShoppingProductsAfterSessionChange,
     resetVideoShoppingProducts,
@@ -30,6 +31,7 @@ export async function logoutToAnonymousSession(): Promise<boolean> {
             localStorage.removeItem('login-method');
             localStorage.removeItem('user-avatar');
             clearShoppingProductCache();
+            clearForyouFeedStore();
             resetVideoShoppingProducts();
             useUserStore.getState().signout();
             useUserStore.getState().setBalance(-1);
@@ -40,6 +42,7 @@ export async function logoutToAnonymousSession(): Promise<boolean> {
         localStorage.removeItem('login-method');
         localStorage.removeItem('user-avatar');
         clearShoppingProductCache();
+        clearForyouFeedStore();
         refreshVideoShoppingProductsAfterSessionChange();
         useUserStore.getState().signin(result.d['info'] as TData);
         const bal = await api<number>('user/balance', { loading: false, toastOnError: false });
