@@ -51,6 +51,24 @@ export const retentionPromoAssets = {
     couponBg,
 } as const;
 
+let retentionPromoAssetsPreloaded = false;
+
+/** CSS background-image 不会随 import 自动拉取；弹窗 mount 前预载并 decode 进缓存 */
+export function preloadRetentionPromoAssets(): void {
+    if (retentionPromoAssetsPreloaded || typeof window === 'undefined') {
+        return;
+    }
+    retentionPromoAssetsPreloaded = true;
+    for (const src of [retentionPromoAssets.headerBg, retentionPromoAssets.couponBg]) {
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = src;
+        void img.decode?.().catch(() => {
+            // 预载失败不阻塞弹窗，仍走 inline background-image
+        });
+    }
+}
+
 /** bg_coupon@2x.png 票券背景固定高度（px），不随文案撑开 */
 export const RETENTION_COUPON_BG_HEIGHT_PX = 126;
 
@@ -693,7 +711,7 @@ export type UseVideoRetentionCommerceOptions = {
 export function useVideoRetentionCommerce({
     variant,
     viewerIsVip,
-    vip: _vip,
+    vip,
     onVipOpenChange,
     episodeRowId,
 }: UseVideoRetentionCommerceOptions): RetentionCommerceWire {
@@ -751,6 +769,18 @@ export function useVideoRetentionCommerce({
         void useVideoShoppingProductsStore.getState().fetchOnce();
     }, [sessionBootstrapReady, staticBase]);
 
+    /** 非 VIP 进播放页即预载票券/顶部背景，避免关 VIP 抽屉后弹窗才拉图 */
+    useEffect(() => {
+        if (!sessionBootstrapReady || viewerIsVip) return;
+        preloadRetentionPromoAssets();
+    }, [sessionBootstrapReady, viewerIsVip]);
+
+    /** VIP 抽屉打开时再触发一次（幂等），缩短「开抽屉→关抽屉→弹挽留」路径上的竞态 */
+    useEffect(() => {
+        if (!vip || viewerIsVip || offers.length === 0) return;
+        preloadRetentionPromoAssets();
+    }, [vip, viewerIsVip, offers.length]);
+
     useEffect(() => {
         setFullyDismissed(false);
         flowStartedRef.current = false;
@@ -797,6 +827,7 @@ export function useVideoRetentionCommerce({
 
     const startRetentionFlow = useCallback(() => {
         if (viewerIsVip || flowStartedRef.current || offers.length === 0) return;
+        preloadRetentionPromoAssets();
         setFullyDismissed(false);
         flowStartedRef.current = true;
         clearSkipCountdown();
