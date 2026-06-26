@@ -1,5 +1,20 @@
 /* 视频页挽留弹窗 v2 — rs-retention-promo__* */
 
+.rs-retention-promo__assetWarmup {
+    position: fixed;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+
+    img {
+        width: 1px;
+        height: 1px;
+    }
+}
+
 .rs-retention-promo {
     position: fixed;
     inset: 0;
@@ -93,22 +108,21 @@
     position: relative;
     margin: 0 -20px 18px;
     padding: 20px 20px 2px;
+}
 
-    /* bg@2x.png 设计稿 750×292 → 375:146，避免 100% 100% 拉伸变形 */
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        aspect-ratio: 375 / 146;
-        background-image: var(--rs-retention-header-bg);
-        background-repeat: no-repeat;
-        background-position: top center;
-        background-size: 100% auto;
-        pointer-events: none;
-        z-index: 0;
-    }
+/* bg@2x.png 设计稿 750×292 → 375:146，避免拉伸变形 */
+.rs-retention-promo__headerBg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 375 / 146;
+    object-fit: contain;
+    object-position: top center;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .rs-retention-promo__title {
@@ -167,9 +181,9 @@
 .rs-retention-promo__couponBg {
     position: absolute;
     inset: 0;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 100% 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
     pointer-events: none;
 }
 

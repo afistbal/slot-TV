@@ -51,22 +51,96 @@ export const retentionPromoAssets = {
     couponBg,
 } as const;
 
-let retentionPromoAssetsPreloaded = false;
+const RETENTION_PROMO_PRELOAD_LINK_PREFIX = 'slot-retention-promo-preload';
+const RETENTION_ASSETS_READY_TIMEOUT_MS = 2500;
 
-/** CSS background-image 不会随 import 自动拉取；弹窗 mount 前预载并 decode 进缓存 */
-export function preloadRetentionPromoAssets(): void {
-    if (retentionPromoAssetsPreloaded || typeof window === 'undefined') {
-        return;
+let retentionPromoAssetsReady = false;
+let retentionPromoAssetsReadyPromise: Promise<void> | null = null;
+
+function injectRetentionPromoPreloadLinks(): void {
+    if (typeof document === 'undefined') return;
+    for (const [suffix, href] of [
+        ['header', retentionPromoAssets.headerBg],
+        ['coupon', retentionPromoAssets.couponBg],
+    ] as const) {
+        const id = `${RETENTION_PROMO_PRELOAD_LINK_PREFIX}-${suffix}`;
+        if (document.getElementById(id)) continue;
+        const link = document.createElement('link');
+        link.id = id;
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = href;
+        link.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(link);
     }
-    retentionPromoAssetsPreloaded = true;
-    for (const src of [retentionPromoAssets.headerBg, retentionPromoAssets.couponBg]) {
+}
+
+function loadRetentionPromoImage(src: string): Promise<void> {
+    return new Promise((resolve) => {
         const img = new Image();
         img.decoding = 'async';
+        img.fetchPriority = 'high';
+        const finish = () => resolve();
+        img.onload = () => {
+            void img.decode?.().finally(finish);
+        };
+        img.onerror = finish;
         img.src = src;
-        void img.decode?.().catch(() => {
-            // 预载失败不阻塞弹窗，仍走 inline background-image
-        });
+    });
+}
+
+/** 视频页与视频抢带宽时：head preload + decode，弹窗打开前尽量已就绪 */
+export function ensureRetentionPromoAssetsReady(): Promise<void> {
+    if (retentionPromoAssetsReady || typeof window === 'undefined') {
+        return Promise.resolve();
     }
+    if (retentionPromoAssetsReadyPromise) {
+        return retentionPromoAssetsReadyPromise;
+    }
+    retentionPromoAssetsReadyPromise = (async () => {
+        injectRetentionPromoPreloadLinks();
+        await Promise.all([
+            loadRetentionPromoImage(retentionPromoAssets.headerBg),
+            loadRetentionPromoImage(retentionPromoAssets.couponBg),
+        ]);
+        retentionPromoAssetsReady = true;
+    })().finally(() => {
+        retentionPromoAssetsReadyPromise = null;
+    });
+    return retentionPromoAssetsReadyPromise;
+}
+
+function waitRetentionPromoAssetsReady(): Promise<void> {
+    return Promise.race([
+        ensureRetentionPromoAssetsReady(),
+        new Promise<void>((resolve) => {
+            window.setTimeout(resolve, RETENTION_ASSETS_READY_TIMEOUT_MS);
+        }),
+    ]);
+}
+
+/** @deprecated 使用 ensureRetentionPromoAssetsReady */
+export function preloadRetentionPromoAssets(): void {
+    void ensureRetentionPromoAssetsReady();
+}
+
+const retentionPromoImgProps = {
+    alt: '',
+    decoding: 'async' as const,
+    fetchPriority: 'high' as const,
+    loading: 'eager' as const,
+};
+
+/** 播放页常驻隐藏 img，避免仅 new Image() 预载被视频挤掉后弹窗再拉图 */
+function RetentionPromoAssetWarmup() {
+    if (typeof document === 'undefined') return null;
+    return createPortal(
+        <div className="rs-retention-promo__assetWarmup" aria-hidden>
+            <img {...retentionPromoImgProps} src={retentionPromoAssets.headerBg} />
+            <img {...retentionPromoImgProps} src={retentionPromoAssets.couponBg} />
+        </div>,
+        document.body,
+    );
 }
 
 /** bg_coupon@2x.png 票券背景固定高度（px），不随文案撑开 */
@@ -325,14 +399,12 @@ function PromoHeaderArt({
 }) {
     const isStep3 = step === 3;
     return (
-        <div
-            className="rs-retention-promo__headerArt"
-            style={
-                {
-                    '--rs-retention-header-bg': `url(${retentionPromoAssets.headerBg})`,
-                } as React.CSSProperties
-            }
-        >
+        <div className="rs-retention-promo__headerArt">
+            <img
+                className="rs-retention-promo__headerBg"
+                {...retentionPromoImgProps}
+                src={retentionPromoAssets.headerBg}
+            />
             <h2 id="rs-retention-promo-title" className="rs-retention-promo__title">
                 <FormattedMessage
                     id={isStep3 ? 'retention_promo_title_step3' : 'retention_promo_title'}
@@ -365,9 +437,10 @@ function PromoCouponCardStep12({
                 aria-hidden
                 style={{ height: RETENTION_COUPON_BG_HEIGHT_PX }}
             >
-                <div
+                <img
                     className="rs-retention-promo__couponBg"
-                    style={{ backgroundImage: `url(${retentionPromoAssets.couponBg})` }}
+                    {...retentionPromoImgProps}
+                    src={retentionPromoAssets.couponBg}
                 />
             </div>
             <div className="rs-retention-promo__couponInner">
@@ -769,16 +842,18 @@ export function useVideoRetentionCommerce({
         void useVideoShoppingProductsStore.getState().fetchOnce();
     }, [sessionBootstrapReady, staticBase]);
 
-    /** 非 VIP 进播放页即预载票券/顶部背景，避免关 VIP 抽屉后弹窗才拉图 */
-    useEffect(() => {
-        if (!sessionBootstrapReady || viewerIsVip) return;
-        preloadRetentionPromoAssets();
-    }, [sessionBootstrapReady, viewerIsVip]);
+    const shouldWarmRetentionAssets = sessionBootstrapReady && !viewerIsVip;
 
-    /** VIP 抽屉打开时再触发一次（幂等），缩短「开抽屉→关抽屉→弹挽留」路径上的竞态 */
+    /** 非 VIP 进播放页：head preload + 常驻隐藏 img，与视频并行但尽量先 decode */
+    useEffect(() => {
+        if (!shouldWarmRetentionAssets) return;
+        void ensureRetentionPromoAssetsReady();
+    }, [shouldWarmRetentionAssets]);
+
+    /** VIP 抽屉打开时再拉一次（幂等），覆盖「快进快关」竞态 */
     useEffect(() => {
         if (!vip || viewerIsVip || offers.length === 0) return;
-        preloadRetentionPromoAssets();
+        void ensureRetentionPromoAssetsReady();
     }, [vip, viewerIsVip, offers.length]);
 
     useEffect(() => {
@@ -827,15 +902,17 @@ export function useVideoRetentionCommerce({
 
     const startRetentionFlow = useCallback(() => {
         if (viewerIsVip || flowStartedRef.current || offers.length === 0) return;
-        preloadRetentionPromoAssets();
         setFullyDismissed(false);
         flowStartedRef.current = true;
         clearSkipCountdown();
         countdownExhaustedRef.current = false;
         if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
-        openTimerRef.current = window.setTimeout(() => openStep(1), OPEN_DELAY_MS) as unknown as ReturnType<
-            typeof setTimeout
-        >;
+        void waitRetentionPromoAssetsReady().finally(() => {
+            if (!flowStartedRef.current) return;
+            openTimerRef.current = window.setTimeout(() => openStep(1), OPEN_DELAY_MS) as unknown as ReturnType<
+                typeof setTimeout
+            >;
+        });
     }, [offers.length, openStep, viewerIsVip]);
 
     const requestPanelClose = useCallback((): boolean => {
@@ -1065,21 +1142,25 @@ export function useVideoRetentionCommerce({
         activeOfferRaw != null ? withCatalogRenewalPrice(activeOfferRaw, products) : null;
     const promoActive = step != null || checkoutRequest != null || fullyDismissed;
 
-    const layer =
-        step != null && activeOffer ? (
-            <VideoRetentionPromoLayer
-                variant={variant}
-                step={step}
-                offer={activeOffer}
-                covers={covers}
-                visible={visible}
-                animateIn={animateIn}
-                showCountdown={showCountdown}
-                countdownSec={countdownSec}
-                onDismiss={dismissCurrentStep}
-                onCta={handleCta}
-            />
-        ) : null;
+    const layer = (
+        <>
+            {shouldWarmRetentionAssets ? <RetentionPromoAssetWarmup /> : null}
+            {step != null && activeOffer ? (
+                <VideoRetentionPromoLayer
+                    variant={variant}
+                    step={step}
+                    offer={activeOffer}
+                    covers={covers}
+                    visible={visible}
+                    animateIn={animateIn}
+                    showCountdown={showCountdown}
+                    countdownSec={countdownSec}
+                    onDismiss={dismissCurrentStep}
+                    onCta={handleCta}
+                />
+            ) : null}
+        </>
+    );
 
     return useMemo(
         () => ({
