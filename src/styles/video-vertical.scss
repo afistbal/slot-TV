@@ -728,14 +728,6 @@
     height: 100%;
 }
 
-/** 字幕：用方向性阴影替代大范围 glow，笔画更利落 */
-.video-player-subtitle-text {
-    -webkit-font-smoothing: subpixel-antialiased;
-    text-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.95),
-        0 -1px 1px rgba(0, 0, 0, 0.35);
-}
-
 /** PC 静音自动播后的「取消静音」（对齐 NetShort xgplayer-unmute DOM） */
 .video-player-root .xgplayer-unmute {
     position: absolute;
@@ -947,10 +939,6 @@
     height: 20px;
 }
 
-.video-player-root .video-player-pc-subtitle-pad {
-    padding-bottom: 200px;
-}
-
 .video-player-root .video-player-h5-info {
     text-align: left;
     min-width: 0;
@@ -1067,10 +1055,6 @@
 
 /** H5 竖屏播放页：顶部栏 / 底部信息 / 控制条（仅 mobile 分支 DOM，@media 双保险不影响 PC） */
 @media (max-width: 767px) {
-    .video-player-h5-subtitle-pad {
-        padding-bottom: 200px;
-    }
-
     .video-player-h5-topbar {
         z-index: 10;
         display: flex;
