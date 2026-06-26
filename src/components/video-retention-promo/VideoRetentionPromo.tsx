@@ -69,7 +69,8 @@ function formatCountdownParts(totalSec: number): { h: string; m: string; s: stri
 function formatPerDayPrice(price: string, days: number): string {
     const n = Number.parseFloat(price);
     if (!Number.isFinite(n) || days <= 0) return '$0.00';
-    return `$${(n / days).toFixed(2)}`;
+    const perDay = Math.floor((n / days) * 100) / 100;
+    return `$${perDay.toFixed(2)}`;
 }
 
 // —— module store (no separate file) ——
@@ -175,8 +176,17 @@ async function fetchMembershipCoversOnce(staticBase: string): Promise<Membership
     return coversInflight;
 }
 
-function discountPercent(discountType: number): number {
-    return discountType === 1 ? 30 : 50;
+/** 折扣 = (renewal - price) / renewal → OFF%，再按十位四舍五入（51→50，49→50） */
+function computeOfferDiscountPercent(
+    offer: Pick<RetentionOffer, 'price' | 'renewal_price'>,
+): number {
+    const p = Number.parseFloat(offer.price);
+    const r = Number.parseFloat(offer.renewal_price);
+    if (!Number.isFinite(p) || !Number.isFinite(r) || r <= 0 || p >= r) {
+        return 0;
+    }
+    const raw = ((r - p) / r) * 100;
+    return Math.round(raw / 10) * 10;
 }
 
 function resolveCheckoutProductId(offer: RetentionOffer | undefined): number | null {
@@ -301,7 +311,7 @@ function PromoCouponCardStep12({
                     <span className="rs-retention-promo__couponLabel">
                         <FormattedMessage id="retention_promo_surprise_discount" />
                     </span>
-                    <span className="rs-retention-promo__couponDiscount">-{discount}%</span>
+                    <span className="rs-retention-promo__couponDiscount">{discount}%</span>
                 </div>
                 <div className="rs-retention-promo__couponDivider" aria-hidden />
                 <p className="rs-retention-promo__couponPricing">{pricingText}</p>
@@ -416,7 +426,7 @@ export function VideoRetentionPromoLayer({
     const intl = useIntl();
     const period = resolveSubscriptionPeriod(offer.name);
     const isWeekly = period === 'weekly' || String(offer.name).toLowerCase().includes('week');
-    const discount = discountPercent(offer.discount_type);
+    const discount = computeOfferDiscountPercent(offer);
     const priceLabel = `$${offer.price}`;
     const renewalLabel = `$${offer.renewal_price}`;
 
@@ -506,10 +516,6 @@ export function VideoRetentionPromoLayer({
                         {ctaText}
                     </button>
                 )}
-
-                {isStep3 ? (
-                    <p className="rs-retention-promo__legal">{step3LegalText}</p>
-                ) : null}
 
                 <PromoShortsRow covers={covers} />
             </div>

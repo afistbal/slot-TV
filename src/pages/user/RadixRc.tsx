@@ -1082,11 +1082,11 @@ export default function RadixRc({
                                 <p>
                                     <FormattedMessage id="payment_processing_line_3" />
                                 </p>
-                                <p className="rs-shopping__payModalCopyLine4">
+                                <p>
                                     <span>
                                         <FormattedMessage id="payment_processing_line_4" />
                                     </span>
-                                    <span className="rs-shopping__payModalCopyAmount">{retryAmount}</span>
+                                    {/* <span className="rs-shopping__payModalCopyAmount">{retryAmount}</span> */}
                                 </p>
                             </div>
                             {/* ????????key ??????????destroy ??on('success')/on('error')???? paySessionSeed prop ???? effect?redirectToCheckout ????Webhook/??????*/}
