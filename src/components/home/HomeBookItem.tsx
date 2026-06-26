@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { VideoCoverPlaceholderShell } from '@/components/VideoCoverPlaceholder';
-import { cn } from '@/lib/utils';
+import { VideoPosterLazyCover } from '@/components/VideoPosterLazyCover';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 export interface HomeBookItemData {
@@ -45,11 +43,6 @@ export function HomeBookItem({
     linkState?: Record<string, unknown>;
 }) {
     const src = movieCoverUrl(item, staticBase) ?? '';
-    const [coverLoaded, setCoverLoaded] = useState(false);
-
-    useEffect(() => {
-        setCoverLoaded(false);
-    }, [src]);
 
     return (
         <div
@@ -69,34 +62,22 @@ export function HomeBookItem({
             />
             {item.showExpo ? <div data-report="expo" className="BookItem_expoItem__EbMPA" /> : null}
             <div className="BookItem_cover__W2qbR">
-                <VideoCoverPlaceholderShell className="BookItem_coverPlaceholder" />
-                <img
+                <VideoPosterLazyCover
                     src={src}
                     alt={item.title}
-                    loading="lazy"
-                    decoding="async"
-                    className={cn(
-                        'BookItem_coverImg relative z-[1]',
-                        coverLoaded ? 'BookItem_coverImg--loaded' : 'BookItem_coverImg--loading',
-                    )}
-                    onLoad={() => setCoverLoaded(true)}
-                    onError={() => setCoverLoaded(false)}
+                    skeletonClassName="BookItem_coverPlaceholder"
+                    placeholderInnerClassName=""
+                    imageClassName="BookItem_coverImg"
                 />
-                <div className="BookItem_mask__bz19c" aria-hidden />
-                {item.showPlayMask ? null : (
-                    <>
-                        {/* 对站 fb8bb5c8… .BookItem_item_mask__EE98C + .BookItem_coverIconPlay__7iBKQ，hover 时与封面动效同现 */}
-                        <div className="BookItem_item_mask__EE98C" aria-hidden />
-                        <div className="BookItem_coverIconPlay__7iBKQ" aria-hidden />
-                    </>
-                )}
                 {item.showPlayMask ? (
                     <div className="BookItem_playMask__lJJFO" aria-hidden>
                         <div className="BookItem_playIconBg__pZ9wk">
                             <div className="BookItem_playIcon__ObTw9" />
                         </div>
                     </div>
-                ) : null}
+                ) : (
+                    <div className="BookItem_coverIconPlay__7iBKQ" aria-hidden />
+                )}
                 {typeof item.progressPercent === 'number' ? (
                     <div className="BookItem_read_progress_bar__5HCyD" aria-hidden>
                         <div className="BookItem_read_progress__q_bYT" style={{ width: `${item.progressPercent}%` }} />

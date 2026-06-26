@@ -639,7 +639,7 @@ export default function Component() {
                         })}
                         <div className="pointer-events-none absolute inset-0 z-[2] isolate">
                             <div
-                                className="absolute bottom-0 left-0 right-0 z-[-1] h-[40%] max-h-[170px] bg-gradient-to-t from-black to-transparent md:max-h-[170px]"
+                                className="absolute bottom-0 left-0 right-0 z-[-1] h-[40%] max-h-[170px] bg-gradient-to-t from-black/70 to-transparent md:max-h-[170px]"
                                 aria-hidden
                             />
                             <div className="absolute inset-0 z-0 home-hero-radial-glow" aria-hidden />
@@ -652,7 +652,7 @@ export default function Component() {
                                 aria-hidden
                             />
                             <div
-                                className="absolute left-0 right-0 top-0 z-[2] h-[40%] max-h-[170px] bg-gradient-to-b from-black to-transparent md:max-h-[170px]"
+                                className="absolute left-0 right-0 top-0 z-[2] h-[40%] max-h-[170px] bg-gradient-to-b from-black/70 to-transparent md:max-h-[170px]"
                                 aria-hidden
                             />
                             {topLen > 0 ? (
@@ -692,8 +692,7 @@ export default function Component() {
                         {topLen > 0 ? (
                             <div
                                 className={cn(
-                                    'home-hero-banner-dots pointer-events-auto absolute bottom-0 left-0 right-0 z-[4] flex w-full justify-center gap-[calc(6/375*var(--app-vw))]',
-                                    'bg-gradient-to-b from-transparent via-black/30 to-app-canvas',
+                                    'home-hero-banner-dots pointer-events-auto absolute bottom-0 left-0 right-0 z-[4] flex w-full justify-center gap-[calc(6/375*var(--app-vw))] pb-[3px]',
                                 )}
                                 role="tablist"
                                 aria-label="Banner"

@@ -482,16 +482,6 @@ export default function RadixRc({
         () => products.find((p) => p.id === checkoutTargetProductId) ?? null,
         [products, checkoutTargetProductId],
     );
-    const retentionDisplayPrice =
-        checkoutRequest?.displayPrice &&
-        checkoutRequest.productId === checkoutTargetProductId
-            ? checkoutRequest.displayPrice
-            : null;
-    const retryAmount = retentionDisplayPrice
-        ? `$${retentionDisplayPrice}`
-        : currentCheckoutProduct?.price
-          ? `$${currentCheckoutProduct.price}`
-          : '';
 
     function handleSelectPlan(productId: number) {
         const p = products.find((item) => item.id === productId);

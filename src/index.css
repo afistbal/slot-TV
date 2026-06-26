@@ -146,11 +146,11 @@ video::cue {
  */
 .home-hero-radial-glow {
     background: radial-gradient(
-        ellipse 82% 70% at 50% 38%,
+        ellipse 88% 76% at 50% 38%,
         rgba(0, 0, 0, 0) 0%,
-        rgba(0, 0, 0, 0) 38%,
-        rgba(0, 0, 0, 0.2) 72%,
-        rgba(0, 0, 0, 0.42) 100%
+        rgba(0, 0, 0, 0) 58%,
+        rgba(0, 0, 0, 0.1) 80%,
+        rgba(0, 0, 0, 0.28) 100%
     );
 }
 

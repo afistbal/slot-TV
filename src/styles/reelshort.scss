@@ -15,6 +15,8 @@
 
 // --- 首页 Banner 指示点（Home.tsx tablist）---
 .home-hero-banner-dots {
+    background: transparent;
+
     button.home-hero-banner-dots__tab {
         position: relative;
         flex-shrink: 0;
@@ -31,13 +33,10 @@
             width: max(4px, calc(4 / 375 * var(--app-vw)));
             border-radius: 9999px;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18));
-            box-shadow:
-                0 1px 3px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
             transition:
                 width 0.3s ease-out,
                 background 0.3s ease-out,
-                box-shadow 0.3s ease-out,
                 border-radius 0.3s ease-out;
         }
 
@@ -45,7 +44,7 @@
             width: calc(24 / 375 * var(--app-vw));
             border-radius: calc(5 / 375 * var(--app-vw));
             background: #fff;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+            box-shadow: none;
         }
     }
 
