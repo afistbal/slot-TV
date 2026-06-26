@@ -12,6 +12,8 @@ import type Player from 'xgplayer';
 import { cn } from '@/lib/utils';
 
 import { DouyinPlayerControls } from './controls/DouyinPlayerControls';
+import { isIosNativeVideoFullscreen } from './controls/feedPlayerFullscreen';
+import { getVideoEl } from './controls/playerControlsApi';
 import { useFeedPlayerFullscreen } from './controls/useFeedPlayerFullscreen';
 import { bindFeedTouchGuard } from './feed/bindFeedTouchGuard';
 import { buildPlayerSlots, getFeedItemDataAttrs } from './feed/buildPlayerSlots';
@@ -112,6 +114,10 @@ export function DouyinFeedPlayer({
     const postRenderTransitionRef = useRef<'append-play' | 'shrink-clamp' | null>(null);
     const shrinkTargetRef = useRef<number | null>(null);
     const endedStackPlayRef = useRef(false);
+    const iosPendingEndedFromRef = useRef<number | null>(null);
+    const iosWaitNativeExitRef = useRef(false);
+    const iosSkipResumeAfterExitRef = useRef(false);
+    const advanceAfterEndedRef = useRef<(current: number) => void>(() => undefined);
     const iosChainRetryDisposeRef = useRef<(() => void) | null>(null);
     const iosPauseRecoverDisposeRef = useRef<(() => void) | null>(null);
     const activeNeighborPrimeDisposeRef = useRef<(() => void) | null>(null);
@@ -255,12 +261,48 @@ export function DouyinFeedPlayer({
         [],
     );
 
+    const flushIosPendingEndedAdvance = useCallback(() => {
+        const from = iosPendingEndedFromRef.current;
+        if (from == null) return;
+        iosPendingEndedFromRef.current = null;
+        iosWaitNativeExitRef.current = false;
+        iosSkipResumeAfterExitRef.current = true;
+        window.setTimeout(() => {
+            iosSkipResumeAfterExitRef.current = false;
+        }, 2500);
+        if (from !== activeIndexRef.current) return;
+
+        const len = playbackItemsLengthRef.current;
+        feedDbg('ios ended flush after exit fs', { from, len });
+        if (showNextEpisodeRef.current) {
+            if (from < len - 1) {
+                advanceAfterEndedRef.current(from);
+            } else {
+                onNextEpisodeRef.current?.();
+            }
+            return;
+        }
+        if (from < len - 1) {
+            advanceAfterEndedRef.current(from);
+        }
+    }, []);
+
+    const onIosNativeFullscreenEnd = useCallback((): boolean => {
+        if (iosWaitNativeExitRef.current) iosWaitNativeExitRef.current = false;
+        const hadPending = iosPendingEndedFromRef.current != null;
+        if (hadPending) {
+            flushIosPendingEndedAdvance();
+        }
+        return hadPending || iosSkipResumeAfterExitRef.current;
+    }, [flushIosPendingEndedAdvance]);
+
     const feedFullscreen = useFeedPlayerFullscreen({
         fullscreenTargetRef: resolvedFullscreenTargetRef,
         isDesktop,
         activeEpisodeKey,
         getActivePlayer,
         onFullscreenUiChange,
+        onIosNativeFullscreenEnd,
         enabled: fullscreenEnabled,
     });
     const feedFullscreenRef = useRef(feedFullscreen);
@@ -743,6 +785,15 @@ export function DouyinFeedPlayer({
         },
         [scrollToIndex, syncActiveIndex],
     );
+    advanceAfterEndedRef.current = advanceAfterEnded;
+
+    /** iOS 沉浸/容器全屏：ended 后等 UI 退出再切条（原生全屏走 webkitendfullscreen） */
+    useEffect(() => {
+        if (!detectPlatform().isIOS || !fullscreenEnabled) return;
+        if (feedFullscreen.isFullscreenUi) return;
+        if (iosWaitNativeExitRef.current) return;
+        flushIosPendingEndedAdvance();
+    }, [feedFullscreen.isFullscreenUi, flushIosPendingEndedAdvance, fullscreenEnabled]);
 
     /** 对齐 foryou ForYouPlayer videoEnded：feedHasNext → 切条 / loadMore */
     const onVideoEnded = useCallback(
@@ -756,6 +807,22 @@ export function DouyinFeedPlayer({
             feedVideoMp4FromPlayer('ended mp4', playerByIndexRef.current.get(current), {
                 index,
             });
+
+            if (
+                detectPlatform().isIOS &&
+                fullscreenEnabledRef.current &&
+                feedFullscreenRef.current.isFullscreenUi
+            ) {
+                const video = getVideoEl(playerByIndexRef.current.get(current) ?? null);
+                iosPendingEndedFromRef.current = current;
+                iosWaitNativeExitRef.current = isIosNativeVideoFullscreen(video);
+                feedDbg('ios ended defer until exit fs', {
+                    current,
+                    waitNative: iosWaitNativeExitRef.current,
+                });
+                void feedFullscreenRef.current.forceExitFullscreen();
+                return;
+            }
 
             if (showNextEpisodeRef.current) {
                 if (current < len - 1) {

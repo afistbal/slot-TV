@@ -19,6 +19,8 @@ export type UseFeedPlayerFullscreenOptions = {
     activeEpisodeKey: string | number;
     getActivePlayer: () => Player | null;
     onFullscreenUiChange?: (active: boolean) => void;
+    /** iOS 原生 video 全屏退出（webkitendfullscreen）；返回 true 表示已处理 ended 切条，勿 resumeIfPaused */
+    onIosNativeFullscreenEnd?: () => boolean | void;
     enabled?: boolean;
 };
 
@@ -44,6 +46,7 @@ export function useFeedPlayerFullscreen({
     activeEpisodeKey,
     getActivePlayer,
     onFullscreenUiChange,
+    onIosNativeFullscreenEnd,
     enabled = true,
 }: UseFeedPlayerFullscreenOptions) {
     const [keepFullscreen, setKeepFullscreen] = useState(false);
@@ -54,6 +57,8 @@ export function useFeedPlayerFullscreen({
     const restoreEpisodeRef = useRef<string | number | null>(null);
     const getActivePlayerRef = useRef(getActivePlayer);
     getActivePlayerRef.current = getActivePlayer;
+    const onIosNativeFullscreenEndRef = useRef(onIosNativeFullscreenEnd);
+    onIosNativeFullscreenEndRef.current = onIosNativeFullscreenEnd;
 
     const isImmersive = !isDesktop && keepFullscreen && !pcFullscreen;
     const isFullscreenUi = isDesktop ? pcFullscreen : keepFullscreen || pcFullscreen;
@@ -173,7 +178,8 @@ export function useFeedPlayerFullscreen({
                 setPcFullscreen(false);
                 setKeepFullscreen(false);
                 setImmersiveDom(fullscreenTargetRef.current, false);
-                if (!shouldIgnoreFullscreenExit()) {
+                const handledEndedAdvance = onIosNativeFullscreenEndRef.current?.() === true;
+                if (!handledEndedAdvance && !shouldIgnoreFullscreenExit()) {
                     resumeIfPaused();
                 }
             };
