@@ -997,9 +997,9 @@ export function ReelShortTopNav({
                   <FormattedMessage id="home" />
                 </NavLink>
                 <NavLink
-                  to="/search"
-                  onPointerEnter={prefetchSearchRouteChunk}
-                  onPointerDown={prefetchSearchRouteChunk}
+                  to="/categories"
+                    onPointerEnter={prefetchSearchRouteChunk}
+                    onPointerDown={prefetchSearchRouteChunk}
                   className={({ isActive }) =>
                     cn(
                       'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
@@ -1060,7 +1060,7 @@ export function ReelShortTopNav({
                 <FormattedMessage id="home" />
               </NavLink>
               <NavLink
-                to={isMd ? '/search' : '/categories'}
+                to="/categories"
                 onPointerEnter={prefetchSearchRouteChunk}
                 onPointerDown={prefetchSearchRouteChunk}
                 className={({ isActive }) =>
