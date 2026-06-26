@@ -269,6 +269,8 @@ export function DouyinFeedPlayer({
     const chromeVideoTapRef = useRef<((target: EventTarget | null) => boolean) | null>(null);
     const chromeTapSuppressRef = useRef(false);
     const chromeVisibleRef = useRef(false);
+    const infoBumpRef = useRef<(() => void) | null>(null);
+    const hasTopContent = Boolean(controlsTopContent);
     const fullscreenEnabledRef = useRef(fullscreenEnabled);
     fullscreenEnabledRef.current = fullscreenEnabled;
     const handleFullscreenVideoTap = useCallback(
@@ -935,6 +937,11 @@ export function DouyinFeedPlayer({
                                             : undefined
                                     }
                                     chromeTapSuppressRef={chromeTapSuppressRef}
+                                    infoBumpRef={
+                                        hasTopContent && index === activeIndex
+                                            ? infoBumpRef
+                                            : undefined
+                                    }
                                 />
                                 {showControls && index === activeIndex ? (
                                     <DouyinPlayerControls
@@ -950,6 +957,8 @@ export function DouyinFeedPlayer({
                                         }
                                         chromeTapSuppressRef={chromeTapSuppressRef}
                                         chromeVisibleRef={chromeVisibleRef}
+                                        infoBumpRef={hasTopContent ? infoBumpRef : undefined}
+                                        topContentResetKey={activeIndex}
                                     />
                                 ) : null}
                             </>

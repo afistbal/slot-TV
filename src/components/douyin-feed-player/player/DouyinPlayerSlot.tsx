@@ -24,6 +24,7 @@ type DouyinPlayerSlotProps = {
     onStall?: (index: number, reason: string) => void;
     onFullscreenVideoTap?: (target?: EventTarget | null) => boolean;
     chromeTapSuppressRef?: MutableRefObject<boolean>;
+    infoBumpRef?: MutableRefObject<(() => void) | null>;
 };
 
 export function DouyinPlayerSlot({
@@ -36,6 +37,7 @@ export function DouyinPlayerSlot({
     onStall,
     onFullscreenVideoTap,
     chromeTapSuppressRef,
+    infoBumpRef,
 }: DouyinPlayerSlotProps) {
     const [mountEl, setMountEl] = useState<HTMLDivElement | null>(null);
     const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
@@ -81,10 +83,11 @@ export function DouyinPlayerSlot({
             event.stopPropagation();
             if (onFullscreenVideoTap?.(event.target)) return;
             if (isControlsTarget(event.target)) return;
+            infoBumpRef?.current?.();
             const player = handleRef.current?.player ?? null;
             void togglePlayerPlay(player);
         },
-        [chromeTapSuppressRef, handleRef, onFullscreenVideoTap],
+        [chromeTapSuppressRef, handleRef, infoBumpRef, onFullscreenVideoTap],
     );
 
     const showSubtitle = slot.isActive && Boolean(subtitleUrl.trim());

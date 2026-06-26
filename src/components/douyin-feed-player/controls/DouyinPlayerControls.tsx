@@ -20,6 +20,7 @@ import '@/styles/video-vertical.scss';
 
 import { isPlayerPaused, togglePlayerPlay } from './playerControlsApi';
 import { useDouyinPlayerControlState } from './useDouyinPlayerControlState';
+import { useOverlayAutoHide } from './useOverlayAutoHide';
 
 import './douyin-player-controls.scss';
 
@@ -62,6 +63,10 @@ type DouyinPlayerControlsProps = {
     chromeTapSuppressRef?: MutableRefObject<boolean>;
     /** 全屏底栏是否展示（与 fade 同步，供 feed 层读取） */
     chromeVisibleRef?: MutableRefObject<boolean>;
+    /** Feed：视频区 tap 唤出 info（由 DouyinFeedPlayer 桥接到 slot） */
+    infoBumpRef?: MutableRefObject<(() => void) | null>;
+    /** 切条/切集时重置 info 展示计时 */
+    topContentResetKey?: number;
 };
 
 function stopBubble(event: MouseEvent | TouchEvent) {
@@ -80,10 +85,13 @@ export function DouyinPlayerControls({
     chromeVideoTapRef,
     chromeTapSuppressRef,
     chromeVisibleRef,
+    infoBumpRef,
+    topContentResetKey,
 }: DouyinPlayerControlsProps) {
     const isDesktop = useMinWidth768();
     const ctl = useDouyinPlayerControlState(player, { fixedPlaybackSpeed, fullscreen });
     const feedBottomLayout = Boolean(topContent) && !isFullscreenUi;
+    const infoAutoHide = useOverlayAutoHide(feedBottomLayout, topContentResetKey);
     const progressScrubRef = useRef<HTMLDivElement | null>(null);
     const [chromeHidden, setChromeHidden] = useState(false);
     const [scrubbing, setScrubbing] = useState(false);
@@ -123,9 +131,23 @@ export function DouyinPlayerControls({
     }, [clearChromeTimer, syncChromeVisible]);
 
     const bumpChrome = useCallback(() => {
-        if (!isFullscreenUi) return;
-        showChrome();
-    }, [isFullscreenUi, showChrome]);
+        if (isFullscreenUi) {
+            showChrome();
+        } else if (feedBottomLayout) {
+            infoAutoHide.bump();
+        }
+    }, [feedBottomLayout, infoAutoHide, isFullscreenUi, showChrome]);
+
+    useEffect(() => {
+        if (!infoBumpRef) return;
+        const bump = feedBottomLayout ? infoAutoHide.bump : null;
+        infoBumpRef.current = bump;
+        return () => {
+            if (infoBumpRef.current === bump) {
+                infoBumpRef.current = null;
+            }
+        };
+    }, [feedBottomLayout, infoAutoHide.bump, infoBumpRef]);
 
     const toggleChromeFromTap = useCallback(
         (target: EventTarget | null): boolean => {
@@ -215,6 +237,15 @@ export function DouyinPlayerControls({
         };
     }, [bumpChrome, ctl.progressDragging, ctl.onSeekRatio, ctl.setProgressDragging]);
 
+    const onFeedBottomHiddenRevealCapture = useCallback(
+        (event: MouseEvent | TouchEvent) => {
+            if (!feedBottomLayout || infoAutoHide.visible) return;
+            stopBubble(event);
+            infoAutoHide.bump();
+        },
+        [feedBottomLayout, infoAutoHide.bump, infoAutoHide.visible],
+    );
+
     return (
         <div
             className={cn(
@@ -236,17 +267,31 @@ export function DouyinPlayerControls({
                 className={cn(
                     'video-player-h5-bottom w-full',
                     (isFullscreenUi || !feedBottomLayout) && 'video-player-h5-bottom--fullscreen',
+                    feedBottomLayout &&
+                        !infoAutoHide.visible &&
+                        'video-player-h5-bottom--feed-hidden',
                 )}
+                aria-hidden={feedBottomLayout ? !infoAutoHide.visible : undefined}
                 style={
                     isFullscreenUi
                         ? {
                               opacity: chromeHidden ? 0 : 1,
-                              transition: 'opacity 0.6s ease-in-out',
+                              transition: 'opacity 0.4s ease-in-out',
+                          }
+                        : undefined
+                }
+                onPointerDownCapture={onFeedBottomHiddenRevealCapture}
+                onTouchStartCapture={onFeedBottomHiddenRevealCapture}
+                onPointerDown={
+                    feedBottomLayout
+                        ? (e) => {
+                              stopBubble(e);
+                              infoAutoHide.bump();
                           }
                         : undefined
                 }
             >
-                {!isFullscreenUi ? topContent : null}
+                {feedBottomLayout ? topContent : null}
                 <div className="video-player-h5-progress-row">
                     <div
                         ref={progressScrubRef}
@@ -254,6 +299,10 @@ export function DouyinPlayerControls({
                         data-vertical-swipe-ignore
                         onMouseDown={(e) => {
                             stopBubble(e);
+                            if (feedBottomLayout && !infoAutoHide.visible) {
+                                infoAutoHide.bump();
+                                return;
+                            }
                             bumpChrome();
                             setScrubbing(true);
                             ctl.setProgressDragging(true);
@@ -269,6 +318,10 @@ export function DouyinPlayerControls({
                             stopBubble(e);
                             const touch = e.touches[0];
                             if (!touch) return;
+                            if (feedBottomLayout && !infoAutoHide.visible) {
+                                infoAutoHide.bump();
+                                return;
+                            }
                             bumpChrome();
                             setScrubbing(true);
                             ctl.setProgressDragging(true);
