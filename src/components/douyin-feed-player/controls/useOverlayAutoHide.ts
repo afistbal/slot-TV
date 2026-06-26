@@ -2,12 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const OVERLAY_AUTO_HIDE_MS = 3000;
 
-/** Feed 底栏（info + 进度 + 工具栏）：3s 无操作自动隐藏 */
-export function useOverlayAutoHide(enabled: boolean, resetKey?: number) {
+/** Feed 底栏：播放中 3s 无操作自动隐藏；暂停时常显 */
+export function useOverlayAutoHide(
+    enabled: boolean,
+    resetKey?: number,
+    autoHideActive = true,
+) {
     const [visible, setVisible] = useState(true);
     const timerRef = useRef<number | null>(null);
     const enabledRef = useRef(enabled);
+    const autoHideActiveRef = useRef(autoHideActive);
     enabledRef.current = enabled;
+    autoHideActiveRef.current = autoHideActive;
 
     const clearTimer = useCallback(() => {
         if (timerRef.current != null) {
@@ -17,9 +23,10 @@ export function useOverlayAutoHide(enabled: boolean, resetKey?: number) {
     }, []);
 
     const scheduleHide = useCallback(() => {
+        if (!enabledRef.current || !autoHideActiveRef.current) return;
         clearTimer();
         timerRef.current = window.setTimeout(() => {
-            if (enabledRef.current) {
+            if (enabledRef.current && autoHideActiveRef.current) {
                 setVisible(false);
             }
             timerRef.current = null;
@@ -35,8 +42,12 @@ export function useOverlayAutoHide(enabled: boolean, resetKey?: number) {
     const show = useCallback(() => {
         if (!enabledRef.current) return;
         setVisible(true);
-        scheduleHide();
-    }, [scheduleHide]);
+        if (autoHideActiveRef.current) {
+            scheduleHide();
+        } else {
+            clearTimer();
+        }
+    }, [clearTimer, scheduleHide]);
 
     const bump = useCallback(() => {
         show();
@@ -56,7 +67,17 @@ export function useOverlayAutoHide(enabled: boolean, resetKey?: number) {
         show();
     }, [enabled, resetKey, show]);
 
+    useEffect(() => {
+        if (!enabled) return;
+        if (!autoHideActive) {
+            clearTimer();
+            setVisible(true);
+            return;
+        }
+        scheduleHide();
+    }, [autoHideActive, clearTimer, enabled, scheduleHide]);
+
     useEffect(() => () => clearTimer(), [clearTimer]);
 
     return { visible, show, hide, bump };
-}
+};

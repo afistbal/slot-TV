@@ -91,7 +91,7 @@ export function DouyinPlayerControls({
     const isDesktop = useMinWidth768();
     const ctl = useDouyinPlayerControlState(player, { fixedPlaybackSpeed, fullscreen });
     const feedBottomLayout = Boolean(topContent) && !isFullscreenUi;
-    const infoAutoHide = useOverlayAutoHide(feedBottomLayout, topContentResetKey);
+    const infoAutoHide = useOverlayAutoHide(feedBottomLayout, topContentResetKey, ctl.playing);
     const progressScrubRef = useRef<HTMLDivElement | null>(null);
     const [chromeHidden, setChromeHidden] = useState(false);
     const [scrubbing, setScrubbing] = useState(false);
