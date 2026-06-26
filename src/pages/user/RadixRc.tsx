@@ -183,6 +183,8 @@ export type RadixRcProps = {
     checkoutModalPrefetch?: boolean;
     /** 用户关闭支付面板（非支付成功） */
     onPayModalClosed?: () => void;
+    /** 关收银时保留 pay/create 会话（弹窗3 CTA 回挽留，非点 X 彻底结束） */
+    shouldRetainPaySessionOnClose?: () => boolean;
 };
 
 type ProductFromKey = NonNullable<RadixRcProps['productFrom']>;
@@ -212,6 +214,7 @@ export default function RadixRc({
     initialCheckoutPayment,
     checkoutModalPrefetch = false,
     onPayModalClosed,
+    shouldRetainPaySessionOnClose,
 }: RadixRcProps = {}) {
     const intl = useIntl();
     const isPc = useMinWidth768();
@@ -279,6 +282,8 @@ export default function RadixRc({
     onEmbedPaySuccessEpisodeDetailRef.current = onEmbedPaySuccessEpisodeDetail;
     const onPayModalClosedRef = useRef(onPayModalClosed);
     onPayModalClosedRef.current = onPayModalClosed;
+    const shouldRetainPaySessionOnCloseRef = useRef(shouldRetainPaySessionOnClose);
+    shouldRetainPaySessionOnCloseRef.current = shouldRetainPaySessionOnClose;
     const payModalOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     /** Step3 预载后 reveal：跳过入场动画，内容已就绪 */
     const hadCheckoutPrefetchRef = useRef(false);
@@ -347,11 +352,14 @@ export default function RadixRc({
 
     function closePayModal() {
         clearPayModalOpenTimer();
-        hadCheckoutPrefetchRef.current = false;
+        const retainSession = shouldRetainPaySessionOnCloseRef.current?.() ?? false;
         setShowPaidServiceAgreement(false);
         setPayModalStatus('idle');
-        setShowPayModal(false);
-        setPaySessionSeed((prev) => prev + 1);
+        if (!retainSession) {
+            hadCheckoutPrefetchRef.current = false;
+            setShowPayModal(false);
+            setPaySessionSeed((prev) => prev + 1);
+        }
         onPayModalClosedRef.current?.();
     }
 

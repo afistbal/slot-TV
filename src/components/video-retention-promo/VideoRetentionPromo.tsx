@@ -636,6 +636,7 @@ export type RetentionCommerceWire = {
     /** Step3 可见时后台预载收银（隐藏弹层） */
     checkoutModalPrefetch?: boolean;
     onPayModalClosed: () => void;
+    shouldRetainPaySessionOnClose: () => boolean;
     promoActive: boolean;
     layer: ReactNode;
 };
@@ -671,6 +672,7 @@ export function RetentionCheckoutRadixRc({
                 initialCheckoutPayment={retention.initialCheckoutPayment}
                 checkoutModalPrefetch={retention.checkoutModalPrefetch}
                 onPayModalClosed={retention.onPayModalClosed}
+                shouldRetainPaySessionOnClose={retention.shouldRetainPaySessionOnClose}
                 embedVideoEpisodeRowId={embedVideoEpisodeRowId}
                 onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
                 headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
@@ -942,6 +944,11 @@ export function useVideoRetentionCommerce({
         >;
     }, []);
 
+    const shouldRetainPaySessionOnClose = useCallback(() => {
+        const fromStep = checkoutFromStepRef.current;
+        return fromStep === 3 && !checkoutViaDismissRef.current;
+    }, []);
+
     const onPayModalClosed = useCallback(() => {
         const restoreStep = checkoutFromStepRef.current ?? stepRef.current;
         const viaDismiss = checkoutViaDismissRef.current;
@@ -961,24 +968,24 @@ export function useVideoRetentionCommerce({
             return;
         }
 
-        setCheckoutRequest(null);
-        setInitialCheckoutPayment(undefined);
-        setCheckoutModalPrefetch(false);
         flowStartedRef.current = true;
         closeVipWithoutRetentionRestart();
 
         if (restoreStep === 3 && viaDismiss) {
+            setCheckoutRequest(null);
+            setInitialCheckoutPayment(undefined);
+            setCheckoutModalPrefetch(false);
             clearPromo();
             setFullyDismissed(true);
-            flowStartedRef.current = true;
             return;
         }
 
-        if (restoreStep === 3 && viaCountdown) {
-            revealStep3AtZero();
-            return;
-        }
         if (restoreStep === 3) {
+            setCheckoutModalPrefetch(true);
+            if (viaCountdown) {
+                revealStep3AtZero();
+                return;
+            }
             if (countdownSecRef.current <= 0) {
                 countdownExhaustedRef.current = true;
                 markSkipCountdown();
@@ -986,6 +993,10 @@ export function useVideoRetentionCommerce({
             revealPromo();
             return;
         }
+
+        setCheckoutRequest(null);
+        setInitialCheckoutPayment(undefined);
+        setCheckoutModalPrefetch(false);
         if (restoreStep != null) {
             openStep(restoreStep);
         }
@@ -1047,6 +1058,7 @@ export function useVideoRetentionCommerce({
             initialCheckoutPayment,
             checkoutModalPrefetch,
             onPayModalClosed,
+            shouldRetainPaySessionOnClose,
             promoActive,
             layer,
         }),
@@ -1059,6 +1071,7 @@ export function useVideoRetentionCommerce({
             onVipEmbedClose,
             onVipOpenChangeGuarded,
             promoActive,
+            shouldRetainPaySessionOnClose,
         ],
     );
 }
