@@ -30,10 +30,11 @@ import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 import {
     buildTagSearchQuery,
-    ensureMovieTagLabels,
+    ensureMovieTags,
     findTagRowByKey,
     readMovieTagFromSearch,
     readTagLabelFromSearch,
+    formatTagUniqueId,
     resolveTagDisplayLabel,
     tagRowDisplayLabel,
 } from '@/lib/movieTagLabels';
@@ -69,6 +70,24 @@ function searchUrlMatchesStore(search: string): boolean {
     return kwOk && tagOk;
 }
 
+/** 含 calc/rem 的 CSS 变量无法用 parseFloat；用离屏探针解析为像素 */
+function resolveCssVarPx(host: HTMLElement, varName: string, fallbackPx: number): number {
+    const probe = document.createElement('div');
+    probe.style.cssText =
+        'position:absolute;visibility:hidden;pointer-events:none;height:var(' +
+        varName +
+        ');width:0;overflow:hidden;';
+    host.appendChild(probe);
+    const px = probe.getBoundingClientRect().height;
+    host.removeChild(probe);
+    return px > 0 && Number.isFinite(px) ? px : fallbackPx;
+}
+
+/** H5 /categories 三行折叠高度回退（含 32px 展开钮行高，16px 根字号） */
+const H5_CATEGORIES_TAGS_COLLAPSED_FALLBACK_PX = 112;
+/** PC 标签三行折叠高度回退 */
+const PC_TAGS_COLLAPSED_FALLBACK_PX = 138;
+
 /** 與離屏測量 `measurePcTagsTwoRowSplit` 內 DOM 一致 */
 const PC_TAG_TOGGLE_INNER_HTML =
     '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18" class="rs-search-page__pcTagsToggleSvg" aria-hidden="true">' +
@@ -101,8 +120,16 @@ const H5_CATEGORIES_TAGS_ROW_MEASURE: TagsRowMeasureClasses = {
     toggleInnerHtml: H5_CATEGORIES_TAG_TOGGLE_INNER_HTML,
 };
 
+/** 离屏容器 offsetHeight 含 padding；折叠上限只计 flex 内容区 */
+function ghostFlexContentHeightPx(ghost: HTMLElement): number {
+    const style = getComputedStyle(ghost);
+    const pt = parseFloat(style.paddingTop) || 0;
+    const pb = parseFloat(style.paddingBottom) || 0;
+    return ghost.offsetHeight - pt - pb;
+}
+
 /**
- * 測量：僅標籤是否超過兩行；若超過，求「前 n 個標籤 + 展開鈕」整體高度不超過兩行上限的最大 n，
+ * 測量：僅標籤是否超過折疊行數；若超過，求「前 n 個標籤 + 展開鈕」整體高度不超過折疊上限的最大 n，
  * 使展開鈕緊跟最後一個可見 tag（對標 ReelShort，而非另起一行）。
  */
 function measureTagsTwoRowSplit(
@@ -142,7 +169,7 @@ function measureTagsTwoRowSplit(
         b.textContent = labelFor(t);
         ghost.appendChild(b);
     }
-    const tagsOnlyH = ghost.offsetHeight;
+    const tagsOnlyH = ghostFlexContentHeightPx(ghost);
     const needsExpand = tagsOnlyH > collapsedMaxPx + 1;
 
     if (!needsExpand) {
@@ -175,7 +202,7 @@ function measureTagsTwoRowSplit(
             ghost.appendChild(b);
         }
         ghost.appendChild(makeToggle());
-        const h = ghost.offsetHeight;
+        const h = ghostFlexContentHeightPx(ghost);
         if (h <= collapsedMaxPx + 2) {
             best = mid;
             lo = mid + 1;
@@ -196,6 +223,7 @@ function measurePcTagsTwoRowSplit(
     collapsedMaxPx: number,
     labelFor: (tag: TData) => string,
     mountParent: HTMLElement,
+    leadingButtonLabels: string[] = [],
 ): { needsExpand: boolean; visibleCount: number } {
     return measureTagsTwoRowSplit(
         widthPx,
@@ -204,6 +232,7 @@ function measurePcTagsTwoRowSplit(
         labelFor,
         mountParent,
         PC_TAGS_ROW_MEASURE,
+        leadingButtonLabels,
     );
 }
 
@@ -434,13 +463,13 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     const searchStore = useSearchStore();
     const scrollRef = useRef<HTMLDivElement>(null);
     const pcTagsRef = useRef<HTMLDivElement>(null);
+    const pcShelfHeadingRef = useRef<HTMLDivElement>(null);
     const [tagOpen, setTagOpen] = useState(false);
     const [tagKeyword, setTagKeyword] = useState('');
     const [pcTagsExpanded, setPcTagsExpanded] = useState(false);
     const [pcTagsNeedsExpand, setPcTagsNeedsExpand] = useState(false);
     /** 折疊態下僅渲染前 n 個標籤 + 展開鈕，使鈕緊跟最後可見 tag */
     const [pcCollapsedVisibleCount, setPcCollapsedVisibleCount] = useState<number | null>(null);
-    const [h5CategoriesTagsExpanded, setH5CategoriesTagsExpanded] = useState(false);
     const [h5CategoriesTagsNeedsExpand, setH5CategoriesTagsNeedsExpand] = useState(false);
     const [h5CategoriesCollapsedVisibleCount, setH5CategoriesCollapsedVisibleCount] = useState<number | null>(
         null,
@@ -566,7 +595,14 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             searchStore.setMore(hasMore);
 
             if (isPc && scrollRef.current) {
-                scrollRef.current.scrollTop = 0;
+                if (isCategoriesPage) {
+                    requestAnimationFrame(() => {
+                        scrollPcToShelfHeading();
+                    });
+                } else {
+                    scrollRef.current.scrollTop = 0;
+                    searchStore.setScrollTop(0);
+                }
             }
         } catch {
             if (loadId === searchMovieLoadId) {
@@ -626,6 +662,46 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
     function handleTagKeywordChange(e: React.ChangeEvent<HTMLInputElement>) {
         setTagKeyword(e.target.value);
+    }
+
+    function openTagDrawer() {
+        setTagKeyword('');
+        setTagOpen(true);
+    }
+
+    function handleAllPlotsClick() {
+        setTagOpen(false);
+        if (!searchStore.tag) {
+            return;
+        }
+        searchStore.setTag('');
+        searchStore.setKeyword('');
+        searchStore.setPage(1);
+        if (isCategoriesPage) {
+            void loadData();
+            return;
+        }
+        navigate('/categories');
+    }
+
+    /** PC /categories：筛选后滚到 `rs-shelf__title`，而非整页置顶 */
+    function scrollPcToShelfHeading() {
+        const scrollEl = scrollRef.current;
+        const headingEl = pcShelfHeadingRef.current;
+        if (!scrollEl || !headingEl) {
+            return;
+        }
+        const navEl = scrollEl.querySelector('.reelshort-topnav');
+        const navHeight = navEl instanceof HTMLElement ? navEl.offsetHeight : 0;
+        const next = Math.max(
+            0,
+            headingEl.getBoundingClientRect().top -
+                scrollEl.getBoundingClientRect().top +
+                scrollEl.scrollTop -
+                navHeight,
+        );
+        scrollEl.scrollTop = next;
+        searchStore.setScrollTop(next);
     }
 
     function handleTagClick(name: string) {
@@ -807,7 +883,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
         let cancelled = false;
         void (async () => {
-            await ensureMovieTagLabels();
+            await ensureMovieTags();
             if (cancelled) return;
 
             const state = useSearchStore.getState();
@@ -830,9 +906,9 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         return () => {
             cancelled = true;
         };
-    }, [sessionBootstrapReady, location.pathname, location.search, intl.locale]);
+    }, [sessionBootstrapReady, location.pathname, location.search]);
 
-    /** PC：兩行高度上限 + 離屏二分測量，决定折疊時展示多少個 tag（展開鈕跟在末尾 tag 後） */
+    /** PC：三行高度上限 + 離屏二分測量，决定折疊時展示多少個 tag（展開鈕跟在末尾 tag 後） */
     useLayoutEffect(() => {
         if (!isPc || searchStore.tags.length === 0) {
             setPcTagsNeedsExpand(false);
@@ -854,16 +930,21 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 return;
             }
             const shell = (host.closest('.rs-search-page') ?? document.body) as HTMLElement;
-            const raw = getComputedStyle(host)
-                .getPropertyValue('--rs-search-pc-tags-collapsed-max')
-                .trim();
-            const collapsedMax = Number.isFinite(parseFloat(raw)) && parseFloat(raw) > 0 ? parseFloat(raw) : 96;
+            const collapsedMax = resolveCssVarPx(
+                host,
+                '--rs-search-pc-tags-collapsed-max',
+                PC_TAGS_COLLAPSED_FALLBACK_PX,
+            );
+            const leadingLabels = isCategoriesPage
+                ? [intl.formatMessage({ id: 'categories_all_plots' })]
+                : [];
             const { needsExpand, visibleCount } = measurePcTagsTwoRowSplit(
                 w,
                 searchStore.tags,
                 collapsedMax,
-                tagRowDisplayLabel,
+                (t) => formatTagUniqueId(String(t['unique_id'] ?? '')),
                 shell,
+                leadingLabels,
             );
             setPcTagsNeedsExpand(needsExpand);
             setPcCollapsedVisibleCount(visibleCount);
@@ -876,13 +957,12 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         const ro = new ResizeObserver(run);
         ro.observe(host);
         return () => ro.disconnect();
-    }, [isPc, searchStore.tags, pcTagsExpanded]);
+    }, [isPc, isCategoriesPage, searchStore.tags, pcTagsExpanded, intl]);
 
     useLayoutEffect(() => {
         if (isPc || !isCategoriesPage || searchStore.tags.length === 0) {
             setH5CategoriesTagsNeedsExpand(false);
             setH5CategoriesCollapsedVisibleCount(null);
-            setH5CategoriesTagsExpanded(false);
             return;
         }
         const host = h5CategoriesTagsRef.current;
@@ -891,19 +971,16 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         }
 
         const run = () => {
-            if (h5CategoriesTagsExpanded) {
-                return;
-            }
             const w = host.offsetWidth;
             if (w <= 0) {
                 return;
             }
             const shell = (host.closest('.rs-search-page') ?? document.body) as HTMLElement;
-            const raw = getComputedStyle(host)
-                .getPropertyValue('--rs-search-categories-tags-collapsed-max')
-                .trim();
-            const collapsedMax =
-                Number.isFinite(parseFloat(raw)) && parseFloat(raw) > 0 ? parseFloat(raw) : 96;
+            const collapsedMax = resolveCssVarPx(
+                host,
+                '--rs-search-categories-tags-collapsed-max',
+                H5_CATEGORIES_TAGS_COLLAPSED_FALLBACK_PX,
+            );
             const { needsExpand, visibleCount } = measureTagsTwoRowSplit(
                 w,
                 searchStore.tags,
@@ -915,22 +992,13 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             );
             setH5CategoriesTagsNeedsExpand(needsExpand);
             setH5CategoriesCollapsedVisibleCount(visibleCount);
-            if (!needsExpand) {
-                setH5CategoriesTagsExpanded(false);
-            }
         };
 
         run();
         const ro = new ResizeObserver(run);
         ro.observe(host);
         return () => ro.disconnect();
-    }, [isPc, isCategoriesPage, h5CategoriesTagsExpanded, searchStore.tags]);
-
-    useEffect(() => {
-        if (!isCategoriesPage) {
-            setH5CategoriesTagsExpanded(false);
-        }
-    }, [isCategoriesPage]);
+    }, [isPc, isCategoriesPage, searchStore.tags]);
 
     const searchPlaceholder = intl.formatMessage({ id: 'search_placeholder' });
 
@@ -943,9 +1011,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             : searchStore.tags;
 
     const h5CategoriesTagsForRender =
-        h5CategoriesTagsNeedsExpand &&
-        !h5CategoriesTagsExpanded &&
-        h5CategoriesCollapsedVisibleCount !== null
+        h5CategoriesTagsNeedsExpand && h5CategoriesCollapsedVisibleCount !== null
             ? searchStore.tags.slice(0, h5CategoriesCollapsedVisibleCount)
             : searchStore.tags;
 
@@ -1094,10 +1160,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                     )}
                                     onClick={() => {
                                         if (searchStore.tag) {
-                                            searchStore.setTag('');
-                                            searchStore.setKeyword('');
-                                            searchStore.setPage(1);
-                                            void loadData();
+                                            handleAllPlotsClick();
                                         }
                                     }}
                                 >
@@ -1119,29 +1182,14 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                         </button>
                                     );
                                 })}
-                                {h5CategoriesTagsNeedsExpand && !h5CategoriesTagsExpanded ? (
+                                {h5CategoriesTagsNeedsExpand ? (
                                     <button
                                         type="button"
                                         className="rs-search-page__categoriesTagsToggle"
-                                        onClick={() => setH5CategoriesTagsExpanded(true)}
-                                        aria-expanded={false}
-                                        aria-label="展开标签列表"
-                                        title="展开"
-                                    >
-                                        <H5CategoriesTagsExpandChevronIcon />
-                                    </button>
-                                ) : null}
-                                {h5CategoriesTagsNeedsExpand && h5CategoriesTagsExpanded ? (
-                                    <button
-                                        type="button"
-                                        className={cn(
-                                            'rs-search-page__categoriesTagsToggle',
-                                            'rs-search-page__categoriesTagsToggle--expanded',
-                                        )}
-                                        onClick={() => setH5CategoriesTagsExpanded(false)}
-                                        aria-expanded
-                                        aria-label="收起标签列表"
-                                        title="收起"
+                                        onClick={openTagDrawer}
+                                        aria-expanded={tagOpen}
+                                        aria-label="打开标签列表"
+                                        title="打开标签列表"
                                     >
                                         <H5CategoriesTagsExpandChevronIcon />
                                     </button>
@@ -1247,9 +1295,21 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 ref={pcTagsRef}
                                                 className="rs-search-page__pcTags"
                                             >
+                                                {isCategoriesPage ? (
+                                                    <button
+                                                        type="button"
+                                                        className={cn(
+                                                            'rs-search-page__pcTag',
+                                                            !searchStore.tag && 'rs-search-page__pcTag--active',
+                                                        )}
+                                                        onClick={handleAllPlotsClick}
+                                                    >
+                                                        <FormattedMessage id="categories_all_plots" />
+                                                    </button>
+                                                ) : null}
                                                 {pcTagsForRender.map((v) => {
                                                     const name = v['name'] as string;
-                                                    const label = tagRowDisplayLabel(v);
+                                                    const label = formatTagUniqueId(String(v['unique_id'] ?? ''));
                                                     const active = name === searchStore.tag;
                                                     return (
                                                         <button
@@ -1297,7 +1357,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                     ) : null}
 
                                     {!isPcTagSearchPage ? (
-                                        <div className="rs-shelf__heading">
+                                        <div className="rs-shelf__heading" ref={pcShelfHeadingRef}>
                                             <div className="rs-shelf__headingRow">
                                                 <h1 className="rs-shelf__title">{pageHeading()}</h1>
                                             </div>
@@ -1501,7 +1561,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                     </DrawerTitle>
                     <div className="rs-search-page__drawerDivider" />
                     <div className="rs-search-page__drawerBody">
-                        <div className="rs-search-page__drawerTags">
+                        <div className="rs-search-page__categoriesTags">
                             {searchStore.tags
                                 .filter((w) => {
                                     const kw = tagKeyword.trim().toLowerCase();
@@ -1513,19 +1573,22 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                     const local = String(w['local_label'] ?? '').toLowerCase();
                                     return uid.includes(kw) || name.includes(kw) || local.includes(kw);
                                 })
-                                .map((w) => (
-                                    <div
-                                        onClick={() => handleTagClick(w['name'] as string)}
-                                        key={w['name'] as string}
-                                        className={cn(
-                                            'rs-search-page__drawerTag',
-                                            (w['name'] as string) === searchStore.tag &&
-                                                'rs-search-page__drawerTag--active',
-                                        )}
-                                    >
-                                        {tagRowDisplayLabel(w)}
-                                    </div>
-                                ))}
+                                .map((w) => {
+                                    const name = w['name'] as string;
+                                    return (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleTagClick(name)}
+                                            key={name}
+                                            className={cn(
+                                                'rs-search-page__tag',
+                                                name === searchStore.tag && 'rs-search-page__tag--active',
+                                            )}
+                                        >
+                                            {tagRowDisplayLabel(w)}
+                                        </button>
+                                    );
+                                })}
                         </div>
                     </div>
                     <div className="rs-search-page__drawerSpacer" />

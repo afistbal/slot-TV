@@ -2,14 +2,7 @@ import { api, type TData } from '@/api';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 import { useSearchStore } from '@/stores/search';
 
-export type MovieTagLabelRow = {
-    language: string;
-    local_label: string;
-    matched_unique_id: string;
-    source_tag_name: string;
-};
-
-/** 展示文案：优先接口 `local_label`，否则退回 unique_id 格式化 */
+/** 展示文案：优先 row `local_label`，否则退回 unique_id 格式化 */
 export function tagRowDisplayLabel(row: TData): string {
     const local = String(row['local_label'] ?? '').trim();
     if (local) {
@@ -33,44 +26,28 @@ export function formatTagUniqueId(uniqueId: string): string {
         .join('');
 }
 
-export function normalizeMovieTagLabels(rows: MovieTagLabelRow[]): TData[] {
-    return rows.map((row) => ({
-        name: row.source_tag_name,
-        unique_id: row.matched_unique_id,
-        local_label: row.local_label,
-        language: row.language,
-    }));
-}
+let movieTagsInflight: Promise<void> | null = null;
 
-let movieTagLabelsInflight: Promise<void> | null = null;
-let movieTagLabelsCachedLocale: string | null = null;
-
-/** 会话内按语言缓存；`Accept-Language` 由 api 层从 localStorage locale 注入 */
-export async function ensureMovieTagLabels(): Promise<void> {
-    const locale = localStorage.getItem('locale') ?? 'en';
+/** 会话内 tags 只拉一次；并发挂载共用同一 Promise */
+export async function ensureMovieTags(): Promise<void> {
     const s = useSearchStore.getState();
-
-    if (s.tags.length > 0 && movieTagLabelsCachedLocale === locale) {
+    if (s.tags.length > 0) {
         return;
     }
-
-    if (movieTagLabelsCachedLocale !== locale) {
-        s.setTags([]);
-        movieTagLabelsCachedLocale = locale;
-    }
-
-    if (!movieTagLabelsInflight) {
-        movieTagLabelsInflight = api<MovieTagLabelRow[]>('movie/tag-labels', { loading: false })
+    if (!movieTagsInflight) {
+        movieTagsInflight = api<TData[]>('movie/tags', { loading: false })
             .then((res) => {
-                useSearchStore.getState().setTags(normalizeMovieTagLabels(res.d ?? []));
-                movieTagLabelsCachedLocale = locale;
+                useSearchStore.getState().setTags(res.d ?? []);
             })
             .finally(() => {
-                movieTagLabelsInflight = null;
+                movieTagsInflight = null;
             });
     }
-    await movieTagLabelsInflight;
+    await movieTagsInflight;
 }
+
+/** @deprecated 请使用 ensureMovieTags */
+export const ensureMovieTagLabels = ensureMovieTags;
 
 /** 按接口 `source_tag_name` 或 `matched_unique_id` 匹配 */
 export function findTagRowByKey(tagKey: string, tags: TData[]): TData | undefined {
@@ -152,7 +129,7 @@ export function resolveTagDisplayLabel(
     return tagName;
 }
 
-/** 订阅 `movie/tag-labels` 缓存；加载完成后标签展示会自动刷新 */
+/** 订阅 `movie/tags` 缓存；加载完成后标签展示会自动刷新 */
 export function useMovieTagLabelsReady(): void {
     useSearchStore((s) => s.tags);
 }
