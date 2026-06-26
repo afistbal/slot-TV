@@ -13,7 +13,7 @@
     background-color: #000;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1039px) {
     /** 避免 100vw 含滚动条宽度导致右侧约 2px 缝；与 fixed inset-0 全屏一致 */
     html:has(.foryou-vertical),
     body:has(.foryou-vertical) {
@@ -42,7 +42,7 @@
 
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .foryou-vertical-pc-shell {
         .foryou-vertical {
             height: 100%;
@@ -98,7 +98,7 @@
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .video-player-root.foryou-feed-player .foryou-player-h5-topbar {
         display: none;
     }

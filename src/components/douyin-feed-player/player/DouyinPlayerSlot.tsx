@@ -1,7 +1,7 @@
 import { useCallback, useState, type MouseEvent, type MutableRefObject } from 'react';
 import type Player from 'xgplayer';
 
-import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { cn } from '@/lib/utils';
 
 import { FeedCenterPlayButton } from '../controls/FeedCenterPlayButton';
@@ -41,7 +41,7 @@ export function DouyinPlayerSlot({
 }: DouyinPlayerSlotProps) {
     const [mountEl, setMountEl] = useState<HTMLDivElement | null>(null);
     const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
-    const isDesktop = useMinWidth768();
+    const isDesktop = useVideoPlayerDesktop();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
     /** PC 9:16 舞台；H5 NetShort 式 9:16 居中露黑边 */

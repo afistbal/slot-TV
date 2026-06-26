@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import type Player from 'xgplayer';
 
 import iconPlay1 from '@/assets/video/icon_play1@2x.webp';
-import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { cn } from '@/lib/utils';
 
 import { isPlayerPaused, togglePlayerPlay } from './playerControlsApi';
@@ -15,7 +15,7 @@ type FeedCenterPlayButtonProps = {
 
 /** 对标 ForYouPlayer `showForyouCenterPlayIcon`：暂停时常显播放三角，点击视频区恢复播放 */
 export function FeedCenterPlayButton({ player, visible }: FeedCenterPlayButtonProps) {
-    const isDesktop = useMinWidth768();
+    const isDesktop = useVideoPlayerDesktop();
     const [paused, setPaused] = useState(true);
 
     useEffect(() => {

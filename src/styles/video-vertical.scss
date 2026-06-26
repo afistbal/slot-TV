@@ -1,5 +1,5 @@
 /** PC 播放页：顶栏 + 下方竖滑区（H5 不渲染此壳，保持全屏） */
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
 
     .video-vertical-pc-shell,
     .video-player-pc-shell {
@@ -137,7 +137,7 @@
 }
 
 /** PC 播放页左上返回 + 集数：与顶栏左列同 x，在播放区顶部（勿 fixed，避免被顶栏 z-index 盖住） */
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .video-player-pc-back-bar {
         position: absolute;
         top: 16px;
@@ -640,7 +640,7 @@
     border: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .video-player-next-episode-icon {
         width: 23px !important;
         height: 23px !important;
@@ -653,7 +653,7 @@
 }
 
 .video-vip-dialog .rs-shopping__coinSection>.grid {
-    @media (min-width: 768px) {
+    @media (min-width: 1040px) {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 }
@@ -816,7 +816,7 @@
 }
 
 /** PC：控制层不拦截视频区点击，底栏/解锁层仍可交互；居中 icon 仅展示 */
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .video-player-root .video-player-ui {
         pointer-events: none;
 
@@ -1054,7 +1054,7 @@
 }
 
 /** H5 竖屏播放页：顶部栏 / 底部信息 / 控制条（仅 mobile 分支 DOM，@media 双保险不影响 PC） */
-@media (max-width: 767px) {
+@media (max-width: 1039px) {
     .video-player-h5-topbar {
         z-index: 10;
         display: flex;
@@ -1220,7 +1220,7 @@
 }
 
 /** PC 右侧抽屉：transform 滑入（对标 YouTube 侧栏），与舞台左移共用时长/曲线 */
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .video-player-pc-shell {
         position: relative;
         --pc-drawer-duration: 720ms; /* 与 PC_DRAWER_DURATION_MS 一致 */

@@ -14,7 +14,7 @@ import type Player from 'xgplayer';
 import nextEpisodeIcon from '@/assets/images/12164930-c692-11ef-a2d6-41216ff1602c.png';
 import fullscreenIcon from '@/assets/video/icon_full@2x.png';
 import { cn } from '@/lib/utils';
-import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 
 import '@/styles/video-vertical.scss';
 
@@ -88,7 +88,7 @@ export function DouyinPlayerControls({
     infoBumpRef,
     topContentResetKey,
 }: DouyinPlayerControlsProps) {
-    const isDesktop = useMinWidth768();
+    const isDesktop = useVideoPlayerDesktop();
     const ctl = useDouyinPlayerControlState(player, { fixedPlaybackSpeed, fullscreen });
     const feedBottomLayout = Boolean(topContent) && !isFullscreenUi;
     const infoAutoHide = useOverlayAutoHide(feedBottomLayout, topContentResetKey, ctl.playing);

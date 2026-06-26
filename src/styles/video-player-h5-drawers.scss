@@ -298,7 +298,7 @@
 }
 
 /** PC：倍速/分集/简介底栏挂到 9:16 舞台内，宽度与视频一致（vaul custom container） */
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .video-player-h5-video-stage {
         [data-slot='drawer-overlay'] {
             position: absolute !important;

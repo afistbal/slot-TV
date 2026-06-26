@@ -79,7 +79,7 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .for-demo-feed-back-topbar {
         padding: 16px 8px 0;
     }
@@ -95,7 +95,7 @@
 }
 
 /** PC：overflow 隐藏邻条视觉，仍保留多 slot 供 scroll / preload 复用 */
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .for-demo-pc-shell .for-demo-pc-player.douyin-feed-player {
         overflow: hidden;
         scroll-snap-type: none;

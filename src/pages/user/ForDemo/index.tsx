@@ -5,7 +5,7 @@ import { useLocation } from 'react-router';
 import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
-import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { useRootStore } from '@/stores/root';
 import { useConfigStore } from '@/stores/config';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
@@ -29,7 +29,7 @@ import './for-demo.scss';
  * for-demo：实验壳 — 与 /foryou 同 API + PC/H5 壳，播放器用 douyin-feed-player。
  */
 export default function ForDemoPage() {
-    const isDesktop = useMinWidth768();
+    const isDesktop = useVideoPlayerDesktop();
     const location = useLocation();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));

@@ -6,7 +6,7 @@ import { buildVDemoPath } from '@/constants/vDemoRoute';
 import { type DouyinFeedVideoItem, type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
-import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { useConfigStore } from '@/stores/config';
 import { useRootStore } from '@/stores/root';
 import { useUserStore } from '@/stores/user';
@@ -61,7 +61,7 @@ function resolveInitialEpisodeIndex(episodes: IPlayerData['episodes'], playEpiso
  * v-demo：数据层 movie/info + batch + episode；播放层复用 for-demo 封装壳 + DouyinFeedPlayer。
  */
 export default function VDemoPage() {
-    const isDesktop = useMinWidth768();
+    const isDesktop = useVideoPlayerDesktop();
     const location = useLocation();
     const params = useParams();
     const navigate = useNavigate();

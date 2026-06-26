@@ -21,7 +21,7 @@
     aspect-ratio: 9 / 16;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .douyin-player-slot__stage {
         border-radius: 8px;
     }
@@ -83,7 +83,7 @@
 }
 
 /* PC：竖屏 cover、横屏 contain（恢复改前行为） */
-@media (min-width: 768px) {
+@media (min-width: 1040px) {
     .douyin-player-slot--vertical :global(.xgplayer),
     .douyin-player-slot--base-height :global(.xgplayer) {
         width: 100%;
