@@ -10,6 +10,19 @@
         object-fit: cover;
         /* 手动调构图：原 Tailwind `object-[55%_center]`；可改 50% center、center top 等 */
         object-position: center 0%;
+        /* H5 首屏：略提亮海报主体，顶/底/侧缘仍靠渐变压暗 */
+        filter: brightness(1.06);
+    }
+
+    /* H5：中间更亮、仅外缘 vignette；顶栏 `from-black` 线性层不动 */
+    .home-hero-radial-glow {
+        background: radial-gradient(
+            ellipse 94% 82% at 50% 40%,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0) 66%,
+            rgba(0, 0, 0, 0.1) 86%,
+            rgba(0, 0, 0, 0.34) 100%
+        );
     }
 }
 

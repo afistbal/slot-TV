@@ -644,15 +644,15 @@ export default function Component() {
                             />
                             <div className="absolute inset-0 z-0 home-hero-radial-glow" aria-hidden />
                             <div
-                                className="absolute inset-y-0 left-0 z-[1] w-[19%] home-hero-gradient-l"
+                                className="absolute inset-y-0 left-0 z-[1] w-[14%] home-hero-gradient-l"
                                 aria-hidden
                             />
                             <div
-                                className="absolute inset-y-0 right-0 z-[1] w-[19%] home-hero-gradient-r"
+                                className="absolute inset-y-0 right-0 z-[1] w-[14%] home-hero-gradient-r"
                                 aria-hidden
                             />
                             <div
-                                className="absolute left-0 right-0 top-0 z-[2] h-[40%] max-h-[170px] bg-gradient-to-b from-black/70 to-transparent md:max-h-[170px]"
+                                className="absolute left-0 right-0 top-0 z-[2] h-[40%] max-h-[170px] bg-gradient-to-b from-black to-transparent md:max-h-[170px]"
                                 aria-hidden
                             />
                             {topLen > 0 ? (
