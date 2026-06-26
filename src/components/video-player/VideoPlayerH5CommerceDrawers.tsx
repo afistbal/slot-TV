@@ -5,7 +5,10 @@ import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
 import RadixRc from '@/pages/user/RadixRc';
-import type { RetentionCommerceWire } from '@/components/video-retention-promo/VideoRetentionPromo';
+import {
+    RetentionCheckoutRadixRc,
+    type RetentionCommerceWire,
+} from '@/components/video-retention-promo/VideoRetentionPromo';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
@@ -74,14 +77,17 @@ export function VideoPlayerH5CommerceDrawers({
                                 headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
                                 embedVideoEpisodeRowId={embedVideoEpisodeRowId}
                                 onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
-                                checkoutRequest={retention?.checkoutRequest}
-                                initialCheckoutPayment={retention?.initialCheckoutPayment}
-                                onPayModalClosed={retention?.onPayModalClosed}
                             />
                         ) : null}
                     </div>
                 </DrawerContent>
             </Drawer>
+            <RetentionCheckoutRadixRc
+                retention={retention}
+                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
+                vipHeaderEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+            />
             {retention?.layer}
             <Drawer open={shareOpen} onOpenChange={onShareOpenChange}>
                 <DrawerContent className="video-share-mobile-drawer border-0 p-0 text-white">

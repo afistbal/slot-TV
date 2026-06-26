@@ -16,6 +16,8 @@ import { resolveSubscriptionPeriod } from '@/lib/subscriptionPlanRenewText';
 import { useConfigStore } from '@/stores/config';
 import { useVideoShoppingProductsStore } from '@/stores/videoShoppingProducts';
 import { useRootStore } from '@/stores/root';
+import RadixRc from '@/pages/user/RadixRc';
+import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 // —— types ——
 
@@ -531,6 +533,44 @@ export type RetentionCommerceWire = {
     layer: ReactNode;
 };
 
+export type RetentionCheckoutRadixRcProps = {
+    retention?: RetentionCommerceWire;
+    embedVideoEpisodeRowId?: number;
+    onEmbedPaySuccessEpisodeDetail?: (episode: IPlayerEpisode) => void;
+    vipHeaderEpisodeUnlockCoins?: number;
+};
+
+/** 挽留直连收银：不打开 VIP 抽屉，RadixRc 仅挂载以 portal 收银台（勿传 onEmbedClose） */
+export function RetentionCheckoutRadixRc({
+    retention,
+    embedVideoEpisodeRowId,
+    onEmbedPaySuccessEpisodeDetail,
+    vipHeaderEpisodeUnlockCoins,
+}: RetentionCheckoutRadixRcProps) {
+    if (!retention?.checkoutRequest) {
+        return null;
+    }
+    return (
+        <div
+            className="pointer-events-none fixed h-0 w-0 overflow-hidden opacity-0"
+            aria-hidden
+        >
+            <RadixRc
+                layout="embed"
+                productFrom="video"
+                checkoutFrom="video"
+                embedPresentation="plain"
+                checkoutRequest={retention.checkoutRequest}
+                initialCheckoutPayment={retention.initialCheckoutPayment}
+                onPayModalClosed={retention.onPayModalClosed}
+                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
+                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+            />
+        </div>
+    );
+}
+
 export type UseVideoRetentionCommerceOptions = {
     variant: 'h5' | 'pc';
     viewerIsVip: boolean;
@@ -688,7 +728,6 @@ export function useVideoRetentionCommerce({
             checkoutFromStepRef.current = fromStep;
             checkoutViaDismissRef.current = viaDismiss;
             hidePromoForCheckout();
-            onVipOpenChange(true);
             setInitialCheckoutPayment(fromStep === 3 ? 3 : undefined);
             if (productId != null) {
                 setCheckoutRequest({
@@ -699,7 +738,7 @@ export function useVideoRetentionCommerce({
                 });
             }
         },
-        [hidePromoForCheckout, offers, onVipOpenChange, products],
+        [hidePromoForCheckout, offers, products],
     );
 
     const dismissCurrentStep = useCallback(() => {
