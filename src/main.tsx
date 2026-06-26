@@ -32,7 +32,7 @@ import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
 import { preloadBrandTopnavWordmark } from './constants/brand'
 
-/** `registerType: 'autoUpdate'`：新 SW 就绪后由插件侧自动接管并刷新，无需 onNeedRefresh / 弹窗 */
+/** 发版不自动 reload；F5 或关掉再开时新 SW 激活进新版 */
 registerSW({ immediate: true })
 preloadBrandTopnavWordmark()
 
