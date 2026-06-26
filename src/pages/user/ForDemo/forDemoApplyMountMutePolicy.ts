@@ -7,7 +7,7 @@ import {
     type ForDemoMountAutoplayFlags,
 } from './forDemoAutoplayPolicy';
 
-/** �?mount 前写�?douyin-feed-player 静音偏好（冷启静�?/ 站内进入有声�?*/
+/** �?mount 前写�?douyin-feed-player 静音偏好（冷启静�?/ 站内进入有声�?*/
 export function applyForDemoMountMutePolicy(flags: ForDemoMountAutoplayFlags): void {
     if (flags.feedColdAutoplay) {
         writeMutedPreference(true);

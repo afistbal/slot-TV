@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type Player from 'xgplayer';
 
+import {
+    clearIosNativeSubtitleTrack,
+    mountIosNativeSubtitleTrack,
+    type IosNativeSubtitleTrackHandle,
+} from '../media/iosNativeSubtitleTrack';
 import { loadFeedSubtitleCues, type FeedSubtitleLoadResult } from '../media/loadFeedSubtitleCues';
 
 export type FeedSubtitleState = {
@@ -103,6 +108,86 @@ export function useFeedSubtitle(player: Player | null, subtitleUrl?: string): Fe
             syncFromVideo();
         });
     }, [subtitleUrl, syncFromVideo]);
+
+    useEffect(() => {
+        const url = subtitleUrl?.trim();
+        const video = player?.video as HTMLVideoElement | undefined;
+        if (!video || !url) {
+            return;
+        }
+
+        let cancelled = false;
+        let nativeHandle: IosNativeSubtitleTrackHandle = {
+            track: null,
+            trackEl: null,
+            blobUrl: null,
+        };
+        let sourceCues: VTTCue[] = [];
+
+        const clearNativeTrack = () => {
+            clearIosNativeSubtitleTrack(video, nativeHandle);
+            nativeHandle = { track: null, trackEl: null, blobUrl: null };
+        };
+
+        const rebuildNativeTrack = (show: boolean) => {
+            clearNativeTrack();
+            nativeHandle = mountIosNativeSubtitleTrack(video, sourceCues, show);
+        };
+
+        const hideNativeTrack = () => {
+            clearNativeTrack();
+        };
+
+        const showNativeTrack = () => {
+            void (async () => {
+                if (sourceCues.length === 0) {
+                    const result = await loadFeedSubtitleCues(url);
+                    if (cancelled || !result.ok) {
+                        return;
+                    }
+                    sourceCues = result.cues;
+                }
+                window.requestAnimationFrame(() => {
+                    if (cancelled) {
+                        return;
+                    }
+                    rebuildNativeTrack(true);
+                });
+            })();
+        };
+
+        const onNativeLayoutChange = () => {
+            window.setTimeout(() => {
+                if (cancelled) {
+                    return;
+                }
+                const fsVideo = video as HTMLVideoElement & { webkitDisplayingFullscreen?: boolean };
+                if (!fsVideo.webkitDisplayingFullscreen) {
+                    return;
+                }
+                rebuildNativeTrack(true);
+            }, 120);
+        };
+
+        void loadFeedSubtitleCues(url).then((result) => {
+            if (cancelled || !result.ok) {
+                return;
+            }
+            sourceCues = result.cues;
+        });
+
+        video.addEventListener('webkitbeginfullscreen', showNativeTrack as EventListener);
+        video.addEventListener('webkitendfullscreen', hideNativeTrack as EventListener);
+        window.addEventListener('orientationchange', onNativeLayoutChange);
+
+        return () => {
+            cancelled = true;
+            video.removeEventListener('webkitbeginfullscreen', showNativeTrack as EventListener);
+            video.removeEventListener('webkitendfullscreen', hideNativeTrack as EventListener);
+            window.removeEventListener('orientationchange', onNativeLayoutChange);
+            clearNativeTrack();
+        };
+    }, [player, subtitleUrl]);
 
     useEffect(() => {
         if (!player || !subtitleUrl?.trim()) {

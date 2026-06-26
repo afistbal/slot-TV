@@ -61,6 +61,27 @@
     object-position: center center;
 }
 
+/* iOS 原生全屏字幕去灰底（仅 feed player video） */
+.douyin-player-slot__mount :global(.xgplayer video) {
+    &::-webkit-media-text-track-container {
+        background: transparent !important;
+    }
+
+    &::-webkit-media-text-track-display {
+        background: transparent !important;
+        text-shadow: 0 0 8px rgba(0, 0, 0, 0.9) !important;
+        font-size: 4.5vw !important;
+        line-height: 1.3 !important;
+    }
+
+    &::cue {
+        background: transparent !important;
+        text-shadow:
+            2px 2px 4px #000,
+            -2px -2px 4px #000 !important;
+    }
+}
+
 /* PC：竖屏 cover、横屏 contain（恢复改前行为） */
 @media (min-width: 768px) {
     .douyin-player-slot--vertical :global(.xgplayer),
