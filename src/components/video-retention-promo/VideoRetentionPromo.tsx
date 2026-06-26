@@ -633,6 +633,8 @@ export type RetentionCommerceWire = {
     checkoutRequest: { productId: number; seq: number; discount_type?: number; displayPrice?: string } | null;
     /** 第三档（季卡）挽留：默认银行卡 payment=3 */
     initialCheckoutPayment?: number;
+    /** Step3 可见时后台预载收银（隐藏弹层） */
+    checkoutModalPrefetch?: boolean;
     onPayModalClosed: () => void;
     promoActive: boolean;
     layer: ReactNode;
@@ -667,6 +669,7 @@ export function RetentionCheckoutRadixRc({
                 embedPresentation="plain"
                 checkoutRequest={retention.checkoutRequest}
                 initialCheckoutPayment={retention.initialCheckoutPayment}
+                checkoutModalPrefetch={retention.checkoutModalPrefetch}
                 onPayModalClosed={retention.onPayModalClosed}
                 embedVideoEpisodeRowId={embedVideoEpisodeRowId}
                 onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
@@ -709,6 +712,7 @@ export function useVideoRetentionCommerce({
         displayPrice?: string;
     } | null>(null);
     const [initialCheckoutPayment, setInitialCheckoutPayment] = useState<number | undefined>(undefined);
+    const [checkoutModalPrefetch, setCheckoutModalPrefetch] = useState(false);
     const [countdownSec, setCountdownSec] = useState(COUNTDOWN_SEC);
     const [showCountdown, setShowCountdown] = useState(false);
     /** 用户从弹窗3点X进收银后再关收银：三层全关，阻止 locked effect 再次弹 VIP */
@@ -819,6 +823,29 @@ export function useVideoRetentionCommerce({
         registerPanelClose(requestPanelClose);
     }, [registerPanelClose, requestPanelClose]);
 
+    /** Step3 展示时后台预载 pay/create + Card，进收银台时只 reveal 不重建 */
+    useEffect(() => {
+        if (step !== 3 || !visible || viewerIsVip || offers.length === 0) {
+            return;
+        }
+        if (checkoutRequestRef.current != null) {
+            return;
+        }
+        const offer = resolveRetentionOfferForStep(offers, 3);
+        const productId = resolveCheckoutProductId(offer ?? undefined);
+        if (productId == null) {
+            return;
+        }
+        setInitialCheckoutPayment(3);
+        setCheckoutModalPrefetch(true);
+        setCheckoutRequest({
+            productId,
+            seq: Date.now(),
+            discount_type: offer?.discount_type,
+            displayPrice: offer?.price,
+        });
+    }, [step, visible, viewerIsVip, offers]);
+
     const openCheckout = useCallback(
         (fromStep: RetentionPromoStep, viaDismiss = false) => {
             const offer = resolveRetentionOfferForStep(offers, fromStep);
@@ -834,6 +861,17 @@ export function useVideoRetentionCommerce({
             checkoutViaDismissRef.current = viaDismiss;
             hidePromoForCheckout();
             setInitialCheckoutPayment(fromStep === 3 ? 3 : undefined);
+
+            if (
+                fromStep === 3 &&
+                productId != null &&
+                checkoutRequestRef.current?.productId === productId
+            ) {
+                setCheckoutModalPrefetch(false);
+                return;
+            }
+
+            setCheckoutModalPrefetch(false);
             if (productId != null) {
                 setCheckoutRequest({
                     productId,
@@ -925,6 +963,7 @@ export function useVideoRetentionCommerce({
 
         setCheckoutRequest(null);
         setInitialCheckoutPayment(undefined);
+        setCheckoutModalPrefetch(false);
         flowStartedRef.current = true;
         closeVipWithoutRetentionRestart();
 
@@ -962,6 +1001,7 @@ export function useVideoRetentionCommerce({
         checkoutViaCountdownRef.current = false;
         setCheckoutRequest(null);
         setInitialCheckoutPayment(undefined);
+        setCheckoutModalPrefetch(false);
 
         if (inCheckoutStack || promoInProgress) {
             clearPromo();
@@ -1005,11 +1045,13 @@ export function useVideoRetentionCommerce({
             onVipEmbedClose,
             checkoutRequest,
             initialCheckoutPayment,
+            checkoutModalPrefetch,
             onPayModalClosed,
             promoActive,
             layer,
         }),
         [
+            checkoutModalPrefetch,
             checkoutRequest,
             initialCheckoutPayment,
             layer,

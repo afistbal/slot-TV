@@ -1238,7 +1238,7 @@
     @keyframes rs-shopping-payModalPanelIn {
         from {
             opacity: 0;
-            transform: translateY(16px);
+            transform: translateY(8px);
         }
 
         to {
@@ -1256,11 +1256,32 @@
         justify-content: center;
         background: rgba(0, 0, 0, 0.65);
         pointer-events: auto;
-        animation: rs-shopping-payModalMaskIn 0.2s ease forwards;
+        animation: rs-shopping-payModalMaskIn 0.12s ease forwards;
     }
 
     .rs-shopping__payModalMask--nested {
         z-index: 140;
+    }
+
+    /** 挽留 Step3 后台预载：保持 DOM 挂载 pay/create + Card，但不展示、不挡点击 */
+    .rs-shopping__payModalMask--prefetch {
+        visibility: hidden;
+        pointer-events: none;
+        animation: none;
+        background: transparent;
+
+        .rs-shopping__payModalPanel {
+            animation: none;
+        }
+    }
+
+    /** Step3 预载完成 reveal：内容已就绪，直接显示 */
+    .rs-shopping__payModalMask--instant {
+        animation: none;
+
+        .rs-shopping__payModalPanel {
+            animation: none;
+        }
     }
 
     .rs-shopping__payModalPanel {
@@ -1279,7 +1300,7 @@
         border-top-right-radius: 16px;
         background: #222222;
         padding: calc(14 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw)) calc(18 / 375 * var(--app-vw));
-        animation: rs-shopping-payModalPanelIn 0.2s ease forwards;
+        animation: rs-shopping-payModalPanelIn 0.12s ease forwards;
 
         @media (min-width: 768px) {
             border-radius: 16px;
@@ -2757,6 +2778,16 @@
     /** 顶圆角：大于 Drawer 默认 `rounded-t-lg`，与 ReelShort 大圆角观感一致 */
     border-top-left-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
     border-top-right-radius: max(24px, calc(28 / 375 * var(--app-vw))) !important;
+}
+
+/** VIP/购物 H5 抽屉：vaul 默认 0.5s 偏慢，收紧到 ~0.22s */
+[data-vaul-drawer].rs-shopping-checkout-drawer--vipNoScroll {
+    transition-duration: 0.22s !important;
+    animation-duration: 0.22s !important;
+}
+
+[data-vaul-overlay].rs-shopping-checkout-drawer__overlay {
+    animation-duration: 0.22s !important;
 }
 
 /* 去掉购物弹窗父层级的金色焦点环（全局 outline-ring 会命中 DrawerContent） */

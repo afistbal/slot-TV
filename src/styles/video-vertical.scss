@@ -680,6 +680,7 @@
     overflow: hidden;
     outline: none !important;
     box-shadow: none !important;
+    animation-duration: 0.15s !important;
 }
 
 .video-vip-dialog.rs-shopping-checkout-drawer--vipNoScroll[data-slot='dialog-content']:focus,

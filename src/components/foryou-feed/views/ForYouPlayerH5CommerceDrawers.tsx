@@ -57,6 +57,7 @@ export function ForYouPlayerH5CommerceDrawers({
             <Drawer open={vip} onOpenChange={vipOpenChange} disablePreventScroll>
                 <DrawerContent
                     handler
+                    overlayClassName="rs-shopping-checkout-drawer__overlay"
                     className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col overflow-hidden border-t border-white/10 p-0 text-white max-h-[min(88vh,1040px)]"
                 >
                     <DrawerTitle className="sr-only">
