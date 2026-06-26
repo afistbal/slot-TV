@@ -674,13 +674,13 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
     function handleAllPlotsClick() {
         setTagOpen(false);
-        if (!searchStore.tag) {
+        if (!searchStore.tag && !searchStore.keyword.trim()) {
             return;
         }
         searchStore.setTag('');
         searchStore.setKeyword('');
         searchStore.setPage(1);
-        if (isCategoriesPage) {
+        if (isCategoriesPage || type === 'search') {
             void loadData();
             return;
         }
@@ -938,7 +938,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 '--rs-search-pc-tags-collapsed-max',
                 PC_TAGS_COLLAPSED_FALLBACK_PX,
             );
-            const leadingLabels = isCategoriesPage
+            const leadingLabels = !isTagSearchPage
                 ? [intl.formatMessage({ id: 'categories_all_plots' })]
                 : [];
             const { needsExpand, visibleCount } = measurePcTagsTwoRowSplit(
@@ -960,7 +960,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         const ro = new ResizeObserver(run);
         ro.observe(host);
         return () => ro.disconnect();
-    }, [isPc, isCategoriesPage, searchStore.tags, pcTagsExpanded, intl]);
+    }, [isPc, isCategoriesPage, isTagSearchPage, searchStore.tags, pcTagsExpanded, intl]);
 
     useLayoutEffect(() => {
         if (isPc || !isCategoriesPage || searchStore.tags.length === 0) {
@@ -1298,18 +1298,18 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 ref={pcTagsRef}
                                                 className="rs-search-page__pcTags"
                                             >
-                                                {isCategoriesPage ? (
-                                                    <button
-                                                        type="button"
-                                                        className={cn(
-                                                            'rs-search-page__pcTag',
-                                                            !searchStore.tag && 'rs-search-page__pcTag--active',
-                                                        )}
-                                                        onClick={handleAllPlotsClick}
-                                                    >
-                                                        <FormattedMessage id="categories_all_plots" />
-                                                    </button>
-                                                ) : null}
+                                                <button
+                                                    type="button"
+                                                    className={cn(
+                                                        'rs-search-page__pcTag',
+                                                        !searchStore.tag &&
+                                                            !searchStore.keyword.trim() &&
+                                                            'rs-search-page__pcTag--active',
+                                                    )}
+                                                    onClick={handleAllPlotsClick}
+                                                >
+                                                    <FormattedMessage id="categories_all_plots" />
+                                                </button>
                                                 {pcTagsForRender.map((v) => {
                                                     const name = v['name'] as string;
                                                     const label = formatTagUniqueId(String(v['unique_id'] ?? ''));
