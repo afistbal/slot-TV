@@ -195,7 +195,7 @@ export function Cards({
         recurringOptions,
         methods: ["card"] as const,
         appearance,
-        country_code: "HK",
+        country_code: "US",
       };
 
       let el: Awaited<ReturnType<typeof createElement<"dropIn">>> | null = null;

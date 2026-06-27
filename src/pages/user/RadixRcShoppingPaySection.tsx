@@ -620,7 +620,7 @@ export default function RadixRcShoppingPaySection({
                     ...(payMode === 'recurring' ? { recurringOptions } : {}),
                     methods: ['card'],
                     appearance,
-                    country_code: 'HK',
+                    country_code: 'US',
                 } as Parameters<typeof createElement<'dropIn'>>[1]);
                 if (!dropIn || cancelled) return;
                 dropIn.mount(cardHost);
