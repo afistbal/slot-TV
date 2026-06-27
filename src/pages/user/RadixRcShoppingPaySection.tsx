@@ -619,7 +619,6 @@ export default function RadixRcShoppingPaySection({
                     methods: ['card'],
                     appearance,
                     country_code: 'HK',
-                    submitType: 'subscribe',
                 } as Parameters<typeof createElement<'dropIn'>>[1]);
                 if (!dropIn || cancelled) return;
                 dropIn.mount(cardHost);

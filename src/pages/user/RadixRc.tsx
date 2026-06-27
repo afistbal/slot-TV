@@ -803,6 +803,9 @@ export default function RadixRc({
 
             {!loadingProducts && coinProducts.length > 0 ? (
                 <div className="rs-shopping__coinSection w-full shadow-none">
+                    <div className="rs-shopping__planRenew2">
+                        <FormattedMessage id="shopping_coins_section_renew_hint" />
+                    </div>
                     {showH5StoreSectionTitles ? (
                         <div
                             className={cn(

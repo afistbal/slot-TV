@@ -501,6 +501,24 @@
         }
     }
 
+    /** Coins 区块上方续订提示（与 VIP 卡内 `.rs-shopping__planRenew` 区分） */
+    .rs-shopping__planRenew2 {
+        text-align: center;
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        font-size: calc(11 / 375 * var(--app-vw));
+        font-weight: 400;
+        line-height: 1.35;
+
+        @media (min-width: 768px) {
+            font-size: 12px;
+            line-height: 1.25;
+        }
+    }
+
     /** 金幣儲值套餐卡：H5 / PC 统一底色 */
     .rs-shopping__coinSku {
         --un-bg-opacity: 1;
@@ -2105,6 +2123,16 @@
 
         .rs-shopping__coinSection {
             margin-top: 4px;
+
+            .rs-shopping__planRenew2 {
+                margin-bottom: calc(4 / 375 * var(--app-vw));
+                color: rgba(255, 255, 255, 0.75);
+                transition: color 0.1s ease;
+
+                @media (min-width: 768px) {
+                    margin-bottom: 4px;
+                }
+            }
         }
 
         .rs-shopping__coinSku--topUpH5 {

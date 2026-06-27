@@ -196,7 +196,6 @@ export function Cards({
         methods: ["card"] as const,
         appearance,
         country_code: "HK",
-        submitType: "subscribe" as const,
       };
 
       let el: Awaited<ReturnType<typeof createElement<"dropIn">>> | null = null;
