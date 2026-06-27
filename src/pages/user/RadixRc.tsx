@@ -1081,6 +1081,7 @@ export default function RadixRc({
                                                   id: currentCheckoutProduct.id,
                                                   name: currentCheckoutProduct.name,
                                                   price: currentCheckoutProduct.price,
+                                                  type: currentCheckoutProduct.type,
                                               }
                                             : null
                                     }

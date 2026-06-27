@@ -81,6 +81,8 @@ export type RadixRcShoppingPaySectionProps = {
         id: number;
         name: string;
         price: string;
+        /** 1=订阅 2=金币（一次性） */
+        type?: number;
     } | null;
     /** 与 `RadixRc` 重试按钮联动：递增后强制重建钱包会话，避免复用失效 intent */
     paySessionSeed?: number;
@@ -474,6 +476,7 @@ export default function RadixRcShoppingPaySection({
         void (async () => {
             const { intent_id, client_secret, customer_id, currency, amountValue } = sessionRef.current!;
             const targetProductId = walletProductId ?? checkoutTargetProductId ?? 0;
+            const payMode = checkoutProductMeta?.type === 2 ? 'payment' : 'recurring';
             const subscribePayload = buildCheckoutPayload(targetProductId, currency, amountValue);
             const orderSn = sessionRef.current?.sn ?? '';
             const reportButtonPayLog = (
@@ -524,7 +527,7 @@ export default function RadixRcShoppingPaySection({
             if (canPickApple && appleHost) {
                 try {
                     const apple = await createElement('applePayButton', {
-                        mode: 'recurring',
+                        mode: payMode,
                         intent_id,
                         client_secret,
                         customer_id,
@@ -552,7 +555,7 @@ export default function RadixRcShoppingPaySection({
 
             try {
                 const google = await createElement('googlePayButton', {
-                    mode: 'recurring',
+                    mode: payMode,
                     intent_id,
                     client_secret,
                     customer_id,
@@ -609,12 +612,12 @@ export default function RadixRcShoppingPaySection({
                     },
                 };
                 const dropIn = await createElement('dropIn', {
-                    mode: 'recurring',
+                    mode: payMode,
                     intent_id,
                     client_secret,
                     customer_id,
                     currency,
-                    recurringOptions,
+                    ...(payMode === 'recurring' ? { recurringOptions } : {}),
                     methods: ['card'],
                     appearance,
                     country_code: 'HK',
@@ -644,7 +647,7 @@ export default function RadixRcShoppingPaySection({
             cancelled = true;
             cleanupElements();
         };
-    }, [sessionReady, canPickApple, onPayStateChange]);
+    }, [sessionReady, canPickApple, onPayStateChange, checkoutProductMeta?.type]);
 
     function handleWalletCheckoutClick() {}
 
