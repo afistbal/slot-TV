@@ -806,16 +806,11 @@ export default function RadixRc({
                     <div className="rs-shopping__planRenew2">
                         <FormattedMessage id="shopping_coins_section_renew_hint" />
                     </div>
-                    {showH5StoreSectionTitles ? (
-                        <div
-                            className={cn(
-                                'mb-3 w-full font-bold leading-tight text-white/90',
-                                'rs-shopping__sectionTitle',
-                            )}
-                        >
+                    {isReelshortH5StoreUi ? (
+                        <h2 className="rs-shopping__sectionTitle">
                             <FormattedMessage id="shopping_bar_coins" />
-                        </div>
-                    ) : !isReelshortH5StoreUi ? (
+                        </h2>
+                    ) : (
                         <div
                             className={cn(
                                 'mb-3 w-full font-bold leading-tight text-white/90',
@@ -824,7 +819,7 @@ export default function RadixRc({
                         >
                             <FormattedMessage id="shopping_top_up_coins" />
                         </div>
-                    ) : null}
+                    )}
                     <div className="grid w-full grid-cols-2 gap-2 shadow-none md:grid-cols-4">
                         {coinProducts.map((p) => {
                             const baseCoin = p.coin ?? 0;
@@ -945,7 +940,7 @@ export default function RadixRc({
                         <FormattedMessage id="shopping_section_tips" />
                     </h2>
                     <ol className="rs-shopping__tipsList">
-                        {([1, 2, 3, 4, 5] as const).map((n) => (
+                        {([1, 2, 3, 4] as const).map((n) => (
                             <li key={n}>
                                 <FormattedMessage id={`shopping_tips_item_${n}`} values={tipSiteValues} />
                             </li>

@@ -1947,7 +1947,7 @@
         }
 
         .rs-shopping__plan {
-            min-height: 148px;
+            min-height: 140px;
             border-radius: calc(12 / 375 * var(--app-vw));
             background: linear-gradient(87deg, #3C3427 0%, #201816 100%);
             isolation: isolate;
@@ -2027,7 +2027,7 @@
 
         .rs-shopping__planBody {
             align-items: flex-start;
-            padding: 22px 110px 10px 16px;
+            padding: 18px 110px 10px 16px;
         }
 
         .rs-shopping__planName {
@@ -2136,7 +2136,7 @@
         }
 
         .rs-shopping__coinSku--topUpH5 {
-            min-height: 118px;
+            min-height: 100px;
             padding: 0;
             border-radius: 10px;
             overflow: hidden;

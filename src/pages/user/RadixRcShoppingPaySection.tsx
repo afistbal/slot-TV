@@ -614,7 +614,6 @@ export default function RadixRcShoppingPaySection({
                     client_secret,
                     customer_id,
                     currency,
-                    payment_consent: recurringOptions,
                     recurringOptions,
                     methods: ['card'],
                     appearance,
