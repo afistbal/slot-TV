@@ -39,7 +39,7 @@ const IOS_NATIVE_CUE_STYLE = `STYLE
   background-color: transparent;
   color: #ffffff;
   font-weight: 700;
-  text-shadow: 2px 2px 4px #000, -2px -2px 4px #000;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 `;
 
