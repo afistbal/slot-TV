@@ -2,8 +2,11 @@
     position: relative;
     height: 100%;
     width: 100%;
-    overflow: hidden;
-    touch-action: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     overscroll-behavior-y: contain;
     background: #000;
 }
@@ -19,20 +22,13 @@
     overscroll-behavior-y: none;
 }
 
-.douyin-feed-player__track {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    will-change: transform;
-}
-
 .douyin-feed-player__slide {
     position: relative;
-    flex: none;
     height: 100vh;
     height: 100dvh;
     width: 100%;
+    scroll-snap-align: start start;
+    scroll-snap-stop: always;
     background: #000;
     overflow: hidden;
 }
