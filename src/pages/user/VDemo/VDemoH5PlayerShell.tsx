@@ -1,7 +1,6 @@
 import {
     useCallback,
     useEffect,
-    useLayoutEffect,
     useRef,
     useState,
     type RefObject,
@@ -9,6 +8,7 @@ import {
 
 import {
     DouyinFeedPlayer,
+    type DouyinFeedNavigateHandle,
     type DouyinFeedVideoItem,
     type FeedNavigateDirection,
 } from '@/components/douyin-feed-player';
@@ -38,7 +38,6 @@ import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShar
 import { cn } from '@/lib/utils';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
-import { scrollVDemoFeedToIndex } from './vDemoFeedScroll';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
@@ -82,12 +81,13 @@ export function VDemoH5PlayerShell({
     const resolveEpisodeCellLocked = useCallback(
         (row: VDemoPlayerData['episodes'][number]) =>
             resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
-        [viewerIsVip, playerItems, episode],
+        [viewerIsVip],
     );
     const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];
     const hasNext = activeIndex < data.episodes.length - 1;
     const episodeRef = useRef<HTMLDivElement>(null);
+    const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
 
     const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
     const [introductionOpen, setIntroductionOpen] = useState(false);
@@ -119,18 +119,6 @@ export function VDemoH5PlayerShell({
         setFavorite(data.info.is_favorite === 1);
     }, [data.info.id, data.info.is_favorite]);
 
-    useLayoutEffect(() => {
-        if (initialIndex <= 0) {
-            return;
-        }
-        const scroller = document.querySelector('.v-demo #sliderVideo') as HTMLElement | null;
-        if (!scroller) {
-            return;
-        }
-        const height = scroller.clientHeight || window.innerHeight;
-        scroller.scrollTop = initialIndex * height;
-    }, [initialIndex, playerItems.length]);
-
     const handleToggleFavorite = useCallback(() => {
         if (!skipRemoteApi) {
             void api('movie/favorite', {
@@ -154,8 +142,8 @@ export function VDemoH5PlayerShell({
         if (!hasNext) {
             return;
         }
-        scrollVDemoFeedToIndex(activeIndex + 1);
-    }, [activeIndex, hasNext]);
+        feedNavigateRef.current?.next();
+    }, [hasNext]);
 
     const handleSelectEpisodeIndex = useCallback(
         (listIndex: number) => {
@@ -163,10 +151,9 @@ export function VDemoH5PlayerShell({
             if (listIndex === activeIndex) {
                 return;
             }
-            onIndexChange(listIndex, listIndex > activeIndex ? 'next' : 'prev');
-            scrollVDemoFeedToIndex(listIndex);
+            feedNavigateRef.current?.goToIndex(listIndex);
         },
-        [activeIndex, onIndexChange],
+        [activeIndex],
     );
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
@@ -201,6 +188,7 @@ export function VDemoH5PlayerShell({
                 fullscreenTargetRef={fullscreenTargetRef}
                 onFullscreenUiChange={handleFullscreenUiChange}
                 onIndexChange={onIndexChange}
+                feedNavigateRef={feedNavigateRef}
                 showNextEpisode={hasNext}
                 onNextEpisode={handleFeedNext}
                 onPlaybackModeChange={handleForyouResume}

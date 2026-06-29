@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useNavigate } from 'react-router';
 
 import {
+    type DouyinFeedNavigateHandle,
     type DouyinFeedVideoItem,
     type FeedNavigateDirection,
     DouyinFeedPlayer,
@@ -32,7 +33,6 @@ import type { IForYouFeedItem } from '@/types/foryouFeed';
 import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
 import { foryouFeedItemKey } from './lib/foryouFeedMerge';
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
-import { scrollForDemoFeedToIndex } from './forDemoFeedScroll';
 
 type ForDemoH5PlayerShellProps = {
     staticBase: string;
@@ -68,6 +68,7 @@ export function ForDemoH5PlayerShell({
     const episodeNo = feedItem.episode ?? 1;
     const feedEpisodeTotal = feedItem.episodes ?? 0;
     const prevListLengthRef = useRef(listLength);
+    const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
 
     const [favorite, setFavorite] = useState(
         feedItem.is_favor === true || feedItem.is_favorite === 1,
@@ -115,7 +116,7 @@ export function ForDemoH5PlayerShell({
         }
         if (activeIndex === prevListLengthRef.current - 1) {
             requestAnimationFrame(() => {
-                scrollForDemoFeedToIndex(activeIndex + 1);
+                feedNavigateRef.current?.goToIndex(activeIndex + 1);
             });
         }
         prevListLengthRef.current = listLength;
@@ -141,7 +142,7 @@ export function ForDemoH5PlayerShell({
 
     const handleFeedNext = useCallback(() => {
         if (activeIndex < playerItems.length - 1) {
-            scrollForDemoFeedToIndex(activeIndex + 1);
+            feedNavigateRef.current?.next();
             return;
         }
         if (hasMore) {
@@ -174,6 +175,7 @@ export function ForDemoH5PlayerShell({
                 fullscreenTargetRef={fullscreenTargetRef}
                 onFullscreenUiChange={handleFullscreenUiChange}
                 onIndexChange={onIndexChange}
+                feedNavigateRef={feedNavigateRef}
                 showNextEpisode={hasNext}
                 onNextEpisode={handleFeedNext}
                 fixedPlaybackSpeed

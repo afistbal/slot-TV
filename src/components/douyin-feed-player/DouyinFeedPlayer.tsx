@@ -6,6 +6,7 @@ import {
     useRef,
     useState,
     type RefObject,
+    type TouchEvent as ReactTouchEvent,
 } from 'react';
 import type Player from 'xgplayer';
 
@@ -15,7 +16,6 @@ import { DouyinPlayerControls } from './controls/DouyinPlayerControls';
 import { isIosNativeVideoFullscreen } from './controls/feedPlayerFullscreen';
 import { getVideoEl } from './controls/playerControlsApi';
 import { useFeedPlayerFullscreen } from './controls/useFeedPlayerFullscreen';
-import { bindFeedTouchGuard } from './feed/bindFeedTouchGuard';
 import { buildPlayerSlots, getFeedItemDataAttrs } from './feed/buildPlayerSlots';
 import { bindWheelNavigate } from './feed/wheelNavigate';
 import { resolveMediaUrl } from './media/resolveMediaUrl';
@@ -30,6 +30,7 @@ import {
     isUserGestureActive,
     isUserAudioUnlocked,
     markUserGesture,
+    setUserTouching,
     syncAudioUnlockFromPreference,
 } from './feed/userGesturePlay';
 import {
@@ -57,6 +58,37 @@ import { DouyinPlayerSlot } from './player/DouyinPlayerSlot';
 import type { DouyinFeedPlayerProps, FeedNavigateDirection } from './types';
 
 import './douyin-feed-player.scss';
+
+const FEED_SLIDE_ANIMATION_MS = 400;
+const FEED_TOUCH_THRESHOLD_PX = 20;
+
+function isVerticalFeedControlTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) return false;
+    return Boolean(
+        target.closest(
+            [
+                '.douyin-player-controls',
+                '.video-player-center-play',
+                '[data-vertical-swipe-ignore]',
+                '.xgplayer-controls',
+                '.xgplayer-progress',
+                '.xgplayer-progress-bar',
+                '.xgplayer-progress-played',
+                '.xgplayer-progress-dot',
+                '.xgplayer-progress-cache',
+                '.xgplayer-progress-btn',
+                '.xgplayer-volume',
+                '.xgplayer-play',
+                '.xgplayer-pause',
+                '.xgplayer-fullscreen',
+                '.xgplayer-texttrack',
+                '.xgplayer-playbackrate',
+                'button',
+                'a',
+            ].join(', '),
+        ),
+    );
+}
 
 /**
  * 抖音式 Feed 播放器（滑动层 + xgplayer 播放层）
@@ -86,17 +118,81 @@ export function DouyinFeedPlayer({
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const playerByIndexRef = useRef<Map<number, Player>>(new Map());
     const [activePlayer, setActivePlayer] = useState<Player | null>(null);
-    const scrollSyncLockRef = useRef(false);
     const pendingPlayIndexRef = useRef<number | null>(null);
     const [activeIndex, setActiveIndex] = useState(() =>
         Math.min(Math.max(0, initialIndex), Math.max(0, items.length - 1)),
     );
     const activeIndexRef = useRef(activeIndex);
     activeIndexRef.current = activeIndex;
+    const [slideHeight, setSlideHeight] = useState(() =>
+        typeof window === 'undefined' ? 0 : window.innerHeight,
+    );
+    const slideHeightRef = useRef(slideHeight);
+    const [offsetY, setOffsetY] = useState(() => slideHeight * activeIndex);
+    const offsetYRef = useRef(offsetY);
+    const [animating, setAnimating] = useState(false);
+    const animationTimerRef = useRef<number | null>(null);
+    const touchActiveRef = useRef(false);
+    const isFirstTouchRef = useRef(true);
+    const touchStartYRef = useRef(0);
+    const lastTouchYRef = useRef(0);
+
+    const setFeedOffsetY = useCallback((value: number) => {
+        offsetYRef.current = value;
+        setOffsetY(value);
+    }, []);
+
+    const clearSlideAnimationTimer = useCallback(() => {
+        if (animationTimerRef.current == null) return;
+        window.clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
+    }, []);
+
+    const setSlideAnimating = useCallback(
+        (value: boolean) => {
+            clearSlideAnimationTimer();
+            setAnimating(value);
+            if (value) {
+                animationTimerRef.current = window.setTimeout(() => {
+                    animationTimerRef.current = null;
+                    setAnimating(false);
+                }, FEED_SLIDE_ANIMATION_MS);
+            }
+        },
+        [clearSlideAnimationTimer],
+    );
 
     useEffect(() => {
         syncAudioUnlockFromPreference();
     }, []);
+
+    useLayoutEffect(() => {
+        const root = scrollerRef.current;
+        if (!root) return;
+
+        const measure = () => {
+            const nextHeight = root.clientHeight || window.innerHeight;
+            slideHeightRef.current = nextHeight;
+            setSlideHeight(nextHeight);
+        };
+
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(root);
+        window.addEventListener('resize', measure);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', measure);
+        };
+    }, []);
+
+    useEffect(() => {
+        const nextOffset = slideHeight * activeIndex;
+        setFeedOffsetY(nextOffset);
+    }, [activeIndex, setFeedOffsetY, slideHeight]);
+
+    useEffect(() => () => clearSlideAnimationTimer(), [clearSlideAnimationTimer]);
 
     const onIndexChangeRef = useRef(onIndexChange);
     onIndexChangeRef.current = onIndexChange;
@@ -109,6 +205,7 @@ export function DouyinFeedPlayer({
     const navigateRef = useRef<(direction: FeedNavigateDirection) => void>(() => undefined);
     const preloadGateRef = useRef(false);
     const [preloadGate, setPreloadGate] = useState(false);
+    const [suppressNextPreload, setSuppressNextPreload] = useState(false);
     const preloadGateDisposeRef = useRef<(() => void) | null>(null);
     const preloadGateAttachedRef = useRef<Player | null>(null);
     const postRenderTransitionRef = useRef<'append-play' | 'shrink-clamp' | null>(null);
@@ -121,6 +218,7 @@ export function DouyinFeedPlayer({
     const iosChainRetryDisposeRef = useRef<(() => void) | null>(null);
     const iosPauseRecoverDisposeRef = useRef<(() => void) | null>(null);
     const activeNeighborPrimeDisposeRef = useRef<(() => void) | null>(null);
+    const suppressNextPreloadTimerRef = useRef<number | null>(null);
     const emptyFullscreenTargetRef = useRef<HTMLElement | null>(null);
     const resolvedFullscreenTargetRef =
         fullscreenTargetRef ?? (emptyFullscreenTargetRef as RefObject<HTMLElement | null>);
@@ -172,6 +270,47 @@ export function DouyinFeedPlayer({
         preloadGateDisposeRef.current?.();
         preloadGateDisposeRef.current = null;
         preloadGateAttachedRef.current = null;
+    }, []);
+
+    const suppressNextPreloadUntilStable = useCallback((source: string, maxDelayMs = 6000) => {
+        if (suppressNextPreloadTimerRef.current != null) {
+            window.clearTimeout(suppressNextPreloadTimerRef.current);
+            suppressNextPreloadTimerRef.current = null;
+        }
+
+        setSuppressNextPreload(true);
+        feedDbg('suppress next preload', { source, maxDelayMs });
+
+        const startedAt = Date.now();
+        const check = () => {
+            const player = playerByIndexRef.current.get(activeIndexRef.current);
+            const video = player?.video as HTMLVideoElement | undefined;
+            const t = video ? Math.round(video.currentTime * 100) / 100 : null;
+            const stable = Boolean(
+                video &&
+                    !video.paused &&
+                    video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+                    video.currentTime >= 0.8,
+            );
+            const expired = Date.now() - startedAt >= maxDelayMs;
+
+            if (stable || expired) {
+                suppressNextPreloadTimerRef.current = null;
+                setSuppressNextPreload(false);
+                feedDbg('resume next preload', {
+                    source,
+                    reason: stable ? 'stable' : 'timeout',
+                    paused: video?.paused ?? null,
+                    readyState: video?.readyState ?? null,
+                    t,
+                });
+                return;
+            }
+
+            suppressNextPreloadTimerRef.current = window.setTimeout(check, 250);
+        };
+
+        suppressNextPreloadTimerRef.current = window.setTimeout(check, 250);
     }, []);
 
     const getBufferedAhead = useCallback((video: HTMLVideoElement): number => {
@@ -251,8 +390,13 @@ export function DouyinFeedPlayer({
     );
 
     const slots = useMemo(
-        () => buildPlayerSlots(playbackItems, activeIndex, preloadNext && preloadGate),
-        [playbackItems, activeIndex, preloadNext, preloadGate],
+        () =>
+            buildPlayerSlots(
+                playbackItems,
+                activeIndex,
+                preloadNext && preloadGate && !suppressNextPreload,
+            ),
+        [playbackItems, activeIndex, preloadNext, preloadGate, suppressNextPreload],
     );
 
     const activeEpisodeKey = playbackItems[activeIndex]?.id ?? activeIndex;
@@ -265,30 +409,44 @@ export function DouyinFeedPlayer({
         const from = iosPendingEndedFromRef.current;
         if (from == null) return;
         iosPendingEndedFromRef.current = null;
+        const waitedNativeExit = iosWaitNativeExitRef.current;
         iosWaitNativeExitRef.current = false;
         iosSkipResumeAfterExitRef.current = true;
         window.setTimeout(() => {
             iosSkipResumeAfterExitRef.current = false;
         }, 2500);
-        if (from !== activeIndexRef.current) return;
 
-        const len = playbackItemsLengthRef.current;
-        feedDbg('ios ended flush after exit fs', { from, len });
-        if (showNextEpisodeRef.current) {
+        const run = () => {
+            if (from !== activeIndexRef.current) return;
+
+            const len = playbackItemsLengthRef.current;
+            feedDbg('ios ended flush after exit fs', {
+                from,
+                len,
+                waitedNativeExit,
+            });
+            if (showNextEpisodeRef.current) {
+                if (from < len - 1) {
+                    advanceAfterEndedRef.current(from);
+                } else {
+                    onNextEpisodeRef.current?.();
+                }
+                return;
+            }
             if (from < len - 1) {
                 advanceAfterEndedRef.current(from);
-            } else {
-                onNextEpisodeRef.current?.();
             }
+        };
+
+        if (waitedNativeExit) {
+            window.setTimeout(run, 250);
             return;
         }
-        if (from < len - 1) {
-            advanceAfterEndedRef.current(from);
-        }
+
+        run();
     }, []);
 
     const onIosNativeFullscreenEnd = useCallback((): boolean => {
-        if (iosWaitNativeExitRef.current) iosWaitNativeExitRef.current = false;
         const hadPending = iosPendingEndedFromRef.current != null;
         if (hadPending) {
             flushIosPendingEndedAdvance();
@@ -393,89 +551,19 @@ export function DouyinFeedPlayer({
     const openPreloadGateRef = useRef(openPreloadGate);
     openPreloadGateRef.current = openPreloadGate;
 
+    const getCurrentSlideHeight = useCallback(
+        () =>
+            slideHeightRef.current ||
+            scrollerRef.current?.clientHeight ||
+            (typeof window === 'undefined' ? 0 : window.innerHeight),
+        [],
+    );
+
     const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
-        const root = scrollerRef.current;
-        const slide = itemRefs.current.get(index);
-        if (!root || !slide) {
-            itemRefs.current.get(index)?.scrollIntoView({ behavior, block: 'start' });
-            return;
-        }
-        const top = slide.offsetTop;
-        scrollSyncLockRef.current = true;
-        if (behavior === 'auto') {
-            root.scrollTop = top;
-            return;
-        }
-        root.scrollTo({ top, behavior });
-    }, []);
-
-    const snapScrollerToActive = useCallback(() => {
-        const root = scrollerRef.current;
-        const slide = itemRefs.current.get(activeIndexRef.current);
-        if (!root || !slide) return;
-        scrollSyncLockRef.current = true;
-        root.scrollTop = slide.offsetTop;
-        requestAnimationFrame(() => {
-            scrollSyncLockRef.current = false;
-        });
-    }, []);
-
-    /** PC：全屏进/出、顶栏显隐后 scroller 高度变化，scrollTop 须重对齐当前条 */
-    useEffect(() => {
-        if (!isDesktop || !fullscreenEnabled) return;
-
-        const scheduleSnap = () => {
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    snapScrollerToActive();
-                });
-            });
-        };
-
-        const root = scrollerRef.current;
-        if (!root) return;
-
-        let lastHeight = root.clientHeight;
-        const ro = new ResizeObserver(() => {
-            const h = root.clientHeight;
-            if (h === lastHeight) return;
-            lastHeight = h;
-            scheduleSnap();
-        });
-        ro.observe(root);
-
-        const onFullscreenChange = () => scheduleSnap();
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullscreenChange as EventListener);
-
-        return () => {
-            ro.disconnect();
-            document.removeEventListener('fullscreenchange', onFullscreenChange);
-            document.removeEventListener(
-                'webkitfullscreenchange',
-                onFullscreenChange as EventListener,
-            );
-        };
-    }, [isDesktop, fullscreenEnabled, snapScrollerToActive, playbackItems.length]);
-
-    /** H5：沉浸全屏进/出后 scroller 高度变化，scrollTop 须重对齐当前条（避免 snap 回跳旧 index） */
-    useEffect(() => {
-        if (isDesktop || !fullscreenEnabled) return;
-
-        scrollSyncLockRef.current = true;
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                snapScrollerToActive();
-                scrollSyncLockRef.current = false;
-            });
-        });
-    }, [
-        isDesktop,
-        fullscreenEnabled,
-        feedFullscreen.isFullscreenUi,
-        snapScrollerToActive,
-        playbackItems.length,
-    ]);
+        const nextOffset = getCurrentSlideHeight() * index;
+        setFeedOffsetY(nextOffset);
+        setSlideAnimating(behavior !== 'auto');
+    }, [getCurrentSlideHeight, setFeedOffsetY, setSlideAnimating]);
 
     const syncActiveIndex = useCallback((next: number, direction?: FeedNavigateDirection) => {
         const len = playbackItemsLengthRef.current;
@@ -533,7 +621,7 @@ export function DouyinFeedPlayer({
         if (direction !== undefined && clamped !== prev) {
             onIndexChangeRef.current?.(clamped, direction);
         }
-    }, [attachActivePlaybackHooks]);
+    }, [attachActivePlaybackHooks, fullscreenEnabled]);
 
     const syncActiveIndexRef = useRef(syncActiveIndex);
     syncActiveIndexRef.current = syncActiveIndex;
@@ -586,7 +674,6 @@ export function DouyinFeedPlayer({
             if (next === current) return;
 
             markUserGesture(3500);
-            scrollSyncLockRef.current = true;
             const navDirection: FeedNavigateDirection =
                 direction === 'auto' ? 'next' : direction;
             syncActiveIndex(next, navDirection);
@@ -608,7 +695,6 @@ export function DouyinFeedPlayer({
             if (next === current) return;
 
             markUserGesture(3500);
-            scrollSyncLockRef.current = true;
             const direction: FeedNavigateDirection = next > current ? 'next' : 'prev';
             syncActiveIndex(next, direction);
             scrollToIndex(next);
@@ -622,6 +708,104 @@ export function DouyinFeedPlayer({
     const goToIndexRef = useRef(goToIndex);
     goToIndexRef.current = goToIndex;
 
+    const handleFeedTouchStart = useCallback(
+        (event: ReactTouchEvent<HTMLDivElement>) => {
+            const touch = event.touches[0];
+            if (!touch || isVerticalFeedControlTarget(event.target)) {
+                touchActiveRef.current = false;
+                return;
+            }
+
+            touchActiveRef.current = true;
+            setSlideAnimating(false);
+            const baseOffset = isFirstTouchRef.current
+                ? getCurrentSlideHeight() * activeIndexRef.current
+                : offsetYRef.current;
+            if (isFirstTouchRef.current) {
+                setFeedOffsetY(baseOffset);
+            }
+            touchStartYRef.current = touch.clientY;
+            lastTouchYRef.current = baseOffset + touch.clientY;
+            setUserTouching(true);
+            markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
+            if (detectPlatform().isIOS) {
+                openPreloadGateRef.current();
+            }
+        },
+        [getCurrentSlideHeight, setFeedOffsetY, setSlideAnimating],
+    );
+
+    const handleFeedTouchMove = useCallback(
+        (event: ReactTouchEvent<HTMLDivElement>) => {
+            if (!touchActiveRef.current) return;
+            const touch = event.touches[0];
+            if (!touch) return;
+
+            markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
+            const height = getCurrentSlideHeight();
+            const maxOffset = Math.max(0, height * (playbackItemsLengthRef.current - 1));
+            const nextOffset = Math.min(
+                Math.max(0, lastTouchYRef.current - touch.clientY),
+                maxOffset,
+            );
+            setFeedOffsetY(nextOffset);
+            if (event.cancelable) {
+                event.preventDefault();
+            }
+        },
+        [getCurrentSlideHeight, setFeedOffsetY],
+    );
+
+    const handleFeedTouchEnd = useCallback(
+        (event: ReactTouchEvent<HTMLDivElement>) => {
+            if (!touchActiveRef.current) return;
+            touchActiveRef.current = false;
+            setUserTouching(false);
+
+            const touch = event.changedTouches[0];
+            const endY = touch?.clientY ?? touchStartYRef.current;
+            const deltaY = touchStartYRef.current - endY;
+            const current = activeIndexRef.current;
+            const len = playbackItemsLengthRef.current;
+            let next = current;
+
+            markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
+            if (Math.abs(deltaY) > FEED_TOUCH_THRESHOLD_PX) {
+                next = Math.min(Math.max(0, current + (deltaY > 0 ? 1 : -1)), len - 1);
+            }
+            isFirstTouchRef.current = false;
+
+            if (next === current) {
+                scrollToIndex(current);
+                feedDbg('touch snap', { index: current, deltaY });
+                return;
+            }
+
+            const direction: FeedNavigateDirection = next > current ? 'next' : 'prev';
+            syncActiveIndex(next, direction);
+            scrollToIndex(next);
+            feedDbg('touch', {
+                from: current,
+                to: next,
+                direction,
+                deltaY,
+                gesture: isUserGestureActive(),
+            });
+            requestAnimationFrame(() => {
+                dispatchActivePlayRef.current('touch');
+            });
+        },
+        [scrollToIndex, syncActiveIndex],
+    );
+
+    const handleFeedTouchCancel = useCallback(() => {
+        if (!touchActiveRef.current) return;
+        touchActiveRef.current = false;
+        setUserTouching(false);
+        isFirstTouchRef.current = false;
+        scrollToIndex(activeIndexRef.current);
+    }, [scrollToIndex]);
+
     useEffect(() => {
         if (!feedNavigateRef) return;
         feedNavigateRef.current = {
@@ -634,7 +818,7 @@ export function DouyinFeedPlayer({
         };
     }, [feedNavigateRef]);
 
-    // MD-ref: mount-only — wheel/scroll/keyboard 绑定 scroller DOM
+    // Root-level non-touch bindings stay outside the transform swipe chain.
     useEffect(() => {
         const root = scrollerRef.current;
         if (!root) return;
@@ -647,17 +831,6 @@ export function DouyinFeedPlayer({
         const wheel = bindWheelNavigate(root, (dir) => {
             navigateRef.current(dir === 'next' ? 'next' : 'prev');
         });
-        const touch = bindFeedTouchGuard(
-            root,
-            undefined,
-            () => {
-                // iOS：首次触摸即 syncInteraction，允许预加载下一条减少冷启动
-                if (detectPlatform().isIOS) {
-                    openPreloadGateRef.current();
-                }
-            },
-        );
-
         const chromeTapStartRef = { current: null as { x: number; y: number } | null };
 
         const onChromeTouchStart = (event: TouchEvent) => {
@@ -700,30 +873,6 @@ export function DouyinFeedPlayer({
         root.addEventListener('touchend', onChromeTouchEnd, { ...chromeCapture, passive: false });
         root.addEventListener('touchcancel', onChromeTouchCancel, { ...chromeCapture, passive: true });
 
-        const onScroll = () => {
-            chromeTapStartRef.current = null;
-            const height = root.clientHeight || window.innerHeight;
-            const idx = Math.round(root.scrollTop / height);
-            const maxIdx = playbackItemsLengthRef.current - 1;
-            const clamped = Math.min(Math.max(0, idx), maxIdx);
-
-            if (scrollSyncLockRef.current) {
-                if (clamped === activeIndexRef.current) {
-                    scrollSyncLockRef.current = false;
-                }
-                return;
-            }
-
-            if (clamped !== activeIndexRef.current) {
-                const direction: FeedNavigateDirection =
-                    clamped > activeIndexRef.current ? 'next' : 'prev';
-                markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
-                feedDbg('scroll', { from: activeIndexRef.current, to: clamped, direction });
-                syncActiveIndexRef.current(clamped, direction);
-                dispatchActivePlayRef.current('scroll');
-            }
-        };
-
         const onKey = (event: KeyboardEvent) => {
             if (event.key === 'ArrowDown' || event.key === 's' || event.key === 'S') {
                 navigateRef.current('next');
@@ -732,16 +881,13 @@ export function DouyinFeedPlayer({
             }
         };
 
-        root.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('keydown', onKey);
 
         return () => {
             wheel.dispose();
-            touch();
             root.removeEventListener('touchstart', onChromeTouchStart, chromeCapture);
             root.removeEventListener('touchend', onChromeTouchEnd, chromeCapture);
             root.removeEventListener('touchcancel', onChromeTouchCancel, chromeCapture);
-            root.removeEventListener('scroll', onScroll);
             window.removeEventListener('keydown', onKey);
         };
     }, []);
@@ -765,13 +911,13 @@ export function DouyinFeedPlayer({
                 if (tryPlayIosChainInEndedStack(nextPlayer, nextUrl)) {
                     endedStackPlayRef.current = true;
                     setIosChainWantPlay(true);
+                    suppressNextPreloadUntilStable('ended-stack');
                 }
             }
 
             markUserGesture(3500);
-            scrollSyncLockRef.current = true;
             syncActiveIndex(next, 'next');
-            scrollToIndex(next, 'auto');
+            scrollToIndex(next);
             feedDbg('advance after ended', {
                 from: current,
                 to: next,
@@ -783,7 +929,7 @@ export function DouyinFeedPlayer({
                 dispatchActivePlayRef.current('ended-auto');
             }
         },
-        [scrollToIndex, syncActiveIndex],
+        [scrollToIndex, suppressNextPreloadUntilStable, syncActiveIndex],
     );
     advanceAfterEndedRef.current = advanceAfterEnded;
 
@@ -952,6 +1098,10 @@ export function DouyinFeedPlayer({
 
     useEffect(() => {
         return () => {
+            if (suppressNextPreloadTimerRef.current != null) {
+                window.clearTimeout(suppressNextPreloadTimerRef.current);
+                suppressNextPreloadTimerRef.current = null;
+            }
             iosChainRetryDisposeRef.current?.();
             iosChainRetryDisposeRef.current = null;
             iosPauseRecoverDisposeRef.current?.();
@@ -975,66 +1125,81 @@ export function DouyinFeedPlayer({
             ref={scrollerRef}
             className={cn('douyin-feed-player', className)}
             id="sliderVideo"
+            onTouchStart={handleFeedTouchStart}
+            onTouchMove={handleFeedTouchMove}
+            onTouchEnd={handleFeedTouchEnd}
+            onTouchCancel={handleFeedTouchCancel}
         >
-            {playbackItems.map((item, index) => {
-                const slot = slots.find((s) => s.index === index);
-                const feedAttrs = getFeedItemDataAttrs(index === activeIndex);
-                return (
-                    <div
-                        key={String(item.id)}
-                        ref={(el) => bindSlideRef(index, el)}
-                        className="douyin-feed-player__slide slider-video"
-                        {...feedAttrs}
-                    >
-                        {slot ? (
-                            <>
-                                <DouyinPlayerSlot
-                                    slot={slot}
-                                    subtitleUrl={item.subtitle ?? ''}
-                                    hasPreload={
-                                        preloadNext && preloadGate && index === activeIndex + 1
-                                    }
-                                    onEnded={() => onVideoEnded(index)}
-                                    onPlayerChange={handleSlotPlayerChange}
-                                    onPlaybackModeChange={onPlaybackModeChange}
-                                    onStall={onStall}
-                                    onFullscreenVideoTap={
-                                        fullscreenEnabled && index === activeIndex
-                                            ? handleFullscreenVideoTap
-                                            : undefined
-                                    }
-                                    chromeTapSuppressRef={chromeTapSuppressRef}
-                                    infoBumpRef={
-                                        hasTopContent && index === activeIndex
-                                            ? infoBumpRef
-                                            : undefined
-                                    }
-                                />
-                                {showControls && index === activeIndex ? (
-                                    <DouyinPlayerControls
-                                        player={activePlayer}
-                                        showNextEpisode={showNextEpisode}
-                                        onNextEpisode={handleToolbarNextEpisode}
-                                        topContent={controlsTopContent}
-                                        fixedPlaybackSpeed={fixedPlaybackSpeed}
-                                        isFullscreenUi={feedFullscreen.isFullscreenUi}
-                                        fullscreen={fullscreenControls}
-                                        chromeVideoTapRef={
-                                            fullscreenEnabled ? chromeVideoTapRef : undefined
+            <div
+                className="douyin-feed-player__track"
+                style={{
+                    transform: `translate3d(0, ${-offsetY}px, 0)`,
+                    transition: animating
+                        ? `transform ${FEED_SLIDE_ANIMATION_MS}ms ease-in-out`
+                        : 'none',
+                }}
+            >
+                {playbackItems.map((item, index) => {
+                    const slot = slots.find((s) => s.index === index);
+                    const feedAttrs = getFeedItemDataAttrs(index === activeIndex);
+                    return (
+                        <div
+                            key={String(item.id)}
+                            ref={(el) => bindSlideRef(index, el)}
+                            className="douyin-feed-player__slide slider-video"
+                            style={slideHeight ? { height: `${slideHeight}px` } : undefined}
+                            {...feedAttrs}
+                        >
+                            {slot ? (
+                                <>
+                                    <DouyinPlayerSlot
+                                        slot={slot}
+                                        subtitleUrl={item.subtitle ?? ''}
+                                        hasPreload={
+                                            preloadNext && preloadGate && index === activeIndex + 1
+                                        }
+                                        onEnded={() => onVideoEnded(index)}
+                                        onPlayerChange={handleSlotPlayerChange}
+                                        onPlaybackModeChange={onPlaybackModeChange}
+                                        onStall={onStall}
+                                        onFullscreenVideoTap={
+                                            fullscreenEnabled && index === activeIndex
+                                                ? handleFullscreenVideoTap
+                                                : undefined
                                         }
                                         chromeTapSuppressRef={chromeTapSuppressRef}
-                                        chromeVisibleRef={chromeVisibleRef}
-                                        infoBumpRef={hasTopContent ? infoBumpRef : undefined}
-                                        topContentResetKey={activeIndex}
+                                        infoBumpRef={
+                                            hasTopContent && index === activeIndex
+                                                ? infoBumpRef
+                                                : undefined
+                                        }
                                     />
-                                ) : null}
-                            </>
-                        ) : (
-                            <div className="douyin-feed-player__cover" />
-                        )}
-                    </div>
-                );
-            })}
+                                    {showControls && index === activeIndex ? (
+                                        <DouyinPlayerControls
+                                            player={activePlayer}
+                                            showNextEpisode={showNextEpisode}
+                                            onNextEpisode={handleToolbarNextEpisode}
+                                            topContent={controlsTopContent}
+                                            fixedPlaybackSpeed={fixedPlaybackSpeed}
+                                            isFullscreenUi={feedFullscreen.isFullscreenUi}
+                                            fullscreen={fullscreenControls}
+                                            chromeVideoTapRef={
+                                                fullscreenEnabled ? chromeVideoTapRef : undefined
+                                            }
+                                            chromeTapSuppressRef={chromeTapSuppressRef}
+                                            chromeVisibleRef={chromeVisibleRef}
+                                            infoBumpRef={hasTopContent ? infoBumpRef : undefined}
+                                            topContentResetKey={activeIndex}
+                                        />
+                                    ) : null}
+                                </>
+                            ) : (
+                                <div className="douyin-feed-player__cover" />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }

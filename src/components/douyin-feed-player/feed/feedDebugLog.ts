@@ -1,23 +1,66 @@
 /** DEV：console 单行日志 + STALL 环形缓冲 tail */
 
-const ENABLED = import.meta.env.DEV;
+export const FEED_DEBUG_LOG_ENABLED = false;
+
 const MAX_ENTRIES = 400;
+
+const TRACKED_EVENTS = new Set([
+    'player init',
+    'suppress next preload',
+    'resume next preload',
+    'sync',
+    'dispatch',
+    'dispatch skip holdPause',
+    'schedule',
+    'schedule skip holdPause',
+    'pause',
+    'play ok',
+    'chain play ok',
+    'chain mark',
+    'chain consume',
+    'chain NotAllowed → muted retry',
+    'play blocked until gesture',
+    'play rejected',
+    'play retry',
+    'play cancelled',
+    'ended',
+    'advance after ended',
+    'ended stack neighbor',
+    'ios ended defer until exit fs',
+    'ios ended flush after exit fs',
+    'ios chain muted bootstrap',
+    'ios chain bootstrap fail',
+    'ios chain retry',
+    'ios chain neighbor recover',
+    'ios chain neighbor recover scheduled',
+    'ios chain recover immediate bounce',
+    'ios chain recover delayed bounce',
+    'chain unmute on playing',
+    'ios chain unmuted bounce ok',
+    'ios chain unmuted bounce fail',
+    'slotChange ended-stack recover',
+    'STALL active unexpected pause',
+    'STALL post-neighbor paused',
+    'touch',
+    'navigate',
+    'goToIndex',
+    'user play tap',
+    'dispatch mp4',
+    'ended mp4',
+    'schedule mp4',
+    'pause mp4',
+    'play ok mp4',
+    'play blocked mp4',
+    'play rejected mp4',
+    'chain schedule mp4',
+    'chain play ok mp4',
+    'user play tap mp4',
+]);
 
 type FeedDbgContext = {
     activeIndex: number;
     len: number;
 };
-
-const WARN_EVENTS = new Set([
-    'play rejected',
-    'play blocked until gesture',
-    'buffer resume fail',
-    'buffer pause low water',
-    'ios chain bootstrap fail',
-    'STALL active unexpected pause',
-    'STALL active playing unattributed',
-    'STALL post-neighbor paused',
-]);
 
 const entries: string[] = [];
 let seq = 0;
@@ -49,35 +92,52 @@ function pushEntry(event: string, detail?: Record<string, unknown>): void {
     }
 }
 
-function tailSummary(count = 10): string {
-    return entries.slice(-count).join(' | ');
-}
-
-function logStall(event: string, detail?: Record<string, unknown>) {
-    console.error('[douyin-feed] STALL', {
-        event,
-        active: context.activeIndex,
-        len: context.len,
-        ...detail,
-        tail: tailSummary(10),
-    });
-}
-
 export function setFeedDbgContext(patch: Partial<FeedDbgContext>) {
+    if (!FEED_DEBUG_LOG_ENABLED) return;
     context = { ...context, ...patch };
 }
 
 export function feedDbg(event: string, detail?: Record<string, unknown>) {
-    if (!ENABLED) return;
-
+    if (!FEED_DEBUG_LOG_ENABLED) return;
+    if (!TRACKED_EVENTS.has(event)) return;
     pushEntry(event, detail);
+}
 
-    const oneLine = `[douyin-feed] ${event}${formatDetail(detail)}`;
+export function collectFeedDebugLog(): string {
+    if (!FEED_DEBUG_LOG_ENABLED) return '# qd-feed-points disabled\n';
 
-    if (WARN_EVENTS.has(event)) {
-        logStall(event, detail);
-        return;
-    }
+    const header = [
+        `createdAt=${new Date().toISOString()}`,
+        `context=${compactValue(context)}`,
+    ];
 
-    console.log(oneLine);
+    return [
+        '# qd-feed-points',
+        ...header,
+        '',
+        '# events',
+        ...entries,
+        '',
+    ].join('\n');
+}
+
+export function downloadFeedDebugLog(): void {
+    if (!FEED_DEBUG_LOG_ENABLED) return;
+
+    const text = collectFeedDebugLog();
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `douyin-feed-debug-${stamp}.txt`;
+
+    void navigator.clipboard?.writeText(text).catch(() => undefined);
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 5000);
 }

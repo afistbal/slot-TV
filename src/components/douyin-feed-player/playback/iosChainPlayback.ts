@@ -8,6 +8,7 @@ import {
     msSinceChainUnmute,
 } from '../feed/feedPlayAttribution';
 import { readMutedPreference } from '../controls/mutePreference';
+import { isUserAudioUnlocked } from '../feed/userGesturePlay';
 import {
     isIosChainWantPlay,
     isUserHoldPause,
@@ -18,6 +19,33 @@ import { primeDouyinNeighborBuffer } from './primeNeighborBuffer';
 
 function playErrorName(err: unknown): string {
     return err instanceof Error ? err.name : String(err);
+}
+
+function playIosUnmutedBounce(video: HTMLVideoElement, source: string): boolean {
+    if (!isUserAudioUnlocked()) return false;
+
+    video.muted = false;
+    markCodedPlay(`ios-chain:${source}:unmuted`);
+    void video
+        .play()
+        .then(() => {
+            markChainUnmute();
+            feedDbg('ios chain unmuted bounce ok', {
+                source,
+                readyState: video.readyState,
+            });
+        })
+        .catch((err: unknown) => {
+            feedDbg('ios chain unmuted bounce fail', {
+                source,
+                name: playErrorName(err),
+                readyState: video.readyState,
+            });
+            video.muted = true;
+            markCodedPlay(`ios-chain:${source}:muted-fallback`);
+            void video.play().catch(() => undefined);
+        });
+    return true;
 }
 
 function isNeighborRecoverSource(source: string): boolean {
@@ -52,6 +80,10 @@ function attachChainUnmuteOnPlaying(video: HTMLVideoElement, deferUnmuteMs = 0):
 /** iOS ended 连播：muted bootstrap → playing 后立即 unmute */
 export function playIosChainWithSound(video: HTMLVideoElement, source: string): void {
     if (!detectPlatform().isIOS || readMutedPreference()) return;
+
+    if (source === 'unmute-bounce' && playIosUnmutedBounce(video, source)) {
+        return;
+    }
 
     const deferUnmuteMs = isNeighborRecoverSource(source) ? 800 : 0;
     attachChainUnmuteOnPlaying(video, deferUnmuteMs);
@@ -152,14 +184,29 @@ export function recoverIosActiveChainIfPaused(
     const elapsed = lastNeighborRecoverAt ? now - lastNeighborRecoverAt : Number.POSITIVE_INFINITY;
     const inUnmuteBounce = sinceUnmute != null && sinceUnmute < 1000;
 
-    if (elapsed < 250 && !inUnmuteBounce) return false;
+    if (inUnmuteBounce) {
+        if (source === 'active-pause') {
+            feedDbg('ios chain recover immediate bounce', {
+                source,
+                msSinceChainUnmute: sinceUnmute,
+            });
+            lastNeighborRecoverAt = now;
+            neighborRecoverBurstAt = now;
+            neighborRecoverBurst += 1;
+            return runNeighborRecover(video, 'unmute-bounce');
+        }
 
-    if (lastNeighborRecoverAt > 0 && elapsed < 500 && inUnmuteBounce) {
-        const retrySource =
-            source === 'post-neighbor' || source === 'active-pause' ? 'unmute-bounce' : source;
-        scheduleNeighborRecover(video, retrySource, 120);
+        const delayMs = Math.max(160, 1000 - sinceUnmute);
+        feedDbg('ios chain recover delayed bounce', {
+            source,
+            delayMs,
+            msSinceChainUnmute: sinceUnmute,
+        });
+        scheduleNeighborRecover(video, 'unmute-bounce', delayMs);
         return true;
     }
+
+    if (elapsed < 250 && !inUnmuteBounce) return false;
 
     lastNeighborRecoverAt = now;
     neighborRecoverBurstAt = now;

@@ -1,4 +1,4 @@
-import { feedDbg } from './feedDebugLog';
+import { FEED_DEBUG_LOG_ENABLED, feedDbg } from './feedDebugLog';
 import {
     isProgPauseForVideo,
     isRecentCodedPlay,
@@ -13,6 +13,9 @@ const READY_LABELS = ['none', 'metadata', 'current', 'future', 'enough'] as cons
 
 /** 对标 Safari Network：mp4 是否仍在 pending（networkState=loading） */
 export function snapshotVideoMp4(video: HTMLVideoElement | null | undefined) {
+    if (!FEED_DEBUG_LOG_ENABLED) {
+        return {};
+    }
     if (!video) {
         return { hasVideo: false };
     }
@@ -55,6 +58,7 @@ export function feedVideoMp4(
     video: HTMLVideoElement | null | undefined,
     extra?: Record<string, unknown>,
 ) {
+    if (!FEED_DEBUG_LOG_ENABLED) return;
     feedDbg(event, { ...snapshotVideoMp4(video), ...extra });
 }
 
@@ -63,6 +67,7 @@ export function feedVideoMp4FromPlayer(
     player: { video?: HTMLVideoElement | null } | null | undefined,
     extra?: Record<string, unknown>,
 ) {
+    if (!FEED_DEBUG_LOG_ENABLED) return;
     const video = player?.video;
     feedVideoMp4(event, video instanceof HTMLVideoElement ? video : null, extra);
 }
@@ -73,6 +78,8 @@ export function attachFeedVideoMp4Diag(
     slotIndex: number,
     isActive: () => boolean,
 ): () => void {
+    if (!FEED_DEBUG_LOG_ENABLED) return () => undefined;
+
     const log = (name: string) => {
         if (!isActive()) return;
         feedVideoMp4(`video ${name}`, video, { slot: slotIndex });
