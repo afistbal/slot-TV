@@ -21,10 +21,12 @@ export function usePcPlayerRightRailAlign(
                 return;
             }
             /** Safari：flex + w-auto + aspect-ratio 首次宽度塌缩，用高度反推 9:16 宽 */
-            const h = stage.clientHeight;
+            const h = stage.clientHeight || shell.clientHeight;
             if (h > 0) {
-                const maxW = stage.parentElement?.clientWidth ?? shell.clientWidth;
-                stage.style.width = `${Math.round(Math.min(maxW, (h * 9) / 16))}px`;
+                const width = `${Math.round(Math.min(shell.clientWidth, (h * 9) / 16))}px`;
+                stage.style.width = width;
+                stage.style.minWidth = width;
+                stage.style.flexBasis = width;
             }
             const shellRect = shell.getBoundingClientRect();
             const stageRect = stage.getBoundingClientRect();
@@ -50,7 +52,9 @@ export function usePcPlayerRightRailAlign(
         }
         window.addEventListener('resize', sync);
         return () => {
-            stageRef.current?.style.removeProperty('width');
+            stage?.style.removeProperty('width');
+            stage?.style.removeProperty('min-width');
+            stage?.style.removeProperty('flex-basis');
             ro.disconnect();
             window.removeEventListener('resize', sync);
         };

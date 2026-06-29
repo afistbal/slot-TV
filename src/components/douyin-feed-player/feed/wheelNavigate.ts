@@ -8,7 +8,12 @@ export type WheelNavigateResult = 'next' | 'prev' | null;
 
 export function resolveWheelDirection(event: WheelEvent): -1 | 0 | 1 {
     const legacy = event as WheelEvent & { wheelDelta?: number; detail?: number };
-    const raw = legacy.wheelDelta ?? -event.deltaY ?? -(legacy.detail ?? 0);
+    const raw =
+        typeof legacy.wheelDelta === 'number'
+            ? legacy.wheelDelta
+            : event.deltaY !== 0
+              ? -event.deltaY
+              : -(legacy.detail ?? 0);
     return Math.max(-1, Math.min(1, raw)) as -1 | 0 | 1;
 }
 
@@ -37,26 +42,41 @@ export function bindWheelNavigate(
     let locked = false;
     let unlockTimer: ReturnType<typeof setTimeout> | null = null;
 
+    const scheduleUnlockAfterWheelIdle = () => {
+        if (unlockTimer) clearTimeout(unlockTimer);
+        unlockTimer = setTimeout(() => {
+            locked = false;
+            accumulated = 0;
+            unlockTimer = null;
+        }, WHEEL_DEBOUNCE_MS);
+    };
+
     const handler = (event: WheelEvent) => {
         if (!isVerticalWheel(event)) return;
 
         const direction = resolveWheelDirection(event);
         if (direction === 0) return;
 
-        accumulated += Math.abs(event.deltaY || (event as WheelEvent & { wheelDelta?: number }).wheelDelta || 0);
-        const shouldTrigger = accumulated > WHEEL_DELTA_THRESHOLD;
+        const magnitude = Math.abs(
+            event.deltaY || (event as WheelEvent & { wheelDelta?: number }).wheelDelta || 0,
+        );
 
-        if (!shouldTrigger || locked) return;
+        if (locked) {
+            accumulated = 0;
+            scheduleUnlockAfterWheelIdle();
+            return;
+        }
+
+        accumulated += magnitude;
+        const shouldTrigger = accumulated > WHEEL_DELTA_THRESHOLD;
+        scheduleUnlockAfterWheelIdle();
+
+        if (!shouldTrigger) return;
 
         locked = true;
         accumulated = 0;
         onNavigate(direction < 0 ? 'next' : 'prev');
-
-        if (unlockTimer) clearTimeout(unlockTimer);
-        unlockTimer = setTimeout(() => {
-            locked = false;
-            unlockTimer = null;
-        }, WHEEL_DEBOUNCE_MS);
+        scheduleUnlockAfterWheelIdle();
     };
 
     element.addEventListener('wheel', handler, { passive: true });
