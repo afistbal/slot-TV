@@ -1,0 +1,47 @@
+.qd-feed-demo-page {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 50;
+}
+
+.qd-feed-demo-page__debug {
+    position: absolute;
+    top: env(safe-area-inset-top, 0);
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 8px 12px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #0f0;
+    background: rgb(0 0 0 / 55%);
+    pointer-events: none;
+    font-family: ui-monospace, monospace;
+}
+
+.qd-feed-demo-page__back {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+    z-index: 101;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #fff;
+    background: rgb(0 0 0 / 45%);
+    border-radius: 8px;
+    border: none;
+}
+
+/* QD: xgplayer 容器 — 9085 L330-338 */
+.isPc-false-video,
+.isPc-true-video {
+    width: 100%;
+    height: 100%;
+}
+
+.isPc-false-video .xgplayer,
+.isPc-true-video .xgplayer {
+    width: 100% !important;
+    height: 100% !important;
+}

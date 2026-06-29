@@ -76,6 +76,7 @@ export default function Component() {
         if (isForYouPathname(pathname)) return true;
         if (isForDemoPathname(pathname)) return true;
         if (isVDemoPathname(pathname)) return true;
+        if (matchPath({ path: '/qd-feed-demo', end: true }, pathname) != null) return true;
         return matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null;
     }, [location.pathname, isShoppingRoute]);
 

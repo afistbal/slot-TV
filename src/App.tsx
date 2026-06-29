@@ -55,6 +55,7 @@ import UserRadixRc from './pages/user/RadixRc';
 import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
 import ForDemoPage from './pages/user/ForDemo';
 import VDemoPage from './pages/user/VDemo';
+import QdFeedDemoPage from './pages/user/QdFeedDemo';
 import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
 
 import AdminWeeklyUpdateTable from './pages/admin/WeeklyUpdateTable';
@@ -225,6 +226,10 @@ const router = createBrowserRouter([
             {
                 path: 'for-you',
                 element: <Navigate to="/foryou" replace />,
+            },
+            {
+                path: 'qd-feed-demo',
+                element: <QdFeedDemoPage />,
             },
         ],
     },
@@ -607,7 +612,8 @@ function App() {
     const isImmersivePlayerPath =
         matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null ||
         matchPath({ path: '/foryou', end: true }, pathname) != null ||
-        matchPath({ path: '/for-you', end: true }, pathname) != null;
+        matchPath({ path: '/for-you', end: true }, pathname) != null ||
+        matchPath({ path: '/qd-feed-demo', end: true }, pathname) != null;
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =
         install > 0 && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;

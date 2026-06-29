@@ -1,0 +1,61 @@
+qd-feed-demo 功能 ↔ quickdrama 源码行号（速查）
+================================================
+
+【强制规定 — 必读】
+  发现任何问题 → 先去下面导出包查 QD 源码 → 找到 chunk+行号 → 照抄移植。
+  禁止未查 QD 就自创逻辑。详见 QUICKDRAMA-REFERENCE.md「强制工作流」。
+
+唯一权威导出包:
+  C:\Users\Administrator\Downloads\www.quickdrama.cc (3)\www.quickdrama.cc\_next\static\chunks\
+
+[1] 上下滑 transform Feed
+  QD: 9085-44814131bc0a1f4a.js  L490-561  模块 79462
+  我们: QdVerticalFeed.tsx
+
+[2] 预加载（只 mount 当前 + 下一条）
+  QD: 9085  L512-514  i===t || i+1===t
+  我们: QdVerticalFeed.tsx renderSlot
+
+[3] 控件区不参与滑动
+  QD: 9085  L499  函数 A() 选择器列表
+  我们: isQdControlTarget.ts
+
+[4] isPlay 驱动播放（200ms delay）
+  QD: 9085  L268-279
+  我们: QdVideoSlot.tsx useEffect isPlay
+
+[5] 点击视频区 toggle play/pause
+  QD: 9085  L333-337
+  我们: QdVideoSlot.tsx onClick
+
+[6] xgplayer 创建参数
+  QD: 9085  L157-190  controls/loop/id/url/height/width/plugins/poster/fit/texttrack
+  我们: qdCreatePlayer.ts createQdXgPlayer
+
+[7] READY 后 progress 等 touch 隔离
+  QD: 9085  L200-216
+  我们: qdCreatePlayer.ts bindQdPlayerControlTouches
+
+[8] ENDED → onVideoEnd
+  QD: 9085  L217-218
+  我们: QdVideoSlot.tsx player.on(ENDED)
+
+[9] 全屏（xgplayer 内置，useCssFullscreen:false → iOS webkitEnterFullscreen）
+  QD: 580-b7614ccc4b885b23.js  L3413 L3450 L2463 L1909-1912
+  我们: 未改 xgplayer 内核，controls:true 使用默认 fullscreen 插件
+
+[10] ended 自动下一条
+  QD: page-2d070b8da4226bcf.js  L1885 onVideoEnd → L1512-1525 tN → scrollTo(e+1)
+  我们: QdFeedDemo/index.tsx handleVideoEnd
+
+[11] popstate 暂停
+  QD: 9085  L258-267
+  我们: QdVideoSlot.tsx
+
+[12] body.url-video-play
+  QD: 9085  L219-224  路径 /video/
+  我们: QdVideoSlot.tsx  路径 /qd-feed-demo
+
+测试: /qd-feed-demo
+
+详细说明见 QUICKDRAMA-REFERENCE.md
