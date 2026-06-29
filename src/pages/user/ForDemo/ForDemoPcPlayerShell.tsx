@@ -201,10 +201,12 @@ export function ForDemoPcPlayerShell({
     }, [activeIndex]);
 
     const handleFeedNext = useCallback(() => {
+        console.log('handleFeedNext', hasMore, playerItems.length, activeIndex);
         if (activeIndex < playerItems.length - 1) {
             feedNavigateRef.current?.next();
             return;
         }
+        console.log('handleFeedNext', hasMore, playerItems.length, activeIndex);
         if (hasMore) {
             onLoadMore();
         }

@@ -34,17 +34,15 @@ function inferHasMore(payload: IForYouListPayload, fallbackPerPage: number): boo
 }
 
 function mapRowsToPlayerItems(rows: IForYouFeedItem[], staticBase: string): DouyinFeedVideoItem[] {
-    const items: DouyinFeedVideoItem[] = [];
-    for (const row of rows) {
+    return rows.map((row, index) => {
         const url = resolveFeedVideoUrl(row, staticBase);
-        if (!url) continue;
-        items.push({
-            id: foryouFeedItemKey(row),
-            url,
+        return {
+            // 列表位 index 保证跨页重复 id-ep_id 时播放器 slide key 仍唯一
+            id: `${foryouFeedItemKey(row)}#${index}`,
+            url: url ?? '',
             subtitle: row.subtitle != null ? String(row.subtitle) : '',
-        });
-    }
-    return items;
+        };
+    });
 }
 
 export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: string) {
@@ -137,20 +135,24 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
         setLoadingMore(true);
         try {
             const base = listRef.current;
-            const res = await fetchForyouList({ mode: 'initial' });
+            const lastRow = base[base.length - 1];
+            const pp = FORYOU_DEFAULT_PER_PAGE;
+            const res = await fetchForyouList({
+                mode: 'more',
+                page: Math.floor(base.length / pp) + 1,
+                lastEpId: lastRow?.ep_id,
+            });
             if (!res.ok) {
                 return;
             }
             const incoming = res.payload.data;
-            const pp = res.payload.per_page ?? res.payload.count ?? FORYOU_DEFAULT_PER_PAGE;
+            const batchSize = res.payload.per_page ?? res.payload.count ?? pp;
             if (!incoming.length) {
                 setHasMore(false);
                 return;
             }
             const merged = mergeForyouFeedItems(base, incoming);
-            const nextHasMore =
-                merged.length > base.length ? inferHasMore(res.payload, pp) : false;
-            applyList(merged, nextHasMore);
+            applyList(merged, inferHasMore(res.payload, batchSize));
         } finally {
             setLoadingMore(false);
             fetchLockRef.current = false;
