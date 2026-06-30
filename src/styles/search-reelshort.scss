@@ -118,6 +118,26 @@
         flex-direction: column;
     }
 
+    &__poster {
+        background: #212121;
+
+        &.is-image-loaded .image-placeholder {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .lazy-load-image-background,
+        .lazy-load-image-loaded,
+        img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            filter: none;
+            image-rendering: auto;
+            transform: none;
+        }
+    }
+
     /** H5 /categories、Drawer：选中粉色 pill（覆盖 &__tag--active 紫蓝态） */
     &--categories {
         @media (max-width: 767px) {
@@ -147,6 +167,197 @@
 
     &__popularHeading {
         padding-top: 4px;
+    }
+
+    &__categoryTabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        padding: 0 16px 12px;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    &__categoryTab {
+        box-sizing: border-box;
+        flex: 0 0 auto;
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        background: transparent;
+        padding: 6px 10px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.25rem;
+        transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease,
+            color 0.15s ease;
+
+        &--active {
+            border-color: transparent;
+            background: #FF3D5D;
+            color: #fff;
+            font-weight: 700;
+        }
+    }
+
+    &__categoriesPanel--h5Picker {
+        position: relative;
+        padding: 6px 16px 12px;
+
+        > .rs-search-page__categoriesHeading,
+        > .rs-search-page__categoryTabs,
+        > .rs-search-page__categoriesTags {
+            display: none;
+        }
+    }
+
+    &__h5CategorySelect {
+        box-sizing: border-box;
+        display: flex;
+        width: 100%;
+        height: 42px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        cursor: pointer;
+        border: 0;
+        border-radius: 4px;
+        background: #161616;
+        padding: 0 14px;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.25rem;
+        text-align: start;
+    }
+
+    &__h5CategorySelectText {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__h5CategorySelectSvg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        color: rgba(255, 255, 255, 0.85);
+        transition: transform 0.2s ease;
+
+        &--open {
+            transform: rotate(180deg);
+        }
+    }
+
+    &__h5CategoryDropdown {
+        position: fixed;
+        z-index: 30;
+        top: 178px;
+        left: 16px;
+        right: 16px;
+        bottom: calc(var(--rs-bottom-nav-stack, 0px) + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 8px 8px 0 0;
+        background: #111111;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+    }
+
+    &__h5CategoryDropdownHeader {
+        display: flex;
+        flex: 0 0 auto;
+        height: 56px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 18px 0 22px;
+    }
+
+    &__h5CategoryDropdownTitle {
+        margin: 0;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.25rem;
+    }
+
+    &__h5CategoryDropdownClose {
+        display: flex;
+        width: 24px;
+        height: 24px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+        color: rgba(255, 255, 255, 0.9);
+        padding: 0;
+    }
+
+    &__h5CategoryDropdownBody {
+        display: grid;
+        flex: 1 1 auto;
+        min-height: 0;
+        grid-template-columns: 116px minmax(0, 1fr);
+        height: auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    &__h5CategorySide {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background: #2b2b2b;
+        padding: 0;
+    }
+
+    &__h5CategorySideItem {
+        display: block;
+        width: 100%;
+        cursor: pointer;
+        border: 0;
+        background: transparent;
+        padding: 16px 18px;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.25rem;
+        text-align: start;
+
+        &--active {
+            background: #111111;
+            color: #FF3D5D;
+            font-weight: 700;
+        }
+    }
+
+    &__h5CategoryTagsPane {
+        display: flex;
+        align-content: flex-start;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 10px 12px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        padding: 10px 16px 18px;
+
+        .rs-search-page__tag {
+            font-size: 14px;
+        }
+
+        .rs-search-page__tag--active {
+            font-weight: 600;
+        }
     }
 
     &__tagSearchHeading {
@@ -480,20 +691,56 @@
 
     /** PC：對標 ReelShort tags（如 movie-actors）— 標籤膠囊條，無 Actors/Actresses 二級 Tab */
     &__pcTagPanel {
-        margin-top: 24px;
-        margin-bottom: 12px;
+        margin-top: 12px;
+        margin-bottom: 24px;
+    }
+
+    &__pcCategoryTabs {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 28px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    &__pcCategoryTab {
+        box-sizing: border-box;
+        cursor: pointer;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        background: transparent;
+        padding: 0 0 10px;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 1.5rem;
+        transition:
+            border-color 0.15s ease,
+            color 0.15s ease;
+
+        &:hover {
+            color: #fff;
+        }
+
+        &--active {
+            border-bottom-color: #FF3D5D;
+            color: #FF3D5D;
+            font-weight: 700;
+        }
     }
 
     /** 標籤 + 展開鈕同一 flex-wrap；折疊態由 JS 只渲染三行內 tag + 鈕，不再 max-height 裁切 */
     &__pcTags {
         /** 三行高度上限：與 measurePcTagsTwoRowSplit 離屏測量一致 */
-        --rs-search-pc-tags-collapsed-max: calc(3 * (1.25rem + 14px) + 36px);
+        --rs-search-pc-tags-collapsed-max: calc(3 * (1.25rem + 12px) + 28px);
+        --rs-search-pc-tags-anchor-max: calc(4 * (1.25rem + 12px) + 42px);
 
         display: flex;
         flex-wrap: wrap;
         align-items: flex-start;
         align-content: flex-start;
-        gap: 18px 16px;
+        gap: 12px 14px;
     }
 
     &__pcTag {
@@ -506,7 +753,7 @@
         cursor: pointer;
         border: 1px solid transparent;
         border-radius: 6px;
-        padding: 6px 12px;
+        padding: 5px 10px;
         font-size: 14px;
         line-height: 1.25rem;
         color: #fff;
@@ -522,8 +769,8 @@
 
         &--active {
             border-color: transparent !important;
-            background: #FF3D5D !important;
-            color: #fff !important;
+            background: rgba(255, 61, 93, 0.28) !important;
+            color: #FF3D5D !important;
             font-weight: 700;
         }
     }

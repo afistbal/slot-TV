@@ -9,19 +9,25 @@ interface ISearch {
     /** movie 接口返回的总条数（分页用） */
     totalCount: number;
     perPage: number;
+    listScopeKey: string;
     scrollTop: number;
     keyword: string;
     tag: string;
     tags: TData[];
+    categories: TData[];
+    categoryId: string;
     setLoading: (loading: boolean) => void;
     setList: (list: TData[]) => void;
     setPage: (page: number) => void;
     setMore: (more: boolean) => void;
     setPaginationMeta: (totalCount: number, perPage: number) => void;
+    setListScopeKey: (listScopeKey: string) => void;
     setScrollTop: (scrollTop: number) => void;
     setKeyword: (keyword: string) => void;
     setTag: (tag: string) => void;
     setTags: (tags: TData[]) => void;
+    setCategories: (categories: TData[]) => void;
+    setCategoryId: (categoryId: string) => void;
 }
 
 export const useSearchStore = create<ISearch>((set) => ({
@@ -32,10 +38,13 @@ export const useSearchStore = create<ISearch>((set) => ({
     more: true,
     totalCount: 0,
     perPage: 24,
+    listScopeKey: '',
     scrollTop: 0,
     keyword: '',
     tag: '',
     tags: [],
+    categories: [],
+    categoryId: '',
     setLoading: (loading: boolean) => set({ loading }),
     setList: (list: TData[]) => set({ list }),
     setPage: (page: number) => {
@@ -48,8 +57,11 @@ export const useSearchStore = create<ISearch>((set) => ({
     setMore: (more: boolean) => set({ more }),
     setPaginationMeta: (totalCount: number, perPage: number) =>
         set({ totalCount, perPage: perPage > 0 ? perPage : 24 }),
+    setListScopeKey: (listScopeKey: string) => set({ listScopeKey }),
     setScrollTop: (scrollTop: number) => set({ scrollTop }),
     setKeyword: (keyword: string) => set({ keyword }),
     setTag: (tag: string) => set({ tag }),
     setTags: (tags: TData[]) => set({ tags }),
+    setCategories: (categories: TData[]) => set({ categories }),
+    setCategoryId: (categoryId: string) => set({ categoryId }),
 }));

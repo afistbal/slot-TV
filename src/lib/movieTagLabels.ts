@@ -27,6 +27,8 @@ export function formatTagUniqueId(uniqueId: string): string {
 }
 
 let movieTagsInflight: Promise<void> | null = null;
+let movieCategoriesInflight: Promise<void> | null = null;
+const categoryTagsInflight = new Map<string, Promise<TData[]>>();
 
 /** 会话内 tags 只拉一次；并发挂载共用同一 Promise */
 export async function ensureMovieTags(): Promise<void> {
@@ -48,6 +50,69 @@ export async function ensureMovieTags(): Promise<void> {
 
 /** @deprecated 请使用 ensureMovieTags */
 export const ensureMovieTagLabels = ensureMovieTags;
+
+export function categoryDisplayLabel(row: TData): string {
+    const name = String(row['name'] ?? '').trim();
+    if (name) {
+        return name;
+    }
+    return String(row['slug'] ?? row['id'] ?? '').trim();
+}
+
+export function defaultMovieCategoryId(categories: TData[]): string {
+    const preferred =
+        categories.find((c) => String(c['slug'] ?? '').toLowerCase() === 'story') ??
+        categories.find((c) => String(c['slug'] ?? '').toLowerCase() !== 'other') ??
+        categories[0];
+    return preferred ? String(preferred['id'] ?? '').trim() : '';
+}
+
+export async function ensureMovieCategories(): Promise<void> {
+    const s = useSearchStore.getState();
+    if (s.categories.length > 0) {
+        return;
+    }
+    if (!movieCategoriesInflight) {
+        movieCategoriesInflight = api<TData[]>('categories', { loading: false })
+            .then((res) => {
+                useSearchStore.getState().setCategories(res.d ?? []);
+            })
+            .finally(() => {
+                movieCategoriesInflight = null;
+            });
+    }
+    await movieCategoriesInflight;
+}
+
+export async function ensureCategoryTags(categoryId: string): Promise<TData[]> {
+    const id = String(categoryId ?? '').trim();
+    if (!id) {
+        useSearchStore.getState().setTags([]);
+        return [];
+    }
+    const current = useSearchStore.getState();
+    if (current.categoryId === id && current.tags.length > 0) {
+        return current.tags;
+    }
+    let task = categoryTagsInflight.get(id);
+    if (!task) {
+        task = api<TData[]>('category/tags', {
+            loading: false,
+            data: { category_id: id },
+        })
+            .then((res) => res.d ?? [])
+            .finally(() => {
+                categoryTagsInflight.delete(id);
+            });
+        categoryTagsInflight.set(id, task);
+    }
+    const tags = await task;
+    const latest = useSearchStore.getState();
+    if (latest.categoryId === id) {
+        latest.setTags(tags);
+    }
+    return tags;
+}
 
 /** 按接口 `source_tag_name` 或 `matched_unique_id` 匹配 */
 export function findTagRowByKey(tagKey: string, tags: TData[]): TData | undefined {

@@ -594,7 +594,7 @@ export default function Component() {
                 </>
             )}
             {!mdUp ? (
-            <div className="relative z-10 -mt-[min(calc(22*var(--app-vw)/100),5.5rem)]">
+            <div className="home-hero-mobile-wrap relative z-10 -mt-[min(calc(22*var(--app-vw)/100),5.5rem)]">
                 <div className="home-hero-shell w-full overflow-hidden" style={{ direction: 'ltr' }}>
                     <div
                         className="home-hero-viewport relative overflow-hidden"
@@ -639,7 +639,7 @@ export default function Component() {
                         })}
                         <div className="pointer-events-none absolute inset-0 z-[2] isolate">
                             <div
-                                className="absolute bottom-0 left-0 right-0 z-[-1] h-[40%] max-h-[170px] bg-gradient-to-t from-black/70 to-transparent md:max-h-[170px]"
+                                className="absolute bottom-[-1px] left-0 right-0 z-[-1] h-[46%] max-h-[190px] bg-gradient-to-t from-black via-black/80 to-transparent md:max-h-[170px]"
                                 aria-hidden
                             />
                             <div className="absolute inset-0 z-0 home-hero-radial-glow" aria-hidden />
@@ -692,7 +692,7 @@ export default function Component() {
                         {topLen > 0 ? (
                             <div
                                 className={cn(
-                                    'home-hero-banner-dots pointer-events-auto absolute bottom-0 left-0 right-0 z-[4] flex w-full justify-center gap-[calc(6/375*var(--app-vw))] pb-[3px]',
+                                    'home-hero-banner-dots pointer-events-auto absolute bottom-[calc(5/375*var(--app-vw))] left-0 right-0 z-[4] flex w-full justify-center gap-[calc(6/375*var(--app-vw))]',
                                 )}
                                 role="tablist"
                                 aria-label="Banner"
@@ -722,7 +722,7 @@ export default function Component() {
             ) : null}
             <div
                 className={cn(
-                    'HomePage_main__BzEnK',
+                    'HomePage_main__BzEnK home-page-main',
                     mdUp && 'relative z-[2] -mt-32',
                 )}
             >

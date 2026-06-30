@@ -6,6 +6,30 @@
 
 // --- 首页 Banner 全屏 cover 图（Home.tsx `<img class="home-hero-cover-img" />`）---
 .home-hero-viewport {
+    &::before,
+    &::after {
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 5;
+        display: block;
+        pointer-events: none;
+        content: '';
+    }
+
+    &::before {
+        top: 0;
+        height: 1px;
+        background: #000;
+    }
+
+    &::after {
+        z-index: 1;
+        bottom: -1px;
+        height: calc(22 / 375 * var(--app-vw));
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000 88%, #000 100%);
+    }
+
     .home-hero-cover-img {
         object-fit: cover;
         /* 手动调构图：原 Tailwind `object-[55%_center]`；可改 50% center、center top 等 */
@@ -61,6 +85,25 @@
         }
     }
 
+}
+
+.home-page .home-hero-mobile-wrap + .home-page-main {
+    position: relative;
+    z-index: 11;
+    margin-top: 0;
+    background: #000;
+    padding-top: calc(10 / 375 * var(--app-vw));
+}
+
+.home-page .home-hero-mobile-wrap + .home-page-main::before {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(-10 / 375 * var(--app-vw));
+    height: calc(10 / 375 * var(--app-vw));
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000 76%, #000 100%);
+    content: '';
 }
 
 // --- 侧栏抽屉（ReelShortNavDrawer.tsx）---
@@ -382,11 +425,12 @@ a.reelshort-topnav__brand-link {
 .reelshort-topnav__h5-subnav {
     display: flex;
     width: 100%;
-    align-items: center;
+    align-items: start;
     justify-content: center;
-    height: calc(47 / 375 * var(--app-vw));
-    padding-bottom: calc(12 / 375 * var(--app-vw));
-    background: #000;
+    height: calc(30 / 375 * var(--app-vw));
+    padding-bottom: 0;
+    border: 0;
+    box-shadow: none;
     transition: background-color 0.2s ease;
 
     @media (min-width: 768px) {
@@ -398,14 +442,16 @@ a.reelshort-topnav__brand-link {
     background: transparent;
 }
 
+
 .reelshort-topnav__h5-subnav .reelshort-topnav__segment-link {
     margin: 0 calc(16 / 375 * var(--app-vw));
     font-size: calc(14 / 375 * var(--app-vw));
+    line-height: calc(18 / 375 * var(--app-vw));
 }
 
 .reelshort-topnav__h5-subnav .reelshort-topnav__segment-link--active::after {
     position: absolute;
-    bottom: calc(-10 / 375 * var(--app-vw));
+    top: calc(100% + 5 / 375 * var(--app-vw));
     left: 50%;
     display: block;
     width: 70%;
@@ -680,6 +726,67 @@ a.reelshort-topnav__profile-link {
 
     .reelshort-topnav__pc-nav-item {
         margin-right: 0;
+    }
+
+    .reelshort-topnav__pc-category-nav {
+        position: relative;
+        display: inline-flex;
+        min-height: var(--rs-nav-hit-size);
+        align-items: center;
+    }
+
+    .reelshort-topnav__pc-category-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        z-index: 120;
+        display: flex;
+        min-width: 288px;
+        transform: translateX(-50%);
+        flex-direction: column;
+        gap: 0;
+        border-radius: 6px;
+        background: #262626;
+        padding: 10px 0;
+        opacity: 0;
+        pointer-events: none;
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
+        transition: opacity 0.14s ease, transform 0.14s ease;
+    }
+
+    .reelshort-topnav__pc-category-menu::before {
+        content: '';
+        position: absolute;
+        top: -7px;
+        left: 20px;
+        width: 14px;
+        height: 14px;
+        transform: rotate(45deg);
+        background: #262626;
+    }
+
+    .reelshort-topnav__pc-category-nav:hover .reelshort-topnav__pc-category-menu,
+    .reelshort-topnav__pc-category-nav:focus-within .reelshort-topnav__pc-category-menu {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .reelshort-topnav__pc-category-menu-item {
+        display: flex;
+        align-items: center;
+        min-height: 48px;
+        padding: 0 24px;
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.25rem;
+        text-decoration: none;
+    }
+
+    .reelshort-topnav__pc-category-menu-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.06);
     }
 
     .reelshort-topnav__pc-primary-nav .reelshort-topnav__segment-link:hover {

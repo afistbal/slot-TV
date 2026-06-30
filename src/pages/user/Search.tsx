@@ -30,7 +30,11 @@ import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 import {
     buildTagSearchQuery,
+    categoryDisplayLabel,
     ensureMovieTags,
+    ensureMovieCategories,
+    ensureCategoryTags,
+    defaultMovieCategoryId,
     findTagRowByKey,
     readMovieTagFromSearch,
     readTagLabelFromSearch,
@@ -68,6 +72,23 @@ function searchUrlMatchesStore(search: string): boolean {
     const kwOk = urlQ ? s.keyword.trim() === decodedQ : s.keyword.trim() === '';
     const tagOk = urlTag ? s.tag === decodedTag : s.tag === '';
     return kwOk && tagOk;
+}
+
+function buildSearchListScopeKey(state: {
+    keyword: string;
+    tag: string;
+    categoryId: string;
+}, isCategoriesPage: boolean): string {
+    if (isCategoriesPage) {
+        if (state.tag) {
+            return `categories:tag:${state.tag}`;
+        }
+        return `categories:category:${state.categoryId || 'all'}`;
+    }
+    if (state.tag) {
+        return `tag:${state.tag}`;
+    }
+    return `search:${state.keyword.trim()}`;
 }
 
 /** 含 calc/rem 的 CSS 变量无法用 parseFloat；用离屏探针解析为像素 */
@@ -466,8 +487,10 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     const pcShelfHeadingRef = useRef<HTMLDivElement>(null);
     const [tagOpen, setTagOpen] = useState(false);
     const [tagKeyword, setTagKeyword] = useState('');
+    const [h5CategoriesPickerOpen, setH5CategoriesPickerOpen] = useState(false);
     const [pcTagsExpanded, setPcTagsExpanded] = useState(false);
     const [pcTagsNeedsExpand, setPcTagsNeedsExpand] = useState(false);
+    const [pcTagsExceedsAnchorRows, setPcTagsExceedsAnchorRows] = useState(false);
     /** 折疊態下僅渲染前 n 個標籤 + 展開鈕，使鈕緊跟最後可見 tag */
     const [pcCollapsedVisibleCount, setPcCollapsedVisibleCount] = useState<number | null>(null);
     const [h5CategoriesTagsNeedsExpand, setH5CategoriesTagsNeedsExpand] = useState(false);
@@ -501,6 +524,10 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             intl.formatMessage({ id: 'tag' }),
             tagLabelFromUrl,
         );
+    const selectedCategoryLabel = () => {
+        const row = searchStore.categories.find((c) => String(c['id'] ?? '') === searchStore.categoryId);
+        return row ? categoryDisplayLabel(row) : '';
+    };
     const tagResultCount =
         searchStore.totalCount > 0 ? searchStore.totalCount : searchStore.list.length;
     /** 窄屏底栏（Tab + 可选「添加桌面」）时抬高回顶钮 */
@@ -557,9 +584,15 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             searchStore.setLoading(true);
         }
         try {
-            const result = await api<IPagination>('movie', {
+            const categoryId = String(state.categoryId ?? '').trim();
+            const shouldLoadByCategory = isCategoriesPage && categoryId && !state.tag;
+            const result = await api<IPagination>(shouldLoadByCategory ? 'movie/by-category' : 'movie', {
                 loading: false,
-                data: {
+                data: shouldLoadByCategory ? {
+                    page: state.page,
+                    pageSize: state.perPage || 24,
+                    category_id: categoryId,
+                } : {
                     page: state.page,
                     /** 按标签筛选时只传 tag，避免 keyword 与 tag 语义叠加导致结果不符合预期 */
                     keyword: state.tag ? '' : state.keyword.trim(),
@@ -575,6 +608,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             const cur = typeof d.current_page === 'number' ? d.current_page : state.page;
             const total = typeof d.count === 'number' ? d.count : 0;
             searchStore.setPaginationMeta(total, perPage);
+            searchStore.setListScopeKey(buildSearchListScopeKey(state, isCategoriesPage));
 
             if (isPc) {
                 searchStore.setList(rows);
@@ -594,14 +628,11 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             }
             searchStore.setMore(hasMore);
 
-            if (isPc && scrollRef.current) {
-                if (isCategoriesPage) {
+            if (isPc && scrollRef.current && !isCategoriesPage) {
+                if (false) {
                     /** 全部劇情（无 tag）不滚到列表区；仅选中具体标签时定位到 rs-shelf__title */
-                    if (state.tag) {
-                        requestAnimationFrame(() => {
-                            scrollPcToShelfHeading();
-                        });
-                    }
+                    scrollRef.current!.scrollTop = 0;
+                    searchStore.setScrollTop(0);
                 } else {
                     scrollRef.current.scrollTop = 0;
                     searchStore.setScrollTop(0);
@@ -674,6 +705,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
     function handleAllPlotsClick() {
         setTagOpen(false);
+        setH5CategoriesPickerOpen(false);
         if (!searchStore.tag && !searchStore.keyword.trim()) {
             return;
         }
@@ -687,28 +719,31 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         navigate('/categories');
     }
 
-    /** PC /categories：筛选后滚到 `rs-shelf__title`，而非整页置顶 */
-    function scrollPcToShelfHeading() {
-        const scrollEl = scrollRef.current;
-        const headingEl = pcShelfHeadingRef.current;
-        if (!scrollEl || !headingEl) {
+    async function handleCategoryClick(categoryId: string) {
+        const nextCategoryId = String(categoryId ?? '').trim();
+        if (!nextCategoryId || searchStore.categoryId === nextCategoryId) {
             return;
         }
-        const navEl = scrollEl.querySelector('.reelshort-topnav');
-        const navHeight = navEl instanceof HTMLElement ? navEl.offsetHeight : 0;
-        const next = Math.max(
-            0,
-            headingEl.getBoundingClientRect().top -
-                scrollEl.getBoundingClientRect().top +
-                scrollEl.scrollTop -
-                navHeight,
-        );
-        scrollEl.scrollTop = next;
-        searchStore.setScrollTop(next);
+        searchStore.setCategoryId(nextCategoryId);
+        searchStore.setTags([]);
+        const tags = await ensureCategoryTags(nextCategoryId);
+        searchStore.setTag('');
+        searchStore.setKeyword('');
+        searchStore.setTags(tags);
+        searchStore.setPage(1);
+        if (isPc && scrollRef.current) {
+            scrollRef.current.scrollTop = 0;
+            searchStore.setScrollTop(0);
+        }
+        void loadData();
     }
+
+    /** PC /categories：筛选后滚到 `rs-shelf__title`，而非整页置顶 */
+    
 
     function handleTagClick(name: string) {
         setTagOpen(false);
+        setH5CategoriesPickerOpen(false);
         if (searchStore.tag === name) {
             if (isCategoriesPage) {
                 searchStore.setTag('');
@@ -724,7 +759,29 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             searchStore.setTag(name);
             searchStore.setKeyword('');
             searchStore.setPage(1);
-            void loadData();
+            void loadData().then(() => {
+                if (!isPc || !pcTagsExceedsAnchorRows) {
+                    return;
+                }
+                requestAnimationFrame(() => {
+                    const scrollEl = scrollRef.current;
+                    const headingEl = pcShelfHeadingRef.current;
+                    if (!scrollEl || !headingEl) {
+                        return;
+                    }
+                    const navEl = scrollEl.querySelector('.reelshort-topnav');
+                    const navHeight = navEl instanceof HTMLElement ? navEl.offsetHeight : 0;
+                    const next = Math.max(
+                        0,
+                        headingEl.getBoundingClientRect().top -
+                            scrollEl.getBoundingClientRect().top +
+                            scrollEl.scrollTop -
+                            navHeight,
+                    );
+                    scrollEl.scrollTop = next;
+                    searchStore.setScrollTop(next);
+                });
+            });
             return;
         }
         const row = findTagRowByKey(name, searchStore.tags);
@@ -763,6 +820,9 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             const q = searchStore.keyword.trim();
             return q.length > 24 ? `${q.slice(0, 24)}…` : q;
         }
+        if (isCategoriesPage && searchStore.categoryId) {
+            return selectedCategoryLabel() || intl.formatMessage({ id: 'nav_categories' });
+        }
         return intl.formatMessage({ id: 'nav_categories' });
     }
 
@@ -779,10 +839,16 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 return intl.formatMessage({ id: 'search_movies_all' });
             }
             if (label) {
+                if (isCategoriesPage) {
+                    return `${label} Movie Collection`;
+                }
                 return intl.formatMessage({ id: 'search_movies_with_tag' }, { tag: label });
             }
             if (isOpaqueTagId(searchStore.tag) && searchStore.tags.length === 0) {
                 return intl.formatMessage({ id: 'search_movies_all' });
+            }
+            if (isCategoriesPage) {
+                return `${searchStore.tag} Movie Collection`;
             }
             return intl.formatMessage(
                 { id: 'search_movies_with_tag' },
@@ -794,6 +860,9 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 { id: 'search_results_for' },
                 { q: searchStore.keyword.trim() },
             );
+        }
+        if (isCategoriesPage && searchStore.categoryId) {
+            return selectedCategoryLabel() || intl.formatMessage({ id: 'search_movies_all' });
         }
         return intl.formatMessage({ id: 'search_movies_all' });
     }
@@ -829,6 +898,11 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 s.setPage(1);
             }
             return;
+        }
+
+        if (s.categoryId) {
+            s.setCategoryId('');
+            s.setTags([]);
         }
 
         const params = new URLSearchParams(location.search);
@@ -886,12 +960,26 @@ export function SearchPage({ type }: { type: SearchPageType }) {
 
         let cancelled = false;
         void (async () => {
-            await ensureMovieTags();
+            if (isCategoriesPage) {
+                await ensureMovieCategories();
+                if (cancelled) return;
+                const latest = useSearchStore.getState();
+                const selectedCategoryId = latest.categoryId || defaultMovieCategoryId(latest.categories);
+                if (selectedCategoryId && latest.categoryId !== selectedCategoryId) {
+                    latest.setCategoryId(selectedCategoryId);
+                    latest.setTags([]);
+                }
+                await ensureCategoryTags(selectedCategoryId);
+            } else {
+                await ensureMovieTags();
+            }
             if (cancelled) return;
 
             const state = useSearchStore.getState();
             const canReuseList =
-                state.list.length > 0 && searchUrlMatchesStore(location.search);
+                state.list.length > 0 &&
+                searchUrlMatchesStore(location.search) &&
+                state.listScopeKey === buildSearchListScopeKey(state, isCategoriesPage);
 
             if (canReuseList) {
                 searchStore.setLoading(false);
@@ -915,6 +1003,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     useLayoutEffect(() => {
         if (!isPc || searchStore.tags.length === 0) {
             setPcTagsNeedsExpand(false);
+            setPcTagsExceedsAnchorRows(false);
             setPcCollapsedVisibleCount(null);
             setPcTagsExpanded(false);
             return;
@@ -938,9 +1027,12 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 '--rs-search-pc-tags-collapsed-max',
                 PC_TAGS_COLLAPSED_FALLBACK_PX,
             );
-            const leadingLabels = !isTagSearchPage
-                ? [intl.formatMessage({ id: 'categories_all_plots' })]
-                : [];
+            const anchorMax = resolveCssVarPx(
+                host,
+                '--rs-search-pc-tags-anchor-max',
+                Math.round((PC_TAGS_COLLAPSED_FALLBACK_PX / 3) * 4),
+            );
+            const leadingLabels: string[] = [];
             const { needsExpand, visibleCount } = measurePcTagsTwoRowSplit(
                 w,
                 searchStore.tags,
@@ -949,7 +1041,16 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 shell,
                 leadingLabels,
             );
+            const { needsExpand: exceedsAnchorRows } = measurePcTagsTwoRowSplit(
+                w,
+                searchStore.tags,
+                anchorMax,
+                (t) => formatTagUniqueId(String(t['unique_id'] ?? '')),
+                shell,
+                leadingLabels,
+            );
             setPcTagsNeedsExpand(needsExpand);
+            setPcTagsExceedsAnchorRows(exceedsAnchorRows);
             setPcCollapsedVisibleCount(visibleCount);
             if (!needsExpand) {
                 setPcTagsExpanded(false);
@@ -991,7 +1092,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 tagRowDisplayLabel,
                 shell,
                 H5_CATEGORIES_TAGS_ROW_MEASURE,
-                [intl.formatMessage({ id: 'categories_all_plots' })],
+                [],
             );
             setH5CategoriesTagsNeedsExpand(needsExpand);
             setH5CategoriesCollapsedVisibleCount(visibleCount);
@@ -1017,6 +1118,12 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         h5CategoriesTagsNeedsExpand && h5CategoriesCollapsedVisibleCount !== null
             ? searchStore.tags.slice(0, h5CategoriesCollapsedVisibleCount)
             : searchStore.tags;
+    const categoriesForRender = searchStore.categories;
+    const showCategoriesSelector = isCategoriesPage && categoriesForRender.length > 0;
+    const h5CategoriesCurrentLabel =
+        resolvedActiveTagLabel() ||
+        selectedCategoryLabel() ||
+        intl.formatMessage({ id: 'nav_categories' });
 
     const perPage = Math.max(1, searchStore.perPage || 24);
     const totalKnown = searchStore.totalCount > 0;
@@ -1146,14 +1253,112 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                             </p>
                         </header>
                     ) : null}
-                    {isCategoriesPage && !isPc && searchStore.tags.length > 0 ? (
+                    {isCategoriesPage && !isPc && (showCategoriesSelector || searchStore.tags.length > 0) ? (
                         <section
-                            className="rs-search-page__categoriesPanel"
+                            className="rs-search-page__categoriesPanel rs-search-page__categoriesPanel--h5Picker"
                             aria-label={intl.formatMessage({ id: 'nav_categories' })}
                         >
+                            <button
+                                type="button"
+                                className="rs-search-page__h5CategorySelect"
+                                onClick={() => setH5CategoriesPickerOpen((open) => !open)}
+                                aria-expanded={h5CategoriesPickerOpen}
+                            >
+                                <span className="rs-search-page__h5CategorySelectText">
+                                    {h5CategoriesCurrentLabel}
+                                </span>
+                                <TagsExpandChevronIcon
+                                    className={cn(
+                                        'rs-search-page__h5CategorySelectSvg',
+                                        h5CategoriesPickerOpen &&
+                                            'rs-search-page__h5CategorySelectSvg--open',
+                                    )}
+                                />
+                            </button>
+                            {h5CategoriesPickerOpen ? (
+                                <div className="rs-search-page__h5CategoryDropdown">
+                                    <div className="rs-search-page__h5CategoryDropdownHeader">
+                                        <h2 className="rs-search-page__h5CategoryDropdownTitle">
+                                            <FormattedMessage id="nav_categories" />
+                                        </h2>
+                                        <button
+                                            type="button"
+                                            className="rs-search-page__h5CategoryDropdownClose"
+                                            onClick={() => setH5CategoriesPickerOpen(false)}
+                                            aria-label={intl.formatMessage({
+                                                id: 'close',
+                                                defaultMessage: 'Close',
+                                            })}
+                                        >
+                                            <X size={18} aria-hidden />
+                                        </button>
+                                    </div>
+                                    <div className="rs-search-page__h5CategoryDropdownBody">
+                                        <div className="rs-search-page__h5CategorySide">
+                                            {categoriesForRender.map((v) => {
+                                                const id = String(v['id'] ?? '');
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={id}
+                                                        className={cn(
+                                                            'rs-search-page__h5CategorySideItem',
+                                                            id === searchStore.categoryId &&
+                                                                'rs-search-page__h5CategorySideItem--active',
+                                                        )}
+                                                        onClick={() => void handleCategoryClick(id)}
+                                                    >
+                                                        {categoryDisplayLabel(v)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="rs-search-page__h5CategoryTagsPane">
+                                            {searchStore.tags.map((v) => {
+                                                const name = v['name'] as string;
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={name}
+                                                        className={cn(
+                                                            'rs-search-page__tag',
+                                                            name === searchStore.tag &&
+                                                                'rs-search-page__tag--active',
+                                                        )}
+                                                        onClick={() => handleTagClick(name)}
+                                                    >
+                                                        {tagRowDisplayLabel(v)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
                             <h2 className="rs-search-page__categoriesHeading">
                                 <FormattedMessage id="categories_all_dramas" />
                             </h2>
+                            {showCategoriesSelector ? (
+                                <div className="rs-search-page__categoryTabs">
+                                    {categoriesForRender.map((v) => {
+                                        const id = String(v['id'] ?? '');
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={id}
+                                                className={cn(
+                                                    'rs-search-page__categoryTab',
+                                                    id === searchStore.categoryId &&
+                                                        'rs-search-page__categoryTab--active',
+                                                )}
+                                                onClick={() => void handleCategoryClick(id)}
+                                            >
+                                                {categoryDisplayLabel(v)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : null}
                             <div ref={h5CategoriesTagsRef} className="rs-search-page__categoriesTags">
                                 <button
                                     type="button"
@@ -1278,7 +1483,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 />
                                             </p>
                                         </header>
-                                    ) : (
+                                    ) : !isCategoriesPage ? (
                                         <div className="rs-shelf__breadcrumbWrap">
                                             <nav aria-label="Breadcrumb" className="rs-shelf__breadcrumb">
                                                 <Link to="/">
@@ -1290,26 +1495,35 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 </span>
                                             </nav>
                                         </div>
-                                    )}
+                                    ) : null}
 
-                                    {searchStore.tags.length > 0 && !isTagSearchPage ? (
+                                    {(showCategoriesSelector || searchStore.tags.length > 0) && !isTagSearchPage ? (
                                         <div className="rs-search-page__pcTagPanel">
+                                            {showCategoriesSelector ? (
+                                                <div className="rs-search-page__pcCategoryTabs">
+                                                    {categoriesForRender.map((v) => {
+                                                        const id = String(v['id'] ?? '');
+                                                        return (
+                                                            <button
+                                                                key={id}
+                                                                type="button"
+                                                                className={cn(
+                                                                    'rs-search-page__pcCategoryTab',
+                                                                    id === searchStore.categoryId &&
+                                                                        'rs-search-page__pcCategoryTab--active',
+                                                                )}
+                                                                onClick={() => void handleCategoryClick(id)}
+                                                            >
+                                                                {categoryDisplayLabel(v)}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
                                             <div
                                                 ref={pcTagsRef}
                                                 className="rs-search-page__pcTags"
                                             >
-                                                <button
-                                                    type="button"
-                                                    className={cn(
-                                                        'rs-search-page__pcTag',
-                                                        !searchStore.tag &&
-                                                            !searchStore.keyword.trim() &&
-                                                            'rs-search-page__pcTag--active',
-                                                    )}
-                                                    onClick={handleAllPlotsClick}
-                                                >
-                                                    <FormattedMessage id="categories_all_plots" />
-                                                </button>
                                                 {pcTagsForRender.map((v) => {
                                                     const name = v['name'] as string;
                                                     const label = formatTagUniqueId(String(v['unique_id'] ?? ''));
