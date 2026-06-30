@@ -28,6 +28,15 @@ interface ISearch {
     setTags: (tags: TData[]) => void;
     setCategories: (categories: TData[]) => void;
     setCategoryId: (categoryId: string) => void;
+    setCategoryResults: (payload: {
+        categoryId: string;
+        tags: TData[];
+        list: TData[];
+        totalCount: number;
+        perPage: number;
+        more: boolean;
+        listScopeKey: string;
+    }) => void;
 }
 
 export const useSearchStore = create<ISearch>((set) => ({
@@ -64,4 +73,19 @@ export const useSearchStore = create<ISearch>((set) => ({
     setTags: (tags: TData[]) => set({ tags }),
     setCategories: (categories: TData[]) => set({ categories }),
     setCategoryId: (categoryId: string) => set({ categoryId }),
+    setCategoryResults: (payload) =>
+        set({
+            categoryId: payload.categoryId,
+            tags: payload.tags,
+            tag: '',
+            keyword: '',
+            page: 1,
+            list: payload.list,
+            totalCount: payload.totalCount,
+            perPage: payload.perPage > 0 ? payload.perPage : 24,
+            more: payload.more,
+            listScopeKey: payload.listScopeKey,
+            loading: false,
+            scrollTop: 0,
+        }),
 }));

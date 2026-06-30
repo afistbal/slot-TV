@@ -724,6 +724,59 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         if (!nextCategoryId || searchStore.categoryId === nextCategoryId) {
             return;
         }
+        if (isPc && isCategoriesPage) {
+            const loadId = ++searchMovieLoadId;
+            requesting.current = true;
+            try {
+                const state = useSearchStore.getState();
+                const pageSize = state.perPage || 24;
+                const [tags, movieResult] = await Promise.all([
+                    ensureCategoryTags(nextCategoryId),
+                    api<IPagination>('movie/by-category', {
+                        loading: false,
+                        data: {
+                            page: 1,
+                            pageSize,
+                            category_id: nextCategoryId,
+                        },
+                    }),
+                ]);
+                if (loadId !== searchMovieLoadId) {
+                    return;
+                }
+
+                const d = movieResult.d;
+                const rows = dedupeSearchRowsById((d.data ?? []) as TData[]);
+                const perPage = d.per_page > 0 ? d.per_page : pageSize;
+                const cur = typeof d.current_page === 'number' ? d.current_page : 1;
+                const total = typeof d.count === 'number' ? d.count : 0;
+                const more = total > 0 ? cur * perPage < total : rows.length === perPage;
+                searchStore.setCategoryResults({
+                    categoryId: nextCategoryId,
+                    tags,
+                    list: rows,
+                    totalCount: total,
+                    perPage,
+                    more,
+                    listScopeKey: buildSearchListScopeKey(
+                        {
+                            keyword: '',
+                            tag: '',
+                            categoryId: nextCategoryId,
+                        },
+                        true,
+                    ),
+                });
+                if (scrollRef.current) {
+                    scrollRef.current.scrollTop = 0;
+                }
+            } finally {
+                if (loadId === searchMovieLoadId) {
+                    requesting.current = false;
+                }
+            }
+            return;
+        }
         searchStore.setCategoryId(nextCategoryId);
         searchStore.setTags([]);
         const tags = await ensureCategoryTags(nextCategoryId);
