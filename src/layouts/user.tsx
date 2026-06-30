@@ -53,11 +53,11 @@ export default function Component() {
         const { pathname, search } = location;
         const videoMatch = matchPath({ path: '/video/:id/:episode?', end: true }, pathname);
         if (videoMatch?.params?.id != null) {
-            return `video:${String(videoMatch.params.id)}${search}`;
+            return `video:${String(videoMatch.params.id)}`;
         }
         const legacyVDemoMatch = matchPath({ path: '/v-demo/:id/:episode?', end: true }, pathname);
         if (legacyVDemoMatch?.params?.id != null) {
-            return `video:${String(legacyVDemoMatch.params.id)}${search}`;
+            return `video:${String(legacyVDemoMatch.params.id)}`;
         }
         return `${pathname}${search}`;
     }, [location]);
