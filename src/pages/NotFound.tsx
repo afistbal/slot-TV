@@ -6,11 +6,10 @@ import { FormattedMessage } from 'react-intl';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
-import { HomeBookItem, type HomeBookItemData } from '@/components/home/HomeBookItem';
+import type { HomeBookItemData } from '@/components/home/HomeBookItem';
+import { HomeBookShelf } from '@/components/home/HomeBookShelf';
 import type { IData } from '@/stores/home';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
-import { cn } from '@/lib/utils';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 
 function normalizeEpisodeSlug(raw?: string) {
   if (!raw) return undefined;
@@ -31,11 +30,6 @@ function normalizeEpisodeSlug(raw?: string) {
   if (m) return decodeURIComponent(m[1]);
   if (v.startsWith('episodes/')) return decodeURIComponent(v.slice('episodes/'.length));
   return decodeURIComponent(v);
-}
-
-function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
-  const slug = normalizeEpisodeSlug(item.episodeSlug);
-  return slug ? `/episodes/${slug}` : `/video/${item.id}`;
 }
 
 function itemsFromHomeRail(items: IData['recommend']): HomeBookItemData[] {
@@ -97,33 +91,16 @@ export default function Component() {
           </Link>
         </div>
 
-        <div className="rs-notfound-like">
+        <div className="home-page rs-notfound-like">
           <div className="HomePage_main__BzEnK">
-            <div data-uistyle="5" className="HomePage_bookShelf__W2tPD">
-              <div className="HomePage_shelfHead">
-                <h2>
-                  <Link to="/">
-                    <FormattedMessage id="you_might_like" />
-                  </Link>
-                </h2>
-              </div>
-              <div className="HomePage_content__DZ4dU HomePage_type_5__SK5Rv">
-                {[0, 1, 2].map((col) => (
-                  <div key={col} className={cn('HomePage_colunm__1XbhV', col === 2 && 'rs-notfound-like__colLast')}>
-                    {recommend.filter((_, idx) => idx % 3 === col).map((item) => (
-                      <HomeBookItem
-                        key={item.id}
-                        to={toEpisodeOrVideoHref(item)}
-                        staticBase={(configStore.config['static'] as string) ?? ''}
-                        item={{ ...item, showExpo: true, showPlayMask: false }}
-                        variant="style5"
-                        linkState={VIDEO_FROM_HOME_STATE}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <HomeBookShelf
+              titleMessageId="you_might_like"
+              titleHref="/"
+              viewAllHref="/"
+              items={recommend}
+              staticBase={(configStore.config['static'] as string) ?? ''}
+              type="type_5"
+            />
           </div>
           <ReelShortFooter />
         </div>

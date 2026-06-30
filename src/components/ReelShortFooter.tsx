@@ -3,9 +3,11 @@ import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { cn } from '@/lib/utils';
-import { BRAND_DISPLAY_NAME } from '@/constants/brand';
 
 const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png', import.meta.url).toString();
+const CONTACT_EMAIL = 'cs@yogoshort.net';
+const FOOTER_COPYRIGHT_LINE_1 = 'YogoShort | All Rights Reserved | 2026 WEISHOW LIMITED';
+const FOOTER_COPYRIGHT_LINE_2 = 'Rm 1002 10/F  EASEY COML BLDG 253-261 HENNESSY RD  Hong Kong';
 
 export type ReelShortFooterProps = {
     /** H5：页脚紧贴底部四栏 Tab，隐藏版权区并去掉底内边距（如 /my-list） */
@@ -18,10 +20,10 @@ export function ReelShortFooter({
     dockAboveBottomTab = false,
     hideSupportCenter = false,
 }: ReelShortFooterProps) {
-    const year = new Date().getFullYear();
     const appVersion = __APP_VERSION__;
     const [aboutOpen, setAboutOpen] = useState(false);
     const [supportOpen, setSupportOpen] = useState(false);
+    const [contactOpen, setContactOpen] = useState(false);
 
     return (
         <footer
@@ -96,8 +98,35 @@ export function ReelShortFooter({
                         </div>
                     )}
 
+                    <div className="reelshort-footer__collapse-box">
+                        <button
+                            type="button"
+                            className={cn(
+                                'reelshort-footer__collapse-item',
+                                contactOpen && 'reelshort-footer__collapse-head--open',
+                            )}
+                            onClick={() => setContactOpen((v) => !v)}
+                            aria-expanded={contactOpen}
+                        >
+                            <span className="reelshort-footer__title">Contact Us</span>
+                            <img width={12} height={10} alt="" src={FOOTER_CHEVRON} className="opacity-80" />
+                        </button>
+                        <div
+                            className={cn(
+                                'reelshort-footer__collapsible',
+                                contactOpen && 'reelshort-footer__collapsible--open',
+                            )}
+                            aria-hidden={!contactOpen}
+                        >
+                            <a href={`mailto:${CONTACT_EMAIL}`} className="reelshort-footer__collapse-item">
+                                {CONTACT_EMAIL}
+                            </a>
+                        </div>
+                    </div>
+
                     <div className="reelshort-footer__copyright">
-                        <FormattedMessage id="footer_copyright" values={{ year, site: BRAND_DISPLAY_NAME }} />
+                        <span>{FOOTER_COPYRIGHT_LINE_1}</span>
+                        <span>{FOOTER_COPYRIGHT_LINE_2}</span>
                     </div>
                 </div>
             </div>
@@ -142,9 +171,19 @@ export function ReelShortFooter({
                                 </div>
                             </div>
                         )}
+
+                        <div className="Footer_footer_item__Jzv7v">
+                            <div className="Footer_item_title__7csub">Contact Us</div>
+                            <div className="Footer_item_sub_title__VYtUB">
+                                <a href={`mailto:${CONTACT_EMAIL}`} className="Footer_item_sub_text__EQ_F8">
+                                    {CONTACT_EMAIL}
+                                </a>
+                            </div>
+                        </div>
                     </div>
                     <div className="Footer_copyright__ygL71">
-                        <FormattedMessage id="footer_copyright" values={{ year, site: BRAND_DISPLAY_NAME }} />
+                        <span>{FOOTER_COPYRIGHT_LINE_1}</span>
+                        <span>{FOOTER_COPYRIGHT_LINE_2}</span>
                     </div>
                 </div>
             </div>
