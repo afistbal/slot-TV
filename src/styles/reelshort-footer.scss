@@ -450,4 +450,11 @@ a.reelshort-footer__collapse-item {
             padding-right: 8px;
         }
     }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb > .Footer_footer__aIVZH {
+        width: 100% !important;
+        max-width: none !important;
+        padding-left: max(8px, calc((100vw - min(88vw, 1600px)) / 2 + 8px)) !important;
+        padding-right: max(8px, calc((100vw - min(88vw, 1600px)) / 2 + 8px)) !important;
+    }
 }
