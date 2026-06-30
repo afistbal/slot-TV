@@ -164,6 +164,50 @@ button.reelshort-nav-drawer__close {
 }
 
 // --- 顶栏（ReelShortTopNav.tsx）---
+@media (min-width: 768px) {
+    .rs-notfound-like .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+        display: grid !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        column-gap: 0.8%;
+        row-gap: min(2vw, 30px);
+        width: 100%;
+        min-width: 0;
+        overflow: visible;
+    }
+
+    @media (min-width: 1000px) {
+        .rs-notfound-like .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1400px) {
+        .rs-notfound-like .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc {
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
+    }
+
+    .rs-notfound-like
+        .HomePage_main__BzEnK
+        .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc
+        .book-item.BookItem_bookStyle5__Hn17I {
+        width: 100%;
+        min-width: 0;
+        margin-right: 0;
+    }
+
+    .rs-notfound-like
+        .HomePage_main__BzEnK
+        .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc
+        .book-item.BookItem_bookStyle5__Hn17I
+        .BookItem_cover__W2qbR {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 36.8 / 49.06667;
+        border-radius: 6px;
+    }
+}
+
 .reelshort-topnav {
     position: sticky;
     top: 0;

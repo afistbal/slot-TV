@@ -219,8 +219,13 @@ a.reelshort-footer__collapse-item {
 .reelshort-footer__copyright {
     color: hsla(0, 0%, 100%, 0.5);
     font-size: 3.2vw;
+    line-height: 1.55;
     text-align: center;
     margin-top: 16px;
+}
+
+.reelshort-footer__copyright span {
+    display: block;
 }
 
 @media (min-width: $rs-footer-bp) {
@@ -409,8 +414,21 @@ a.reelshort-footer__collapse-item {
         width: 100%;
     }
 
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH .Footer_copyright__ygL71 span {
+        display: block;
+    }
+
     .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH a:hover {
-        color: hsla(0, 0%, 100%, 0.5);
+        color: #fe4167 !important;
+    }
+
+    .reelshort-footer__pc.Footer_footer_box__Y_9Qb
+        .Footer_footer__aIVZH
+        .Footer_footer_list__BY2Iy
+        .Footer_footer_item__Jzv7v
+        .Footer_item_sub_title__VYtUB
+        a.Footer_item_sub_text__EQ_F8:hover {
+        color: #fe4167 !important;
     }
 
     /* 版本行：与对站子行同字号/行高/色（H5 折叠同款文案） */
@@ -428,8 +446,8 @@ a.reelshort-footer__collapse-item {
 
     @media (min-width: 1280px) {
         .reelshort-footer__pc.Footer_footer_box__Y_9Qb .Footer_footer__aIVZH {
-            padding-left: 32px;
-            padding-right: 32px;
+            padding-left: 8px;
+            padding-right: 8px;
         }
     }
 }

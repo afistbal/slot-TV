@@ -34,19 +34,13 @@ function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
 
 /** 与 `home-reelshort.scss` 中 PC `.HomePage_type_5--pc` 宫格列断点一致 */
 function pcHomeShelfGridColumns(width: number): number {
-    if (width >= 1700) {
+    if (width >= 1400) {
         return 7;
     }
-    if (width >= 1400) {
+    if (width >= 1000) {
         return 6;
     }
-    if (width >= 1200) {
-        return 5;
-    }
-    if (width >= 1000) {
-        return 4;
-    }
-    return 4;
+    return 5;
 }
 
 function usePcType5GridColumns(track: boolean) {
