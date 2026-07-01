@@ -29,10 +29,15 @@ const appVersion = packageJson.version ?? '0.0.0'
 /** 与 `scripts/sync-public-html-assets.mjs` 规则一致：为 HTML 内引用的本地图标/清单加 `?v=package.version`。 */
 function patchHtmlAssetRefs(html: string, version: string): string {
   const q = `?v=${encodeURIComponent(version)}`
-  return html.replace(
-    /(href|src)="(\/(?:favorite\.svg|new-logo\.png|icons\/new-192\.png|icons\/new-512\.png|manifest\.json))(?:\?[^"#]*)?"/g,
-    (_m, attr, p) => `${attr}="${p}${q}"`,
-  )
+  return html
+    .replace(
+      /(href|src)="(\/(?:favorite\.svg|new-logo\.png|icons\/new-192\.png|icons\/new-512\.png|manifest\.json))(?:\?[^"#]*)?"/g,
+      (_m, attr, p) => `${attr}="${p}${q}"`,
+    )
+    .replace(
+      /(<meta\s+name="app-version"\s+content=")[^"]*("\s*\/?>)/g,
+      (_m, before, after) => `${before}${version}${after}`,
+    )
 }
 
 /** 从环境变量推断 API 源站 origin，供 `<link rel=preconnect>` 提前建连（弱网略减首包后首请求的 RTT） */

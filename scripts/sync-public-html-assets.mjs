@@ -5,13 +5,16 @@ import { pathToFileURL } from 'node:url';
 /** 与 `vite.config.ts` 中 `patchHtmlAssetRefs` 保持一致：本地静态资源加 `?v=` 清缓存。 */
 const ASSET_REF_RE =
     /(href|src)="(\/(?:favorite\.svg|new-logo\.png|icons\/new-192\.png|icons\/new-512\.png|manifest\.json))(?:\?[^"#]*)?"/g;
+const APP_VERSION_META_RE = /(<meta\s+name="app-version"\s+content=")[^"]*("\s*\/?>)/g;
 
 export function patchHtmlAssetRefsString(html, version) {
     const q = `?v=${encodeURIComponent(version)}`;
-    return html.replace(ASSET_REF_RE, (_m, attr, p) => `${attr}="${p}${q}"`);
+    return html
+        .replace(ASSET_REF_RE, (_m, attr, p) => `${attr}="${p}${q}"`)
+        .replace(APP_VERSION_META_RE, (_m, before, after) => `${before}${version}${after}`);
 }
 
-const PUBLIC_HTML_FILES = ['public/reelshort-privacy-policy.html', 'public/airwallex.html'];
+const PUBLIC_HTML_FILES = ['index.html', 'public/reelshort-privacy-policy.html', 'public/airwallex.html'];
 
 export async function patchPublicHtmlFiles(version) {
     const v = String(version ?? '').trim();

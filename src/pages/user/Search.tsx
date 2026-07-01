@@ -1767,28 +1767,34 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                 ) : (
                                     <>
                                         <div className="rs-search-page__grid">
-                                            {searchStore.list.map((v) => (
-                                                <Link
-                                                    to={`/video/${v['id']}`}
-                                                    state={VIDEO_FROM_HOME_STATE}
-                                                    key={String(v['id'])}
-                                                    className="rs-search-page__card"
-                                                >
-                                                    <Image
-                                                        height={1.3325}
-                                                        width="100%"
-                                                        alt={v['title'] as string}
-                                                        src={
-                                                            movieCoverUrl(
-                                                                v,
-                                                                configStore.config['static'] as string,
-                                                            ) ?? ''
-                                                        }
-                                                        className="rs-search-page__poster"
-                                                    />
-                                                    <div className="rs-search-page__title">{`${v['title']}`}</div>
-                                                </Link>
-                                            ))}
+                                            {searchStore.list.map((v) => {
+                                                const item = toSearchRowItem(v);
+                                                if (!item) {
+                                                    return null;
+                                                }
+                                                return (
+                                                    <Link
+                                                        to={`/video/${item.id}`}
+                                                        state={VIDEO_FROM_HOME_STATE}
+                                                        key={item.id}
+                                                        className="rs-search-page__card"
+                                                    >
+                                                        <Image
+                                                            height={1.3325}
+                                                            width="100%"
+                                                            alt={item.title}
+                                                            src={
+                                                                movieCoverUrl(
+                                                                    item,
+                                                                    configStore.config['static'] as string,
+                                                                ) ?? ''
+                                                            }
+                                                            className="rs-search-page__poster"
+                                                        />
+                                                        <div className="rs-search-page__title">{item.title}</div>
+                                                    </Link>
+                                                );
+                                            })}
                                         </div>
                                         <InView
                                             as="div"
