@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
+import { Clock } from 'lucide-react';
 
 const DEFAULT_DURATION_SECONDS = 30 * 60;
 const DEFAULT_STORAGE_KEY = 'promotion-countdown-timeout';
@@ -85,7 +86,9 @@ export default function Countdown({
                     <span className="rs-countdown-compact__label">
                         <FormattedMessage id="limited_time" />
                     </span>
-                ) : null}
+                ) : (
+                    <Clock className="rs-countdown-compact__clockIcon" strokeWidth={2} aria-hidden />
+                )}
                 <span className="rs-countdown-compact__time">{timeText}</span>
             </div>
         );

@@ -604,7 +604,7 @@
         padding: calc(2 / 375 * var(--app-vw)) calc(8 / 375 * var(--app-vw));
         border-bottom-left-radius: calc(6 / 375 * var(--app-vw));
         border-top-right-radius: calc(4 / 375 * var(--app-vw));
-        background: #f87171;
+        background: linear-gradient(90deg, #FD36BC 0%, #FD3A5A 100%);
         font-size: calc(10 / 375 * var(--app-vw));
         font-weight: 600;
         line-height: 1.25;
@@ -644,7 +644,7 @@
         padding: calc(5 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
         border-bottom-left-radius: calc(10 / 375 * var(--app-vw));
         border-top-right-radius: inherit;
-        background: #f87171;
+        background: linear-gradient(90deg, #FD36BC 0%, #FD3A5A 100%);
         color: #fff;
         font-size: calc(13 / 375 * var(--app-vw));
         font-weight: 700;
@@ -666,6 +666,18 @@
         display: inline-block;
         min-width: 70px;
         text-align: center;
+    }
+
+    .rs-countdown-compact__clockIcon {
+        flex: 0 0 auto;
+        width: calc(16 / 375 * var(--app-vw));
+        height: calc(16 / 375 * var(--app-vw));
+        color: currentColor;
+
+        @media (min-width: 768px) {
+            width: 16px;
+            height: 16px;
+        }
     }
 
     .rs-shopping__planCheckedIcon {
