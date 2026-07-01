@@ -30,6 +30,13 @@ interface ImportMetaEnv {
   readonly VITE_APP_FLAG?: string;
   /** POST 请求加密：`true` / `false`；未设则 dev 加密、build 明文 */
   readonly VITE_API_REQUEST_ENCRYPTION?: string;
+  readonly VITE_API_BASE_URL?: string;
+  readonly VITE_SHARE_ORIGIN?: string;
+  readonly VITE_BRAND_DISPLAY_NAME?: string;
+  readonly VITE_BRAND_DOMAIN_DISPLAY?: string;
+  readonly VITE_BRAND_DESCRIPTION?: string;
+  readonly VITE_BRAND_CONTACT_EMAIL?: string;
+  readonly VITE_BRAND_COPYRIGHT_COMPANY?: string;
   /** 设为 `true` 在非 localhost 环境也启用 disable-devtools.js（默认 prod 且非 5173 端口已启用） */
   readonly VITE_DISABLE_DEVTOOLS?: string;
 }

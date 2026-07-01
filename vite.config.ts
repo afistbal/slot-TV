@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 // import legacy from '@vitejs/plugin-legacy'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { copyFileSync, cpSync, existsSync, readFileSync, statSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from "path"
 
@@ -25,6 +25,68 @@ const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
 ) as { version?: string }
 const appVersion = packageJson.version ?? '0.0.0'
+
+type BrandConfig = {
+  displayName: string
+  domainDisplay: string
+  description: string
+  shareOrigin: string
+  apiBaseURL: string
+}
+
+function brandConfigFromEnv(env: Record<string, string>): BrandConfig {
+  const displayName = (env.VITE_BRAND_DISPLAY_NAME || 'YogoShort').trim()
+  return {
+    displayName,
+    domainDisplay: (env.VITE_BRAND_DOMAIN_DISPLAY || `${displayName}.com`).trim(),
+    description: (env.VITE_BRAND_DESCRIPTION || `Watch short dramas on ${displayName}.`).trim(),
+    shareOrigin: (env.VITE_SHARE_ORIGIN || '').trim().replace(/\/+$/, ''),
+    apiBaseURL: (env.VITE_API_BASE_URL || 'https://test.yogoshort.com/api').trim(),
+  }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function replaceMetaContent(html: string, attr: 'name' | 'property', key: string, value: string): string {
+  const pattern = new RegExp(`(<meta\\s+[^>]*${attr}="${escapeRegExp(key)}"[^>]*content=")[^"]*(")`, 'i')
+  return html.replace(pattern, (_m, before, after) => `${before}${value}${after}`)
+}
+
+function patchHtmlBrand(html: string, brand: BrandConfig): string {
+  let next = html
+  next = replaceMetaContent(next, 'name', 'mobile-web-app-title', brand.displayName)
+  next = replaceMetaContent(next, 'property', 'og:title', brand.displayName)
+  next = replaceMetaContent(next, 'property', 'og:description', brand.description)
+  next = replaceMetaContent(next, 'property', 'og:site_name', brand.displayName)
+  next = replaceMetaContent(next, 'property', 'og:url', brand.shareOrigin || '/')
+  next = replaceMetaContent(next, 'name', 'twitter:title', brand.displayName)
+  next = replaceMetaContent(next, 'name', 'twitter:description', brand.description)
+  return next.replace(/<title>[^<]*<\/title>/i, `<title>${brand.displayName}</title>`)
+}
+
+function patchManifestBrand(raw: string, brand: BrandConfig): string {
+  const manifest = JSON.parse(raw) as Record<string, unknown>
+  manifest.name = brand.displayName
+  manifest.short_name = brand.displayName
+  return `${JSON.stringify(manifest, null, 4)}\n`
+}
+
+function patchOpNewShareBrand(raw: string, brand: BrandConfig): string {
+  let next = patchHtmlBrand(raw, brand).replaceAll('YogoShort', brand.displayName)
+  next = next.replace(
+    "return isTest ? 'https://test.yogoshort.com/api' : 'https://i.yogoshort.com/api';",
+    `return '${brand.apiBaseURL}';`,
+  )
+  if (brand.shareOrigin) {
+    next = next.replace(
+      "return isTest ? 'https://testwww.yogoshort.com' : 'https://yogoshort.com';",
+      `return '${brand.shareOrigin}';`,
+    )
+  }
+  return next
+}
 
 /** 与 `scripts/sync-public-html-assets.mjs` 规则一致：为 HTML 内引用的本地图标/清单加 `?v=package.version`。 */
 function patchHtmlAssetRefs(html: string, version: string): string {
@@ -140,13 +202,13 @@ function copyShareHtmlFiles(outDir: string): Plugin {
   }
 }
 
-function htmlAssetCacheBust(version: string): Plugin {
+function htmlAssetCacheBust(version: string, brand: BrandConfig): Plugin {
   const publicHtmlNames = new Set(['reelshort-privacy-policy.html', 'airwallex.html'])
   return {
     name: 'html-asset-cache-bust',
     enforce: 'pre',
     transformIndexHtml(html) {
-      return patchHtmlAssetRefs(html, version)
+      return patchHtmlBrand(patchHtmlAssetRefs(html, version), brand)
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
@@ -160,7 +222,7 @@ function htmlAssetCacheBust(version: string): Plugin {
         try {
           const disk = readFileSync(fp, 'utf-8')
           res.setHeader('Content-Type', 'text/html; charset=utf-8')
-          res.end(patchHtmlAssetRefs(disk, version))
+          res.end(patchHtmlBrand(patchHtmlAssetRefs(disk, version), brand))
         } catch {
           next()
         }
@@ -169,22 +231,54 @@ function htmlAssetCacheBust(version: string): Plugin {
   }
 }
 
+function patchStaticBrandFiles(outDir: string, brand: BrandConfig): Plugin {
+  return {
+    name: 'patch-static-brand-files',
+    closeBundle() {
+      const manifestPath = path.join(outDir, 'manifest.json')
+      if (existsSync(manifestPath)) {
+        writeFileSync(manifestPath, patchManifestBrand(readFileSync(manifestPath, 'utf-8'), brand), 'utf-8')
+      }
+
+      const opNewSharePath = path.join(outDir, 'op_new', 'app-google-share.html')
+      if (existsSync(opNewSharePath)) {
+        writeFileSync(opNewSharePath, patchOpNewShareBrand(readFileSync(opNewSharePath, 'utf-8'), brand), 'utf-8')
+      }
+
+      const airwallexPath = path.join(outDir, 'airwallex.html')
+      if (existsSync(airwallexPath)) {
+        writeFileSync(airwallexPath, patchHtmlBrand(readFileSync(airwallexPath, 'utf-8'), brand), 'utf-8')
+      }
+
+      for (const name of ['share.blade.php', 'share.template.html', 'og-share.html', 'share-test.html']) {
+        const sharePath = path.join(outDir, name)
+        if (existsSync(sharePath)) {
+          writeFileSync(sharePath, patchHtmlBrand(readFileSync(sharePath, 'utf-8'), brand), 'utf-8')
+        }
+      }
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default ({ mode }: { mode: string }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const numberedProdMatch = /^prod\d+$/.exec(mode)
   const isProdBuild = mode === 'prod' || mode === 'production'
-  const outDir = isProdBuild ? 'D:/JJ-TV/movie-www-prod' : 'D:/JJ-TV/movie-www'
+  const outDir = numberedProdMatch ? `D:/JJ-TV/movie-www-${mode}` : isProdBuild ? 'D:/JJ-TV/movie-www-prod' : 'D:/JJ-TV/movie-www'
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com'
   const apiOriginForHints = inferApiOriginForPreconnect(env)
+  const brand = brandConfigFromEnv(env)
 
   return defineConfig({
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
     },
     plugins: [
-      htmlAssetCacheBust(appVersion),
+      htmlAssetCacheBust(appVersion, brand),
       copyShareHtmlFiles(outDir),
       opNewStatic(outDir),
+      patchStaticBrandFiles(outDir, brand),
       injectApiOriginPreconnect(apiOriginForHints),
       react(),
       tailwindcss(),

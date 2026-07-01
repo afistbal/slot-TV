@@ -1,6 +1,4 @@
 {
-    "site_name": "YogoShort",
-    "domain": "YogoShort.com",
     "language": "Sprache",
     "home": "Startseite",
     "scroll_to_top": "Nach oben scrollen",
@@ -69,7 +67,6 @@
     "check_login": "Anmeldung überprüfen",
     "guest": "Gast",
     "welcome_to_site": "Willkommen bei {site}!",
-    "vip": "YogoShort VIP",
     "enjoy": "Alle Dramen kostenlos genießen",
     "feedback_help": "Feedback & Hilfe",
     "about_us": "Über uns",

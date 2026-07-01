@@ -1,4 +1,5 @@
 import enMessages from '@/locales/en.json';
+import { BRAND_DISPLAY_NAME, BRAND_DOMAIN_DISPLAY } from '@/constants/brand';
 
 export type TIntlMessages = Record<string, string>;
 
@@ -24,10 +25,21 @@ const LOCALE_LOADERS: Record<string, LocaleLoader> = {
     zh: () => import('@/locales/zh.json'),
 };
 
-const messagesCache = new Map<string, TIntlMessages>([['en', EN_MESSAGES]]);
+function applyBrandMessages(messages: TIntlMessages): TIntlMessages {
+    return {
+        ...messages,
+        site_name: BRAND_DISPLAY_NAME,
+        domain: BRAND_DOMAIN_DISPLAY,
+        vip: `${BRAND_DISPLAY_NAME} VIP`,
+    };
+}
+
+const BRANDED_EN_MESSAGES = applyBrandMessages(EN_MESSAGES);
+
+const messagesCache = new Map<string, TIntlMessages>([['en', BRANDED_EN_MESSAGES]]);
 
 function mergeWithEnglish(partial: TIntlMessages): TIntlMessages {
-    return { ...EN_MESSAGES, ...partial };
+    return applyBrandMessages({ ...EN_MESSAGES, ...partial });
 }
 
 /** 与 App / 语言页 `APP_LANGUAGES` 及 `localStorage.locale` 对齐 */
@@ -50,7 +62,7 @@ export function normalizeAppLocaleCode(code: string): string {
 }
 
 export function messagesForLocale(code: string): TIntlMessages {
-    return messagesCache.get(normalizeAppLocaleCode(code)) ?? EN_MESSAGES;
+    return messagesCache.get(normalizeAppLocaleCode(code)) ?? BRANDED_EN_MESSAGES;
 }
 
 export async function loadMessagesForLocale(code: string): Promise<TIntlMessages> {
@@ -62,7 +74,7 @@ export async function loadMessagesForLocale(code: string): Promise<TIntlMessages
 
     const loader = LOCALE_LOADERS[normalized];
     if (!loader) {
-        return EN_MESSAGES;
+        return BRANDED_EN_MESSAGES;
     }
 
     const loaded = await loader();

@@ -1,6 +1,4 @@
 {
-    "site_name": "YogoShort",
-    "domain": "YogoShort.com",
     "language": "語言",
     "loading": "載入中",
     "close": "关闭",
@@ -79,7 +77,6 @@
     "check_login": "登入",
     "guest": "遊客",
     "welcome_to_site": "歡迎來到 {site}！",
-    "vip": "YogoShort VIP",
     "enjoy": "開通會員，免費觀看所有影片",
     "feedback_help": "反饋 & 幫助",
     "about_us": "關於",

@@ -1,6 +1,4 @@
 {
-    "site_name": "YogoShort",
-    "domain": "YogoShort.com",
     "language": "Dil",
     "home": "Ana Sayfa",
     "scroll_to_top": "En üste kaydır",
@@ -69,7 +67,6 @@
     "check_login": "Girişi Kontrol Et",
     "guest": "Misafir",
     "welcome_to_site": "{site}'e hoş geldiniz!",
-    "vip": "YogoShort VIP",
     "enjoy": "Tüm dizilerin keyfini ücretsiz çıkarın",
     "feedback_help": "Geri Bildirim & Yardım",
     "about_us": "Hakkımızda",

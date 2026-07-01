@@ -3,11 +3,10 @@ import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { cn } from '@/lib/utils';
+import { BRAND_CONTACT_EMAIL, BRAND_COPYRIGHT_LINE_1 } from '@/constants/brand';
 import '@/styles/reelshort-footer.scss';
 
 const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png', import.meta.url).toString();
-const CONTACT_EMAIL = 'cs@yogoshort.net';
-const FOOTER_COPYRIGHT_LINE_1 = 'YogoShort | All Rights Reserved | 2026 WEISHOW LIMITED';
 const FOOTER_COPYRIGHT_LINE_2 = 'Rm 1002 10/F  EASEY COML BLDG 253-261 HENNESSY RD  Hong Kong';
 
 export type ReelShortFooterProps = {
@@ -119,14 +118,14 @@ export function ReelShortFooter({
                             )}
                             aria-hidden={!contactOpen}
                         >
-                            <a href={`mailto:${CONTACT_EMAIL}`} className="reelshort-footer__collapse-item">
-                                {CONTACT_EMAIL}
+                            <a href={`mailto:${BRAND_CONTACT_EMAIL}`} className="reelshort-footer__collapse-item">
+                                {BRAND_CONTACT_EMAIL}
                             </a>
                         </div>
                     </div>
 
                     <div className="reelshort-footer__copyright">
-                        <span>{FOOTER_COPYRIGHT_LINE_1}</span>
+                        <span>{BRAND_COPYRIGHT_LINE_1}</span>
                         <span>{FOOTER_COPYRIGHT_LINE_2}</span>
                     </div>
                 </div>
@@ -176,14 +175,14 @@ export function ReelShortFooter({
                         <div className="Footer_footer_item__Jzv7v">
                             <div className="Footer_item_title__7csub">Contact Us</div>
                             <div className="Footer_item_sub_title__VYtUB">
-                                <a href={`mailto:${CONTACT_EMAIL}`} className="Footer_item_sub_text__EQ_F8">
-                                    {CONTACT_EMAIL}
+                                <a href={`mailto:${BRAND_CONTACT_EMAIL}`} className="Footer_item_sub_text__EQ_F8">
+                                    {BRAND_CONTACT_EMAIL}
                                 </a>
                             </div>
                         </div>
                     </div>
                     <div className="Footer_copyright__ygL71">
-                        <span>{FOOTER_COPYRIGHT_LINE_1}</span>
+                        <span>{BRAND_COPYRIGHT_LINE_1}</span>
                         <span>{FOOTER_COPYRIGHT_LINE_2}</span>
                     </div>
                 </div>

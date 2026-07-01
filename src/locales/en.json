@@ -1,6 +1,4 @@
 {
-    "site_name": "YogoShort",
-    "domain": "YogoShort.com",
     "language": "Language",
     "loading": "Loading",
     "airwallex_google_pay_demo_title": "Airwallex Express Pay Demo",
@@ -78,7 +76,6 @@
     "check_login": "Check Login",
     "guest": "Guest",
     "welcome_to_site": "Welcome to {site}!",
-    "vip": "YogoShort VIP",
     "enjoy": "Enjoy all dramas for free",
     "feedback_help": "Feedback & Help",
     "about_us": "About US",

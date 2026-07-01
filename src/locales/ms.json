@@ -1,6 +1,4 @@
 {
-    "site_name": "YogoShort",
-    "domain": "YogoShort.com",
     "language": "Bahasa",
     "home": "Laman Utama",
     "scroll_to_top": "Tatal ke atas",
@@ -69,7 +67,6 @@
     "check_login": "Semak Log Masuk",
     "guest": "Tetamu",
     "welcome_to_site": "Selamat datang ke {site}!",
-    "vip": "YogoShort VIP",
     "enjoy": "Nikmati semua drama secara percuma",
     "feedback_help": "Maklum Balas & Bantuan",
     "about_us": "Mengenai Kami",

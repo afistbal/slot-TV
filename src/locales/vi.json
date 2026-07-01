@@ -1,6 +1,4 @@
 {
-    "site_name": "YogoShort",
-    "domain": "YogoShort.com",
     "language": "Ngôn ngữ",
     "home": "Trang chủ",
     "scroll_to_top": "Cuộn lên đầu trang",
@@ -69,7 +67,6 @@
     "check_login": "Kiểm tra đăng nhập",
     "guest": "Khách",
     "welcome_to_site": "Chào mừng đến với {site}!",
-    "vip": "YogoShort VIP",
     "enjoy": "Xem tất cả phim miễn phí",
     "feedback_help": "Phản hồi & Trợ giúp",
     "about_us": "Về chúng tôi",
