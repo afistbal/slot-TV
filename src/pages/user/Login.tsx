@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils';
 import { getAnonymousUniIdPayload } from '@/lib/anonymousUniIdForBinding';
 import { fromSourceForLogin } from '@/lib/adAttribution';
 import { setIsAnonymousFromInfo } from '@/lib/clientIsAnonymous';
+import '@/styles/login-reelshort.scss';
+import '@/styles/login-modal-reelshort-pc.scss';
 
 type PcLoginStep = 'providers' | 'email';
 

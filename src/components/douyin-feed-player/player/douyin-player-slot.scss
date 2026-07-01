@@ -36,33 +36,62 @@
     overflow: hidden;
 }
 
-.douyin-player-slot__mount :global(.xgplayer) {
+.douyin-player-slot__mount .xgplayer {
     width: 100%;
     height: 100%;
     background: #000;
 }
 
 /* 兜底：禁用 xgplayer 内置 start 大三角（已 ignores + 自定义 FeedCenterPlayButton） */
-.douyin-player-slot__mount :global(.xgplayer-start) {
+.douyin-player-slot__mount .xgplayer-start {
     display: none !important;
     pointer-events: none !important;
 }
 
+/* FB cold start should not flash xgplayer's built-in spinner. */
+.douyin-player-slot__mount .xgplayer-loading,
+.douyin-player-slot__mount xg-loading,
+.douyin-player-slot__mount xg-loading-inner {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.douyin-player-slot__mount .xgplayer-enter-spinner {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.douyin-player-slot__mount .xgplayer.xgplayer-isloading .xgplayer-enter-spinner {
+    display: block !important;
+    animation: douyin-player-spinner-delay 1ms linear 2s forwards;
+}
+
+@keyframes douyin-player-spinner-delay {
+    to {
+        visibility: visible;
+        opacity: 1;
+    }
+}
+
 /* H5：contain 完整显示 */
-.douyin-player-slot--vertical :global(.xgplayer),
-.douyin-player-slot--horizontal :global(.xgplayer) {
+.douyin-player-slot--vertical .xgplayer,
+.douyin-player-slot--horizontal .xgplayer {
     width: 100%;
     height: 100%;
 }
 
-.douyin-player-slot--vertical :global(.xgplayer video),
-.douyin-player-slot--horizontal :global(.xgplayer video) {
+.douyin-player-slot--vertical .xgplayer video,
+.douyin-player-slot--horizontal .xgplayer video {
     object-fit: contain;
     object-position: center center;
 }
 
 /* iOS 原生全屏字幕去灰底（仅 feed player video） */
-.douyin-player-slot__mount :global(.xgplayer video) {
+.douyin-player-slot__mount .xgplayer video {
     &::-webkit-media-text-track-container {
         background: transparent !important;
     }
@@ -82,26 +111,26 @@
 
 /* PC：竖屏 cover、横屏 contain（恢复改前行为） */
 @media (min-width: 1040px) {
-    .douyin-player-slot--vertical :global(.xgplayer),
-    .douyin-player-slot--base-height :global(.xgplayer) {
+    .douyin-player-slot--vertical .xgplayer,
+    .douyin-player-slot--base-height .xgplayer {
         width: 100%;
         height: 100%;
     }
 
-    .douyin-player-slot--vertical :global(.xgplayer video),
-    .douyin-player-slot--base-height :global(.xgplayer video) {
+    .douyin-player-slot--vertical .xgplayer video,
+    .douyin-player-slot--base-height .xgplayer video {
         object-fit: cover !important;
         object-position: center center;
     }
 
-    .douyin-player-slot--horizontal :global(.xgplayer),
-    .douyin-player-slot--base-width :global(.xgplayer) {
+    .douyin-player-slot--horizontal .xgplayer,
+    .douyin-player-slot--base-width .xgplayer {
         width: 100%;
         max-height: 100%;
     }
 
-    .douyin-player-slot--horizontal :global(.xgplayer video),
-    .douyin-player-slot--base-width :global(.xgplayer video) {
+    .douyin-player-slot--horizontal .xgplayer video,
+    .douyin-player-slot--base-width .xgplayer video {
         object-fit: contain !important;
         object-position: center center;
     }

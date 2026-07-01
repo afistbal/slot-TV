@@ -3,6 +3,7 @@ import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { cn } from '@/lib/utils';
+import '@/styles/reelshort-footer.scss';
 
 const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png', import.meta.url).toString();
 const CONTACT_EMAIL = 'cs@yogoshort.net';

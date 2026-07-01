@@ -17,28 +17,26 @@ import {
 } from '@/components/douyin-feed-player';
 import { FeedPlayerBottomInfo } from '@/components/feed';
 import {
-    VideoPlayerLockOverlay,
-    VideoPlayerPcBackBar,
-    VideoPlayerPcEpisodeNav,
-    VideoPlayerPcUnmuteOverlay,
-    VideoPlayerSideActions,
     VideoPlayerVipCommerce,
     type VideoPlayerVipCommerceHandle,
-    useFeedPlayerColdUnmuteVisible,
-    useFeedPlayerTapToUnmute,
-    useVideoPlayerBack,
-} from '@/components/video-player';
+} from '@/components/video-player/VideoPlayerVipCommerce';
+import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
+import { VideoPlayerPcBackBar } from '@/components/video-player/VideoPlayerPcBackBar';
+import { VideoPlayerPcEpisodeNav } from '@/components/video-player/VideoPlayerPcEpisodeNav';
+import { VideoPlayerPcUnmuteOverlay } from '@/components/video-player/VideoPlayerPcUnmuteOverlay';
+import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
+import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
+import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
+import { useVideoPlayerBack } from '@/components/video-player/useVideoPlayerBack';
 import { cn } from '@/lib/utils';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
-import {
-    ForYouPlayerPcEpisodeDrawer,
-    ForYouPlayerPcIntroDrawer,
-    useForYouPlayerShare,
-} from '@/components/foryou-feed/forYouPlayerOverlays';
+import { useVideoPlayerShare } from '@/components/video-player/useVideoPlayerShare';
+import { VideoPlayerPcEpisodeDrawer as ForYouPlayerPcEpisodeDrawer } from '@/components/video-player/views/VideoPlayerPcEpisodeDrawer';
+import { VideoPlayerPcIntroDrawer as ForYouPlayerPcIntroDrawer } from '@/components/video-player/views/VideoPlayerPcIntroDrawer';
 import { measurePcStageShiftPx } from '@/components/video-player/videoPlayerPcDrawerStageShift';
 import {
     buildPcEpisodeTabRanges,
@@ -147,7 +145,7 @@ export function VDemoPcPlayerShell({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useForYouPlayerShare(data, staticBase, episodeNo);
+    } = useVideoPlayerShare(data, staticBase, episodeNo);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
     const handleForyouResume = useVDemoForyouResumeHandler(

@@ -44,6 +44,8 @@ import {
 } from '@/lib/movieTagLabels';
 import iconTag from '@/assets/images/icon_tag@2x.png';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import '@/styles/search-reelshort.scss';
+import '@/styles/shelf-reelshort.scss';
 
 /** 搜索分页合并时接口可能返回重复 id，去重避免 React key 冲突与重复卡片 */
 function dedupeSearchRowsById(rows: TData[]): TData[] {

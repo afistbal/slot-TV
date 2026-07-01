@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { useRootStore } from "@/stores/root";
 import { Check } from "lucide-react";
 import { APP_LANGUAGES } from "@/constants/appLanguages";
+import "@/styles/language-reelshort.scss";
 
 export default function Component() {
     const rootStore = useRootStore();

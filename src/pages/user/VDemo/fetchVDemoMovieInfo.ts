@@ -18,14 +18,34 @@ export type VDemoPlayerData = IPlayerData & {
     }>;
 };
 
+const movieInfoCache = new Map<number, VDemoPlayerData>();
+const movieInfoInflight = new Map<number, Promise<
+    | { ok: true; data: VDemoPlayerData }
+    | { ok: false; message: string }
+>>();
+
 export async function fetchVDemoMovieInfo(
     movieId: number,
 ): Promise<
     | { ok: true; data: VDemoPlayerData }
     | { ok: false; message: string }
 > {
+    const id = Number(movieId);
+    const cached = movieInfoCache.get(id);
+    if (cached) {
+        return { ok: true, data: cached };
+    }
+    const inflight = movieInfoInflight.get(id);
+    if (inflight) {
+        return inflight;
+    }
+
+    const task = (async (): Promise<
+        | { ok: true; data: VDemoPlayerData }
+        | { ok: false; message: string }
+    > => {
     const result = await api<VDemoPlayerData>('movie/info', {
-        data: { id: movieId },
+        data: { id },
         loading: false,
     });
 
@@ -37,11 +57,21 @@ export async function fetchVDemoMovieInfo(
         (a, b) => Number(a.episode) - Number(b.episode),
     );
 
+    const data = {
+        ...result.d,
+        episodes,
+    };
+    movieInfoCache.set(id, data);
     return {
         ok: true,
-        data: {
-            ...result.d,
-            episodes,
-        },
+        data,
     };
+    })();
+
+    movieInfoInflight.set(id, task);
+    try {
+        return await task;
+    } finally {
+        movieInfoInflight.delete(id);
+    }
 }

@@ -1,16 +1,18 @@
 import { useIntl } from 'react-intl';
+import { lazy, Suspense } from 'react';
 import shareCloseIcon from '@/assets/icons/share/close.svg';
 import shareFacebookIcon from '@/assets/video/share_icon_facebook@2x.webp';
 import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
-import RadixRc from '@/pages/user/RadixRc';
 import {
     RetentionCheckoutRadixRc,
     type RetentionCommerceWire,
 } from '@/components/video-retention-promo/VideoRetentionPromo';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
+
+const RadixRc = lazy(() => import('@/pages/user/RadixRc'));
 
 export type ForYouPlayerH5CommerceDrawersProps = {
     vip: boolean;
@@ -65,13 +67,15 @@ export function ForYouPlayerH5CommerceDrawers({
                     </DrawerTitle>
                     <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
                         {vip ? (
-                            <RadixRc
-                                layout="embed"
-                                productFrom="video"
-                                checkoutFrom="video"
-                                onEmbedClose={vipEmbedClose}
-                                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-                            />
+                            <Suspense fallback={null}>
+                                <RadixRc
+                                    layout="embed"
+                                    productFrom="video"
+                                    checkoutFrom="video"
+                                    onEmbedClose={vipEmbedClose}
+                                    headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                                />
+                            </Suspense>
                         ) : null}
                     </div>
                 </DrawerContent>

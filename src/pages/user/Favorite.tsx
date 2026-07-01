@@ -17,6 +17,8 @@ import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import '@/styles/my-list-reelshort.scss';
+import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
 
 type FavoriteProps = {
     /** PC /profile：ReelShort Library 式海报网格；默认 H5/全页为横划列表 */

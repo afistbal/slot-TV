@@ -27,6 +27,10 @@ import FeedbackPanel from '@/pages/user/Feedback';
 import UserDetailPanel from '@/pages/user/UserDetail';
 import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
 import { PcLoginDialog } from '@/pages/user/Login';
+import '@/styles/profile-reelshort.scss';
+import '@/styles/reelshort-dashboard-pc-mirror.scss';
+import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
+import '@/styles/my-list-reelshort.scss';
 type ProfilePcTab = 'topup' | 'wallet' | 'profile' | 'mylist' | 'feedback';
 
 /** PC 侧栏 webp 图标：mask + currentColor，active/hover 时与菜单文字同色 */

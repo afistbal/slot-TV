@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import Forward from "@/components/Forward";
 import { api, type TData } from "@/api";
 import Loader from "@/components/Loader";
+import "@/styles/membership-reelshort.scss";
 
 interface IData {
     amount: string;

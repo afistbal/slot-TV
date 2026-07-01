@@ -7,6 +7,8 @@ import MemberTerms from "@/widgets/MemberTerms";
 import { ShoppingPaidServiceAgreementContent } from "@/pages/user/ShoppingPaidServiceAgreementContent";
 import { BRAND_DISPLAY_NAME } from "@/constants/brand";
 import { cn } from "@/lib/utils";
+import "@/styles/legal-doc-reelshort.scss";
+import "@/styles/legal-doc-reelshort-pc.scss";
 
 function linkifyLine(text: string): React.ReactNode {
     const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);

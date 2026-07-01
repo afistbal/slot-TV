@@ -6,7 +6,7 @@ import {
     airwallexEnsureShoppingWalletInit,
     normalizeAirwallexLocale,
 } from '@/lib/airwallexShoppingWalletEmbedSingleton';
-import { createElement, type ElementTypes } from '@airwallex/components-sdk';
+import type { createElement as airwallexCreateElement, ElementTypes } from '@airwallex/components-sdk';
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import payApple from '@/assets/icons/shopping-pay/apple-pay.svg';
 import payGoogle from '@/assets/icons/shopping-pay/google-pay.svg';
@@ -474,6 +474,7 @@ export default function RadixRcShoppingPaySection({
         setWalletState({ apple: 'pending', google: 'pending' });
 
         void (async () => {
+            const { createElement } = await import('@airwallex/components-sdk');
             const { intent_id, client_secret, customer_id, currency, amountValue } = sessionRef.current!;
             const targetProductId = walletProductId ?? checkoutTargetProductId ?? 0;
             const payMode = checkoutProductMeta?.type === 2 ? 'payment' : 'recurring';
@@ -536,7 +537,7 @@ export default function RadixRcShoppingPaySection({
                         buttonType: 'plain',
                         buttonColor: 'black',
                         style: { width: '100%', height: '40px' },
-                    } as Parameters<typeof createElement<'applePayButton'>>[1]);
+                    } as Parameters<typeof airwallexCreateElement<'applePayButton'>>[1]);
                     if (!apple || cancelled) return;
                     apple.mount(appleHost);
                     apple.on('click', () => {
@@ -573,7 +574,7 @@ export default function RadixRcShoppingPaySection({
                         },
                     },
                     style: { width: '100%', height: '40px' },
-                } as Parameters<typeof createElement<'googlePayButton'>>[1]);
+                } as Parameters<typeof airwallexCreateElement<'googlePayButton'>>[1]);
                 if (!google || cancelled) return;
                 google.mount(googleHost);
                 google.on('click', () => {
@@ -621,7 +622,7 @@ export default function RadixRcShoppingPaySection({
                     methods: ['card'],
                     appearance,
                     country_code: 'US',
-                } as Parameters<typeof createElement<'dropIn'>>[1]);
+                } as Parameters<typeof airwallexCreateElement<'dropIn'>>[1]);
                 if (!dropIn || cancelled) return;
                 dropIn.mount(cardHost);
                 dropIn.on('ready', () => {

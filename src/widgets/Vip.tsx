@@ -15,7 +15,6 @@ import {
     trackFbInitiateCheckout,
     trackViewContent,
 } from "@/hooks/usePixel";
-import { init } from '@airwallex/components-sdk';
 import { toast } from "sonner";
 // import Adjust from "@adjustcom/adjust-web-sdk";
 import Payment from "./Payment";
@@ -84,6 +83,7 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
             return;
         }
 
+        const { init } = await import('@airwallex/components-sdk');
         const { payments } = await init({
             locale: 'en',
             env: result.d['env'] as ('prod' | 'demo'),

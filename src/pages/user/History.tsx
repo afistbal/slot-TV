@@ -17,6 +17,8 @@ import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import '@/styles/my-list-reelshort.scss';
+import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
 
 type HistoryProps = {
     variant?: 'row' | 'cabinet';

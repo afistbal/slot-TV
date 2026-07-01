@@ -1,6 +1,6 @@
-import { init } from "@airwallex/components-sdk";
+import type { init as airwallexInit } from "@airwallex/components-sdk";
 
-type AirwallexInit = NonNullable<Parameters<typeof init>[0]>;
+type AirwallexInit = NonNullable<Parameters<typeof airwallexInit>[0]>;
 type AirwallexInitLocale = NonNullable<AirwallexInit["locale"]>;
 
 /** 与 `Cards` / 购物钱包的 `normalizeAirwallexLocale` 行为一致 */
@@ -60,11 +60,13 @@ export async function airwallexEnsureShoppingWalletInit(
   }
   initLocale = locale;
   initEnv = env;
-  initPromise = init({
-    locale,
-    env,
-    enabledElements: ["payments"],
-  });
+  initPromise = import("@airwallex/components-sdk").then(({ init }) =>
+    init({
+      locale,
+      env,
+      enabledElements: ["payments"],
+    }),
+  );
   await initPromise;
 }
 

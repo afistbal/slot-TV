@@ -1,44 +1,34 @@
 import enMessages from '@/locales/en.json';
-import zhMessages from '@/locales/zh.json';
-import arMessages from '@/locales/ar.json';
-import deMessages from '@/locales/de.json';
-import esMessages from '@/locales/es.json';
-import frMessages from '@/locales/fr.json';
-import hiMessages from '@/locales/hi.json';
-import idMessages from '@/locales/id.json';
-import itMessages from '@/locales/it.json';
-import jaMessages from '@/locales/ja.json';
-import koMessages from '@/locales/ko.json';
-import msMessages from '@/locales/ms.json';
-import ptMessages from '@/locales/pt.json';
-import thMessages from '@/locales/th.json';
-import trMessages from '@/locales/tr.json';
-import viMessages from '@/locales/vi.json';
 
 export type TIntlMessages = Record<string, string>;
 
-function mergeWithEnglish(partial: TIntlMessages): TIntlMessages {
-    return { ...enMessages, ...partial };
-}
+type LocaleLoader = () => Promise<{ default: TIntlMessages }>;
 
-const MESSAGES_BY_CODE: Record<string, TIntlMessages> = {
-    en: enMessages as TIntlMessages,
-    zh: zhMessages as TIntlMessages,
-    ar: mergeWithEnglish(arMessages as TIntlMessages),
-    de: mergeWithEnglish(deMessages as TIntlMessages),
-    es: mergeWithEnglish(esMessages as TIntlMessages),
-    fr: mergeWithEnglish(frMessages as TIntlMessages),
-    hi: mergeWithEnglish(hiMessages as TIntlMessages),
-    id: mergeWithEnglish(idMessages as TIntlMessages),
-    it: mergeWithEnglish(itMessages as TIntlMessages),
-    ja: mergeWithEnglish(jaMessages as TIntlMessages),
-    ko: mergeWithEnglish(koMessages as TIntlMessages),
-    ms: mergeWithEnglish(msMessages as TIntlMessages),
-    pt: mergeWithEnglish(ptMessages as TIntlMessages),
-    th: mergeWithEnglish(thMessages as TIntlMessages),
-    tr: mergeWithEnglish(trMessages as TIntlMessages),
-    vi: mergeWithEnglish(viMessages as TIntlMessages),
+const EN_MESSAGES = enMessages as TIntlMessages;
+
+const LOCALE_LOADERS: Record<string, LocaleLoader> = {
+    ar: () => import('@/locales/ar.json'),
+    de: () => import('@/locales/de.json'),
+    es: () => import('@/locales/es.json'),
+    fr: () => import('@/locales/fr.json'),
+    hi: () => import('@/locales/hi.json'),
+    id: () => import('@/locales/id.json'),
+    it: () => import('@/locales/it.json'),
+    ja: () => import('@/locales/ja.json'),
+    ko: () => import('@/locales/ko.json'),
+    ms: () => import('@/locales/ms.json'),
+    pt: () => import('@/locales/pt.json'),
+    th: () => import('@/locales/th.json'),
+    tr: () => import('@/locales/tr.json'),
+    vi: () => import('@/locales/vi.json'),
+    zh: () => import('@/locales/zh.json'),
 };
+
+const messagesCache = new Map<string, TIntlMessages>([['en', EN_MESSAGES]]);
+
+function mergeWithEnglish(partial: TIntlMessages): TIntlMessages {
+    return { ...EN_MESSAGES, ...partial };
+}
 
 /** 与 App / 语言页 `APP_LANGUAGES` 及 `localStorage.locale` 对齐 */
 export function normalizeAppLocaleCode(code: string): string {
@@ -53,12 +43,30 @@ export function normalizeAppLocaleCode(code: string): string {
     ) {
         return 'zh';
     }
-    if (c in MESSAGES_BY_CODE) {
+    if (c === 'en' || c in LOCALE_LOADERS) {
         return c;
     }
     return 'en';
 }
 
 export function messagesForLocale(code: string): TIntlMessages {
-    return MESSAGES_BY_CODE[normalizeAppLocaleCode(code)] ?? MESSAGES_BY_CODE.en;
+    return messagesCache.get(normalizeAppLocaleCode(code)) ?? EN_MESSAGES;
+}
+
+export async function loadMessagesForLocale(code: string): Promise<TIntlMessages> {
+    const normalized = normalizeAppLocaleCode(code);
+    const cached = messagesCache.get(normalized);
+    if (cached) {
+        return cached;
+    }
+
+    const loader = LOCALE_LOADERS[normalized];
+    if (!loader) {
+        return EN_MESSAGES;
+    }
+
+    const loaded = await loader();
+    const messages = mergeWithEnglish(loaded.default);
+    messagesCache.set(normalized, messages);
+    return messages;
 }

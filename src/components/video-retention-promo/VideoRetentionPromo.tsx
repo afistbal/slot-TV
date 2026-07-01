@@ -4,6 +4,8 @@ import {
     useMemo,
     useRef,
     useState,
+    lazy,
+    Suspense,
     type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,8 +18,10 @@ import { resolveSubscriptionPeriod } from '@/lib/subscriptionPlanRenewText';
 import { useConfigStore } from '@/stores/config';
 import { useVideoShoppingProductsStore } from '@/stores/videoShoppingProducts';
 import { useRootStore } from '@/stores/root';
-import RadixRc from '@/pages/user/RadixRc';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
+import '@/styles/video-retention-promo.scss';
+
+const RadixRc = lazy(() => import('@/pages/user/RadixRc'));
 
 // —— types ——
 
@@ -746,7 +750,7 @@ export function RetentionCheckoutRadixRc({
     onEmbedPaySuccessEpisodeDetail,
     vipHeaderEpisodeUnlockCoins,
 }: RetentionCheckoutRadixRcProps) {
-    if (!retention?.checkoutRequest) {
+    if (!retention?.checkoutRequest || retention.checkoutModalPrefetch) {
         return null;
     }
     return (
@@ -754,20 +758,22 @@ export function RetentionCheckoutRadixRc({
             className="pointer-events-none fixed h-0 w-0 overflow-hidden opacity-0"
             aria-hidden
         >
-            <RadixRc
-                layout="embed"
-                productFrom="video"
-                checkoutFrom="video"
-                embedPresentation="plain"
-                checkoutRequest={retention.checkoutRequest}
-                initialCheckoutPayment={retention.initialCheckoutPayment}
-                checkoutModalPrefetch={retention.checkoutModalPrefetch}
-                onPayModalClosed={retention.onPayModalClosed}
-                shouldRetainPaySessionOnClose={retention.shouldRetainPaySessionOnClose}
-                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
-                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
-                headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-            />
+            <Suspense fallback={null}>
+                <RadixRc
+                    layout="embed"
+                    productFrom="video"
+                    checkoutFrom="video"
+                    embedPresentation="plain"
+                    checkoutRequest={retention.checkoutRequest}
+                    initialCheckoutPayment={retention.initialCheckoutPayment}
+                    checkoutModalPrefetch={retention.checkoutModalPrefetch}
+                    onPayModalClosed={retention.onPayModalClosed}
+                    shouldRetainPaySessionOnClose={retention.shouldRetainPaySessionOnClose}
+                    embedVideoEpisodeRowId={embedVideoEpisodeRowId}
+                    onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
+                    headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
+                />
+            </Suspense>
         </div>
     );
 }
@@ -835,14 +841,16 @@ export function useVideoRetentionCommerce({
         suppressRetentionOnVipCloseRef.current = false;
     }, [onVipOpenChangeGuarded]);
 
+    const shouldPrepareRetention = sessionBootstrapReady && !viewerIsVip && (vip || step != null || checkoutRequest != null);
+
     useEffect(() => {
-        if (!sessionBootstrapReady) return;
+        if (!shouldPrepareRetention) return;
         void fetchOffersOnce().then(setOffers);
         void fetchMembershipCoversOnce(staticBase).then(setCovers);
         void useVideoShoppingProductsStore.getState().fetchOnce();
-    }, [sessionBootstrapReady, staticBase]);
+    }, [shouldPrepareRetention, staticBase]);
 
-    const shouldWarmRetentionAssets = sessionBootstrapReady && !viewerIsVip;
+    const shouldWarmRetentionAssets = shouldPrepareRetention;
 
     /** 非 VIP 进播放页：head preload + 常驻隐藏 img，与视频并行但尽量先 decode */
     useEffect(() => {

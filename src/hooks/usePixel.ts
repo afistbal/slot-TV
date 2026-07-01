@@ -1,7 +1,11 @@
 
 import { useRef } from 'react';
-import { FacebookPixel, type EventData, type TrackableEventName } from 'react-use-facebook-pixel';
+import type { EventData, TrackableEventName } from 'react-use-facebook-pixel';
 import { isFacebookAnalytics, isTikTokAnalytics, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
+
+type FacebookPixelInstance = {
+    trackEvent(name: TrackableEventName, data?: EventData[TrackableEventName]): void;
+};
 
 interface TiktokPixel {
     init(pixelId: string, advancedMatching?: {}, options?: {
@@ -17,7 +21,7 @@ interface IPixel {
 }
 
 class _Facebook implements IPixel {
-    instance: FacebookPixel | null = null;
+    instance: FacebookPixelInstance | null = null;
 
     public track(name: unknown, data?: unknown) {
         this.instance?.trackEvent(name as TrackableEventName, data as EventData[TrackableEventName]);
@@ -173,6 +177,7 @@ export async function init(config: { [key: string]: unknown }) {
     }
 
     const initializeFacebookPixel = async (id: string) => {
+        const { FacebookPixel } = await import('react-use-facebook-pixel');
         fbPixelId = id;
         const instance = new FacebookPixel({
             pixelID: id,

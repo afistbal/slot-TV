@@ -23,6 +23,7 @@ import { useRootStore } from '@/stores/root';
 import { applyHomeHeroPreloadLinks } from '@/lib/homeHeroPreloads';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import { VideoPosterLazyCover } from '@/components/VideoPosterLazyCover';
+import '@/styles/home-reelshort.scss';
 
 const HERO_FADE_MS = 600;
 /** 首页内层滚动超过此值后显示「回顶」浮动按钮（与 antd BackTop 默认 visibilityHeight=400 对齐） */

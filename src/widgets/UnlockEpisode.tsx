@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils';
 import { useUserStore } from '@/stores/user';
 import Vip from './Vip';
 import Payment from './Payment';
-import { init } from '@airwallex/components-sdk';
 import { toast } from 'sonner';
 import {
     buildProductPixelPayload,
@@ -107,6 +106,7 @@ export default function UnlockEpisode({
             return;
         }
 
+        const { init } = await import('@airwallex/components-sdk');
         const { payments } = await init({
             locale: 'en',
             env: result.d['env'] as 'prod' | 'demo',

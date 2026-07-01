@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
+import '@/styles/reelshort.scss';
 import { cn } from '@/lib/utils';
 import { api, type IPagination, type TData } from '@/api';
 import { ReelShortNavDrawer } from '@/components/ReelShortNavDrawer';

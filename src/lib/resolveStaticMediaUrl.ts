@@ -2,6 +2,10 @@ function protocolFromBase(base: string): 'http' | 'https' {
     return /^http:\/\//i.test(base) ? 'http' : 'https';
 }
 
+function forceCosHttps(url: string): string {
+    return url.replace(/^http:\/\/cos\.yogoshort\.com\//i, 'https://cos.yogoshort.com/');
+}
+
 /** `cos.yogoshort.com/path` — host + path，无 scheme */
 function extractHostFromPath(path: string): string | null {
     const slashIdx = path.indexOf('/');
@@ -25,19 +29,21 @@ export function resolveStaticMediaUrl(raw: string, staticBase: string): string {
         return '';
     }
     if (/^https?:\/\//i.test(s)) {
-        return s;
+        return forceCosHttps(s);
     }
 
     const base = String(staticBase ?? '').replace(/\/+$/, '');
     const path = s.replace(/^\/+/, '');
 
     if (s.startsWith('//')) {
-        return `${protocolFromBase(base)}:${s}`;
+        const protocol = /^\/\/cos\.yogoshort\.com\//i.test(s) ? 'https' : protocolFromBase(base);
+        return `${protocol}:${s}`;
     }
 
     const hostInPath = extractHostFromPath(path);
     if (hostInPath) {
-        return `${protocolFromBase(base)}://${path}`;
+        const protocol = /^cos\.yogoshort\.com$/i.test(hostInPath) ? 'https' : protocolFromBase(base);
+        return `${protocol}://${path}`;
     }
 
     if (!base) {
@@ -47,11 +53,11 @@ export function resolveStaticMediaUrl(raw: string, staticBase: string): string {
     try {
         const baseUrl = new URL(base.startsWith('http') ? base : `https://${base}`);
         if (path === baseUrl.host || path.startsWith(`${baseUrl.host}/`)) {
-            return `${baseUrl.protocol}//${path}`;
+            return forceCosHttps(`${baseUrl.protocol}//${path}`);
         }
     } catch {
         // ignore
     }
 
-    return `${base}/${path}`;
+    return forceCosHttps(`${base}/${path}`);
 }

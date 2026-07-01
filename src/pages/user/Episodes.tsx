@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/
 import { Drawer, DrawerContent, DrawerTitle as DrawerA11yTitle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
 import episodePlayingBadgeGif from '@/assets/images/f24458e0-c6ae-11f0-84ad-6b5693b490dc.gif';
+import '@/styles/episodes-reelshort.scss';
 
 function pad2(n: number) {
     return String(Math.max(0, Math.floor(n))).padStart(2, '0');

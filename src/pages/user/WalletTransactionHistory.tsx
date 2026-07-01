@@ -11,6 +11,7 @@ import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router';
+import '@/styles/wallet-reelshort.scss';
 
 export interface IBalanceHistoryRow {
     type: number;

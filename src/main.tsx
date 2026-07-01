@@ -1,40 +1,10 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import './styles/reelshort.scss'
-import './styles/reelshort-footer.scss'
-import './styles/home-reelshort.scss'
-import './styles/profile-reelshort.scss'
-import './styles/reelshort-dashboard-pc-mirror.scss'
-import './styles/reelshort-dashboard-cabinet-mylist.scss'
-import './styles/login-reelshort.scss'
-import './styles/login-modal-reelshort-pc.scss'
-import './styles/shelf-reelshort.scss'
-import './styles/shopping-reelshort.scss'
-import './styles/reelshort-basics-spin.scss'
-import './styles/search-reelshort.scss'
-import './styles/video-cover-placeholder.scss'
-import './styles/my-list-reelshort.scss'
-import './styles/episodes-reelshort.scss'
-import './styles/pwa-install.scss'
-import './styles/ios-pwa-add.scss'
-import './styles/reelshort-bottom-nav.scss'
-import './styles/feedback-reelshort.scss'
-import './styles/language-reelshort.scss'
-import './styles/membership-reelshort.scss'
-import './styles/wallet-reelshort.scss'
-import './styles/legal-doc-reelshort.scss'
-import './styles/legal-doc-reelshort-pc.scss'
-import './styles/checkout-reelshort.scss'
-import './styles/video-vertical.scss'
-import './styles/video-player-h5-drawers.scss'
-import './styles/video-retention-promo.scss'
 import App from './App.tsx'
 import { registerSW } from 'virtual:pwa-register'
-import { preloadBrandTopnavWordmark } from './constants/brand'
 
 /** 发版不自动 reload；F5 或关掉再开时新 SW 激活进新版 */
 registerSW({ immediate: true })
-preloadBrandTopnavWordmark()
 
 createRoot(document.getElementById('root')!).render(
   <App />,

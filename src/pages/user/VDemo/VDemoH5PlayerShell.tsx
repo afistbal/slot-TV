@@ -14,25 +14,25 @@ import {
 } from '@/components/douyin-feed-player';
 import { FeedPlayerBottomInfo } from '@/components/feed';
 import {
-    VideoPlayerH5BackBar,
-    VideoPlayerH5ColdUnmuteOverlay,
-    VideoPlayerLockOverlay,
-    VideoPlayerSideActions,
     VideoPlayerVipCommerce,
     type VideoPlayerVipCommerceHandle,
-    useFeedPlayerColdUnmuteVisible,
-    useFeedPlayerTapToUnmute,
-    useVideoPlayerBack,
-} from '@/components/video-player';
+} from '@/components/video-player/VideoPlayerVipCommerce';
+import { VideoPlayerH5BackBar } from '@/components/video-player/VideoPlayerH5BackBar';
+import { VideoPlayerH5ColdUnmuteOverlay } from '@/components/video-player/VideoPlayerH5ColdUnmuteOverlay';
+import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
+import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
+import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
+import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
+import { useVideoPlayerBack } from '@/components/video-player/useVideoPlayerBack';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useUserStore } from '@/stores/user';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
+import { useVideoPlayerShare } from '@/components/video-player/useVideoPlayerShare';
 import {
-    ForYouPlayerEpisodeSpeedIntroDrawers,
-    useForYouPlayerShare,
-} from '@/components/foryou-feed/forYouPlayerOverlays';
+    VideoPlayerEpisodeSpeedIntroDrawers as ForYouPlayerEpisodeSpeedIntroDrawers,
+} from '@/components/video-player/views/VideoPlayerEpisodeSpeedIntroDrawers';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import { cn } from '@/lib/utils';
@@ -111,7 +111,7 @@ export function VDemoH5PlayerShell({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useForYouPlayerShare(data, staticBase, episodeNo);
+    } = useVideoPlayerShare(data, staticBase, episodeNo);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
 

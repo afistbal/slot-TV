@@ -196,9 +196,29 @@ export default ({ mode }: { mode: string }) => {
         workbox: {
           /** 默认 2 MiB；主 chunk 超限时 build 会失败，见 vite-plugin-pwa / workbox FAQ */
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+          globPatterns: [
+            'index.html',
+            'manifest.json',
+            'favorite.png',
+            'new-logo.png',
+            'icons/*.{png,svg,webp,ico}',
+          ],
           // injectRegister 为 false 时插件不会自动合并这两项；autoUpdate 依赖 SW 内 skipWaiting，否则新版本会一直 waiting
           skipWaiting: true,
           clientsClaim: true,
+          runtimeCaching: [
+            {
+              urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith('/assets/'),
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'slot-runtime-assets',
+                expiration: {
+                  maxEntries: 120,
+                  maxAgeSeconds: 30 * 24 * 60 * 60,
+                },
+              },
+            },
+          ],
           navigateFallbackDenylist: [
             /^\/api\//,
             /^\/op_new\//,

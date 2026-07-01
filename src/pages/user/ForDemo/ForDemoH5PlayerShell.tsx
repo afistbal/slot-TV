@@ -32,6 +32,7 @@ import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
 import { foryouFeedItemKey } from './lib/foryouFeedMerge';
+import { prewarmForyouVideoEntry } from './lib/prewarmVideoEntry';
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
 
 type ForDemoH5PlayerShellProps = {
@@ -154,6 +155,10 @@ export function ForDemoH5PlayerShell({
         navigateFromForDemoWatchFull(navigate, feedItem, activeIndex);
     }, [activeIndex, feedItem, navigate]);
 
+    const handleWatchFullSeriesIntent = useCallback(() => {
+        prewarmForyouVideoEntry(feedItem);
+    }, [feedItem]);
+
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
 
@@ -188,6 +193,7 @@ export function ForDemoH5PlayerShell({
                         feedEpisodeTotal={feedEpisodeTotal}
                         onOpenIntroduction={() => setIntroductionOpen(true)}
                         onWatchFullSeries={handleWatchFullSeries}
+                        onWatchFullSeriesIntent={handleWatchFullSeriesIntent}
                     />
                 }
             />

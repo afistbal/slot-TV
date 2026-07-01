@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import '@/styles/reelshort-basics-spin.scss';
 
 /**
  * 与 ReelShort BasicsSpin 同一套 DOM/CSS（`reelshort-basics-spin.scss`）：

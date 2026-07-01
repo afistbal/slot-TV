@@ -7,7 +7,7 @@ import {
     useRouteError,
 } from "react-router";
 import { FormattedMessage, IntlProvider } from 'react-intl';
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
 import { Toaster } from "./components/ui/sonner";
 import { useLoadingStore } from "./stores/loading";
 import { LoaderCircle } from "lucide-react";
@@ -24,42 +24,13 @@ import { cn } from "./lib/utils";
 import { Button } from "./components/ui/button";
 import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
-import Adjust from '@adjustcom/adjust-web-sdk';
 import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/usePixel';
 import { syncAdAttributionCache } from './lib/adAttribution';
 import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
-import { messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
+import { loadMessagesForLocale, messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
 
-import LayoutUser from './layouts/user';
-import ShareToVideoRedirect from './pages/user/ShareToVideoRedirect';
-import UserMyList from './pages/user/MyList';
-import UserFavorite from './pages/user/Favorite';
-import UserHistory from './pages/user/History';
-import UserProfile from './pages/user/Profile';
-import UserShelf from './pages/user/Shelf';
-import UserEpisodes from './pages/user/Episodes';
-
-import UserFeedback from './pages/user/Feedback';
-import UserLanguage from './pages/user/Language';
-import UserAbout from './pages/user/About';
-import UserText from './pages/user/Text';
-import UserLogin from './pages/user/Login';
-import UserPay from './pages/user/Pay';
-import UserSearch from './pages/user/Search';
-import UserMyBalance from './pages/user/MyBanlance';
-import UserWallet from './pages/user/Wallet';
-import UserDetail from './pages/user/UserDetail';
-import UserRadixRc from './pages/user/RadixRc';
-import UserIosAddHomeGuide from './pages/user/IosAddHomeGuide';
-import ForDemoPage from './pages/user/ForDemo';
-import VDemoPage from './pages/user/VDemo';
-import QdFeedDemoPage from './pages/user/QdFeedDemo';
-import ZgjDownloadPage from './pages/tools/ZgjDownloadPage';
-
-import AdminWeeklyUpdateTable from './pages/admin/WeeklyUpdateTable';
-import NotFound from './pages/NotFound';
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
 
@@ -76,6 +47,41 @@ function LayoutUserPrimaryTabPlaceholder() {
 /** `config` 未完成前：与首页壳同色、无转圈，避免与首页内二次 loading 叠体感 */
 function InitialBootPlaceholder() {
     return <div className="fixed inset-0 z-10 min-h-0 bg-app-canvas" aria-hidden />;
+}
+
+const LayoutUser = lazy(() => import('./layouts/user'));
+const ShareToVideoRedirect = lazy(() => import('./pages/user/ShareToVideoRedirect'));
+const UserMyList = lazy(() => import('./pages/user/MyList'));
+const UserFavorite = lazy(() => import('./pages/user/Favorite'));
+const UserHistory = lazy(() => import('./pages/user/History'));
+const UserProfile = lazy(() => import('./pages/user/Profile'));
+const UserShelf = lazy(() => import('./pages/user/Shelf'));
+const UserEpisodes = lazy(() => import('./pages/user/Episodes'));
+const UserFeedback = lazy(() => import('./pages/user/Feedback'));
+const UserLanguage = lazy(() => import('./pages/user/Language'));
+const UserAbout = lazy(() => import('./pages/user/About'));
+const UserText = lazy(() => import('./pages/user/Text'));
+const UserLogin = lazy(() => import('./pages/user/Login'));
+const UserPay = lazy(() => import('./pages/user/Pay'));
+const UserSearch = lazy(() => import('./pages/user/Search'));
+const UserMyBalance = lazy(() => import('./pages/user/MyBanlance'));
+const UserWallet = lazy(() => import('./pages/user/Wallet'));
+const UserDetail = lazy(() => import('./pages/user/UserDetail'));
+const UserRadixRc = lazy(() => import('./pages/user/RadixRc'));
+const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
+const ForDemoPage = lazy(() => import('./pages/user/ForDemo'));
+const VDemoPage = lazy(() => import('./pages/user/VDemo'));
+const QdFeedDemoPage = lazy(() => import('./pages/user/QdFeedDemo'));
+const ZgjDownloadPage = lazy(() => import('./pages/tools/ZgjDownloadPage'));
+const AdminWeeklyUpdateTable = lazy(() => import('./pages/admin/WeeklyUpdateTable'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+function lazyRoute(Component: ComponentType) {
+    return (
+        <Suspense fallback={<InitialBootPlaceholder />}>
+            <Component />
+        </Suspense>
+    );
 }
 
 /** Chromium `beforeinstallprompt`（部分 TS lib 未声明） */
@@ -105,7 +111,7 @@ function ErrorBoundary() {
 const router = createBrowserRouter([
     {
         path: '/',
-        element: <LayoutUser />,
+        element: lazyRoute(LayoutUser),
         errorElement: <ErrorBoundary />,
         children: [
             {
@@ -138,65 +144,65 @@ const router = createBrowserRouter([
             },
             {
                 path: 'shelf/:slug',
-                element: <UserShelf />,
+                element: lazyRoute(UserShelf),
             },
             {
                 path: ':locale/shelf/:slug',
-                element: <UserShelf />,
+                element: lazyRoute(UserShelf),
             },
             {
                 path: 'shelf/:slug/:page',
-                element: <UserShelf />,
+                element: lazyRoute(UserShelf),
             },
             {
                 path: ':locale/shelf/:slug/:page',
-                element: <UserShelf />,
+                element: lazyRoute(UserShelf),
             },
             {
                 path: 'episodes/:slug',
-                element: <UserEpisodes />,
+                element: lazyRoute(UserEpisodes),
             },
             {
                 path: ':locale/episodes/:slug',
-                element: <UserEpisodes />,
+                element: lazyRoute(UserEpisodes),
             },
             {
                 path: 'shopping',
-                element: <UserRadixRc />,
+                element: lazyRoute(UserRadixRc),
             },
             {
                 path: ':locale/shopping',
-                element: <UserRadixRc />,
+                element: lazyRoute(UserRadixRc),
             },
             {
                 path: 'my-list',
-                element: <UserMyList />,
+                element: lazyRoute(UserMyList),
                 children: [
                     {
                         index: true,
-                        element: <UserFavorite />,
+                        element: lazyRoute(UserFavorite),
                     },
                     {
                         path: 'history',
-                        element: <UserHistory />,
+                        element: lazyRoute(UserHistory),
                     },
                 ]
             },
             {
                 path: 'profile',
-                element: <UserProfile />,
+                element: lazyRoute(UserProfile),
             },
             {
                 path: 'wallet',
-                element: <UserWallet />,
+                element: lazyRoute(UserWallet),
             },
             {
                 path: ':locale/wallet',
-                element: <UserWallet />,
+                element: lazyRoute(UserWallet),
             },
             {
                 path: 'user/detail',
-                element: <UserDetail />,
+                element: lazyRoute(UserDetail),
             },
             {
                 path: 'radix-rc',
@@ -205,15 +211,15 @@ const router = createBrowserRouter([
             /** 须挂在 LayoutUser 下：否则整页离开用户壳子，首页/搜索的 keep-alive 会随 Layout 卸载 */
             {
                 path: 'video/:id/:episode?',
-                element: <VDemoPage />,
+                element: lazyRoute(VDemoPage),
             },
             {
                 path: 'share/:id',
-                element: <ShareToVideoRedirect />,
+                element: lazyRoute(ShareToVideoRedirect),
             },
             {
                 path: 'foryou',
-                element: <ForDemoPage />,
+                element: lazyRoute(ForDemoPage),
             },
             {
                 path: 'for-demo',
@@ -221,7 +227,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'v-demo/:id/:episode?',
-                element: <VDemoPage />,
+                element: lazyRoute(VDemoPage),
             },
             {
                 path: 'for-you',
@@ -229,14 +235,14 @@ const router = createBrowserRouter([
             },
             {
                 path: 'qd-feed-demo',
-                element: <QdFeedDemoPage />,
+                element: lazyRoute(QdFeedDemoPage),
             },
         ],
     },
     {
         path: '/zgjdownload',
         errorElement: <ErrorBoundary />,
-        element: <ZgjDownloadPage />,
+        element: lazyRoute(ZgjDownloadPage),
     },
     {
         path: '/page',
@@ -250,27 +256,27 @@ const router = createBrowserRouter([
             },
             {
                 path: 'feedback',
-                element: <UserFeedback />,
+                element: lazyRoute(UserFeedback),
             },
             {
                 path: 'language',
-                element: <UserLanguage />,
+                element: lazyRoute(UserLanguage),
             },
             {
                 path: 'about',
-                element: <UserAbout />,
+                element: lazyRoute(UserAbout),
             },
             {
                 path: 'text',
-                element: <UserText />,
+                element: lazyRoute(UserText),
             },
             {
                 path: 'login',
-                element: <UserLogin />,
+                element: lazyRoute(UserLogin),
             },
             {
                 path: 'ios-add-home',
-                element: <UserIosAddHomeGuide />,
+                element: lazyRoute(UserIosAddHomeGuide),
             },
             {
                 path: 'pay/:id',
@@ -278,7 +284,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'pay',
-                element: <UserPay />,
+                element: lazyRoute(UserPay),
             },
             {
                 path: 'checkout/:id',
@@ -286,21 +292,21 @@ const router = createBrowserRouter([
             },
             {
                 path: 'search',
-                element: <UserSearch />,
+                element: lazyRoute(UserSearch),
             },
             {
                 path: 'my-balance',
-                element: <UserMyBalance />,
+                element: lazyRoute(UserMyBalance),
             },
             {
                 path: 'week-data',
-                element: <AdminWeeklyUpdateTable />,
+                element: lazyRoute(AdminWeeklyUpdateTable),
             },
         ],
     },
     {
         path: '*',
-        element: <NotFound />,
+        element: lazyRoute(NotFound),
     },
 ]);
 
@@ -323,7 +329,6 @@ function App() {
     const [checked, setChecked] = useState(false);
     const [install, setInstall] = useState(0);
     const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
-    const adjustInitedRef = useRef(false);
     const downloadTrackedRef = useRef(false);
     /** 避免 StrictMode 双调用时旧 `loadData` 回写 config / 抢跑会话 */
     const loadDataGenerationRef = useRef(0);
@@ -423,15 +428,8 @@ function App() {
 
         configStore.setConfig(config.d);
 
-        const adjustConfig = config.d['adjust'] as Record<string, unknown>;
-        if (!adjustInitedRef.current) {
-            Adjust.initSdk({
-                appToken: adjustConfig['token'] as string,
-                environment: adjustConfig['environment'] as 'production' | 'sandbox',
-                logLevel: adjustConfig['log_level'] as Adjust.LogLevel,
-            });
-            adjustInitedRef.current = true;
-        }
+        // Adjust is not connected for the current H5 flow. Keep the SDK disabled here;
+        // restore this init block when Adjust attribution is officially needed again.
 
         syncFbAttributionCache();
         syncAdAttributionCache();
@@ -510,8 +508,22 @@ function App() {
     }, []);
 
     useEffect(() => {
-        setMessages(messagesForLocale(rootStore.locale));
+        let cancelled = false;
+        void loadMessagesForLocale(rootStore.locale).then((nextMessages) => {
+            if (!cancelled) {
+                setMessages(nextMessages);
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
     }, [rootStore.locale]);
+
+    const skipSecondaryRoutePrefetch =
+        matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null ||
+        matchPath({ path: '/foryou', end: true }, pathname) != null ||
+        matchPath({ path: '/for-you', end: true }, pathname) != null ||
+        matchPath({ path: '/qd-feed-demo', end: true }, pathname) != null;
 
     useEffect(() => {
         /** `checked` 仅表示 config 已就绪；`stat`/`alive` 需带有效 token，须等会话 bootstrap */
@@ -577,12 +589,15 @@ function App() {
         if (!checked || !sessionBootstrapReady) {
             return;
         }
+        if (skipSecondaryRoutePrefetch) {
+            return;
+        }
         if (secondaryPrefetchScheduledRef.current) {
             return;
         }
         secondaryPrefetchScheduledRef.current = true;
         scheduleSecondaryUserRoutesPrefetch();
-    }, [checked, sessionBootstrapReady]);
+    }, [checked, sessionBootstrapReady, skipSecondaryRoutePrefetch]);
 
     useEffect(() => {
         if (!checked || !sessionBootstrapReady) {

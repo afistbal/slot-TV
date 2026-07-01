@@ -2,6 +2,7 @@ import { Fragment, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FormattedMessage } from 'react-intl';
 import { NavLink, useLocation, useNavigate } from 'react-router';
+import '@/styles/reelshort-bottom-nav.scss';
 import { cn } from '@/lib/utils';
 import { bottomTabAddDesktopIcon, bottomTabIcons } from '@/constants/bottomTabAssets';
 import { FORYOU_PATH, isForYouPathname } from '@/constants/foryouRoute';

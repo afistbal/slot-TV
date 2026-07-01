@@ -47,6 +47,7 @@ import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
 import { foryouFeedItemKey } from './lib/foryouFeedMerge';
+import { prewarmForyouVideoEntry } from './lib/prewarmVideoEntry';
 
 type ForDemoPcPlayerShellProps = {
     staticBase: string;
@@ -214,6 +215,10 @@ export function ForDemoPcPlayerShell({
         navigateFromForDemoWatchFull(navigate, feedItem, activeIndex);
     }, [activeIndex, feedItem, navigate]);
 
+    const handleWatchFullSeriesIntent = useCallback(() => {
+        prewarmForyouVideoEntry(feedItem);
+    }, [feedItem]);
+
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
 
@@ -329,6 +334,7 @@ export function ForDemoPcPlayerShell({
                                     feedEpisodeTotal={feedEpisodeTotal}
                                     onOpenIntroduction={openPcIntroDrawer}
                                     onWatchFullSeries={handleWatchFullSeries}
+                                    onWatchFullSeriesIntent={handleWatchFullSeriesIntent}
                                 />
                             }
                         />

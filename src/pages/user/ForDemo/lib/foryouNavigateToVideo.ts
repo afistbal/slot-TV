@@ -9,6 +9,7 @@ import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { markVideoSessionUserUnmuted } from '@/components/video-player/videoSessionMute';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
+import { prewarmForyouVideoEntry } from './prewarmVideoEntry';
 
 export function navigateFromForyouToVideo(
     navigate: NavigateFunction,
@@ -16,6 +17,7 @@ export function navigateFromForyouToVideo(
     resumeTimeSec: number,
     activeIndex?: number,
 ): void {
+    prewarmForyouVideoEntry(item);
     const episodeNo = item.episode ?? 1;
 
     if (activeIndex != null && activeIndex >= 0 && useForyouFeedStore.getState().list.length) {

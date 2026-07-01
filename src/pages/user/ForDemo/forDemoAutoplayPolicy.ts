@@ -1,9 +1,6 @@
 import { isForDemoPathname } from '@/constants/forDemoRoute';
 import { isVDemoPathname } from '@/constants/vDemoRoute';
-import {
-    canNavigateBack,
-    isDocumentReload,
-} from '@/components/video-player/videoPlayerUtils';
+import { isDocumentReload } from '@/components/video-player/videoPlayerUtils';
 
 const FOR_DEMO_RELOAD_LANDING_KEY = 'for-demo-reload-landing';
 /** 同文档会话内 for-demo 冷蒙层已展示/离开过，SPA 返回不再当冷启动 */
@@ -52,17 +49,9 @@ export function consumeForDemoReloadLanding(): boolean {
 }
 
 export function resolveForDemoFromHomeVideoPlayback(locationState: unknown): boolean {
-    if (
-        Boolean(
-            (locationState as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
-        )
-    ) {
-        return true;
-    }
-    if (typeof window === 'undefined') {
-        return false;
-    }
-    return canNavigateBack();
+    return Boolean(
+        (locationState as { fromHomeVideoPlayback?: boolean } | null)?.fromHomeVideoPlayback,
+    );
 }
 
 /** 首条是否静音冷启动（F5 / 广告直链；站内点击进入为 false�?*/
@@ -79,10 +68,7 @@ export function isForDemoFeedColdAutoplay(
     if (fromHomeVideoPlayback) {
         return false;
     }
-    if (isForDemoColdSessionConsumed()) {
-        return false;
-    }
-    return !canNavigateBack();
+    return true;
 }
 
 export type ForDemoMountAutoplayFlags = {

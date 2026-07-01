@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { useLocation } from 'react-router';
 
 import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
-import { ReelShortTopNav } from '@/components/ReelShortTopNav';
+import { useDelayedVisible } from '@/hooks/useDelayedVisible';
 import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { useRootStore } from '@/stores/root';
 import { useConfigStore } from '@/stores/config';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
 import { useForyouFeedStore } from '@/stores/foryouFeed';
-import { usePrefetchVideoShoppingProducts } from '@/stores/videoShoppingProducts';
 
 import { ForDemoH5PlayerShell } from './ForDemoH5PlayerShell';
 import { ForDemoPcPlayerShell } from './ForDemoPcPlayerShell';
 import { useForDemoFeed } from './useForDemoFeed';
+import { scheduleForyouVideoEntryPrewarm } from './lib/prewarmVideoEntry';
 import { applyForDemoMountMutePolicy } from './forDemoApplyMountMutePolicy';
 import {
     markForDemoColdSessionConsumed,
@@ -23,7 +23,14 @@ import {
 } from './forDemoAutoplayPolicy';
 
 import '@/components/foryou-feed/foryou-vertical.scss';
+import '@/styles/video-vertical.scss';
 import './for-demo.scss';
+
+const ReelShortTopNav = lazy(() =>
+    import('@/components/ReelShortTopNav').then((mod) => ({ default: mod.ReelShortTopNav })),
+);
+
+const BOOT_LOADER_DELAY_MS = 100000;
 
 /**
  * for-demo：实验壳 — 与 /foryou 同 API + PC/H5 壳，播放器用 douyin-feed-player。
@@ -33,7 +40,6 @@ export default function ForDemoPage() {
     const location = useLocation();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
-    usePrefetchVideoShoppingProducts();
 
     const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
     if (mountFlagsRef.current == null) {
@@ -68,6 +74,7 @@ export default function ForDemoPage() {
         loadMore,
         prefetchIfNearEnd,
     } = useForDemoFeed(sessionBootstrapReady, staticBase);
+    const showBootLoader = useDelayedVisible(loading, BOOT_LOADER_DELAY_MS);
 
     useEffect(() => {
         useRootStore.getState().setTheme('dark');
@@ -93,9 +100,18 @@ export default function ForDemoPage() {
     const hasPrev = activeIndex > 0;
     const hasNext = activeIndex < playerItems.length - 1 || hasMore;
 
+    useEffect(() => {
+        if (loading || !activeFeedItem) {
+            return;
+        }
+        return scheduleForyouVideoEntryPrewarm(activeFeedItem);
+    }, [activeFeedItem, loading]);
+
     const pcTopNav = isDesktop ? (
         <div className="video-vertical-pc-topnav">
-            <ReelShortTopNav leftAction="none" showSearch />
+            <Suspense fallback={null}>
+                <ReelShortTopNav leftAction="none" showSearch />
+            </Suspense>
         </div>
     ) : null;
 
@@ -104,12 +120,12 @@ export default function ForDemoPage() {
             <div className="video-vertical-pc-shell for-demo-pc-shell foryou-vertical-pc-shell">
                 {pcTopNav}
                 <div className="flex min-h-0 flex-1 items-center justify-center bg-black">
-                    <Loader color="light" />
+                    {showBootLoader ? <Loader color="light" /> : null}
                 </div>
             </div>
         ) : (
             <div className="for-demo for-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
-                <Loader color="light" />
+                {showBootLoader ? <Loader color="light" /> : null}
             </div>
         );
     }

@@ -27,11 +27,14 @@ export async function refreshSessionFromStoredToken(): Promise<boolean> {
         const info = (raw['info'] as TData | undefined) ?? raw;
         initIsAnonymousFromInfo(info);
         useUserStore.getState().signin(info);
-        /** `signin` 不写 balance；`login/token` 的 info 也未必含最新金币，与支付/解锁后一致需再拉 `user/balance` */
-        const bal = await api<number>('user/balance', { loading: false, toastOnError: false });
-        if (bal.c === 0) {
-            useUserStore.getState().setBalance(bal.d);
-        }
+        /** Balance is not needed for first playback; refresh it without blocking video bootstrap. */
+        void api<number>('user/balance', { loading: false, toastOnError: false })
+            .then((bal) => {
+                if (bal.c === 0) {
+                    useUserStore.getState().setBalance(bal.d);
+                }
+            })
+            .catch(() => undefined);
         return true;
     }
     localStorage.removeItem('token');

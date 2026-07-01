@@ -19,6 +19,7 @@ import {
     episodeTabIndexForEpisodeNo,
     H5_EPISODE_TAB_PAGE_SIZE,
 } from '../videoPlayerPcEpisodeTabs';
+import '@/styles/video-player-h5-drawers.scss';
 
 function formatPlaybackSpeedLabel(rate: number) {
     if (Number.isInteger(rate)) {

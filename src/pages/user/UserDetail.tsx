@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { Page } from '@/layouts/user';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
+import '@/styles/profile-reelshort.scss';
 
 export default function Component({ embedded = false }: { embedded?: boolean } = {}) {
   const intl = useIntl();

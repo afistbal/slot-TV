@@ -4,6 +4,7 @@ import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import { BRAND_LOGO_SRC } from '@/constants/brand';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import usePixel from '@/hooks/usePixel';
+import '@/styles/ios-pwa-add.scss';
 
 /**
  * iOS / iPad：未以主屏幕 standalone 打开时显示，点击进 `/page/ios-add-home`。

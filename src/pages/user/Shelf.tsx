@@ -8,6 +8,7 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import '@/styles/shelf-reelshort.scss';
 
 function parseShelfSlug(rawSlug: string) {
     const decoded = decodeURIComponent(rawSlug);

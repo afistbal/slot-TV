@@ -8,7 +8,7 @@ import {
 import { isApplePlatform } from "@/lib/isApplePlatform";
 import { buildPayCreateData } from "@/lib/payCreateData";
 import { cn } from "@/lib/utils";
-import { createElement, type ElementTypes, type Payment } from "@airwallex/components-sdk";
+import type { createElement as airwallexCreateElement, ElementTypes, Payment } from "@airwallex/components-sdk";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 
@@ -198,11 +198,12 @@ export function Cards({
         country_code: "US",
       };
 
-      let el: Awaited<ReturnType<typeof createElement<"dropIn">>> | null = null;
+      const { createElement } = await import("@airwallex/components-sdk");
+      let el: Awaited<ReturnType<typeof airwallexCreateElement<"dropIn">>> | null = null;
       try {
         el = await createElement(
           "dropIn",
-          dropInOptions as unknown as Parameters<typeof createElement<"dropIn">>[1],
+          dropInOptions as unknown as Parameters<typeof airwallexCreateElement<"dropIn">>[1],
         );
       } catch (e) {
         cardDbg("createElement(dropIn) 异常", e);

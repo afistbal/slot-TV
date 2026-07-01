@@ -3,13 +3,18 @@ import { FormattedMessage } from 'react-intl';
 type Props = {
     feedEpisodeTotal: number;
     onClick: () => void;
+    onIntent?: () => void;
 };
 
-export function ForYouWatchFullSeriesButton({ feedEpisodeTotal, onClick }: Props) {
+export function ForYouWatchFullSeriesButton({ feedEpisodeTotal, onClick, onIntent }: Props) {
     return (
         <button
             type="button"
             className="foryou-watch-full-btn"
+            onPointerDown={onIntent}
+            onTouchStart={onIntent}
+            onMouseEnter={onIntent}
+            onFocus={onIntent}
             onClick={(e) => {
                 e.stopPropagation();
                 onClick();

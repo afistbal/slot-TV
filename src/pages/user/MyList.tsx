@@ -8,6 +8,8 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
+import '@/styles/my-list-reelshort.scss';
+import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
 
 type MyListLocationState = {
     sourceform?: string;

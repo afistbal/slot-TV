@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import "@/styles/reelshort-basics-spin.scss";
 
 type ReelShortBasicsSpinProps = {
     /** 为 false 时不渲染（方便父级条件渲染） */

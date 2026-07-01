@@ -6,7 +6,6 @@ import { Page } from "@/layouts/user";
 import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
-import Adjust from "@adjustcom/adjust-web-sdk";
 
 export default function Component() {
     const [loading, setLoading] = useState(true);
@@ -96,12 +95,8 @@ export default function Component() {
             if (checkout && sn) {
                 const parsed = JSON.parse(checkout);
                 trackFbPurchase(parsed, sn);
-                Adjust.trackEvent({
-                    deduplicationId: sn,
-                    eventToken: 'ux3ud3',
-                    revenue: parseFloat(parsed['value']),
-                    currency: parsed['currency'],
-                });
+                // Adjust is disabled for the current H5 flow. Restore this purchase
+                // event when Adjust attribution is officially connected again.
             }
         } else {
             setResult(2);

@@ -1,5 +1,6 @@
 import videoCoverPlaceholderLogo from '@/assets/images/img_logo@2x.png';
 import { cn } from '@/lib/utils';
+import '@/styles/video-cover-placeholder.scss';
 
 /** 视频封面未加载时的 logo 占位（`img_logo@2x.png`） */
 export function VideoCoverPlaceholder({ className }: { className?: string }) {

@@ -43,6 +43,8 @@ import {
     useVideoShoppingProductsStore,
 } from '@/stores/videoShoppingProducts';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
+import '@/styles/shopping-reelshort.scss';
+import '@/styles/checkout-reelshort.scss';
 
 function paywallImage(file: string) {
     return new URL(`../../assets/images/${file}`, import.meta.url).href;
@@ -1070,26 +1072,28 @@ export default function RadixRc({
                             </div>
                             
                             <div className="rs-shopping__payStack">
-                                <RadixRcShoppingPaySection
-                                    key={String(walletProductId ?? 'wallet')}
-                                    walletProductId={walletProductId}
-                                    checkoutTargetProductId={checkoutTargetProductId}
-                                    checkoutFrom={checkoutFrom}
-                                    checkoutProductMeta={
-                                        currentCheckoutProduct
-                                            ? {
-                                                  id: currentCheckoutProduct.id,
-                                                  name: currentCheckoutProduct.name,
-                                                  price: currentCheckoutProduct.price,
-                                                  type: currentCheckoutProduct.type,
-                                              }
-                                            : null
-                                    }
-                                    paySessionSeed={paySessionSeed}
-                                    initialCheckoutPayment={initialCheckoutPayment}
-                                    payCreateDiscountType={checkoutRequest?.discount_type}
-                                    onPayStateChange={setPayModalStatus}
-                                />
+                                {checkoutModalPrefetch ? null : (
+                                    <RadixRcShoppingPaySection
+                                        key={String(walletProductId ?? 'wallet')}
+                                        walletProductId={walletProductId}
+                                        checkoutTargetProductId={checkoutTargetProductId}
+                                        checkoutFrom={checkoutFrom}
+                                        checkoutProductMeta={
+                                            currentCheckoutProduct
+                                                ? {
+                                                      id: currentCheckoutProduct.id,
+                                                      name: currentCheckoutProduct.name,
+                                                      price: currentCheckoutProduct.price,
+                                                      type: currentCheckoutProduct.type,
+                                                  }
+                                                : null
+                                        }
+                                        paySessionSeed={paySessionSeed}
+                                        initialCheckoutPayment={initialCheckoutPayment}
+                                        payCreateDiscountType={checkoutRequest?.discount_type}
+                                        onPayStateChange={setPayModalStatus}
+                                    />
+                                )}
                             </div>
                         </div>
 

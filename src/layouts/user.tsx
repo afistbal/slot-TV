@@ -2,11 +2,9 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { matchPath, Outlet, useLocation, useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { ReelShortBasicsSpin } from "@/components/ReelShortBasicsSpin";
 import { ReelShortBottomNav } from "@/components/ReelShortBottomNav";
-import UserHome from "@/pages/user/Home";
-import UserSearch from "@/pages/user/Search";
 import { trackPageView } from "@/hooks/usePixel";
 import { matchSearchFamilyPath } from "@/lib/searchRoutes";
 import { isForDemoPathname } from "@/constants/forDemoRoute";
@@ -14,6 +12,9 @@ import { isVDemoPathname } from "@/constants/vDemoRoute";
 import { isForYouPathname } from "@/constants/foryouRoute";
 import { syncAdAttributionCache } from "@/lib/adAttribution";
 import { syncFbAttributionCache } from "@/lib/fbAttribution";
+
+const UserHome = lazy(() => import("@/pages/user/Home"));
+const UserSearch = lazy(() => import("@/pages/user/Search"));
 
 /** 与 App 中 `/`、`/search`、`/:locale/search` 占位路由一致；仅这两页做 DOM 级 keep-alive，避免反复卸载导致图片/LazyLoad 重跑 */
 function usePrimaryTabKeepAlive() {

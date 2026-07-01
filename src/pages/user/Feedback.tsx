@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { toast } from "sonner";
 import usePixel from "@/hooks/usePixel";
+import "@/styles/feedback-reelshort.scss";
 
 export default function Component({ embedded = false }: { embedded?: boolean }) {
     const intl = useIntl();

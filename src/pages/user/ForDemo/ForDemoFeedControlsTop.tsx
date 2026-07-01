@@ -10,6 +10,7 @@ type ForDemoFeedControlsTopProps = {
     feedEpisodeTotal: number;
     onOpenIntroduction: () => void;
     onWatchFullSeries: () => void;
+    onWatchFullSeriesIntent?: () => void;
 };
 
 /** for-demo 底栏 info + Watch Full，作为 `controlsTopContent` 与进度条/工具栏同一容器 */
@@ -21,6 +22,7 @@ export function ForDemoFeedControlsTop({
     feedEpisodeTotal,
     onOpenIntroduction,
     onWatchFullSeries,
+    onWatchFullSeriesIntent,
 }: ForDemoFeedControlsTopProps) {
     return (
         <>
@@ -35,6 +37,7 @@ export function ForDemoFeedControlsTop({
             <ForYouWatchFullSeriesButton
                 feedEpisodeTotal={feedEpisodeTotal}
                 onClick={onWatchFullSeries}
+                onIntent={onWatchFullSeriesIntent}
             />
         </>
     );

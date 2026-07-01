@@ -12,7 +12,6 @@ import {
     trackFbInitiateCheckout,
     trackViewContent,
 } from '@/hooks/usePixel';
-import { init } from '@airwallex/components-sdk';
 import { toast } from 'sonner';
 import coinIcon from '@/assets/profile/icon_coin@2x.png';
 import Payment from './Payment';
@@ -57,6 +56,7 @@ export default function Coin({
             return;
         }
 
+        const { init } = await import('@airwallex/components-sdk');
         const { payments } = await init({
             locale: 'en',
             env: result.d['env'] as 'prod' | 'demo',

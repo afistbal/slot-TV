@@ -1,20 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 
 import { resolveForyouIncomingResumeSec } from '@/constants/foryouRoute';
 import { buildVDemoPath } from '@/constants/vDemoRoute';
 import { type DouyinFeedVideoItem, type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import Loader from '@/components/Loader';
-import { ReelShortTopNav } from '@/components/ReelShortTopNav';
+import { useDelayedVisible } from '@/hooks/useDelayedVisible';
 import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { useConfigStore } from '@/stores/config';
 import { useRootStore } from '@/stores/root';
 import { useUserStore } from '@/stores/user';
-import { usePrefetchVideoShoppingProducts } from '@/stores/videoShoppingProducts';
 import type { IPlayerData } from '@/types/videoPlayer';
 
-import { clearVDemoActiveEpisodeCache } from './fetchVDemoEpisode';
-import { clearVDemoEpisodeCache } from './fetchVDemoEpisodesBatch';
 import { fetchVDemoMovieInfo, type VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { applyForDemoMountMutePolicy } from '@/pages/user/ForDemo/forDemoApplyMountMutePolicy';
 import {
@@ -35,6 +32,12 @@ import { scheduleVDemoFeedScrollSettled } from './vDemoFeedScroll';
 import '@/components/foryou-feed/foryou-vertical.scss';
 import '@/styles/video-vertical.scss';
 import './v-demo.scss';
+
+const ReelShortTopNav = lazy(() =>
+    import('@/components/ReelShortTopNav').then((mod) => ({ default: mod.ReelShortTopNav })),
+);
+
+const BOOT_LOADER_DELAY_MS = 100000;
 
 function parseRouteEpisodeParam(raw: string | undefined): number | undefined {
     if (raw == null || raw === '') {
@@ -68,7 +71,6 @@ export default function VDemoPage() {
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
     const viewerIsVip = useUserStore((s) => s.isVIP());
-    usePrefetchVideoShoppingProducts();
     const movieId = Number(params['id']);
     const urlEpisode = parseRouteEpisodeParam(params['episode']);
 
@@ -83,6 +85,7 @@ export default function VDemoPage() {
     const [error, setError] = useState<string | null>(null);
     const [foryouResumeTimeSec, setForyouResumeTimeSec] = useState<number | undefined>();
     const [foryouResumeEpisodeRowId, setForyouResumeEpisodeRowId] = useState<number | undefined>();
+    const showBootLoader = useDelayedVisible(loading, BOOT_LOADER_DELAY_MS);
 
     const episodesRef = useRef(episodes);
     episodesRef.current = episodes;
@@ -149,8 +152,6 @@ export default function VDemoPage() {
         }
 
         let cancelled = false;
-        clearVDemoEpisodeCache();
-        clearVDemoActiveEpisodeCache();
         foryouResumeResolvedRef.current = false;
         setForyouResumeTimeSec(undefined);
         setForyouResumeEpisodeRowId(undefined);
@@ -203,35 +204,34 @@ export default function VDemoPage() {
             activeIndexRef.current = startIndex;
             episodesRef.current = sortedEpisodes;
             useForDemoColdUnmuteStore.getState().setColdLandingIndex(startIndex);
-
-            try {
-                await syncVDemoOnActiveIndex(
-                    movieId,
-                    sortedEpisodes,
-                    startIndex,
-                    viewerIsVipRef.current,
-                );
-            } catch (e) {
-                if (cancelled) {
-                    return;
-                }
-                const message = e instanceof Error ? e.message : 'batch failed';
-                setError(message);
-                setLoading(false);
-                return;
-            }
-
-            if (cancelled) {
-                return;
-            }
             setItems(buildVDemoFeedItems(sortedEpisodes));
             setLoading(false);
+
+            void syncVDemoOnActiveIndex(
+                movieId,
+                sortedEpisodes,
+                startIndex,
+                viewerIsVipRef.current,
+            )
+                .then(() => {
+                    if (!cancelled) {
+                        refreshItemsAfterScroll();
+                    }
+                })
+                .catch((e) => {
+                    if (cancelled) {
+                        return;
+                    }
+                    console.warn(
+                        '[v-demo] initial batch preload failed',
+                        e instanceof Error ? e.message : e,
+                    );
+                });
+
         })();
 
         return () => {
             cancelled = true;
-            clearVDemoEpisodeCache();
-            clearVDemoActiveEpisodeCache();
         };
     }, [movieId, sessionBootstrapReady]);
 
@@ -296,7 +296,9 @@ export default function VDemoPage() {
 
     const pcTopNav = isDesktop ? (
         <div className="video-vertical-pc-topnav">
-            <ReelShortTopNav leftAction="none" showSearch />
+            <Suspense fallback={null}>
+                <ReelShortTopNav leftAction="none" showSearch />
+            </Suspense>
         </div>
     ) : null;
 
@@ -305,12 +307,12 @@ export default function VDemoPage() {
             <div className="video-vertical-pc-shell v-demo-pc-shell foryou-vertical-pc-shell">
                 {pcTopNav}
                 <div className="flex min-h-0 flex-1 items-center justify-center bg-black">
-                    <Loader color="light" />
+                    {showBootLoader ? <Loader color="light" /> : null}
                 </div>
             </div>
         ) : (
             <div className="v-demo v-demo--state foryou-vertical foryou-vertical--fullscreen-boot">
-                <Loader color="light" />
+                {showBootLoader ? <Loader color="light" /> : null}
             </div>
         );
     }
