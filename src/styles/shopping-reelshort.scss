@@ -628,7 +628,7 @@
         right: -1px;
         z-index: 3;
         overflow: hidden;
-        min-width: calc(106 / 375 * var(--app-vw));
+        min-width: calc(88 / 375 * var(--app-vw));
         border-top-right-radius: inherit;
         pointer-events: none;
     }
@@ -640,13 +640,13 @@
         gap: calc(4 / 375 * var(--app-vw));
         box-sizing: border-box;
         width: 100%;
-        min-height: calc(28 / 375 * var(--app-vw));
-        padding: calc(5 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
-        border-bottom-left-radius: calc(10 / 375 * var(--app-vw));
+        min-height: calc(24 / 375 * var(--app-vw));
+        padding: calc(4 / 375 * var(--app-vw)) calc(8 / 375 * var(--app-vw));
+        border-bottom-left-radius: calc(9 / 375 * var(--app-vw));
         border-top-right-radius: inherit;
         background: linear-gradient(90deg, #FD36BC 0%, #FD3A5A 100%);
         color: #fff;
-        font-size: calc(13 / 375 * var(--app-vw));
+        font-size: calc(12 / 375 * var(--app-vw));
         font-weight: 700;
         line-height: 1;
         font-variant-numeric: tabular-nums;
@@ -654,29 +654,29 @@
 
         @media (min-width: 768px) {
             gap: 4px;
-            min-height: 28px;
-            padding: 5px 12px;
-            border-bottom-left-radius: 10px;
+            min-height: 24px;
+            padding: 4px 8px;
+            border-bottom-left-radius: 9px;
             border-top-right-radius: inherit;
-            font-size: 13px;
+            font-size: 12px;
         }
     }
 
     .rs-countdown-compact__time {
         display: inline-block;
-        min-width: 70px;
+        min-width: 58px;
         text-align: center;
     }
 
     .rs-countdown-compact__clockIcon {
         flex: 0 0 auto;
-        width: calc(16 / 375 * var(--app-vw));
-        height: calc(16 / 375 * var(--app-vw));
+        width: calc(14 / 375 * var(--app-vw));
+        height: calc(14 / 375 * var(--app-vw));
         color: currentColor;
 
         @media (min-width: 768px) {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
         }
     }
 
@@ -770,12 +770,35 @@
         align-items: baseline;
     }
 
+    .rs-shopping__planPriceStack {
+        display: inline-flex;
+        align-items: baseline;
+        gap: calc(6 / 375 * var(--app-vw));
+
+        @media (min-width: 768px) {
+            gap: 6px;
+        }
+    }
+
     .rs-shopping__planPrice {
         font-size: calc(20 / 375 * var(--app-vw));
 
         @media (min-width: 768px) {
             font-size: 22px;
             line-height: 1.15;
+        }
+    }
+
+    .rs-shopping__planOriginalPrice {
+        font-size: calc(12 / 375 * var(--app-vw));
+        font-weight: 400;
+        line-height: 1;
+        color: rgba(64, 26, 6, 0.72);
+        text-decoration-line: line-through;
+        text-decoration-thickness: 1px;
+
+        @media (min-width: 768px) {
+            font-size: 13px;
         }
     }
 
@@ -2005,7 +2028,7 @@
         }
 
         .rs-shopping__plan {
-            min-height: 140px;
+            min-height: 150px;
             border-radius: calc(12 / 375 * var(--app-vw));
             background: linear-gradient(87deg, #3C3427 0%, #201816 100%);
             isolation: isolate;
@@ -2033,6 +2056,11 @@
                 transition: color 0.1s ease;
             }
 
+            .rs-shopping__planOriginalPrice {
+                color: rgba(255, 255, 255, 0.9);
+                transition: color 0.1s ease;
+            }
+
             .rs-shopping__planBenefits {
                 background: rgba(78, 78, 78, 0.35);
                 color: #F1DA97;
@@ -2055,6 +2083,10 @@
 
             .rs-shopping__planRenew {
                 color: rgba(64, 26, 6, 0.75);
+            }
+
+            .rs-shopping__planOriginalPrice {
+                color: rgba(64, 26, 6, 0.82);
             }
 
             .rs-shopping__planBenefits {
@@ -2111,8 +2143,15 @@
         }
 
         .rs-shopping__plan--hasCountdown .rs-shopping__planPriceRow {
-            top: clamp(34px, calc(36 / 375 * var(--app-vw)), 38px);
+            top: clamp(26px, calc(28 / 375 * var(--app-vw)), 30px);
             transform: none;
+        }
+
+        .rs-shopping__planPriceStack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
 
         .rs-shopping__planPrice {
@@ -2140,6 +2179,14 @@
                 opacity: 0;
                 transition: opacity 0.1s ease;
             }
+        }
+
+        .rs-shopping__planOriginalPrice {
+            font-size: 14px;
+            line-height: 1;
+            color: currentColor;
+            text-decoration-line: line-through;
+            text-decoration-thickness: 1px;
         }
 
         .rs-shopping__plan--selected .rs-shopping__planPrice {

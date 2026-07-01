@@ -660,6 +660,7 @@ export default function RadixRc({
                     const effectiveSelectedId = currentId ?? defaultWalletProductId;
                     const isPlanSelected = effectiveSelectedId === p.id;
                     const showPlanCountdown = hasPlanCountdown(p);
+                    const showOriginalPrice = hasLimitedOffer(p.price, p.renewal_price);
                     const planBenefitIcons = isReelshortH5StoreUi
                         ? isPlanSelected
                             ? shoppingVipBenefitIcons.weekly
@@ -751,7 +752,14 @@ export default function RadixRc({
                                             })}
                                         </div>
                                         <div className="rs-shopping__planPriceRow">
-                                            <div className="rs-shopping__planPrice">${p.price}</div>
+                                            <div className="rs-shopping__planPriceStack">
+                                                <div className="rs-shopping__planPrice">${p.price}</div>
+                                                {showOriginalPrice ? (
+                                                    <div className="rs-shopping__planOriginalPrice">
+                                                        ${p.renewal_price}
+                                                    </div>
+                                                ) : null}
+                                            </div>
                                         </div>
                                         <div className="rs-shopping__planRenew">
                                             {formatSubscriptionPlanRenewText(intl, {

@@ -88,6 +88,10 @@ function patchOpNewShareBrand(raw: string, brand: BrandConfig): string {
   return next
 }
 
+function patchShareBladeSiteName(raw: string, brand: BrandConfig): string {
+  return replaceMetaContent(raw, 'property', 'og:site_name', brand.displayName)
+}
+
 /** 与 `scripts/sync-public-html-assets.mjs` 规则一致：为 HTML 内引用的本地图标/清单加 `?v=package.version`。 */
 function patchHtmlAssetRefs(html: string, version: string): string {
   const q = `?v=${encodeURIComponent(version)}`
@@ -250,12 +254,11 @@ function patchStaticBrandFiles(outDir: string, brand: BrandConfig): Plugin {
         writeFileSync(airwallexPath, patchHtmlBrand(readFileSync(airwallexPath, 'utf-8'), brand), 'utf-8')
       }
 
-      for (const name of ['share.blade.php', 'share.template.html', 'og-share.html', 'share-test.html']) {
-        const sharePath = path.join(outDir, name)
-        if (existsSync(sharePath)) {
-          writeFileSync(sharePath, patchHtmlBrand(readFileSync(sharePath, 'utf-8'), brand), 'utf-8')
-        }
+      const shareBladePath = path.join(outDir, 'share.blade.php')
+      if (existsSync(shareBladePath)) {
+        writeFileSync(shareBladePath, patchShareBladeSiteName(readFileSync(shareBladePath, 'utf-8'), brand), 'utf-8')
       }
+
     },
   }
 }
