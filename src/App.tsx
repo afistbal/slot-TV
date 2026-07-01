@@ -71,8 +71,6 @@ const UserRadixRc = lazy(() => import('./pages/user/RadixRc'));
 const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
 const ForDemoPage = lazy(() => import('./pages/user/ForDemo'));
 const VDemoPage = lazy(() => import('./pages/user/VDemo'));
-const QdFeedDemoPage = lazy(() => import('./pages/user/QdFeedDemo'));
-const ZgjDownloadPage = lazy(() => import('./pages/tools/ZgjDownloadPage'));
 const AdminWeeklyUpdateTable = lazy(() => import('./pages/admin/WeeklyUpdateTable'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -233,16 +231,7 @@ const router = createBrowserRouter([
                 path: 'for-you',
                 element: <Navigate to="/foryou" replace />,
             },
-            {
-                path: 'qd-feed-demo',
-                element: lazyRoute(QdFeedDemoPage),
-            },
         ],
-    },
-    {
-        path: '/zgjdownload',
-        errorElement: <ErrorBoundary />,
-        element: lazyRoute(ZgjDownloadPage),
     },
     {
         path: '/page',
@@ -522,8 +511,7 @@ function App() {
     const skipSecondaryRoutePrefetch =
         matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null ||
         matchPath({ path: '/foryou', end: true }, pathname) != null ||
-        matchPath({ path: '/for-you', end: true }, pathname) != null ||
-        matchPath({ path: '/qd-feed-demo', end: true }, pathname) != null;
+        matchPath({ path: '/for-you', end: true }, pathname) != null;
 
     useEffect(() => {
         /** `checked` 仅表示 config 已就绪；`stat`/`alive` 需带有效 token，须等会话 bootstrap */
@@ -619,16 +607,12 @@ function App() {
     }, [checked, sessionBootstrapReady]);
 
     const appPathSegments = pathname.toLowerCase().split('/').filter(Boolean);
-    /** 与 `/zgjdownload` 等：不等全站 config 即可挂载路由 */
-    const isStandaloneToolPath =
-        appPathSegments.length === 1 && appPathSegments[0] === 'zgjdownload';
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
     /** 全屏竖滑播放：勿挡底部控制条（与 `layouts/user` 中隐藏 iOS 胶囊条一致） */
     const isImmersivePlayerPath =
         matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null ||
         matchPath({ path: '/foryou', end: true }, pathname) != null ||
-        matchPath({ path: '/for-you', end: true }, pathname) != null ||
-        matchPath({ path: '/qd-feed-demo', end: true }, pathname) != null;
+        matchPath({ path: '/for-you', end: true }, pathname) != null;
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =
         install > 0 && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;
@@ -651,7 +635,7 @@ function App() {
                     onClick={handleExecuteInstall}
                 />
             ) : null}
-            {checked || isStandaloneToolPath ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
+            {checked ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
         </div>
         <Dialog
             open={loadingStore.status}
