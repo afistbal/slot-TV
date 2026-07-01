@@ -124,14 +124,14 @@ function ShoppingVipMembershipHeader() {
     );
 }
 
-/** ??`widgets/Vip.tsx` ?????????????????*/
-function limitedOfferOffPercent(price: string, renewalPrice: string): string {
-    const p = parseFloat(price);
-    const r = parseFloat(renewalPrice);
-    if (!Number.isFinite(p) || !Number.isFinite(r) || r <= 0) {
-        return '0%';
-    }
-    return `${100 - Math.floor((p / r) * 100)}%`;
+function hasLimitedOffer(price: string, renewalPrice: string): boolean {
+    const p = Number.parseFloat(price);
+    const r = Number.parseFloat(renewalPrice);
+    return Number.isFinite(p) && Number.isFinite(r) && r > 0 && p < r;
+}
+
+function hasPlanCountdown(plan: Pick<Product, 'name' | 'price' | 'renewal_price'>): boolean {
+    return isWeeklySubscriptionPlan(plan.name) && hasLimitedOffer(plan.price, plan.renewal_price);
 }
 
 type Product = {
@@ -528,7 +528,7 @@ export default function RadixRc({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅 seq 变化时触发收银
     }, [checkoutRequest?.seq]);
 
-    const showCountdown = !loadingProducts && products.length > 0;
+    const showCountdown = !loadingProducts && planProducts.some(hasPlanCountdown);
     const countdownMainEl = showCountdown ? (
         <div className="rs-shopping__countdown">
             <Countdown />
@@ -659,6 +659,7 @@ export default function RadixRc({
                     const planPeriod = resolveSubscriptionPeriod(p.name);
                     const effectiveSelectedId = currentId ?? defaultWalletProductId;
                     const isPlanSelected = effectiveSelectedId === p.id;
+                    const showPlanCountdown = hasPlanCountdown(p);
                     const planBenefitIcons = isReelshortH5StoreUi
                         ? isPlanSelected
                             ? shoppingVipBenefitIcons.weekly
@@ -715,6 +716,7 @@ export default function RadixRc({
                             className={cn(
                                 'rs-shopping__plan',
                                 isPlanSelected && 'rs-shopping__plan--selected',
+                                showPlanCountdown && 'rs-shopping__plan--hasCountdown',
                                 !enableInteraction && 'cursor-default',
                             )}
                         >
@@ -724,12 +726,9 @@ export default function RadixRc({
                                     style={{ backgroundImage: `url(${vipCardBg})` }}
                                 />
 
-                                {!isReelshortH5StoreUi && isWeeklySubscriptionPlan(p.name) ? (
-                                    <div className="rs-shopping__planOfferBadge">
-                                        <FormattedMessage
-                                            id="limited_time_offer"
-                                            values={{ off: limitedOfferOffPercent(p.price, p.renewal_price) }}
-                                        />
+                                {showPlanCountdown ? (
+                                    <div className="rs-shopping__planCountdown">
+                                        <Countdown compact showLabel={false} />
                                     </div>
                                 ) : null}
                                 {/* {currentId === p.id ? (
@@ -966,12 +965,6 @@ export default function RadixRc({
                         </span>
                         <LegalDocumentLink title="privacy_policy" className="rs-shopping__tipsAgreementLink">
                             <FormattedMessage id="shopping_tips_link_privacy" />
-                        </LegalDocumentLink>
-                        <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
-                            |
-                        </span>
-                        <LegalDocumentLink title="pay_service" className="rs-shopping__tipsAgreementLink">
-                            <FormattedMessage id="shopping_paid_service_agreement_title" />
                         </LegalDocumentLink>
                     </div>
                 </section>

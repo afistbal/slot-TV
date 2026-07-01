@@ -170,7 +170,7 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
     }, [product]);
 
     return <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="bg-linear-to-b from-amber-100 to-transparent p-6">
+        <DialogContent className="bg-[#222] p-6 text-white">
             <DialogTitle className="text-2xl font-bold text-center text-slate-700">
                 <FormattedMessage id="vip" />
             </DialogTitle>

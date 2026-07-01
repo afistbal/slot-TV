@@ -157,7 +157,7 @@ export default function UnlockEpisode({
 
     return (
         <Drawer open={open} onOpenChange={onOpenChange}>
-            <DrawerContent className="min-h-2/5 bg-linear-to-b from-orange-50 to-red-50">
+            <DrawerContent className="min-h-2/5 bg-[#222] text-white">
                 <DrawerTitle className="flex justify-between p-4 items-start">
                     {!loading && (
                         <div className="font-normal text-slate-500">
@@ -180,7 +180,7 @@ export default function UnlockEpisode({
                 {loading ? (
                     <Loader />
                 ) : (
-                    <div className="overflow-auto border-t">
+                    <div className="overflow-auto border-t border-white/10">
                         <div className='pt-4'>
                             <Countdown/>
                         </div>

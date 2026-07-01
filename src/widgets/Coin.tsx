@@ -143,7 +143,7 @@ export default function Coin({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-linear-to-b from-amber-100 to-orange-50 p-6">
+            <DialogContent className="bg-[#222] p-6 text-white">
                 <DialogTitle className="text-2xl font-bold text-center text-slate-700">
                     <FormattedMessage id="top_up" />
                 </DialogTitle>

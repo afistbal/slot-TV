@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
 
+const DEFAULT_DURATION_SECONDS = 30 * 60;
+const DEFAULT_STORAGE_KEY = 'promotion-countdown-timeout';
+
+type CountdownProps = {
+    storageKey?: string;
+    durationSeconds?: number;
+    compact?: boolean;
+    showLabel?: boolean;
+    className?: string;
+};
+
 function formatCountdownParts(totalSeconds: number) {
     const safe = Math.max(0, totalSeconds);
     const days = Math.floor(safe / 86400);
@@ -10,35 +21,75 @@ function formatCountdownParts(totalSeconds: number) {
     return { days, hours, minutes, seconds };
 }
 
-export default function Countdown() {
-    const [countdown, setCountdown] = useState(0);
+function readPromotionDeadline(storageKey: string, durationSeconds: number, now: number) {
+    let deadline = Number.NaN;
+    try {
+        deadline = Number.parseInt(localStorage.getItem(storageKey) ?? '', 10);
+    } catch {
+        deadline = Number.NaN;
+    }
+
+    if (!Number.isFinite(deadline) || deadline <= now) {
+        deadline = now + durationSeconds;
+        try {
+            localStorage.setItem(storageKey, String(deadline));
+        } catch {
+            // localStorage may be unavailable in private or embedded webviews.
+        }
+    }
+
+    return deadline;
+}
+
+function pad2(n: number) {
+    return n.toString().padStart(2, '0');
+}
+
+export default function Countdown({
+    storageKey = DEFAULT_STORAGE_KEY,
+    durationSeconds = DEFAULT_DURATION_SECONDS,
+    compact = false,
+    showLabel = true,
+    className,
+}: CountdownProps = {}) {
+    const duration = Math.max(1, Math.floor(durationSeconds));
+    const [countdown, setCountdown] = useState(duration);
 
     useEffect(() => {
-        let time = parseInt(localStorage.getItem('promotion-countdown-timeout')?.toString() || 'NaN', 10);
-        const now = Math.floor(new Date().getTime() / 1000);
-        const count = 30 * 60;
-        if (isNaN(time) || time <= now) {
-            time = count + now;
-            localStorage.setItem('promotion-countdown-timeout', time.toString());
-        }
+        let mounted = true;
 
-        setCountdown(time - now);
-        const timer = window.setInterval(() => {
-            setCountdown((current) => {
-                if (current === 0) {
-                    localStorage.setItem('promotion-countdown-timeout', '0');
-                    return 0;
-                }
-                return current - 1;
-            });
-        }, 1000);
+        const syncCountdown = () => {
+            const now = Math.floor(Date.now() / 1000);
+            const deadline = readPromotionDeadline(storageKey, duration, now);
+            if (mounted) {
+                setCountdown(Math.max(0, deadline - now));
+            }
+        };
+
+        syncCountdown();
+        const timer = window.setInterval(syncCountdown, 1000);
 
         return () => {
+            mounted = false;
             window.clearInterval(timer);
         };
-    }, []);
+    }, [duration, storageKey]);
 
     const { hours, minutes, seconds } = formatCountdownParts(countdown);
+    const timeText = `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
+
+    if (compact) {
+        return (
+            <div className={className ? `rs-countdown-compact ${className}` : 'rs-countdown-compact'}>
+                {showLabel ? (
+                    <span className="rs-countdown-compact__label">
+                        <FormattedMessage id="limited_time" />
+                    </span>
+                ) : null}
+                <span className="rs-countdown-compact__time">{timeText}</span>
+            </div>
+        );
+    }
 
     return (
         <div className="flex gap-1 items-center justify-center">
@@ -47,13 +98,13 @@ export default function Countdown() {
             </div>
             <div className="flex gap-1">
                 <div className="bg-pink-400 text-white text-sm leading-3.5 p-2 rounded-sm tabular-nums">
-                    {hours.toString().padStart(2, '0')}
+                    {pad2(hours)}
                 </div>
                 <div className="bg-pink-400 text-white text-sm leading-3.5 p-2 rounded-sm tabular-nums">
-                    {minutes.toString().padStart(2, '0')}
+                    {pad2(minutes)}
                 </div>
                 <div className="bg-pink-400 text-white text-sm leading-3.5 p-2 rounded-sm tabular-nums">
-                    {seconds.toString().padStart(2, '0')}
+                    {pad2(seconds)}
                 </div>
             </div>
         </div>

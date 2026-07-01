@@ -622,6 +622,52 @@
     }
 
     /** 套餐选中图标：放在卡片右侧中部 */
+    .rs-shopping__planCountdown {
+        position: absolute;
+        top: -1px;
+        right: -1px;
+        z-index: 3;
+        overflow: hidden;
+        min-width: calc(106 / 375 * var(--app-vw));
+        border-top-right-radius: inherit;
+        pointer-events: none;
+    }
+
+    .rs-countdown-compact {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: calc(4 / 375 * var(--app-vw));
+        box-sizing: border-box;
+        width: 100%;
+        min-height: calc(28 / 375 * var(--app-vw));
+        padding: calc(5 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+        border-bottom-left-radius: calc(10 / 375 * var(--app-vw));
+        border-top-right-radius: inherit;
+        background: #f87171;
+        color: #fff;
+        font-size: calc(13 / 375 * var(--app-vw));
+        font-weight: 700;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+
+        @media (min-width: 768px) {
+            gap: 4px;
+            min-height: 28px;
+            padding: 5px 12px;
+            border-bottom-left-radius: 10px;
+            border-top-right-radius: inherit;
+            font-size: 13px;
+        }
+    }
+
+    .rs-countdown-compact__time {
+        display: inline-block;
+        min-width: 70px;
+        text-align: center;
+    }
+
     .rs-shopping__planCheckedIcon {
         position: absolute;
         right: calc(14 / 375 * var(--app-vw));
@@ -2052,6 +2098,11 @@
             margin: 0;
         }
 
+        .rs-shopping__plan--hasCountdown .rs-shopping__planPriceRow {
+            top: clamp(34px, calc(36 / 375 * var(--app-vw)), 38px);
+            transform: none;
+        }
+
         .rs-shopping__planPrice {
             position: relative;
             isolation: isolate;
@@ -2381,7 +2432,7 @@
 
     /** 视频页 H5 抽屉：周卡～Tips 与整页 `/shopping` 共用 `--topUpH5` 样式 */
     .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer:has(.rs-shopping--topUpH5) {
-        background-color: #000;
+        background-color: #222;
     }
 
     .rs-shopping-drawer-sheet--videoDrawer .rs-shopping.rs-shopping--drawerEmbed.rs-shopping--topUpH5 {
@@ -2423,12 +2474,12 @@
 /** 弹窗底：与 Uno/Tailwind 一致 `rgb(20 20 20 / var(--un-bg-opacity))` */
 .rs-shopping-drawer-bg {
     --un-bg-opacity: 1;
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    background-color: #222;
 }
 
 /** 视频页 H5 VIP 抽屉外壳：与整页购物抽屉一致 `rgb(20 20 20)` */
 .rs-shopping-checkout-drawer--vipNoScroll.rs-shopping-drawer-bg {
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    background-color: #222;
 }
 
 /** ReelShort 剧集付费弹层；内边距与整页 `rs-shopping__main` 对齐 */
@@ -2437,7 +2488,7 @@
     max-width: 100%;
     overflow-x: hidden;
     --un-bg-opacity: 1;
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    background-color: #222;
     color: rgba(255, 255, 255, 0.9);
     padding-left: calc(15 / 375 * var(--app-vw));
     padding-right: calc(15 / 375 * var(--app-vw));
@@ -2532,7 +2583,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    background-color: #222;
 }
 
 .rs-shopping-drawer-sheet.rs-shopping-drawer-sheet--videoDrawer>.rs-shopping.rs-shopping--drawerEmbed {
@@ -2779,7 +2830,7 @@
 .rs-shopping-checkout-drawer__scroll--reelshort {
     overflow-x: hidden;
     --un-bg-opacity: 1;
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    background-color: #222;
 }
 
 /**
@@ -2792,7 +2843,7 @@
     overflow-x: hidden;
     overflow-y: hidden;
     -webkit-overflow-scrolling: auto;
-    background-color: rgb(20 20 20 / var(--un-bg-opacity));
+    background-color: #222;
 }
 
 /** 覆盖 vaul 默认 max-h-[80vh]：H5 视频 VIP 抽屉 88vh */

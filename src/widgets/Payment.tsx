@@ -21,7 +21,7 @@ export default function Payment({ open, onSubmit, onOpenChange }: { open: boolea
     }
 
     return <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-linear-to-br from-amber-50 to-pink-50" aria-describedby="payment">
+        <DrawerContent className="bg-[#222] text-white" aria-describedby="payment">
             <DrawerTitle className="flex items-center gap-4 px-4 pt-4 mb-4">
                 <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
                     <FormattedMessage id="payment_method" />
@@ -30,7 +30,7 @@ export default function Payment({ open, onSubmit, onOpenChange }: { open: boolea
                     <X />
                 </div>
             </DrawerTitle>
-            <div className="border-t p-8 flex flex-col gap-4">
+            <div className="border-t border-white/10 p-8 flex flex-col gap-4">
                 <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 1 ? 'border-red-400 bg-red-50' : '')} onClick={() => setPayment(1)}>
                     <img src={applePay} alt="Apple Pay" className="h-[30px]" />
                     {payment === 1 && <Check className="text-red-400 absolute right-8" />}
@@ -51,7 +51,7 @@ export default function Payment({ open, onSubmit, onOpenChange }: { open: boolea
             </div>
             <div className="p-8 pt-0 flex flex-col gap-4">
                 <Button onClick={() => onSubmit(payment)}><FormattedMessage id="pay_now" /></Button>
-                <div className="text-center text-sm text-muted-foreground">
+                <div className="text-center text-sm text-white/60">
                     <FormattedMessage id="payment_agreement" />
                     <div>「<span onClick={handleOpenTerms} className="underline"><FormattedMessage id="membership_terms_of_service" /></span>」</div>
                 </div>
@@ -59,7 +59,7 @@ export default function Payment({ open, onSubmit, onOpenChange }: { open: boolea
         </DrawerContent>
 
         <Drawer open={terms} onOpenChange={handleOpenTerms}>
-            <DrawerContent aria-describedby="terms">
+            <DrawerContent className="bg-[#222] text-white" aria-describedby="terms">
                 <DrawerTitle className="flex items-center gap-4 px-4 pt-4 mb-4">
                     <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
                         <FormattedMessage id="membership_terms_of_service" />
@@ -68,7 +68,7 @@ export default function Payment({ open, onSubmit, onOpenChange }: { open: boolea
                         <X />
                     </div>
                 </DrawerTitle>
-                <div className="p-4 border-t overflow-y-auto">
+                <div className="p-4 border-t border-white/10 overflow-y-auto">
                     <MemberTerms />
                 </div>
             </DrawerContent>

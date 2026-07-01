@@ -285,15 +285,18 @@ function computeOfferDiscountPercent(
     return Math.round(raw / 10) * 10;
 }
 
-const RETENTION_STEP_TARGET_PRICE: Record<RetentionPromoStep, number> = {
-    1: 13.99,
-    2: 9.99,
-    3: 49.99,
-};
-
 function isWeeklyRetentionOffer(offer: RetentionOffer): boolean {
     const period = resolveSubscriptionPeriod(offer.name);
     return period === 'weekly' || String(offer.name).toLowerCase().includes('week');
+}
+
+function isQuarterlyRetentionOffer(offer: RetentionOffer): boolean {
+    const period = resolveSubscriptionPeriod(offer.name);
+    return period === 'quarterly' || String(offer.name).toLowerCase().includes('quarter');
+}
+
+function isRetentionDiscountType(offer: RetentionOffer, discountType: number): boolean {
+    return Number(offer.discount_type) === discountType;
 }
 
 /** 按档位目标价匹配 offer，避免接口数组顺序与弹窗 step 不一致 */
@@ -301,25 +304,27 @@ function resolveRetentionOfferForStep(
     offers: RetentionOffer[],
     step: RetentionPromoStep,
 ): RetentionOffer | null {
-    if (!offers.length) return null;
-    const pool =
-        step === 3
-            ? offers.filter((offer) => !isWeeklyRetentionOffer(offer))
-            : offers.filter((offer) => isWeeklyRetentionOffer(offer));
-    const candidates = pool.length ? pool : offers;
-    const target = RETENTION_STEP_TARGET_PRICE[step];
-    let best = candidates[0];
-    let bestDelta = Infinity;
-    for (const offer of candidates) {
-        const price = Number.parseFloat(offer.price);
-        if (!Number.isFinite(price)) continue;
-        const delta = Math.abs(price - target);
-        if (delta < bestDelta) {
-            bestDelta = delta;
-            best = offer;
-        }
+    if (step === 1) {
+        return offers.find((offer) => isWeeklyRetentionOffer(offer) && isRetentionDiscountType(offer, 1)) ?? null;
     }
-    return best;
+    if (step === 2) {
+        return offers.find((offer) => isWeeklyRetentionOffer(offer) && isRetentionDiscountType(offer, 2)) ?? null;
+    }
+    return offers.find((offer) => isQuarterlyRetentionOffer(offer) && isRetentionDiscountType(offer, 1)) ?? null;
+}
+
+function resolveNextRetentionStep(
+    offers: RetentionOffer[],
+    currentStep: RetentionPromoStep | null,
+): RetentionPromoStep | null {
+    const steps: RetentionPromoStep[] = [1, 2, 3];
+    return (
+        steps.find(
+            (candidate) =>
+                (currentStep == null || candidate > currentStep) &&
+                resolveRetentionOfferForStep(offers, candidate) != null,
+        ) ?? null
+    );
 }
 
 function withCatalogRenewalPrice(
@@ -814,6 +819,7 @@ export function useVideoRetentionCommerce({
     const [checkoutModalPrefetch, setCheckoutModalPrefetch] = useState(false);
     const [countdownSec, setCountdownSec] = useState(COUNTDOWN_SEC);
     const [showCountdown, setShowCountdown] = useState(false);
+    const [flowActive, setFlowActive] = useState(false);
     /** 用户从弹窗3点X进收银后再关收银：三层全关，阻止 locked effect 再次弹 VIP */
     const [fullyDismissed, setFullyDismissed] = useState(false);
 
@@ -866,6 +872,7 @@ export function useVideoRetentionCommerce({
 
     useEffect(() => {
         setFullyDismissed(false);
+        setFlowActive(false);
         flowStartedRef.current = false;
     }, [episodeRowId]);
 
@@ -882,11 +889,13 @@ export function useVideoRetentionCommerce({
         setAnimateIn(false);
         setStep(null);
         setShowCountdown(false);
+        setFlowActive(false);
         flowStartedRef.current = false;
         countdownExhaustedRef.current = false;
     }, []);
 
     const openStep = useCallback((nextStep: RetentionPromoStep) => {
+        setFlowActive(true);
         setStep(nextStep);
         setVisible(true);
         setAnimateIn(false);
@@ -910,18 +919,24 @@ export function useVideoRetentionCommerce({
 
     const startRetentionFlow = useCallback(() => {
         if (viewerIsVip || flowStartedRef.current || offers.length === 0) return;
+        const firstStep = resolveNextRetentionStep(offers, null);
         setFullyDismissed(false);
         flowStartedRef.current = true;
+        if (firstStep == null) {
+            setFullyDismissed(true);
+            return;
+        }
+        setFlowActive(true);
         clearSkipCountdown();
         countdownExhaustedRef.current = false;
         if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
         void waitRetentionPromoAssetsReady().finally(() => {
             if (!flowStartedRef.current) return;
-            openTimerRef.current = window.setTimeout(() => openStep(1), OPEN_DELAY_MS) as unknown as ReturnType<
+            openTimerRef.current = window.setTimeout(() => openStep(firstStep), OPEN_DELAY_MS) as unknown as ReturnType<
                 typeof setTimeout
             >;
         });
-    }, [offers.length, openStep, viewerIsVip]);
+    }, [offers, openStep, viewerIsVip]);
 
     const requestPanelClose = useCallback((): boolean => {
         if (suppressRetentionOnVipCloseRef.current) {
@@ -1004,18 +1019,27 @@ export function useVideoRetentionCommerce({
 
     const dismissCurrentStep = useCallback(() => {
         const current = stepRef.current;
-        if (current === 1) {
-            openStep(2);
+        if (!current) {
+            clearPromo();
+            setFullyDismissed(true);
             return;
         }
-        if (current === 2) {
-            openStep(3);
+
+        const nextStep = resolveNextRetentionStep(offers, current);
+        if (nextStep != null) {
+            openStep(nextStep);
             return;
         }
+
         if (current === 3) {
             openCheckout(3, true);
+            return;
         }
-    }, [openCheckout, openStep]);
+
+        clearPromo();
+        setFullyDismissed(true);
+        closeVipWithoutRetentionRestart();
+    }, [clearPromo, closeVipWithoutRetentionRestart, offers, openCheckout, openStep]);
 
     const handleCta = useCallback(() => {
         const current = stepRef.current;
@@ -1148,7 +1172,7 @@ export function useVideoRetentionCommerce({
     const activeOfferRaw = step != null ? resolveRetentionOfferForStep(offers, step) : null;
     const activeOffer =
         activeOfferRaw != null ? withCatalogRenewalPrice(activeOfferRaw, products) : null;
-    const promoActive = step != null || checkoutRequest != null || fullyDismissed;
+    const promoActive = flowActive || step != null || checkoutRequest != null || fullyDismissed;
 
     const layer = (
         <>
@@ -1185,6 +1209,7 @@ export function useVideoRetentionCommerce({
         [
             checkoutModalPrefetch,
             checkoutRequest,
+            flowActive,
             initialCheckoutPayment,
             layer,
             onPayModalClosed,
