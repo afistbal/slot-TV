@@ -711,9 +711,7 @@ export function DouyinFeedPlayer({
             root,
             undefined,
             () => {
-                if (detectPlatform().isIOS) {
-                    openPreloadGateRef.current();
-                }
+                openPreloadGateRef.current();
             },
         );
         const chromeTapStartRef = { current: null as { x: number; y: number } | null };
@@ -747,6 +745,60 @@ export function DouyinFeedPlayer({
                 feedDbg(source, { from: activeIndexRef.current, to: clamped, direction });
                 syncActiveIndexRef.current(clamped, direction);
                 dispatchActivePlayRef.current(source);
+            }
+        };
+
+        const prepareIncomingIndex = (target: number) => {
+            const maxIdx = playbackItemsLengthRef.current - 1;
+            if (target < 0 || target > maxIdx) return;
+
+            openPreloadGateRef.current();
+
+            const player = playerByIndexRef.current.get(target);
+            const url = playbackItemsRef.current[target]?.url ?? '';
+            if (!player || !url) return;
+
+            resumePlayerLoading(player, url, { autoplay: false });
+            primeDouyinNeighborBuffer(player, url);
+        };
+
+        const precommitIncomingIndex = () => {
+            if (scrollSyncLockRef.current) return;
+
+            const height = root.clientHeight || window.innerHeight;
+            if (height <= 0) return;
+
+            const rawIndex = root.scrollTop / height;
+            const active = activeIndexRef.current;
+            const maxIdx = playbackItemsLengthRef.current - 1;
+
+            if (rawIndex > active) {
+                const progress = rawIndex - active;
+                const target = Math.min(active + 1, maxIdx);
+                if (progress >= 0.3) {
+                    prepareIncomingIndex(target);
+                }
+                if (progress >= 0.55 && target !== active) {
+                    markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
+                    feedDbg('scroll-early', { from: active, to: target, direction: 'next', progress });
+                    syncActiveIndexRef.current(target, 'next');
+                    dispatchActivePlayRef.current('scroll-early');
+                }
+                return;
+            }
+
+            if (rawIndex < active) {
+                const progress = active - rawIndex;
+                const target = Math.max(active - 1, 0);
+                if (progress >= 0.3) {
+                    prepareIncomingIndex(target);
+                }
+                if (progress >= 0.55 && target !== active) {
+                    markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
+                    feedDbg('scroll-early', { from: active, to: target, direction: 'prev', progress });
+                    syncActiveIndexRef.current(target, 'prev');
+                    dispatchActivePlayRef.current('scroll-early');
+                }
             }
         };
 
@@ -796,6 +848,7 @@ export function DouyinFeedPlayer({
                 commitScrollIndex('scroll-sync');
                 return;
             }
+            precommitIncomingIndex();
             clearScrollSettleTimer();
             scrollSettleTimer = window.setTimeout(() => {
                 scrollSettleTimer = null;
