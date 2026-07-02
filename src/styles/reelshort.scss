@@ -50,6 +50,46 @@
     }
 }
 
+/* 404 recommendation shelf on H5. Keep this scoped so the home page shelf is untouched. */
+@media (max-width: 767px) {
+    .rs-notfound-like .HomePage_main__BzEnK {
+        padding-left: calc(4.8 * var(--app-vw) / 100);
+        padding-right: calc(4.8 * var(--app-vw) / 100);
+        padding-bottom: calc(8 * var(--app-vw) / 100);
+    }
+
+    .rs-notfound-like .HomePage_main__BzEnK .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv:not(.HomePage_type_5--pc) {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: calc(4.26667 * var(--app-vw) / 100);
+        row-gap: calc(3.46667 * var(--app-vw) / 100);
+        width: 100%;
+        padding-right: 0;
+        box-sizing: border-box;
+        overflow: visible;
+    }
+
+    .rs-notfound-like
+        .HomePage_main__BzEnK
+        .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv:not(.HomePage_type_5--pc)
+        .book-item.BookItem_bookStyle5__Hn17I {
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+    }
+
+    .rs-notfound-like
+        .HomePage_main__BzEnK
+        .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv:not(.HomePage_type_5--pc)
+        .book-item.BookItem_bookStyle5__Hn17I
+        .BookItem_cover__W2qbR {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3 / 4;
+        border-radius: calc(1.6 * var(--app-vw) / 100);
+    }
+}
+
 // --- 首页 Banner 指示点（Home.tsx tablist）---
 .home-hero-banner-dots {
     background: transparent;

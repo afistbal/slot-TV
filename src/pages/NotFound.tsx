@@ -10,6 +10,7 @@ import type { HomeBookItemData } from '@/components/home/HomeBookItem';
 import { HomeBookShelf } from '@/components/home/HomeBookShelf';
 import type { IData } from '@/stores/home';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
+import '@/styles/home-reelshort.scss';
 
 function normalizeEpisodeSlug(raw?: string) {
   if (!raw) return undefined;
@@ -108,4 +109,3 @@ export default function Component() {
     </div>
   );
 }
-
