@@ -1,6 +1,6 @@
 /**
- * 全站展示用品牌名与静态资源路径。
- * 修改此处即可同步顶栏 Logo+字标、Footer 版权里的站点名、关于页、分享页与品牌视频弹窗标题等。
+ * 鍏ㄧ珯灞曠ず鐢ㄥ搧鐗屽悕涓庨潤鎬佽祫婧愯矾寰勩€?
+ * 淇敼姝ゅ鍗冲彲鍚屾椤舵爮 Logo+瀛楁爣銆丗ooter 鐗堟潈閲岀殑绔欑偣鍚嶃€佸叧浜庨〉銆佸垎浜〉涓庡搧鐗岃棰戝脊绐楁爣棰樼瓑銆?
  */
 export const BRAND_DISPLAY_NAME = import.meta.env.VITE_BRAND_DISPLAY_NAME || 'YogoShort';
 
@@ -19,14 +19,14 @@ export const BRAND_COPYRIGHT_LINE_1 =
 
 export const BRAND_LOGO_SRC = '/new-logo.png';
 
-/** 顶栏品牌链接：Logo + 字标合一的横版 WebP */
-export const BRAND_TOPNAV_WORDMARK_SRC = '/web_logo.webp';
+/** 椤舵爮鍝佺墝閾炬帴锛歀ogo + 瀛楁爣鍚堜竴鐨勬í鐗?WebP */
+export const BRAND_TOPNAV_WORDMARK_SRC = `/web_logo.webp?v=${encodeURIComponent(__APP_VERSION__)}`;
 export const BRAND_TOPNAV_WORDMARK_WIDTH = 280;
 export const BRAND_TOPNAV_WORDMARK_HEIGHT = 80;
 
 let brandTopnavWordmarkPreloaded = false;
 
-/** 应用启动时预载顶栏字标，避免路由切换后 TopNav 重挂载时 logo 闪一下 */
+/** 搴旂敤鍚姩鏃堕杞介《鏍忓瓧鏍囷紝閬垮厤璺敱鍒囨崲鍚?TopNav 閲嶆寕杞芥椂 logo 闂竴涓?*/
 export function preloadBrandTopnavWordmark(): void {
     if (brandTopnavWordmarkPreloaded || typeof window === 'undefined') {
         return;

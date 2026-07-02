@@ -97,7 +97,7 @@ function patchHtmlAssetRefs(html: string, version: string): string {
   const q = `?v=${encodeURIComponent(version)}`
   return html
     .replace(
-      /(href|src)="(\/(?:favorite\.svg|new-logo\.png|icons\/new-192\.png|icons\/new-512\.png|manifest\.json))(?:\?[^"#]*)?"/g,
+      /(href|src)="(\/(?:favorite\.svg|new-logo\.png|web_logo\.webp|icons\/new-192\.png|icons\/new-512\.png|manifest\.json))(?:\?[^"#]*)?"/g,
       (_m, attr, p) => `${attr}="${p}${q}"`,
     )
     .replace(
@@ -258,7 +258,6 @@ function patchStaticBrandFiles(outDir: string, brand: BrandConfig): Plugin {
       if (existsSync(shareBladePath)) {
         writeFileSync(shareBladePath, patchShareBladeSiteName(readFileSync(shareBladePath, 'utf-8'), brand), 'utf-8')
       }
-
     },
   }
 }
@@ -298,29 +297,9 @@ export default ({ mode }: { mode: string }) => {
         workbox: {
           /** 默认 2 MiB；主 chunk 超限时 build 会失败，见 vite-plugin-pwa / workbox FAQ */
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          globPatterns: [
-            'index.html',
-            'manifest.json',
-            'favorite.png',
-            'new-logo.png',
-            'icons/*.{png,svg,webp,ico}',
-          ],
           // injectRegister 为 false 时插件不会自动合并这两项；autoUpdate 依赖 SW 内 skipWaiting，否则新版本会一直 waiting
           skipWaiting: true,
           clientsClaim: true,
-          runtimeCaching: [
-            {
-              urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith('/assets/'),
-              handler: 'StaleWhileRevalidate',
-              options: {
-                cacheName: 'slot-runtime-assets',
-                expiration: {
-                  maxEntries: 120,
-                  maxAgeSeconds: 30 * 24 * 60 * 60,
-                },
-              },
-            },
-          ],
           navigateFallbackDenylist: [
             /^\/api\//,
             /^\/op_new\//,
@@ -349,7 +328,7 @@ export default ({ mode }: { mode: string }) => {
     },
     server: {
       host: '0.0.0.0',
-      port: 5173,
+      port: 5188,
       proxy: {
         '/api': {
           target: apiProxyTarget,
@@ -360,7 +339,7 @@ export default ({ mode }: { mode: string }) => {
     },
     preview: {
       host: '0.0.0.0',
-      port: 5173,
+      port: 5188,
       proxy: {
         '/api': {
           target: apiProxyTarget,

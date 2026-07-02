@@ -729,6 +729,14 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         if (isPc && isCategoriesPage) {
             const loadId = ++searchMovieLoadId;
             requesting.current = true;
+            searchStore.setCategoryId(nextCategoryId);
+            searchStore.setTag('');
+            searchStore.setKeyword('');
+            searchStore.setTags([]);
+            searchStore.setPage(1);
+            if (scrollRef.current) {
+                scrollRef.current.scrollTop = 0;
+            }
             try {
                 const state = useSearchStore.getState();
                 const pageSize = state.perPage || 24;

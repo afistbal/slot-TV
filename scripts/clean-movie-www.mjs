@@ -3,7 +3,7 @@ import path from 'path';
 
 const cliOutDir = process.argv[2];
 const outDir = path.resolve(cliOutDir || 'D:/JJ-TV/movie-www');
-const keepNames = new Set(['.git', '.well-known', 'googlefdb534d9533860b7.html']);
+const keepNames = new Set(['.git', '.well-known', 'googlefdb534d9533860b7.html', 'assets']);
 
 function exists(p) {
     try {
