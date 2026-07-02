@@ -13,9 +13,9 @@ import { feedVideoMp4FromPlayer } from '../feed/feedVideoMp4Log';
 import { isUserAudioUnlocked, isUserGestureActive } from '../feed/userGesturePlay';
 import { playIosChainWithSound } from '../playback/iosChainPlayback';
 import { readMutedPreference } from '../controls/mutePreference';
-import { isCrossOriginMediaUrl } from '../media/isCrossOriginMediaUrl';
 import { detectPlatform } from '../platform/detectPlatform';
-import { pickPlaybackMode } from '../playback/pickPlaybackMode';
+import { resolvePlaybackMode } from '../playback/pickPlaybackMode';
+import { setNativeVideoSrc } from '../playback/setNativeVideoSrc';
 import { getMp4PluginConfig } from '../playback/bufferConfig';
 import type { PlaybackMode } from '../types';
 
@@ -67,13 +67,10 @@ function applyMuted(player: Player, muted: boolean) {
 }
 
 export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
-    const platform = detectPlatform();
-    const mode = pickPlaybackMode({
-        isIOS: platform.isIOS,
-        mseSupported: platform.mseSupported,
+    const mode = resolvePlaybackMode({
         hasPreload: options.hasPreload ?? false,
         forceNative: options.forceNative,
-        crossOriginMedia: isCrossOriginMediaUrl(options.url),
+        url: options.url,
     });
 
     const useMse = mode === 'mse';
@@ -108,6 +105,12 @@ export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
 
     if (player.video) {
         applyMuted(player, autoplayMuted);
+        if (/\.m3u8(?:[?#]|$)/i.test(options.url)) {
+            setNativeVideoSrc(player.video as HTMLVideoElement, options.url, {
+                autoplay: false,
+                muted: autoplayMuted,
+            });
+        }
     }
 
     return {

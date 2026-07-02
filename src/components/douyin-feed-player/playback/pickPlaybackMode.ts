@@ -21,11 +21,16 @@ export function pickPlaybackMode(opts: {
     return 'mse';
 }
 
+function isHlsUrl(url?: string): boolean {
+    return Boolean(url && /\.m3u8(?:[?#]|$)/i.test(url));
+}
+
 export function resolvePlaybackMode(opts: {
     hasPreload: boolean;
     forceNative?: boolean;
     url?: string;
 }): PlaybackMode {
+    if (isHlsUrl(opts.url)) return 'native';
     const platform = detectPlatform();
     const crossOriginMedia = opts.url ? isCrossOriginMediaUrl(opts.url) : false;
     return pickPlaybackMode({
