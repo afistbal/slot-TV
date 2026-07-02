@@ -8,6 +8,7 @@ import {
 } from '@/lib/airwallexShoppingWalletEmbedSingleton';
 import type { createElement as airwallexCreateElement, ElementTypes } from '@airwallex/components-sdk';
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
+import loadingGif from '@/assets/icons/loading.gif';
 import payApple from '@/assets/icons/shopping-pay/apple-pay.svg';
 import payGoogle from '@/assets/icons/shopping-pay/google-pay.svg';
 import payVisa from '@/assets/icons/shopping-pay/visa.svg';
@@ -41,6 +42,13 @@ type PayCreateResp = {
     price?: unknown;
     env?: 'prod' | 'demo';
     success_url?: string;
+};
+
+type AirwallexPayElement = {
+    on: (
+        eventCode: 'success' | 'error' | 'cancel',
+        handler: (event: { detail?: unknown }) => void,
+    ) => void;
 };
 
 function majorAmount(apiHint: unknown): number {
@@ -265,10 +273,36 @@ function WalletPayAction({
 type CardPayActionProps = {
     mountRef: RefObject<HTMLDivElement | null>;
     visuallyHidden: boolean;
+    ready: boolean;
     inert?: boolean;
 };
 
-function CardPayAction({ mountRef, visuallyHidden, inert = false }: CardPayActionProps) {
+function CardPayAction({ mountRef, visuallyHidden, ready, inert = false }: CardPayActionProps) {
+    const [maskVisible, setMaskVisible] = useState(!ready);
+    const [maskExiting, setMaskExiting] = useState(false);
+
+    useEffect(() => {
+        if (!ready) {
+            setMaskVisible(true);
+            setMaskExiting(false);
+            return;
+        }
+
+        setMaskVisible(true);
+        setMaskExiting(false);
+        const fadeTimer = window.setTimeout(() => {
+            setMaskExiting(true);
+        }, 320);
+        const removeTimer = window.setTimeout(() => {
+            setMaskVisible(false);
+        }, 520);
+
+        return () => {
+            window.clearTimeout(fadeTimer);
+            window.clearTimeout(removeTimer);
+        };
+    }, [ready]);
+
     return (
         <div
             className="rs-shopping__cardDropin"
@@ -278,7 +312,34 @@ function CardPayAction({ mountRef, visuallyHidden, inert = false }: CardPayActio
         >
             <div className={cn('rs-checkout rs-checkout-h5 rs-checkout-h5--embedded')}>
                 <div className="rs-checkout-h5__inner">
-                    <div ref={mountRef} className="rs-checkout-h5__dropInMount" />
+                    <div
+                        className={cn(
+                            'rs-checkout-h5__dropInShell',
+                            ready && 'rs-checkout-h5__dropInShell--ready',
+                            maskVisible && 'rs-checkout-h5__dropInShell--maskVisible',
+                        )}
+                    >
+                        <div ref={mountRef} className="rs-checkout-h5__dropInMount" />
+                        {maskVisible ? (
+                            <div
+                                className={cn(
+                                    'rs-shopping__cardDropinMask',
+                                    maskExiting && 'rs-shopping__cardDropinMask--exiting',
+                                )}
+                                aria-hidden
+                            >
+                                <div className="rs-shopping__cardSkeletonSpinner">
+                                    <img src={loadingGif} alt="" />
+                                </div>
+                                <div className="rs-shopping__cardSkeletonInput rs-shopping__cardSkeletonInput--number" />
+                                <div className="rs-shopping__cardSkeletonSplit">
+                                    <div className="rs-shopping__cardSkeletonInput" />
+                                    <div className="rs-shopping__cardSkeletonInput" />
+                                </div>
+                                <div className="rs-shopping__cardSkeletonInput rs-shopping__cardSkeletonInput--name" />
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
             </div>
         </div>
@@ -291,7 +352,6 @@ function CardPayAction({ mountRef, visuallyHidden, inert = false }: CardPayActio
 export default function RadixRcShoppingPaySection({
     walletProductId,
     checkoutTargetProductId,
-    checkoutFrom: _checkoutFrom,
     checkoutProductMeta,
     paySessionSeed = 0,
     initialCheckoutPayment,
@@ -309,6 +369,7 @@ export default function RadixRcShoppingPaySection({
         apple: 'pending',
         google: 'pending',
     });
+    const [cardReady, setCardReady] = useState(false);
     const appleMountRef = useRef<HTMLDivElement | null>(null);
     const googleMountRef = useRef<HTMLDivElement | null>(null);
     const cardMountRef = useRef<HTMLDivElement | null>(null);
@@ -376,6 +437,7 @@ export default function RadixRcShoppingPaySection({
         const targetProductId = walletProductId;
         setSessionReady(false);
         setWalletState({ apple: 'pending', google: 'pending' });
+        setCardReady(false);
         sessionRef.current = null;
         purchaseTrackedRef.current = false;
         addToCartTrackedRef.current = false;
@@ -472,6 +534,7 @@ export default function RadixRcShoppingPaySection({
         }
         cleanupElements();
         setWalletState({ apple: 'pending', google: 'pending' });
+        setCardReady(false);
 
         void (async () => {
             const { createElement } = await import('@airwallex/components-sdk');
@@ -508,8 +571,9 @@ export default function RadixRcShoppingPaySection({
                 );
                 reportButtonPayLog('padding', paymentMethod);
             };
-            const bindCommon = (element: any, paymentMethod: string) => {
-                element.on('success', () => {
+            const bindCommon = (element: unknown, paymentMethod: string) => {
+                const payElement = element as AirwallexPayElement;
+                payElement.on('success', () => {
                     if (purchaseTrackedRef.current) {
                         return;
                     }
@@ -518,11 +582,11 @@ export default function RadixRcShoppingPaySection({
                     trackFbPurchase(subscribePayload, orderSn || undefined);
                     onPayStateChange?.('success');
                 });
-                element.on('error', (ev: { detail?: unknown }) => {
+                payElement.on('error', (ev: { detail?: unknown }) => {
                     reportButtonPayLog('error', paymentMethod, ev?.detail);
                     onPayStateChange?.('failed');
                 });
-                element.on('cancel', () => onPayStateChange?.('idle'));
+                payElement.on('cancel', () => onPayStateChange?.('idle'));
             };
 
             if (canPickApple && appleHost) {
@@ -626,6 +690,7 @@ export default function RadixRcShoppingPaySection({
                 if (!dropIn || cancelled) return;
                 dropIn.mount(cardHost);
                 dropIn.on('ready', () => {
+                    setCardReady(true);
                     if (paymentRef.current === 2) {
                         dismissSoftKeyboard();
                     }
@@ -706,6 +771,7 @@ export default function RadixRcShoppingPaySection({
             <CardPayAction
                 mountRef={cardMountRef}
                 visuallyHidden={payment !== 3}
+                ready={cardReady}
                 inert={googlePayFocusGuard}
             />
         </div>

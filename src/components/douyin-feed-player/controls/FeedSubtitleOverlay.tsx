@@ -15,15 +15,11 @@ type FeedSubtitleOverlayProps = {
 
 /** 在 video stage 内 absolute bottom，距播放器底 160px。 */
 export function FeedSubtitleOverlay({ player, subtitleUrl, className }: FeedSubtitleOverlayProps) {
-    const { text, ready, loading, error } = useFeedSubtitle(player, subtitleUrl);
+    const { text, ready, loading } = useFeedSubtitle(player, subtitleUrl);
 
     const trimmed = subtitleUrl.trim();
     if (!trimmed) {
         return null;
-    }
-
-    if (import.meta.env.DEV && error) {
-        console.error('[douyin-feed-player] subtitle unavailable for active item', trimmed, error);
     }
 
     if (!ready || !text) {

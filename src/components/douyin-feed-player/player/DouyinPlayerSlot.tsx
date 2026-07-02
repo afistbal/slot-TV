@@ -1,6 +1,7 @@
-import { useCallback, useState, type MouseEvent, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent, type MutableRefObject } from 'react';
 import type Player from 'xgplayer';
 
+import mountLoadingGif from '@/assets/icons/loading.gif';
 import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +42,7 @@ export function DouyinPlayerSlot({
 }: DouyinPlayerSlotProps) {
     const [mountEl, setMountEl] = useState<HTMLDivElement | null>(null);
     const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
+    const [mountLoadingVisible, setMountLoadingVisible] = useState(true);
     const isDesktop = useVideoPlayerDesktop();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
@@ -90,6 +92,56 @@ export function DouyinPlayerSlot({
 
     const showSubtitle = slot.isActive && Boolean(subtitleUrl.trim());
 
+    useEffect(() => {
+        setMountLoadingVisible(true);
+    }, [slot.item.url]);
+
+    useEffect(() => {
+        if (slot.isActive) {
+            setMountLoadingVisible(true);
+        }
+    }, [slot.isActive]);
+
+    useEffect(() => {
+        if (!slotPlayer) {
+            setMountLoadingVisible(true);
+            return;
+        }
+
+        const player = slotPlayer;
+        const syncMountLoading = () => {
+            const video = player.video as HTMLVideoElement | undefined;
+            const canPlayForward = Boolean(
+                video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA,
+            );
+            setMountLoadingVisible(slot.isActive && !canPlayForward);
+        };
+
+        const events = [
+            'loadstart',
+            'loadedmetadata',
+            'loadeddata',
+            'canplay',
+            'playing',
+            'play',
+            'timeupdate',
+            'pause',
+            'waiting',
+            'stalled',
+            'ended',
+            'emptied',
+        ] as const;
+        events.forEach((eventName) => player.on(eventName, syncMountLoading));
+        const video = player.video as HTMLVideoElement | undefined;
+        events.forEach((eventName) => video?.addEventListener(eventName, syncMountLoading));
+        syncMountLoading();
+
+        return () => {
+            events.forEach((eventName) => player.off(eventName, syncMountLoading));
+            events.forEach((eventName) => video?.removeEventListener(eventName, syncMountLoading));
+        };
+    }, [slot.isActive, slot.item.url, slotPlayer]);
+
     return (
         <div
             className="douyin-player-slot"
@@ -104,13 +156,32 @@ export function DouyinPlayerSlot({
                         className="douyin-player-slot__mount"
                         role="presentation"
                     />
+                    {mountLoadingVisible ? (
+                        <div className="douyin-player-slot__mount-loading" aria-hidden>
+                            <img
+                                className="douyin-player-slot__mount-loading-img"
+                                src={mountLoadingGif}
+                                alt=""
+                                draggable={false}
+                            />
+                        </div>
+                    ) : null}
                     <FeedCenterPlayButton player={slotPlayer} visible={slot.isActive} />
                     {showSubtitle ? (
                         <FeedSubtitleOverlay player={slotPlayer} subtitleUrl={subtitleUrl} />
                     ) : null}
                 </div>
             ) : (
-                <div className={cn(stageClassName, 'douyin-player-slot__placeholder')} aria-hidden />
+                <div className={cn(stageClassName, 'douyin-player-slot__placeholder')} aria-hidden>
+                    <div className="douyin-player-slot__mount-loading">
+                        <img
+                            className="douyin-player-slot__mount-loading-img"
+                            src={mountLoadingGif}
+                            alt=""
+                            draggable={false}
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );

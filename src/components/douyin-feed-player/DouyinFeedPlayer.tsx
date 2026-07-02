@@ -10,6 +10,7 @@ import {
 import type Player from 'xgplayer';
 
 import { cn } from '@/lib/utils';
+import mountLoadingGif from '@/assets/icons/loading.gif';
 
 import { DouyinPlayerControls } from './controls/DouyinPlayerControls';
 import { isIosNativeVideoFullscreen } from './controls/feedPlayerFullscreen';
@@ -1120,7 +1121,14 @@ export function DouyinFeedPlayer({
                                 ) : null}
                             </>
                         ) : (
-                            <div className="douyin-feed-player__cover" />
+                            <div className="douyin-feed-player__cover" aria-hidden>
+                                <img
+                                    className="douyin-feed-player__cover-loading-img"
+                                    src={mountLoadingGif}
+                                    alt=""
+                                    draggable={false}
+                                />
+                            </div>
                         )}
                     </div>
                 );

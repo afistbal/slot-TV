@@ -28,12 +28,32 @@
 }
 
 .douyin-player-slot__mount {
+    position: relative;
     width: 100%;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+}
+
+.douyin-player-slot__mount-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transform: translateZ(0);
+}
+
+.douyin-player-slot__mount-loading-img {
+    display: block;
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    user-select: none;
 }
 
 .douyin-player-slot__mount .xgplayer {
@@ -63,18 +83,6 @@
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
-}
-
-.douyin-player-slot__mount .xgplayer.xgplayer-isloading .xgplayer-enter-spinner {
-    display: block !important;
-    animation: douyin-player-spinner-delay 1ms linear 2s forwards;
-}
-
-@keyframes douyin-player-spinner-delay {
-    to {
-        visibility: visible;
-        opacity: 1;
-    }
 }
 
 /* H5：contain 完整显示 */

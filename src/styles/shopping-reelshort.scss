@@ -1307,20 +1307,39 @@
         max-width: 100%;
     }
 
+    .rs-shopping__cardDropin .rs-checkout-h5__dropInShell {
+        min-height: 190px;
+        overflow: visible;
+    }
+
     .rs-shopping__cardDropin .rs-checkout-h5__dropInMount {
-        min-height: 240px;
+        min-height: 190px;
         border-radius: calc(8 / 375 * var(--app-vw));
         padding: 0;
         background: #222222;
+        color-scheme: dark;
+        overflow: visible;
+        transition: none !important;
 
         @media (min-width: 768px) {
             border-radius: 8px;
         }
     }
 
+    .rs-shopping__cardDropin .rs-checkout-h5__dropInMount iframe {
+        min-height: 190px;
+        opacity: 0;
+        background: #222222;
+        transition: opacity 0.18s ease !important;
+    }
+
+    .rs-shopping__cardDropin .rs-checkout-h5__dropInShell--ready .rs-checkout-h5__dropInMount iframe {
+        opacity: 1;
+    }
+
     /* Airwallex dropIn 注入的骨架条默认是浅灰，这里统一压成深色 */
-    .rs-shopping__cardDropin .rs-checkout-h5__dropInMount>#loading>div {
-        background-color: #222222 !important;
+    .rs-shopping__cardDropin .rs-checkout-h5__dropInMount>#loading {
+        display: none !important;
     }
 
 

@@ -30,6 +30,7 @@ import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
 import { useWindowPathname } from './hooks/useWindowPathname';
 import { loadMessagesForLocale, messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
+import { ReelShortBasicsSpin } from "./components/ReelShortBasicsSpin";
 
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
@@ -47,6 +48,14 @@ function LayoutUserPrimaryTabPlaceholder() {
 /** `config` 未完成前：与首页壳同色、无转圈，避免与首页内二次 loading 叠体感 */
 function InitialBootPlaceholder() {
     return <div className="fixed inset-0 z-10 min-h-0 bg-app-canvas" aria-hidden />;
+}
+
+function RouteLazyFallback() {
+    return (
+        <div className="fixed inset-0 z-[9998] min-h-0 bg-app-canvas">
+            <ReelShortBasicsSpin visible variant="modal" withOverlay={false} />
+        </div>
+    );
 }
 
 const LayoutUser = lazy(() => import('./layouts/user'));
@@ -76,7 +85,7 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 function lazyRoute(Component: ComponentType) {
     return (
-        <Suspense fallback={<InitialBootPlaceholder />}>
+        <Suspense fallback={<RouteLazyFallback />}>
             <Component />
         </Suspense>
     );

@@ -16,20 +16,41 @@ type FeedCenterPlayButtonProps = {
 /** 对标 ForYouPlayer `showForyouCenterPlayIcon`：暂停时常显播放三角，点击视频区恢复播放 */
 export function FeedCenterPlayButton({ player, visible }: FeedCenterPlayButtonProps) {
     const isDesktop = useVideoPlayerDesktop();
-    const [paused, setPaused] = useState(true);
+    const [showPaused, setShowPaused] = useState(false);
 
     useEffect(() => {
+        let showTimer: number | null = null;
+
+        const clearShowTimer = () => {
+            if (showTimer == null) return;
+            window.clearTimeout(showTimer);
+            showTimer = null;
+        };
+
+        const applyPaused = (nextPaused: boolean) => {
+            clearShowTimer();
+            if (!nextPaused) {
+                setShowPaused(false);
+                return;
+            }
+            showTimer = window.setTimeout(() => {
+                setShowPaused(true);
+                showTimer = null;
+            }, 280);
+        };
+
         if (!player || !visible) {
-            setPaused(true);
-            return;
+            setShowPaused(false);
+            return clearShowTimer;
         }
 
-        const sync = () => setPaused(isPlayerPaused(player));
+        const sync = () => applyPaused(isPlayerPaused(player));
         const events = ['play', 'pause', 'ended', 'loadedmetadata'] as const;
         events.forEach((ev) => player.on(ev, sync));
         sync();
 
         return () => {
+            clearShowTimer();
             events.forEach((ev) => player.off(ev, sync));
         };
     }, [player, visible]);
@@ -43,7 +64,7 @@ export function FeedCenterPlayButton({ player, visible }: FeedCenterPlayButtonPr
         [player],
     );
 
-    if (!visible || !player || !paused) {
+    if (!visible || !player || !showPaused) {
         return null;
     }
 

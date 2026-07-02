@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { DouyinFeedVideoItem } from '@/components/douyin-feed-player';
-import { readMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
 import { feedDbg } from '@/components/douyin-feed-player/feed/feedDebugLog';
-import { detectPlatform } from '@/components/douyin-feed-player/platform/detectPlatform';
-import { isIosChainWantPlay } from '@/components/douyin-feed-player/player/createXgPlayer';
 import {
     FORYOU_DEFAULT_PER_PAGE,
     FORYOU_LOAD_MORE_PREFETCH_FROM_END,
@@ -55,6 +52,7 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
     const listRef = useRef(list);
     listRef.current = list;
     const fetchLockRef = useRef(false);
+    const nextPageRef = useRef(2);
     const staticBaseRef = useRef(staticBase);
     staticBaseRef.current = staticBase;
 
@@ -97,6 +95,10 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
         let cancelled = false;
         const feedStore = useForyouFeedStore.getState();
         if (feedStore.isCacheValid()) {
+            nextPageRef.current = Math.max(
+                2,
+                Math.floor(feedStore.list.length / FORYOU_DEFAULT_PER_PAGE) + 1,
+            );
             applyList(feedStore.list, feedStore.hasMore);
             setLoadError(null);
             setLoading(false);
@@ -117,6 +119,7 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
             } else {
                 const rows = res.payload.data;
                 const pp = res.payload.per_page ?? res.payload.count ?? FORYOU_DEFAULT_PER_PAGE;
+                nextPageRef.current = (res.payload.current_page ?? 1) + 1;
                 applyList(rows, inferHasMore(res.payload, pp));
                 setLoadError(null);
             }
@@ -136,21 +139,25 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
         try {
             const base = listRef.current;
             const lastRow = base[base.length - 1];
-            const pp = FORYOU_DEFAULT_PER_PAGE;
+            const page = nextPageRef.current;
             const res = await fetchForyouList({
                 mode: 'more',
-                page: Math.floor(base.length / pp) + 1,
+                page,
                 lastEpId: lastRow?.ep_id,
             });
             if (!res.ok) {
                 return;
             }
             const incoming = res.payload.data;
-            const batchSize = res.payload.per_page ?? res.payload.count ?? pp;
+            const batchSize = res.payload.per_page ?? res.payload.count ?? FORYOU_DEFAULT_PER_PAGE;
             if (!incoming.length) {
                 setHasMore(false);
                 return;
             }
+            nextPageRef.current =
+                res.payload.current_page != null && res.payload.current_page >= page
+                    ? res.payload.current_page + 1
+                    : page + 1;
             const merged = mergeForyouFeedItems(base, incoming);
             applyList(merged, inferHasMore(res.payload, batchSize));
         } finally {
@@ -165,23 +172,8 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
                 return;
             }
 
-            const runLoadMore = () => {
-                if (isIosChainWantPlay()) {
-                    feedDbg('loadmore defer chain', { index });
-                    window.setTimeout(runLoadMore, 2000);
-                    return;
-                }
-                void loadMore();
-            };
-
-            const iosUnmuted = detectPlatform().isIOS && !readMutedPreference();
-            if (iosUnmuted) {
-                feedDbg('loadmore defer ios', { index, ms: 5000 });
-                window.setTimeout(runLoadMore, 5000);
-                return;
-            }
-
-            runLoadMore();
+            feedDbg('loadmore near end', { index, len: list.length });
+            void loadMore();
         },
         [list.length, loadMore],
     );
