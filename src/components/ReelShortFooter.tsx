@@ -3,11 +3,10 @@ import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { cn } from '@/lib/utils';
-import { BRAND_CONTACT_EMAIL, BRAND_COPYRIGHT_LINE_1 } from '@/constants/brand';
+import { BRAND_CONTACT_EMAIL, BRAND_DISPLAY_NAME } from '@/constants/brand';
 import '@/styles/reelshort-footer.scss';
 
 const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png', import.meta.url).toString();
-const FOOTER_COPYRIGHT_LINE_2 = 'Rm 1002 10/F  EASEY COML BLDG 253-261 HENNESSY RD  Hong Kong';
 
 export type ReelShortFooterProps = {
     /** H5：页脚紧贴底部四栏 Tab，隐藏版权区并去掉底内边距（如 /my-list） */
@@ -21,6 +20,7 @@ export function ReelShortFooter({
     hideSupportCenter = false,
 }: ReelShortFooterProps) {
     const appVersion = __APP_VERSION__;
+    const year = new Date().getFullYear();
     const [aboutOpen, setAboutOpen] = useState(false);
     const [supportOpen, setSupportOpen] = useState(false);
     const [contactOpen, setContactOpen] = useState(false);
@@ -125,8 +125,7 @@ export function ReelShortFooter({
                     </div>
 
                     <div className="reelshort-footer__copyright">
-                        <span>{BRAND_COPYRIGHT_LINE_1}</span>
-                        <span>{FOOTER_COPYRIGHT_LINE_2}</span>
+                        <FormattedMessage id="footer_copyright" values={{ year, site: BRAND_DISPLAY_NAME }} />
                     </div>
                 </div>
             </div>
@@ -182,8 +181,7 @@ export function ReelShortFooter({
                         </div>
                     </div>
                     <div className="Footer_copyright__ygL71">
-                        <span>{BRAND_COPYRIGHT_LINE_1}</span>
-                        <span>{FOOTER_COPYRIGHT_LINE_2}</span>
+                        <FormattedMessage id="footer_copyright" values={{ year, site: BRAND_DISPLAY_NAME }} />
                     </div>
                 </div>
             </div>
