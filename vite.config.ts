@@ -263,10 +263,11 @@ function patchStaticBrandFiles(outDir: string, brand: BrandConfig): Plugin {
 }
 
 // https://vite.dev/config/
-export default ({ mode }: { mode: string }) => {
+export default ({ mode, command }: { mode: string; command: string }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const numberedProdMatch = /^prod\d+$/.exec(mode)
   const isProdBuild = mode === 'prod' || mode === 'production'
+  const isDevServer = command === 'serve'
   const outDir = numberedProdMatch ? `D:/JJ-TV/movie-www-${mode}` : isProdBuild ? 'D:/JJ-TV/movie-www-prod' : 'D:/JJ-TV/movie-www'
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com'
   const apiOriginForHints = inferApiOriginForPreconnect(env)
@@ -290,7 +291,7 @@ export default ({ mode }: { mode: string }) => {
       VitePWA({
         registerType: 'autoUpdate',
         devOptions: {
-          enabled: true,
+          enabled: !isDevServer,
         },
         manifest: false,
         injectRegister: false,
@@ -300,6 +301,16 @@ export default ({ mode }: { mode: string }) => {
           // injectRegister 为 false 时插件不会自动合并这两项；autoUpdate 依赖 SW 内 skipWaiting，否则新版本会一直 waiting
           skipWaiting: true,
           clientsClaim: true,
+          importScripts: [`/pwa-force-reload.js?v=${appVersion}`],
+          // 控制 SW 安装体积和请求数量；懒加载路由、语言包、页面级 CSS 由 CDN 按需加载。
+          globPatterns: [
+            'assets/index-*.js',
+            'assets/index-*.css',
+            'assets/brand-*.js',
+            'assets/workbox-window.prod.es5-*.js',
+          ],
+          // 不再用缓存里的 index.html 兜底所有 SPA 导航，避免旧 app shell 长时间滞留。
+          navigateFallback: null,
           navigateFallbackDenylist: [
             /^\/api\//,
             /^\/op_new\//,

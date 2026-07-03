@@ -28,8 +28,6 @@ interface ImportMetaEnv {
   readonly VITE_BOTTOM_TAB_BAR?: string;
   /** 与 lot-h5 一致：设为 `prod` 时走生产 baseURL */
   readonly VITE_APP_FLAG?: string;
-  /** POST 请求加密：`true` / `false`；未设则 dev 加密、build 明文 */
-  readonly VITE_API_REQUEST_ENCRYPTION?: string;
   readonly VITE_API_BASE_URL?: string;
   readonly VITE_SHARE_ORIGIN?: string;
   readonly VITE_BRAND_DISPLAY_NAME?: string;

@@ -47,19 +47,19 @@ export function VideoPlayerLockOverlay({
     return (
         <div
             className={cn(
-                'video-player-pc-lock-overlay absolute inset-0 flex-center flex-col leading-normal mb-6 px-8 text-sm md:px-[70px]',
+                'video-player-pc-lock-overlay absolute inset-0',
                 className,
             )}
         >
-            <img src={paidEpisodeLockIcon} alt="" className="h-16 w-16" />
-            <p className="mt-6 mb-10 w-[320px] text-center text-[20px] font-bold text-white/90">
+            <img src={paidEpisodeLockIcon} alt="" className="video-player-pc-lock-overlay__icon" />
+            <p className="video-player-pc-lock-overlay__text">
                 <FormattedMessage id="pay_unlock_toast_locked_episode" />
             </p>
             <div
-                className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-linear-to-r from-amber-400 to-red-400 p-4 px-12 text-xl font-bold text-white"
+                className="video-player-pc-lock-overlay__button"
                 onClick={(event) => handleUnlockClick(event, onUnlock)}
             >
-                <Unlock className="h-5 w-5 stroke-4" />
+                <Unlock className="video-player-pc-lock-overlay__buttonIcon" />
                 <div>
                     <FormattedMessage id="unlock_now" />
                 </div>

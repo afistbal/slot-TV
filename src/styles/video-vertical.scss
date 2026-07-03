@@ -136,6 +136,53 @@
     -webkit-font-smoothing: subpixel-antialiased;
 }
 
+.video-player-pc-lock-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px min(70px, 10%);
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.video-player-pc-lock-overlay__icon {
+    width: 64px;
+    height: 64px;
+    flex: 0 0 auto;
+}
+
+.video-player-pc-lock-overlay__text {
+    width: min(340px, 100%);
+    margin: 24px 0 40px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.video-player-pc-lock-overlay__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: min(340px, 100%);
+    min-height: 60px;
+    gap: 8px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #ffb300 0%, #ff5f67 100%);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.video-player-pc-lock-overlay__buttonIcon {
+    width: 20px;
+    height: 20px;
+    stroke-width: 4;
+    flex: 0 0 auto;
+}
+
 /** PC 播放页左上返回 + 集数：与顶栏左列同 x，在播放区顶部（勿 fixed，避免被顶栏 z-index 盖住） */
 @media (min-width: 1040px) {
     .video-player-pc-back-bar {

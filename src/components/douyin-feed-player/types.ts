@@ -51,6 +51,8 @@ export type DouyinFeedPlayerProps = {
     onFullscreenUiChange?: (active: boolean) => void;
     /** 壳层 PC 导航：prev/next/选集须先 syncActiveIndex 再滚动 */
     feedNavigateRef?: MutableRefObject<DouyinFeedNavigateHandle | null>;
+    /** 业务锁态：当前项无 URL 时展示黑底，避免误显示播放器 loading。 */
+    isItemLocked?: (item: DouyinFeedVideoItem, index: number) => boolean;
 };
 export type PlayerSlotState = {
     index: number;

@@ -81,6 +81,7 @@ export function DouyinFeedPlayer({
     isDesktop = false,
     onFullscreenUiChange,
     feedNavigateRef,
+    isItemLocked,
 }: DouyinFeedPlayerProps) {
     const isVideoH5Feed = Boolean(className?.includes('v-demo-h5-player'));
     const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -1122,6 +1123,7 @@ export function DouyinFeedPlayer({
         >
             {playbackItems.map((item, index) => {
                 const slot = slots.find((s) => s.index === index);
+                const locked = Boolean(isItemLocked?.(item, index));
                 const feedAttrs = getFeedItemDataAttrs(index === activeIndex);
                 return (
                     <div
@@ -1173,6 +1175,11 @@ export function DouyinFeedPlayer({
                                     />
                                 ) : null}
                             </>
+                        ) : locked ? (
+                            <div
+                                className="douyin-feed-player__cover douyin-feed-player__cover--locked"
+                                aria-hidden
+                            />
                         ) : (
                             <div className="douyin-feed-player__cover" aria-hidden>
                                 <img

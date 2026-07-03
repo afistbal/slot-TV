@@ -856,7 +856,7 @@ export function useVideoRetentionCommerce({
         void useVideoShoppingProductsStore.getState().fetchOnce();
     }, [shouldPrepareRetention, staticBase]);
 
-    const shouldWarmRetentionAssets = shouldPrepareRetention;
+    const shouldWarmRetentionAssets = sessionBootstrapReady && !viewerIsVip;
 
     /** 非 VIP 进播放页：head preload + 常驻隐藏 img，与视频并行但尽量先 decode */
     useEffect(() => {

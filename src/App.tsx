@@ -28,6 +28,7 @@ import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/u
 import { syncAdAttributionCache } from './lib/adAttribution';
 import { syncFbAttributionCache } from './lib/fbAttribution';
 import usePixel from './hooks/usePixel';
+import { describeChunkLoadError, reloadAfterChunkLoadError } from './lib/pwaChunkRecovery';
 import { useWindowPathname } from './hooks/useWindowPathname';
 import { loadMessagesForLocale, messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
 import { ReelShortBasicsSpin } from "./components/ReelShortBasicsSpin";
@@ -99,15 +100,17 @@ interface BeforeInstallPromptEvent extends Event {
 
 function ErrorBoundary() {
     const error = useRouteError();
+    const errorText = describeChunkLoadError(error);
 
     useEffect(() => {
-        report(JSON.stringify(error));
-    }, []);
+        report(errorText);
+        reloadAfterChunkLoadError(error);
+    }, [error, errorText]);
 
     return <div className="p-4 w-full">
         <h1 className="text-2xl">Oops! Something went wrong.</h1>
         <pre className="mt-4 select-all whitespace-pre-wrap">
-            {JSON.stringify(error, null, 2)}
+            {errorText}
         </pre>
         <div className="flex justify-center mt-4">
             <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-md bg-red-400 text-white cursor-pointer">Reload</button>

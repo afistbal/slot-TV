@@ -98,6 +98,10 @@ export function VDemoPcPlayerShell({
         (row: typeof data.episodes[number]) => resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
         [viewerIsVip, playerItems, episode],
     );
+    const isFeedItemLocked = useCallback(
+        (_item: DouyinFeedVideoItem, index: number) => isVDemoEpisodeLocked(data.episodes[index], true),
+        [data.episodes],
+    );
     const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];
     const hasPrev = activeIndex > 0;
@@ -387,6 +391,7 @@ export function VDemoPcPlayerShell({
                                     onOpenIntroduction={openPcIntroDrawer}
                                 />
                             }
+                            isItemLocked={isFeedItemLocked}
                         />
                         <VideoPlayerPcUnmuteOverlay
                             visible={coldUnmuteVisible && !activeLocked}

@@ -83,6 +83,10 @@ export function VDemoH5PlayerShell({
             resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
         [viewerIsVip],
     );
+    const isFeedItemLocked = useCallback(
+        (_item: DouyinFeedVideoItem, index: number) => isVDemoEpisodeLocked(data.episodes[index], true),
+        [data.episodes],
+    );
     const vipCommerceRef = useRef<VideoPlayerVipCommerceHandle>(null);
     const activePlayerItem = playerItems[activeIndex];
     const hasNext = activeIndex < data.episodes.length - 1;
@@ -202,6 +206,7 @@ export function VDemoH5PlayerShell({
                         onOpenIntroduction={() => setIntroductionOpen(true)}
                     />
                 }
+                isItemLocked={isFeedItemLocked}
             />
             <VideoPlayerH5ColdUnmuteOverlay
                 visible={coldUnmuteVisible && !activeLocked}
