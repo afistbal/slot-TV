@@ -755,7 +755,7 @@ export function RetentionCheckoutRadixRc({
     onEmbedPaySuccessEpisodeDetail,
     vipHeaderEpisodeUnlockCoins,
 }: RetentionCheckoutRadixRcProps) {
-    if (!retention?.checkoutRequest || retention.checkoutModalPrefetch) {
+    if (!retention?.checkoutRequest) {
         return null;
     }
     return (

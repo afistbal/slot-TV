@@ -1073,28 +1073,26 @@ export default function RadixRc({
                             </div>
                             
                             <div className="rs-shopping__payStack">
-                                {checkoutModalPrefetch ? null : (
-                                    <RadixRcShoppingPaySection
-                                        key={String(walletProductId ?? 'wallet')}
-                                        walletProductId={walletProductId}
-                                        checkoutTargetProductId={checkoutTargetProductId}
-                                        checkoutFrom={checkoutFrom}
-                                        checkoutProductMeta={
-                                            currentCheckoutProduct
-                                                ? {
-                                                      id: currentCheckoutProduct.id,
-                                                      name: currentCheckoutProduct.name,
-                                                      price: currentCheckoutProduct.price,
-                                                      type: currentCheckoutProduct.type,
-                                                  }
-                                                : null
-                                        }
-                                        paySessionSeed={paySessionSeed}
-                                        initialCheckoutPayment={initialCheckoutPayment}
-                                        payCreateDiscountType={checkoutRequest?.discount_type}
-                                        onPayStateChange={setPayModalStatus}
-                                    />
-                                )}
+                                <RadixRcShoppingPaySection
+                                    key={String(walletProductId ?? 'wallet')}
+                                    walletProductId={walletProductId}
+                                    checkoutTargetProductId={checkoutTargetProductId}
+                                    checkoutFrom={checkoutFrom}
+                                    checkoutProductMeta={
+                                        currentCheckoutProduct
+                                            ? {
+                                                  id: currentCheckoutProduct.id,
+                                                  name: currentCheckoutProduct.name,
+                                                  price: currentCheckoutProduct.price,
+                                                  type: currentCheckoutProduct.type,
+                                              }
+                                            : null
+                                    }
+                                    paySessionSeed={paySessionSeed}
+                                    initialCheckoutPayment={initialCheckoutPayment}
+                                    payCreateDiscountType={checkoutRequest?.discount_type}
+                                    onPayStateChange={setPayModalStatus}
+                                />
                             </div>
                         </div>
 
