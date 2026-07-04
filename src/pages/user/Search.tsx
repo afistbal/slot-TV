@@ -76,6 +76,29 @@ function searchUrlMatchesStore(search: string): boolean {
     return kwOk && tagOk;
 }
 
+function readCategoryIdFromSearch(search: string, categories: TData[]): string {
+    const params = new URLSearchParams(search);
+    const directId = String(params.get('category_id') ?? '').trim();
+    if (directId) {
+        return directId;
+    }
+
+    const categoryKey = String(params.get('category') ?? params.get('category_name') ?? '').trim();
+    if (!categoryKey) {
+        return '';
+    }
+
+    const normalizedKey = categoryKey.toLowerCase();
+    const row = categories.find((category) => {
+        const id = String(category['id'] ?? '').trim().toLowerCase();
+        const slug = String(category['slug'] ?? '').trim().toLowerCase();
+        const label = categoryDisplayLabel(category).trim().toLowerCase();
+        return id === normalizedKey || slug === normalizedKey || label === normalizedKey;
+    });
+
+    return row ? String(row['id'] ?? '').trim() : '';
+}
+
 function buildSearchListScopeKey(state: {
     keyword: string;
     tag: string;
@@ -946,9 +969,16 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         }
 
         const s = useSearchStore.getState();
+        const params = new URLSearchParams(location.search);
         let changed = false;
 
         if (matchCategoriesPath(path)) {
+            const categoryIdFromSearch = String(params.get('category_id') ?? '').trim();
+            if (categoryIdFromSearch && s.categoryId !== categoryIdFromSearch) {
+                s.setCategoryId(categoryIdFromSearch);
+                s.setTags([]);
+                changed = true;
+            }
             if (s.tag) {
                 s.setTag('');
                 changed = true;
@@ -967,8 +997,6 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             s.setCategoryId('');
             s.setTags([]);
         }
-
-        const params = new URLSearchParams(location.search);
 
         if (matchSearchOnlyPath(path)) {
             const q = params.get('q');
@@ -1027,10 +1055,14 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 await ensureMovieCategories();
                 if (cancelled) return;
                 const latest = useSearchStore.getState();
-                const selectedCategoryId = latest.categoryId || defaultMovieCategoryId(latest.categories);
+                const selectedCategoryId =
+                    readCategoryIdFromSearch(location.search, latest.categories) ||
+                    latest.categoryId ||
+                    defaultMovieCategoryId(latest.categories);
                 if (selectedCategoryId && latest.categoryId !== selectedCategoryId) {
                     latest.setCategoryId(selectedCategoryId);
                     latest.setTags([]);
+                    latest.setPage(1);
                 }
                 await ensureCategoryTags(selectedCategoryId);
             } else {

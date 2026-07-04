@@ -672,7 +672,7 @@ export function DouyinFeedPlayer({
             markUserGesture(3500);
             const direction: FeedNavigateDirection = next > current ? 'next' : 'prev';
             syncActiveIndex(next, direction);
-            scrollToIndex(next);
+            scrollToIndex(next, 'auto');
             feedDbg('goToIndex', { from: current, to: next, direction });
             requestAnimationFrame(() => {
                 dispatchActivePlayRef.current('navigate');

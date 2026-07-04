@@ -36,14 +36,6 @@ import usePixel from '@/hooks/usePixel';
 import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
 import { prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
 
-const PC_CATEGORY_NAV_ITEMS = [
-  'Other',
-  'Story',
-  'Characters',
-  'Setting',
-  'Genre',
-  'Style',
-] as const;
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
@@ -1006,35 +998,19 @@ export function ReelShortTopNav({
                 >
                   <FormattedMessage id="home" />
                 </NavLink>
-                <div
-                  className="reelshort-topnav__pc-category-nav"
+                <NavLink
+                  to="/categories"
                   onPointerEnter={prefetchSearchRouteChunk}
                   onPointerDown={prefetchSearchRouteChunk}
+                  className={({ isActive }) =>
+                    cn(
+                      'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
+                      isActive && 'reelshort-topnav__segment-link--active',
+                    )
+                  }
                 >
-                  <NavLink
-                    to="/categories"
-                    className={({ isActive }) =>
-                      cn(
-                        'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
-                        isActive && 'reelshort-topnav__segment-link--active',
-                      )
-                    }
-                  >
-                    <FormattedMessage id="nav_categories" />
-                  </NavLink>
-                  <div className="reelshort-topnav__pc-category-menu" role="menu">
-                    {PC_CATEGORY_NAV_ITEMS.map((label) => (
-                      <Link
-                        key={label}
-                        to="/categories"
-                        className="reelshort-topnav__pc-category-menu-item"
-                        role="menuitem"
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
+                  <FormattedMessage id="nav_categories" />
+                </NavLink>
                 <NavLink
                   to={FORYOU_PATH}
                   state={VIDEO_FROM_HOME_STATE}

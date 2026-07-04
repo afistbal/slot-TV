@@ -289,7 +289,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
       //   targets: ['defaults', 'not IE 11'],
       // }),
       VitePWA({
-        registerType: 'autoUpdate',
+        registerType: 'prompt',
         devOptions: {
           enabled: !isDevServer,
         },
@@ -298,7 +298,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
         workbox: {
           /** 默认 2 MiB；主 chunk 超限时 build 会失败，见 vite-plugin-pwa / workbox FAQ */
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          // injectRegister 为 false 时插件不会自动合并这两项；autoUpdate 依赖 SW 内 skipWaiting，否则新版本会一直 waiting
+          // injectRegister 为 false 时插件不会自动合并这两项；手动注册仍依赖 SW 主动跳过 waiting 并接管页面。
           skipWaiting: true,
           clientsClaim: true,
           importScripts: [`/pwa-force-reload.js?v=${appVersion}`],
@@ -307,7 +307,6 @@ export default ({ mode, command }: { mode: string; command: string }) => {
             'assets/index-*.js',
             'assets/index-*.css',
             'assets/brand-*.js',
-            'assets/workbox-window.prod.es5-*.js',
           ],
           // 不再用缓存里的 index.html 兜底所有 SPA 导航，避免旧 app shell 长时间滞留。
           navigateFallback: null,

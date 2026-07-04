@@ -11,6 +11,26 @@ function shouldHandleWindowUrl(rawUrl) {
   return true;
 }
 
+function isPwaReloadDeferredPath(pathname) {
+  const segments = pathname.split('/').filter(Boolean);
+  const first = segments[0] || '';
+  const second = segments[1] || '';
+  const isLocalePrefix = /^[a-z]{2}(?:-[a-z]{2,4})?$/i.test(first);
+  const route = isLocalePrefix ? second : first;
+
+  return route === 'video' ||
+    route === 'v-demo' ||
+    route === 'foryou' ||
+    route === 'for-you' ||
+    route === 'for-demo' ||
+    route === 'episodes';
+}
+
+function shouldFallbackNavigateClient(rawUrl) {
+  const url = new URL(rawUrl);
+  return !isPwaReloadDeferredPath(url.pathname);
+}
+
 function requestClientReload(client) {
   return new Promise((resolve) => {
     const channel = new MessageChannel();
@@ -50,6 +70,7 @@ self.addEventListener('activate', (event) => {
       if (!shouldHandleWindowUrl(client.url)) return undefined;
       return requestClientReload(client).then((acked) => {
         if (acked) return undefined;
+        if (!shouldFallbackNavigateClient(client.url)) return undefined;
         return client.navigate(client.url).catch(() => undefined);
       });
     }));
