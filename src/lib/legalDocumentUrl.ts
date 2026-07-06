@@ -3,7 +3,8 @@ export type LegalDocTitle =
     | "privacy_policy"
     | "membership_agreement"
     | "payment_agreement"
-    | "pay_service";
+    | "pay_service"
+    | "refund_policy";
 
 /** Vite `BASE_URL` 去掉尾部 `/`；根部署时为 `""`，子路径为 `"/tv"` 等。 */
 function appBasePrefix(): string {

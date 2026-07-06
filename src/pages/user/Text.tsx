@@ -5,6 +5,7 @@ import { useLocation } from "react-router";
 import userAgreementEn from "@/content/user-agreement.en.txt?raw";
 import MemberTerms from "@/widgets/MemberTerms";
 import { ShoppingPaidServiceAgreementContent } from "@/pages/user/ShoppingPaidServiceAgreementContent";
+import { RefundPolicyContent } from "@/pages/user/RefundPolicyContent";
 import { BRAND_DISPLAY_NAME } from "@/constants/brand";
 import { cn } from "@/lib/utils";
 import "@/styles/legal-doc-reelshort.scss";
@@ -236,7 +237,8 @@ type LegalPageKey =
     | "privacy_policy"
     | "membership_agreement"
     | "payment_agreement"
-    | "pay_service";
+    | "pay_service"
+    | "refund_policy";
 
 function parseLegalPageKey(titleParam: string | null): LegalPageKey {
     switch (titleParam) {
@@ -248,6 +250,8 @@ function parseLegalPageKey(titleParam: string | null): LegalPageKey {
             return "payment_agreement";
         case "pay_service":
             return "pay_service";
+        case "refund_policy":
+            return "refund_policy";
         default:
             return "user_agreement";
     }
@@ -259,6 +263,7 @@ const LEGAL_PAGE_TITLE_IDS: Record<LegalPageKey, string> = {
     membership_agreement: "shopping_tips_link_membership",
     payment_agreement: "shopping_tips_link_payment",
     pay_service: "shopping_paid_service_agreement_title",
+    refund_policy: "shopping_tips_link_refund",
 };
 
 function LegalPageBody({ pageKey }: { pageKey: LegalPageKey }) {
@@ -267,6 +272,9 @@ function LegalPageBody({ pageKey }: { pageKey: LegalPageKey }) {
     }
     if (pageKey === "membership_agreement") {
         return <MemberTerms />;
+    }
+    if (pageKey === "refund_policy") {
+        return <RefundPolicyContent />;
     }
     if (pageKey === "payment_agreement" || pageKey === "pay_service") {
         return <ShoppingPaidServiceAgreementContent />;

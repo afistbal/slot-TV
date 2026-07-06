@@ -1722,6 +1722,7 @@
         margin-bottom: calc(2 / 375 * var(--app-vw));
         padding: 0 calc(4 / 375 * var(--app-vw));
         display: flex;
+        flex-direction: row;
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
@@ -1737,6 +1738,18 @@
             padding: 0 4px;
             gap: 8px;
             font-size: 11px;
+        }
+    }
+
+    .rs-shopping__payModalAgreementLead {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: calc(6 / 375 * var(--app-vw));
+        max-width: 100%;
+
+        @media (min-width: 768px) {
+            gap: 6px;
         }
     }
 
@@ -1760,17 +1773,42 @@
         }
     }
 
-    .rs-shopping__payModalAgreementCopy {
-        flex: 0 1 auto;
-        min-width: 0;
-        max-width: 100%;
-        text-align: center;
+    .rs-shopping__payModalAgreementPrefix {
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
     }
 
-    .rs-shopping__payModalAgreementText {
-        display: inline;
-        color: rgba(255, 255, 255, 0.55);
-        text-align: center;
+    .rs-shopping__payModalAgreementLinks {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: calc(4 / 375 * var(--app-vw));
+        width: auto;
+        max-width: 100%;
+
+        @media (min-width: 768px) {
+            gap: 4px;
+        }
+    }
+
+    .rs-shopping__payModalAgreementLinksSep {
+        color: rgba(255, 255, 255, 0.35);
+        user-select: none;
+    }
+
+    @media (max-width: 767px) {
+        .rs-shopping__payModalAgreement {
+            flex-direction: column;
+            flex-wrap: nowrap;
+            gap: calc(6 / 375 * var(--app-vw));
+            padding-inline: calc(12 / 375 * var(--app-vw));
+        }
+
+        .rs-shopping__payModalAgreementLinks {
+            display: flex;
+            width: 100%;
+        }
     }
 
     .rs-shopping__payModalAgreementLink {

@@ -965,8 +965,20 @@ export default function RadixRc({
                         <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
                             |
                         </span>
+                        <LegalDocumentLink title="user_agreement" className="rs-shopping__tipsAgreementLink">
+                            <FormattedMessage id="user_agreement" />
+                        </LegalDocumentLink>
+                        <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
+                            |
+                        </span>
                         <LegalDocumentLink title="payment_agreement" className="rs-shopping__tipsAgreementLink">
                             <FormattedMessage id="shopping_tips_link_payment" />
+                        </LegalDocumentLink>
+                        <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
+                            |
+                        </span>
+                        <LegalDocumentLink title="refund_policy" className="rs-shopping__tipsAgreementLink">
+                            <FormattedMessage id="shopping_tips_link_refund" />
                         </LegalDocumentLink>
                         <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
                             |
@@ -1206,24 +1218,43 @@ export default function RadixRc({
                             </span>
                         </div>
                         <div className="rs-shopping__payModalAgreement">
-                            <span className="rs-shopping__payModalAgreementMark" aria-hidden="true">
-                                <img
-                                    src={checkboxChecked}
-                                    alt=""
-                                    className="rs-shopping__payModalAgreementCheckImg"
-                                />
-                            </span>
-                            <div className="rs-shopping__payModalAgreementCopy">
-                                <span className="rs-shopping__payModalAgreementText">
-                                    <FormattedMessage id="shopping_pay_agreement_prefix" />
-                                    <LegalDocumentLink
-                                        title="pay_service"
-                                        className="rs-shopping__payModalAgreementLink"
-                                    >
-                                        <FormattedMessage id="shopping_pay_agreement_link" />
-                                    </LegalDocumentLink>
-                                    {/* <FormattedMessage id="shopping_pay_agreement_suffix" /> */}
+                            <div className="rs-shopping__payModalAgreementLead">
+                                <span className="rs-shopping__payModalAgreementMark" aria-hidden="true">
+                                    <img
+                                        src={checkboxChecked}
+                                        alt=""
+                                        className="rs-shopping__payModalAgreementCheckImg"
+                                    />
                                 </span>
+                                <span className="rs-shopping__payModalAgreementPrefix">
+                                    <FormattedMessage id="shopping_pay_agreement_prefix" />
+                                </span>
+                            </div>
+                            <div className="rs-shopping__payModalAgreementLinks">
+                                <LegalDocumentLink
+                                    title="pay_service"
+                                    className="rs-shopping__payModalAgreementLink"
+                                >
+                                    <FormattedMessage id="shopping_pay_agreement_link" />
+                                </LegalDocumentLink>
+                                <span className="rs-shopping__payModalAgreementLinksSep" aria-hidden="true">
+                                    |
+                                </span>
+                                <LegalDocumentLink
+                                    title="user_agreement"
+                                    className="rs-shopping__payModalAgreementLink"
+                                >
+                                    <FormattedMessage id="user_agreement" />
+                                </LegalDocumentLink>
+                                <span className="rs-shopping__payModalAgreementLinksSep" aria-hidden="true">
+                                    |
+                                </span>
+                                <LegalDocumentLink
+                                    title="refund_policy"
+                                    className="rs-shopping__payModalAgreementLink"
+                                >
+                                    <FormattedMessage id="shopping_tips_link_refund" />
+                                </LegalDocumentLink>
                             </div>
                         </div>
                     </div>
