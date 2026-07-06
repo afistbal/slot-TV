@@ -65,7 +65,7 @@ export function ShoppingPaidServiceAgreementContent() {
                             automatic renewal policy, it is recommended that you consult customer service or refer to
                             relevant help documents before making the payment;
                             <br />- The content of this agreement should be understood and adhered to together with the
-                            &quot;Terms&Conditions&quot; and &quot;Privacy Policy&quot; of the application.
+                            &quot;Terms of Service&quot; and &quot;Privacy Policy&quot; of the application.
                             <br />- By checking ✅, you indicate that you have read, understood and agreed to this
                             &quot;User Paid Service Agreement&quot;.
                         </p>

@@ -233,7 +233,7 @@ function PrivacyPolicyBody() {
 }
 
 type LegalPageKey =
-    | "user_agreement"
+    | "terms_of_service"
     | "privacy_policy"
     | "membership_agreement"
     | "payment_agreement"
@@ -252,13 +252,16 @@ function parseLegalPageKey(titleParam: string | null): LegalPageKey {
             return "pay_service";
         case "refund_policy":
             return "refund_policy";
+        case "terms_of_service":
+        case "user_agreement":
+            return "terms_of_service";
         default:
-            return "user_agreement";
+            return "terms_of_service";
     }
 }
 
 const LEGAL_PAGE_TITLE_IDS: Record<LegalPageKey, string> = {
-    user_agreement: "user_agreement",
+    terms_of_service: "terms_of_service",
     privacy_policy: "privacy_policy",
     membership_agreement: "shopping_tips_link_membership",
     payment_agreement: "shopping_tips_link_payment",

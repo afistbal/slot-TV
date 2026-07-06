@@ -965,8 +965,8 @@ export default function RadixRc({
                         <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
                             |
                         </span>
-                        <LegalDocumentLink title="user_agreement" className="rs-shopping__tipsAgreementLink">
-                            <FormattedMessage id="user_agreement" />
+                        <LegalDocumentLink title="terms_of_service" className="rs-shopping__tipsAgreementLink">
+                            <FormattedMessage id="terms_of_service" />
                         </LegalDocumentLink>
                         <span className="rs-shopping__tipsAgreementsSep" aria-hidden="true">
                             |
@@ -1240,12 +1240,12 @@ export default function RadixRc({
                                 <span className="rs-shopping__payModalAgreementLinksSep" aria-hidden="true">
                                     |
                                 </span>
-                                <LegalDocumentLink
-                                    title="user_agreement"
-                                    className="rs-shopping__payModalAgreementLink"
-                                >
-                                    <FormattedMessage id="user_agreement" />
-                                </LegalDocumentLink>
+                                        <LegalDocumentLink
+                                            title="terms_of_service"
+                                            className="rs-shopping__payModalAgreementLink"
+                                        >
+                                            <FormattedMessage id="terms_of_service" />
+                                        </LegalDocumentLink>
                                 <span className="rs-shopping__payModalAgreementLinksSep" aria-hidden="true">
                                     |
                                 </span>

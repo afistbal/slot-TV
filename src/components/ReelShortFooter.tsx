@@ -53,8 +53,11 @@ export function ReelShortFooter({
                             className={cn('reelshort-footer__collapsible', aboutOpen && 'reelshort-footer__collapsible--open')}
                             aria-hidden={!aboutOpen}
                         >
-                            <LegalDocumentLink title="user_agreement" className="reelshort-footer__collapse-item">
-                                <FormattedMessage id="user_agreement" />
+                            <LegalDocumentLink title="terms_of_service" className="reelshort-footer__collapse-item">
+                                <FormattedMessage id="terms_of_service" />
+                            </LegalDocumentLink>
+                            <LegalDocumentLink title="refund_policy" className="reelshort-footer__collapse-item">
+                                <FormattedMessage id="shopping_tips_link_refund" />
                             </LegalDocumentLink>
                             <LegalDocumentLink title="privacy_policy" className="reelshort-footer__collapse-item">
                                 <FormattedMessage id="privacy_policy" />
@@ -139,8 +142,13 @@ export function ReelShortFooter({
                                 <FormattedMessage id="footer_about_us" />
                             </div>
                             <div className="Footer_item_sub_title__VYtUB">
-                                <LegalDocumentLink title="user_agreement" className="Footer_item_sub_text__EQ_F8">
-                                    <FormattedMessage id="user_agreement" />
+                                <LegalDocumentLink title="terms_of_service" className="Footer_item_sub_text__EQ_F8">
+                                    <FormattedMessage id="terms_of_service" />
+                                </LegalDocumentLink>
+                            </div>
+                            <div className="Footer_item_sub_title__VYtUB">
+                                <LegalDocumentLink title="refund_policy" className="Footer_item_sub_text__EQ_F8">
+                                    <FormattedMessage id="shopping_tips_link_refund" />
                                 </LegalDocumentLink>
                             </div>
                             <div className="Footer_item_sub_title__VYtUB">

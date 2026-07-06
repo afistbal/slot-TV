@@ -1,4 +1,5 @@
 export type LegalDocTitle =
+    | "terms_of_service"
     | "user_agreement"
     | "privacy_policy"
     | "membership_agreement"

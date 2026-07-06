@@ -18,12 +18,12 @@ export default function Component() {
             </div>
             <div className="m-4 rounded-md bg-white">
                 <LegalDocumentLink
-                    key="user_agreement"
-                    title="user_agreement"
+                    key="terms_of_service"
+                    title="terms_of_service"
                     className="flex gap-2 justify-between items-center p-4"
                 >
                     <div className="flex gap-1 text-gray-600">
-                        <div className="text-md"><FormattedMessage id="user_agreement" /></div>
+                        <div className="text-md"><FormattedMessage id="terms_of_service" /></div>
                     </div>
                     <Forward className="text-slate-400" />
                 </LegalDocumentLink>

@@ -493,7 +493,7 @@ export function PcLoginDialog({
                 id="protocol"
                 values={{
                     tos: (parts: React.ReactNode[]) => (
-                        <LegalDocumentLink title="user_agreement" className="underline">
+                        <LegalDocumentLink title="terms_of_service" className="underline">
                             {parts}
                         </LegalDocumentLink>
                     ),
@@ -798,7 +798,7 @@ export default function Component() {
                             id="protocol"
                             values={{
                                 tos: (parts: React.ReactNode[]) => (
-                                    <LegalDocumentLink title="user_agreement" className="underline">
+                                    <LegalDocumentLink title="terms_of_service" className="underline">
                                         {parts}
                                     </LegalDocumentLink>
                                 ),
