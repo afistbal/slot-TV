@@ -6,9 +6,9 @@ import iconListActive from '@/assets/bottom-tab/tab_icon_list@2x.webp';
 import iconListNor from '@/assets/bottom-tab/tab_icon_list_nor@2x.webp';
 import iconProfileActive from '@/assets/bottom-tab/tab_icon_profile@2x.webp';
 import iconProfileNor from '@/assets/bottom-tab/tab_icon_profile_nor@2x.webp';
-import iconAddDesktopLogo from '@/assets/bottom-tab/icon_logo@2x.webp';
+import { BRAND_BOTTOM_TAB_ADD_ICON_SRC } from '@/constants/brand';
 
-export const bottomTabAddDesktopIcon = iconAddDesktopLogo;
+export const bottomTabAddDesktopIcon = BRAND_BOTTOM_TAB_ADD_ICON_SRC;
 
 export const bottomTabIcons = {
     home: { active: iconHomeActive, nor: iconHomeNor },

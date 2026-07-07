@@ -1,7 +1,7 @@
 import { CircleUser } from 'lucide-react';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
-import coinIcon from '@/assets/profile/icon_coin@2x.png';
+import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import { profileH5Assets, profilePcMenuAssets } from '@/constants/profileAssets';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';

@@ -1,4 +1,4 @@
-import videoCoverPlaceholderLogo from '@/assets/images/img_logo@2x.png';
+import { BRAND_COVER_PLACEHOLDER_LOGO_SRC } from '@/constants/brand';
 import { cn } from '@/lib/utils';
 import '@/styles/video-cover-placeholder.scss';
 
@@ -13,7 +13,7 @@ export function VideoCoverPlaceholder({ className }: { className?: string }) {
             aria-hidden
         >
             <img
-                src={videoCoverPlaceholderLogo}
+                src={BRAND_COVER_PLACEHOLDER_LOGO_SRC}
                 alt=""
                 decoding="sync"
                 loading="eager"

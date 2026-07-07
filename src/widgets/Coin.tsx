@@ -13,7 +13,7 @@ import {
     trackViewContent,
 } from '@/hooks/usePixel';
 import { toast } from 'sonner';
-import coinIcon from '@/assets/profile/icon_coin@2x.png';
+import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import Payment from './Payment';
 import Countdown from './Countdown';
 // import Adjust from "@adjustcom/adjust-web-sdk";

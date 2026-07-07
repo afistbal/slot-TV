@@ -5,7 +5,7 @@ import { enrichBalanceHistoryRows } from '@/lib/enrichBalanceHistoryRows';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import coinIcon from '@/assets/profile/icon_coin@2x.png';
+import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import emptyImg from '@/assets/images/empty.webp';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';

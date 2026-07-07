@@ -35,6 +35,9 @@ interface ImportMetaEnv {
   readonly VITE_BRAND_DESCRIPTION?: string;
   readonly VITE_BRAND_CONTACT_EMAIL?: string;
   readonly VITE_BRAND_COPYRIGHT_COMPANY?: string;
+  readonly VITE_BRAND_ASSET_BASE?: string;
+  readonly VITE_BRAND_COIN_ICON_SRC?: string;
+  readonly VITE_BRAND_LEGAL_SITE_URL?: string;
   /** 设为 `true` 在非 localhost 环境也启用 disable-devtools.js（默认 prod 且非 5173 端口已启用） */
   readonly VITE_DISABLE_DEVTOOLS?: string;
 }

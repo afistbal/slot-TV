@@ -1,7 +1,7 @@
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { X } from 'lucide-react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import coinIcon from '@/assets/profile/icon_coin@2x.png';
+import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import gift from '@/assets/gift.svg';
 import gem from '@/assets/gem.svg';
 import { useEffect, useState } from 'react';

@@ -1,17 +1,17 @@
 import { Page } from "@/layouts/user";
 import { useIntl } from "react-intl";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { useLocation } from "react-router";
 import userAgreementEn from "@/content/user-agreement.en.txt?raw";
 import MemberTerms from "@/widgets/MemberTerms";
 import { ShoppingPaidServiceAgreementContent } from "@/pages/user/ShoppingPaidServiceAgreementContent";
 import { RefundPolicyContent } from "@/pages/user/RefundPolicyContent";
-import { BRAND_DISPLAY_NAME } from "@/constants/brand";
+import { BRAND_DISPLAY_NAME, BRAND_LEGAL_SITE_URL } from "@/constants/brand";
 import { cn } from "@/lib/utils";
 import "@/styles/legal-doc-reelshort.scss";
 import "@/styles/legal-doc-reelshort-pc.scss";
 
-function linkifyLine(text: string): React.ReactNode {
+function linkifyLine(text: string): ReactNode {
     const parts = text.split(/(\[[^\]]+\]\([^)]+\))/g);
     return (
         <>
@@ -47,12 +47,18 @@ function isAllCapsNotice(s: string): boolean {
     return t.length > 40 && t === t.toUpperCase() && /^[A-Z0-9]/.test(t);
 }
 
+function applyBrandLegalCopy(text: string): string {
+    return text
+        .replace(/https:\/\/(?:www\.)?yogoshort\.com/gi, BRAND_LEGAL_SITE_URL)
+        .replace(/\bYogoShort\b/g, BRAND_DISPLAY_NAME);
+}
+
 function useUserAgreementBlocks() {
     return useMemo(() => {
         return userAgreementEn
             .replace(/\r\n/g, "\n")
             .split(/\n\n+/)
-            .map((s) => s.trim())
+            .map((s) => applyBrandLegalCopy(s.trim()))
             .filter(Boolean);
     }, []);
 }
@@ -102,16 +108,13 @@ function UserAgreementBody() {
 }
 
 function PrivacyPolicyBody() {
-    const intl = useIntl();
-    const domain = intl.formatMessage({ id: "domain" });
-
     return (
         <>
             <p>
-                This Privacy Policy describes how [{domain}] (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;)
-                collects, uses, stores, and discloses information when you use our software application
-                (&quot;the Software&quot;). By using the Software, you consent to the practices described in this
-                Privacy Policy.
+                This Privacy Policy describes how [{BRAND_DISPLAY_NAME}] (&quot;we,&quot; &quot;us,&quot; or
+                &quot;our&quot;) collects, uses, stores, and discloses information when you use our software
+                application (&quot;the Software&quot;). By using the Software, you consent to the practices described in
+                this Privacy Policy.
             </p>
             <h2 className="rs-legal-doc__h2">1. Information We Collect</h2>
             <h3 className="rs-legal-doc__h3">1.1 Personal Information</h3>
@@ -178,8 +181,8 @@ function PrivacyPolicyBody() {
             <p>
                 In the event of a merger, acquisition, sale of all or substantially all of our assets, or similar
                 corporate transaction, your information may be transferred as part of that transaction. We will notify you
-                via email or prominent notice on the Software of any such change in ownership or uses of your information,
-                along with any choices you may have regarding your information.
+                via email or prominent notice on the Software of any such change in ownership or uses of your
+                information, along with any choices you may have regarding your information.
             </p>
             <h2 className="rs-legal-doc__h2">4. Data Security</h2>
             <p>
@@ -218,16 +221,16 @@ function PrivacyPolicyBody() {
             </p>
             <h2 className="rs-legal-doc__h2">8. Changes to this Privacy Policy</h2>
             <p>
-                We may update this Privacy Policy from time to time. When we do, we will post the updated version on this
-                page and indicate at the top of the page the date it was last updated. We encourage you to review this
-                Privacy Policy periodically to stay informed about how we are protecting your information.
+                We may update this Privacy Policy from time to time. When we do, we will post the updated version on
+                this page and indicate at the top of the page the date it was last updated. We encourage you to review
+                this Privacy Policy periodically to stay informed about how we are protecting your information.
             </p>
             <h2 className="rs-legal-doc__h2">9. Contact Us</h2>
             <p>
                 If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices,
                 please contact us at [Contact Email Address].
             </p>
-            <p>{domain}</p>
+            <p>{BRAND_LEGAL_SITE_URL}</p>
         </>
     );
 }
@@ -292,10 +295,9 @@ export default function Component() {
     const pageKey = parseLegalPageKey(titleParam);
     const pageTitleId = LEGAL_PAGE_TITLE_IDS[pageKey];
 
-    /** 浏览器标签标题：全视口生效：`<文案> – YogoShort>`；图标见项目根目录 `index.html`（`/favorite.png`、`/new-logo.png`）。 */
     useEffect(() => {
         const prev = document.title;
-        document.title = `${intl.formatMessage({ id: pageTitleId })} – ${BRAND_DISPLAY_NAME}`;
+        document.title = `${intl.formatMessage({ id: pageTitleId })} - ${BRAND_DISPLAY_NAME}`;
         return () => {
             document.title = prev;
         };
@@ -307,8 +309,7 @@ export default function Component() {
                 className={cn(
                     "rs-legal-doc",
                     pageKey === "membership_agreement" && "rs-legal-doc--memberTerms",
-                    (pageKey === "payment_agreement" || pageKey === "pay_service") &&
-                        "rs-legal-doc--payment",
+                    (pageKey === "payment_agreement" || pageKey === "pay_service") && "rs-legal-doc--payment",
                 )}
             >
                 <LegalPageBody pageKey={pageKey} />

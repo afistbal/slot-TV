@@ -22,7 +22,7 @@ import checkboxChecked from '@/assets/icons/shopping-pay/checkbox_checked.png';
 import iconSuccessful from '@/assets/icons/shopping-pay/icon_successful.png';
 import btnLoadingIcon from '@/assets/images/btn_loading.svg';
 import Countdown from '@/widgets/Countdown';
-import coinIcon from '@/assets/profile/icon_coin@2x.png';
+import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import {
     formatSubscriptionPlanRenewText,
     isWeeklySubscriptionPlan,
