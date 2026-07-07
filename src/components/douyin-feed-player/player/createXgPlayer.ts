@@ -15,7 +15,7 @@ import { playIosChainWithSound } from '../playback/iosChainPlayback';
 import { readMutedPreference } from '../controls/mutePreference';
 import { detectPlatform } from '../platform/detectPlatform';
 import { resolvePlaybackMode } from '../playback/pickPlaybackMode';
-import { setNativeVideoSrc } from '../playback/setNativeVideoSrc';
+import { clearNativeVideoHls, isHlsUrl, setNativeVideoSrc } from '../playback/setNativeVideoSrc';
 import { getMp4PluginConfig } from '../playback/bufferConfig';
 import type { PlaybackMode } from '../types';
 
@@ -66,7 +66,74 @@ function applyMuted(player: Player, muted: boolean) {
     if (xg.muted !== undefined) xg.muted = muted;
 }
 
+function createHlsVideoElement(muted: boolean): HTMLVideoElement {
+    const video = document.createElement('video');
+    video.className = 'xgplayer-video';
+    video.playsInline = true;
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.muted = muted;
+    video.style.width = '100%';
+    video.style.height = '100%';
+    video.style.objectFit = 'contain';
+    return video;
+}
+
+function createHlsPlayerHandle(
+    options: CreateXgPlayerOptions,
+    mode: PlaybackMode,
+    autoplayMuted: boolean,
+): XgPlayerHandle {
+    options.el.innerHTML = '';
+    const video = createHlsVideoElement(autoplayMuted);
+    options.el.appendChild(video);
+    setNativeVideoSrc(video, options.url, {
+        autoplay: false,
+        muted: autoplayMuted,
+    });
+
+    const player = {
+        video,
+        play: () => video.play(),
+        pause: () => {
+            video.pause();
+        },
+        on: (event: string, handler: EventListenerOrEventListenerObject) => {
+            video.addEventListener(event, handler);
+        },
+        off: (event: string, handler: EventListenerOrEventListenerObject) => {
+            video.removeEventListener(event, handler);
+        },
+        destroy: () => {
+            clearNativeVideoHls(video);
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+            video.remove();
+        },
+        get muted() {
+            return video.muted;
+        },
+        set muted(value: boolean) {
+            video.muted = value;
+        },
+    } as unknown as Player;
+
+    return {
+        player,
+        mode,
+        destroy: () => {
+            try {
+                (player as Player & { destroy: () => void }).destroy();
+            } catch {
+                /* ignore */
+            }
+        },
+    };
+}
+
 export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
+    const useHls = isHlsUrl(options.url);
     const mode = resolvePlaybackMode({
         hasPreload: options.hasPreload ?? false,
         forceNative: options.forceNative,
@@ -75,6 +142,10 @@ export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
 
     const useMse = mode === 'mse';
     const autoplayMuted = readMutedPreference();
+
+    if (useHls) {
+        return createHlsPlayerHandle(options, mode, autoplayMuted);
+    }
 
     const player = new Player({
         el: options.el,
@@ -105,12 +176,6 @@ export function createXgPlayer(options: CreateXgPlayerOptions): XgPlayerHandle {
 
     if (player.video) {
         applyMuted(player, autoplayMuted);
-        if (/\.m3u8(?:[?#]|$)/i.test(options.url)) {
-            setNativeVideoSrc(player.video as HTMLVideoElement, options.url, {
-                autoplay: false,
-                muted: autoplayMuted,
-            });
-        }
     }
 
     return {
@@ -170,7 +235,7 @@ function runActivePlay(player: Player, gen: number, forceMute: boolean): Promise
     if (forceMute && video) {
         video.addEventListener('playing', () => restoreMuteAfterIosAutoplay(player, gen), { once: true });
     }
-    return player.play().then(() => {
+    return Promise.resolve(player.play()).then(() => {
         feedDbg('play ok', { gen, forceMute });
         feedVideoMp4FromPlayer('play ok mp4', player, { gen, forceMute });
         watchPlayStalled(player, gen, forceMute);

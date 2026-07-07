@@ -2,7 +2,7 @@ import Hls from 'hls.js';
 
 const hlsByVideo = new WeakMap<HTMLVideoElement, Hls>();
 
-function isHlsUrl(url: string): boolean {
+export function isHlsUrl(url: string): boolean {
     return /\.m3u8(?:[?#]|$)/i.test(url);
 }
 
@@ -45,15 +45,30 @@ export function setNativeVideoSrc(
 
     video.addEventListener('loadedmetadata', onMeta);
 
-    if (isHlsUrl(url) && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
+    if (isHlsUrl(url) && Hls.isSupported()) {
         const hls = new Hls({
             enableWorker: true,
-            lowLatencyMode: true,
+            lowLatencyMode: false,
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+            xhrSetup: (xhr) => {
+                xhr.withCredentials = false;
+            },
         });
         hlsByVideo.set(video, hls);
         if (opts.autoplay) {
             hls.once(Hls.Events.MANIFEST_PARSED, () => playVideo(video));
         }
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (!data.fatal) return;
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                hls.startLoad();
+                return;
+            }
+            if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                hls.recoverMediaError();
+            }
+        });
         hls.loadSource(url);
         hls.attachMedia(video);
     } else {

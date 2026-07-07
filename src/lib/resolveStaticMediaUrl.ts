@@ -2,11 +2,11 @@ function protocolFromBase(base: string): 'http' | 'https' {
     return /^http:\/\//i.test(base) ? 'http' : 'https';
 }
 
-function forceCosHttps(url: string): string {
-    return url.replace(/^http:\/\/cos\.yogoshort\.com\//i, 'https://cos.yogoshort.com/');
+function normalizeStaticBase(base: string): string {
+    const trimmed = String(base ?? '').trim().replace(/\/+$/, '');
+    return trimmed.startsWith('//') ? `https:${trimmed}` : trimmed;
 }
 
-/** `cos.yogoshort.com/path` — host + path，无 scheme */
 function extractHostFromPath(path: string): string | null {
     const slashIdx = path.indexOf('/');
     if (slashIdx <= 0) {
@@ -19,31 +19,26 @@ function extractHostFromPath(path: string): string | null {
     return host;
 }
 
-/**
- * 将 API 相对 video / 静态资源路径拼成绝对 URL。
- * 兼容：`https://…`、协议相对 `//…`、纯路径、`cos.example.com/…`（勿与 static 再拼一次 host）。
- */
+/** Resolve API media paths against config.static. */
 export function resolveStaticMediaUrl(raw: string, staticBase: string): string {
     const s = String(raw ?? '').trim();
     if (!s) {
         return '';
     }
     if (/^https?:\/\//i.test(s)) {
-        return forceCosHttps(s);
+        return s;
     }
 
-    const base = String(staticBase ?? '').replace(/\/+$/, '');
+    const base = normalizeStaticBase(staticBase);
     const path = s.replace(/^\/+/, '');
 
     if (s.startsWith('//')) {
-        const protocol = /^\/\/cos\.yogoshort\.com\//i.test(s) ? 'https' : protocolFromBase(base);
-        return `${protocol}:${s}`;
+        return `https:${s}`;
     }
 
     const hostInPath = extractHostFromPath(path);
     if (hostInPath) {
-        const protocol = /^cos\.yogoshort\.com$/i.test(hostInPath) ? 'https' : protocolFromBase(base);
-        return `${protocol}://${path}`;
+        return `${protocolFromBase(base)}://${path}`;
     }
 
     if (!base) {
@@ -53,11 +48,11 @@ export function resolveStaticMediaUrl(raw: string, staticBase: string): string {
     try {
         const baseUrl = new URL(base.startsWith('http') ? base : `https://${base}`);
         if (path === baseUrl.host || path.startsWith(`${baseUrl.host}/`)) {
-            return forceCosHttps(`${baseUrl.protocol}//${path}`);
+            return `${baseUrl.protocol}//${path}`;
         }
     } catch {
-        // ignore
+        // Keep the plain join fallback for non-URL config values.
     }
 
-    return forceCosHttps(`${base}/${path}`);
+    return `${base}/${path}`;
 }
