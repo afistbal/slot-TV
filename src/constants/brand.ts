@@ -8,10 +8,11 @@ export const BRAND_DESCRIPTION =
 export const BRAND_CONTACT_EMAIL = import.meta.env.VITE_BRAND_CONTACT_EMAIL || 'cs@yogoshort.net';
 
 export const BRAND_COPYRIGHT_COMPANY =
-    import.meta.env.VITE_BRAND_COPYRIGHT_COMPANY || 'WEISHOW LIMITED';
+    (import.meta.env.VITE_BRAND_COPYRIGHT_COMPANY || '').trim();
+export const BRAND_COPYRIGHT_YEAR = new Date().getFullYear();
 
 export const BRAND_COPYRIGHT_LINE_1 =
-    `${BRAND_DISPLAY_NAME} | All Rights Reserved | 2026 ${BRAND_COPYRIGHT_COMPANY}`;
+    `${BRAND_DISPLAY_NAME} | All Rights Reserved | ${BRAND_COPYRIGHT_YEAR}${BRAND_COPYRIGHT_COMPANY ? ` ${BRAND_COPYRIGHT_COMPANY}` : ''}`;
 
 function normalizePublicBase(value: string): string {
     const trimmed = value.trim();
