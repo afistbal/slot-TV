@@ -38,6 +38,13 @@ interface ImportMetaEnv {
   readonly VITE_BRAND_ASSET_BASE?: string;
   readonly VITE_BRAND_COIN_ICON_SRC?: string;
   readonly VITE_BRAND_LEGAL_SITE_URL?: string;
+  readonly VITE_FIREBASE_API_KEY?: string;
+  readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
+  readonly VITE_FIREBASE_PROJECT_ID?: string;
+  readonly VITE_FIREBASE_STORAGE_BUCKET?: string;
+  readonly VITE_FIREBASE_MESSAGING_SENDER_ID?: string;
+  readonly VITE_FIREBASE_APP_ID?: string;
+  readonly VITE_FIREBASE_MEASUREMENT_ID?: string;
   /** 设为 `true` 在非 localhost 环境也启用 disable-devtools.js（默认 prod 且非 5173 端口已启用） */
   readonly VITE_DISABLE_DEVTOOLS?: string;
 }
