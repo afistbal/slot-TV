@@ -8,7 +8,7 @@ import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
 import type { HomeBookItemData } from '@/components/home/HomeBookItem';
 import { HomeBookShelf } from '@/components/home/HomeBookShelf';
-import type { IData } from '@/stores/home';
+import { resolveHomeForYouItems, type IData } from '@/stores/home';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import '@/styles/home-reelshort.scss';
 
@@ -65,7 +65,7 @@ export default function Component() {
       return;
     }
     api<IData>('home', { loading: false }).then((res) => {
-      setRecommend(itemsFromHomeRail(res.d?.recommend ?? []));
+      setRecommend(itemsFromHomeRail(resolveHomeForYouItems(res.d)));
     });
   }, []);
 

@@ -69,7 +69,6 @@ export default function ForDemoPage() {
         playerItems,
         loading,
         loadError,
-        loadingMore,
         hasMore,
         loadMore,
         prefetchIfNearEnd,
@@ -202,14 +201,6 @@ export default function ForDemoPage() {
         <div className="video-vertical-pc-shell for-demo-pc-shell foryou-vertical-pc-shell">
             {!isFullscreenUi ? pcTopNav : null}
             <div className="for-demo for-demo--pc relative min-h-0 flex-1 overflow-hidden bg-black">
-                {loadingMore ? (
-                    <div
-                        className="foryou-vertical__edge-hint foryou-vertical__edge-hint--bottom"
-                        aria-live="polite"
-                    >
-                        <Loader color="light" />
-                    </div>
-                ) : null}
                 <div
                     ref={fullscreenTargetRef}
                     className="video-fullscreen-target h-full w-full touch-none select-none"
@@ -223,14 +214,6 @@ export default function ForDemoPage() {
             ref={fullscreenTargetRef}
             className="for-demo for-demo--h5 foryou-vertical video-fullscreen-target fixed inset-0 z-0 overflow-hidden bg-black"
         >
-            {loadingMore ? (
-                <div
-                    className="foryou-vertical__edge-hint foryou-vertical__edge-hint--bottom"
-                    aria-live="polite"
-                >
-                    <Loader color="light" />
-                </div>
-            ) : null}
             {playerBody}
         </div>
     );

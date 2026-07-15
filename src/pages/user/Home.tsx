@@ -7,7 +7,12 @@ import { api, type IPagination } from '@/api';
 import { cn } from '@/lib/utils';
 import { FormattedMessage, useIntl } from 'react-intl';
 import NoContent from '@/components/NoContent';
-import { useHomeStore, type IData, filterRenderableTopBannerItems } from '@/stores/home';
+import {
+    useHomeStore,
+    type IData,
+    filterRenderableTopBannerItems,
+    resolveHomeForYouItems,
+} from '@/stores/home';
 import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
@@ -361,10 +366,19 @@ export default function Component() {
         return () => observer.disconnect();
     }, [isHomeRouteActive, sessionBootstrapReady, homeStore.list.length, homeStore.more]);
 
+    const homeData = homeStore.data;
     const topList = useMemo(
-        () => filterRenderableTopBannerItems(homeStore.data?.top ?? []),
-        [homeStore.data?.top],
+        () => filterRenderableTopBannerItems(homeData?.top ?? []),
+        [homeData?.top],
     );
+    const forYouItems = useMemo(() => resolveHomeForYouItems(homeData), [homeData]);
+    const hasRenderableShelves = homeData?.shelves?.some((shelf) => shelf.items.length > 0) ?? false;
+    const hasRenderableHomeContent =
+        topList.length > 0 ||
+        hasRenderableShelves ||
+        (homeData?.rank?.length ?? 0) > 0 ||
+        forYouItems.length > 0 ||
+        homeStore.list.length > 0;
     const topLen = topList.length;
     const currentHero =
         topLen > 0 ? topList[Math.min(Math.max(homeStore.current, 0), topLen - 1)] : undefined;
@@ -499,7 +513,6 @@ export default function Component() {
             });
     }, [sessionBootstrapReady]);
 
-    const homeData = homeStore.data;
     const showAwaitShell =
         !sessionBootstrapReady ||
         (sessionBootstrapReady && homeStore.loading && homeData == null);
@@ -528,9 +541,7 @@ export default function Component() {
 
     const noRenderableHome =
         !homeStore.loading &&
-        (homeData == null ||
-            (homeData.top?.length ?? 0) === 0 ||
-            (homeData.recommend?.length ?? 0) === 0);
+        (homeData == null || !hasRenderableHomeContent);
 
     return <div
         className={cn(
@@ -765,7 +776,7 @@ export default function Component() {
                     titleMessageId="for_you"
                     titleHref="/"
                     staticBase={configStore.config['static'] as string}
-                    items={itemsFromHomeRail(homeStore.data?.recommend ?? [])}
+                    items={itemsFromHomeRail(forYouItems)}
                 />
 
                 {/* 最近更新：movie 分页静默预加载（隐形哨兵，无 loading / 无更多文案） */}

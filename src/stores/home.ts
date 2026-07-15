@@ -33,9 +33,10 @@ export interface IShelf {
 }
 
 export interface IData {
-    top: IItem[],
-    recommend: IItem[],
-    rank: IItem[],
+    top?: IItem[],
+    recommend?: IItem[],
+    foryou?: IItem[],
+    rank?: IItem[],
     continueWatching?: IItem[],
     shelves?: IShelf[],
 }
@@ -46,6 +47,16 @@ export function filterRenderableTopBannerItems<T extends { image?: string | null
         if (v.image == null) return false;
         return String(v.image).trim() !== '';
     });
+}
+
+export function resolveHomeForYouItems(data?: Pick<IData, 'recommend' | 'foryou'>): IItem[] {
+    if (Array.isArray(data?.foryou) && data.foryou.length > 0) {
+        return data.foryou;
+    }
+    if (Array.isArray(data?.recommend)) {
+        return data.recommend;
+    }
+    return [];
 }
 
 interface IHome {
