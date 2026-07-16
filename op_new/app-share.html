@@ -6,30 +6,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="format-detection" content="telephone=no">
   <link rel="icon" type="image/png" href="./images/favicon.png">
-  <title>YogoShort</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:site_name" content="YogoShort" />
+  <meta id="ogUrl" property="og:url" content="{{$php_url}}" />
+  <meta id="ogTitle" property="og:title" content="{{$title}}" />
+  <meta id="ogDescription" property="og:description" content="{{$introduction}}" />
+  <meta id="ogImage" property="og:image" content="{{$image}}" />
+  <meta id="ogImageSecure" property="og:image:secure_url" content="{{$image}}" />
+  <meta property="og:image:type" content="image/webp" />
+  <meta property="og:image:width" content="360" />
+  <meta property="og:image:height" content="640" />
 
-  <meta id="metaDescription" name="description" content="Watch short dramas on YogoShort.">
-  <meta property="og:type" content="website">
-  <meta property="og:locale" content="en_US">
-  <meta property="og:site_name" content="YogoShort">
-  <meta id="ogUrl" property="og:url" content="">
-  <meta id="ogTitle" property="og:title" content="YogoShort">
-  <meta id="ogDescription" property="og:description" content="Watch short dramas on YogoShort.">
-  <meta id="ogImage" property="og:image" content="">
-  <meta id="ogImageSecure" property="og:image:secure_url" content="">
-  <meta property="og:image:type" content="image/webp">
-  <meta property="og:image:width" content="360">
-  <meta property="og:image:height" content="640">
-  <meta name="twitter:card" content="summary">
-  <meta id="twitterTitle" name="twitter:title" content="YogoShort">
-  <meta id="twitterDescription" name="twitter:description" content="Watch short dramas on YogoShort.">
-  <meta id="twitterImage" name="twitter:image" content="">
+  <meta name="twitter:card" content="summary" />
+  <meta id="twitterTitle" name="twitter:title" content="{{$title}}" />
+  <meta id="twitterDescription" name="twitter:description" content="{{$introduction}}" />
+  <meta id="twitterImage" name="twitter:image" content="{{$image}}" />
+
+  <meta id="metaDescription" name="description" content="{{$introduction}}" />
+  <title>{{$title}}</title>
 
   <!--
     App 分享 FB / Twitter 落地页
 
     分享链接示例：
-      https://yogoshort.com/op_new/app-google-share.html?id=9846&episode=1
+      https://yogoshort.com/op_new/app-share.html?id=9846&episode=1
 
     点击 Open / 封面 / CTA：
       Android → Deep Link，visibilitychange 未唤起则回退 Google Play

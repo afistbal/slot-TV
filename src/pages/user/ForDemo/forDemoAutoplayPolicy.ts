@@ -1,6 +1,9 @@
 import { isForDemoPathname } from '@/constants/forDemoRoute';
 import { isVDemoPathname } from '@/constants/vDemoRoute';
-import { isDocumentReload } from '@/components/video-player/videoPlayerUtils';
+import {
+    DOCUMENT_INITIAL_IS_RELOAD,
+    DOCUMENT_INITIAL_PATHNAME,
+} from '@/lib/documentNavigation';
 
 const FOR_DEMO_RELOAD_LANDING_KEY = 'for-demo-reload-landing';
 /** 同文档会话内 for-demo 冷蒙层已展示/离开过，SPA 返回不再当冷启动 */
@@ -25,9 +28,9 @@ export function isForDemoColdSessionConsumed(): boolean {
 /** 仅在 /for-demo�?v-demo F5：标记冷启动（其它页 reload 不误伤） */
 if (
     typeof window !== 'undefined' &&
-    isDocumentReload() &&
-    (isForDemoPathname(window.location.pathname) ||
-        isVDemoPathname(window.location.pathname))
+    DOCUMENT_INITIAL_IS_RELOAD &&
+    (isForDemoPathname(DOCUMENT_INITIAL_PATHNAME) ||
+        isVDemoPathname(DOCUMENT_INITIAL_PATHNAME))
 ) {
     try {
         sessionStorage.setItem(FOR_DEMO_RELOAD_LANDING_KEY, '1');

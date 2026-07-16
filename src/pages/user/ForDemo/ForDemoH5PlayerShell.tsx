@@ -15,7 +15,9 @@ import {
 } from '@/components/video-player';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
+import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { useUserStore } from '@/stores/user';
+import { resolveVideoFavorite, setVideoFavoriteOverride } from '@/stores/videoFavorite';
 import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForDemo/lib/foryouFeedUtils';
 import { navigateFromForDemoWatchFull } from '@/pages/user/ForDemo/lib/foryouNavigateToVideo';
 import {
@@ -71,8 +73,8 @@ export function ForDemoH5PlayerShell({
     const prevListLengthRef = useRef(listLength);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
 
-    const [favorite, setFavorite] = useState(
-        feedItem.is_favor === true || feedItem.is_favorite === 1,
+    const [favorite, setFavorite] = useState(() =>
+        resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
     );
     const [vip, setVip] = useState(false);
     const retention = useVideoRetentionCommerce({
@@ -107,8 +109,8 @@ export function ForDemoH5PlayerShell({
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
 
     useEffect(() => {
-        setFavorite(feedItem.is_favor === true || feedItem.is_favorite === 1);
-    }, [feedItem.ep_id, feedItem.is_favor, feedItem.is_favorite]);
+        setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
+    }, [data.info.id, data.info.is_favorite, feedItem.ep_id]);
 
     useEffect(() => {
         if (listLength <= prevListLengthRef.current) {
@@ -124,6 +126,12 @@ export function ForDemoH5PlayerShell({
     }, [activeIndex, listLength]);
 
     const handleToggleFavorite = useCallback(() => {
+        setFavorite((prev) => {
+            const next = !prev;
+            setVideoFavoriteOverride(data.info.id, next);
+            useForyouFeedStore.getState().patchFavorite(data.info.id, next);
+            return next;
+        });
         if (!skipRemoteApi) {
             void api('movie/favorite', {
                 method: 'post',
@@ -131,7 +139,6 @@ export function ForDemoH5PlayerShell({
                 loading: false,
             });
         }
-        setFavorite((prev) => !prev);
     }, [data.info.id]);
 
     const handleToggleVip = useCallback(() => {

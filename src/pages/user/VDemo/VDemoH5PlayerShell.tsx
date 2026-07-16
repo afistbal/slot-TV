@@ -26,7 +26,9 @@ import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlaye
 import { useVideoPlayerBack } from '@/components/video-player/useVideoPlayerBack';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
+import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { useUserStore } from '@/stores/user';
+import { resolveVideoFavorite, setVideoFavoriteOverride } from '@/stores/videoFavorite';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { useVideoPlayerShare } from '@/components/video-player/useVideoPlayerShare';
@@ -93,7 +95,9 @@ export function VDemoH5PlayerShell({
     const episodeRef = useRef<HTMLDivElement>(null);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
 
-    const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
+    const [favorite, setFavorite] = useState(() =>
+        resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
+    );
     const [introductionOpen, setIntroductionOpen] = useState(false);
     const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
     const [isFullscreenUi, setIsFullscreenUi] = useState(false);
@@ -120,10 +124,16 @@ export function VDemoH5PlayerShell({
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
 
     useEffect(() => {
-        setFavorite(data.info.is_favorite === 1);
+        setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
     }, [data.info.id, data.info.is_favorite]);
 
     const handleToggleFavorite = useCallback(() => {
+        setFavorite((prev) => {
+            const next = !prev;
+            setVideoFavoriteOverride(data.info.id, next);
+            useForyouFeedStore.getState().patchFavorite(data.info.id, next);
+            return next;
+        });
         if (!skipRemoteApi) {
             void api('movie/favorite', {
                 method: 'post',
@@ -131,7 +141,6 @@ export function VDemoH5PlayerShell({
                 loading: false,
             });
         }
-        setFavorite((prev) => !prev);
     }, [data.info.id]);
 
     const handlePaySuccessEpisodeDetail = useCallback(

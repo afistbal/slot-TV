@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import './lib/documentNavigation'
 import { installChunkLoadRecovery } from './lib/pwaChunkRecovery'
 
 const PWA_UPDATE_CHECK_INTERVAL_MS = 30 * 1000

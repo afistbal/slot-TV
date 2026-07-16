@@ -29,6 +29,7 @@ type ForyouFeedState = {
         audienceKey: string;
     }) => void;
     setActiveIndex: (activeIndex: number) => void;
+    patchFavorite: (movieId: number, favorite: boolean) => void;
     clear: () => void;
     isCacheValid: () => boolean;
 };
@@ -40,6 +41,18 @@ export const useForyouFeedStore = create<ForyouFeedState>((set, get) => ({
     audienceKey: null,
     setFeed: ({ list, hasMore, audienceKey }) => set({ list, hasMore, audienceKey }),
     setActiveIndex: (activeIndex) => set({ activeIndex }),
+    patchFavorite: (movieId, favorite) =>
+        set((state) => ({
+            list: state.list.map((item) =>
+                Number(item.id) === Number(movieId)
+                    ? {
+                        ...item,
+                        is_favor: favorite,
+                        is_favorite: favorite ? 1 : 0,
+                    }
+                    : item,
+            ),
+        })),
     clear: () => set({ list: [], hasMore: true, activeIndex: 0, audienceKey: null }),
     isCacheValid: () => {
         const state = get();

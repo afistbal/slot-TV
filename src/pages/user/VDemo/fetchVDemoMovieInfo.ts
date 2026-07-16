@@ -2,6 +2,7 @@
  * v-demo：先拉 `movie/info` 拿到剧详情与选集列表（无 mp4/vtt）。
  */
 import { api } from '@/api';
+import { resolveVideoFavorite } from '@/stores/videoFavorite';
 import type { IPlayerData } from '@/types/videoPlayer';
 
 export type VDemoPlayerData = IPlayerData & {
@@ -24,6 +25,21 @@ const movieInfoInflight = new Map<number, Promise<
     | { ok: false; message: string }
 >>();
 
+function applyFavoriteOverride(data: VDemoPlayerData): VDemoPlayerData {
+    const favorite = resolveVideoFavorite(data.info.id, data.info.is_favorite === 1);
+    const isFavorite = favorite ? 1 : 0;
+    if (data.info.is_favorite === isFavorite) {
+        return data;
+    }
+    return {
+        ...data,
+        info: {
+            ...data.info,
+            is_favorite: isFavorite,
+        },
+    };
+}
+
 export async function fetchVDemoMovieInfo(
     movieId: number,
 ): Promise<
@@ -33,7 +49,7 @@ export async function fetchVDemoMovieInfo(
     const id = Number(movieId);
     const cached = movieInfoCache.get(id);
     if (cached) {
-        return { ok: true, data: cached };
+        return { ok: true, data: applyFavoriteOverride(cached) };
     }
     const inflight = movieInfoInflight.get(id);
     if (inflight) {
@@ -64,7 +80,7 @@ export async function fetchVDemoMovieInfo(
     movieInfoCache.set(id, data);
     return {
         ok: true,
-        data,
+        data: applyFavoriteOverride(data),
     };
     })();
 

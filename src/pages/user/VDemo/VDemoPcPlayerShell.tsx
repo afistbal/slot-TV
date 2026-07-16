@@ -31,7 +31,9 @@ import { useVideoPlayerBack } from '@/components/video-player/useVideoPlayerBack
 import { cn } from '@/lib/utils';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
+import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { useUserStore } from '@/stores/user';
+import { resolveVideoFavorite, setVideoFavoriteOverride } from '@/stores/videoFavorite';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { useVideoPlayerShare } from '@/components/video-player/useVideoPlayerShare';
@@ -95,8 +97,9 @@ export function VDemoPcPlayerShell({
     const activeLocked = isVDemoEpisodeLocked(activeRow, true);
     const viewerIsVip = Boolean(userStore.signed && userStore.isVIP());
     const resolveEpisodeCellLocked = useCallback(
-        (row: typeof data.episodes[number]) => resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
-        [viewerIsVip, playerItems, episode],
+        (row: VDemoPlayerData['episodes'][number]) =>
+            resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
+        [viewerIsVip],
     );
     const isFeedItemLocked = useCallback(
         (_item: DouyinFeedVideoItem, index: number) => isVDemoEpisodeLocked(data.episodes[index], true),
@@ -116,7 +119,9 @@ export function VDemoPcPlayerShell({
 
     const tabRanges = useMemo(() => buildPcEpisodeTabRanges(maxEpisode), [maxEpisode]);
 
-    const [favorite, setFavorite] = useState(data.info.is_favorite === 1);
+    const [favorite, setFavorite] = useState(() =>
+        resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
+    );
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
@@ -167,7 +172,7 @@ export function VDemoPcPlayerShell({
     }, [data.episodes, desktopEpisodeTab, maxEpisode, tabRanges]);
 
     useEffect(() => {
-        setFavorite(data.info.is_favorite === 1);
+        setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
     }, [data.info.id, data.info.is_favorite]);
 
     useEffect(() => {
@@ -230,6 +235,12 @@ export function VDemoPcPlayerShell({
     );
 
     const handleToggleFavorite = useCallback(() => {
+        setFavorite((prev) => {
+            const next = !prev;
+            setVideoFavoriteOverride(data.info.id, next);
+            useForyouFeedStore.getState().patchFavorite(data.info.id, next);
+            return next;
+        });
         if (!skipRemoteApi) {
             void api('movie/favorite', {
                 method: 'post',
@@ -237,7 +248,6 @@ export function VDemoPcPlayerShell({
                 loading: false,
             });
         }
-        setFavorite((prev) => !prev);
     }, [data.info.id]);
 
     const handlePaySuccessEpisodeDetail = useCallback(

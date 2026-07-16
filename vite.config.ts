@@ -140,7 +140,8 @@ function patchManifestBrand(raw: string, brand: BrandConfig): string {
 function patchOpNewShareBrand(raw: string, brand: BrandConfig, version?: string): string {
   const faviconSrc = version ? withAssetVersion(brand.faviconSrc, version) : brand.faviconSrc
   const logoSrc = version ? withAssetVersion(brand.logoSrc, version) : brand.logoSrc
-  let next = patchHtmlBrand(raw, brand, version).replaceAll('YogoShort', brand.displayName)
+  let next = raw.replaceAll('YogoShort', brand.displayName)
+  next = replaceMetaContent(next, 'property', 'og:site_name', brand.displayName)
   next = next.replace(
     /(<link\s+rel="icon"[^>]*href=")[^"]*(")/i,
     (_m, before, after) => `${before}${faviconSrc}${after}`,
@@ -237,9 +238,9 @@ function createOpNewStaticHandler(brand: BrandConfig, version: string) {
       next()
       return
     }
-    let rel = decodeURIComponent(raw.replace(/^\/op_new\/?/, '') || 'app-google-share.html')
+    let rel = decodeURIComponent(raw.replace(/^\/op_new\/?/, '') || 'app-share.html')
     if (rel === '' || rel.endsWith('/')) {
-      rel = 'app-google-share.html'
+      rel = 'app-share.html'
     }
     const fp = path.normalize(path.join(OP_NEW_DIR, rel))
     if (!fp.startsWith(OP_NEW_DIR)) {
@@ -348,7 +349,7 @@ function patchStaticBrandFiles(outDir: string, brand: BrandConfig, version: stri
         writeFileSync(manifestPath, patchManifestBrand(readFileSync(manifestPath, 'utf-8'), brand), 'utf-8')
       }
 
-      const opNewSharePath = path.join(outDir, 'op_new', 'app-google-share.html')
+      const opNewSharePath = path.join(outDir, 'op_new', 'app-share.html')
       if (existsSync(opNewSharePath)) {
         writeFileSync(opNewSharePath, patchOpNewShareBrand(readFileSync(opNewSharePath, 'utf-8'), brand, version), 'utf-8')
       }

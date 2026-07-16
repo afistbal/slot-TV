@@ -2,6 +2,7 @@ import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
 import type { IForYouFeedItem, IForYouFeedTag, IForYouListPayload } from '@/types/foryouFeed';
 import { normalizePlayerTags } from '@/lib/normalizePlayerTags';
+import { resolveVideoFavorite } from '@/stores/videoFavorite';
 
 import { FORYOU_DEFAULT_PER_PAGE } from './foryouConstants';
 
@@ -32,13 +33,18 @@ function normalizeFeedTags(raw: unknown): IForYouFeedTag[] {
 }
 
 function normalizeFeedRow(raw: Record<string, unknown>): IForYouFeedItem {
+    const id = Number(raw['id']);
     const epRaw = raw['episode'] ?? raw['ep'];
     const totalRaw =
         raw['total_episodes'] ?? raw['episodes'] ?? raw['total_episode'] ?? raw['episode_count'];
     const isFavor = raw['is_favor'] ?? raw['is_favorite'];
+    const resolvedFavorite = resolveVideoFavorite(
+        id,
+        isFavor === true || isFavor === 1 || isFavor === '1',
+    );
     const introRaw = raw['introduction'];
     return {
-        id: Number(raw['id']),
+        id,
         slot: Array.isArray(raw['slot']) ? (raw['slot'] as string[]) : undefined,
         title: String(raw['title'] ?? ''),
         image: String(raw['image'] ?? ''),
@@ -53,7 +59,8 @@ function normalizeFeedRow(raw: Record<string, unknown>): IForYouFeedItem {
         video: String(raw['video'] ?? ''),
         subtitle: String(raw['subtitle'] ?? ''),
         tags: normalizeFeedTags(raw['tags']),
-        is_favor: isFavor === true || isFavor === 1 || isFavor === '1',
+        is_favor: resolvedFavorite,
+        is_favorite: resolvedFavorite ? 1 : 0,
         favor: Number(raw['favor'] ?? raw['favorite'] ?? 0),
     };
 }
