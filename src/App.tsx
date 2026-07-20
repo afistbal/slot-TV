@@ -38,22 +38,38 @@ import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUser
 import { setIsAnonymousFromInfo } from "./lib/clientIsAnonymous";
 import { loginTikTokMinis } from "./lib/tiktokMinisLogin";
 
-/** TikTok 登录最多尝试两次：首次失败后重试一次，避免失败时无限循环。 */
-async function loginTikTokMinisWithOneRetry() {
-    let firstFailure: unknown;
+const TIKTOK_LOGIN_RETRY_DELAYS_MS = [1200, 2000, 3500];
 
-    try {
-        const result = await loginTikTokMinis();
-        if (result.c === 0) {
-            return result;
+function waitForTikTokBridge(ms: number) {
+    return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
+/**
+ * TikTok DevTool 在 iframe 加载完成后还需要一点时间初始化 JSB bridge。
+ * 首次 login 过早调用会报 `DevMode bridge timeout`，导致首页一直等不到 session。
+ */
+async function loginTikTokMinisWithOneRetry() {
+    let lastFailure: unknown;
+
+    for (let attempt = 0; attempt < TIKTOK_LOGIN_RETRY_DELAYS_MS.length; attempt += 1) {
+        await waitForTikTokBridge(TIKTOK_LOGIN_RETRY_DELAYS_MS[attempt]);
+        try {
+            const result = await loginTikTokMinis();
+            if (result.c === 0) {
+                return result;
+            }
+            lastFailure = new Error(result.m || 'TikTok login failed.');
+        } catch (error) {
+            lastFailure = error;
         }
-        firstFailure = new Error(result.m || 'TikTok login failed.');
-    } catch (error) {
-        firstFailure = error;
+
+        console.warn(
+            `[TikTok login] Attempt ${attempt + 1}/${TIKTOK_LOGIN_RETRY_DELAYS_MS.length} failed; retrying after bridge settles.`,
+            lastFailure,
+        );
     }
 
-    console.warn('[TikTok login] First attempt failed; retrying silent login once.', firstFailure);
-    return loginTikTokMinis();
+    throw lastFailure instanceof Error ? lastFailure : new Error('TikTok silent login failed.');
 }
 import { isTikTokPlatform } from "./platform";
 

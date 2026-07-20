@@ -16,7 +16,6 @@ import {
     prefetchMyListRouteChunk,
     prefetchProfileRouteChunk,
 } from '@/lib/prefetchSecondaryUserRoutes';
-import { isTikTokPlatform } from '@/platform';
 
 export type ReelShortBottomNavProps = {
     /** 收银台、全屏播放等页隐藏底部 Tab 与「添加桌面」胶囊 */
@@ -76,10 +75,9 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
     const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
     const showIosAddHome = shouldShowIosAddHomeFab();
     const sourceform = `${location.pathname}${location.search}`;
-    const isTikTok = isTikTokPlatform();
 
     const isForYouPage = isForYouPathname(location.pathname);
-    const showTabs = showBottomTabBar && !isTikTok && !isDesktop && !hidden && !isForYouPage;
+    const showTabs = showBottomTabBar && !isDesktop && !hidden && !isForYouPage;
     const addVariant: 'ios' | 'android' | null = showIosAddHome ? 'ios' : showInstallPrompt ? 'android' : null;
     const showAddDesktop = addVariant !== null && !isForYouPage;
 
