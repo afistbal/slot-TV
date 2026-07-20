@@ -1,7 +1,7 @@
 {
   "name": "tv",
   "private": true,
-  "version": "2.0.79",
+  "version": "2.0.81",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,10 @@
     "build:dev": "node ./scripts/bump-version.mjs && node ./scripts/clean-movie-www.mjs D:/JJ-TV/movie-www && tsc -b && vite build --mode dev && node ./scripts/prune-old-assets.mjs D:/JJ-TV/movie-www",
     "build:prod": "node ./scripts/bump-version.mjs && node ./scripts/clean-movie-www.mjs D:/JJ-TV/movie-www-prod && tsc -b && vite build --mode prod && node ./scripts/prune-old-assets.mjs D:/JJ-TV/movie-www-prod",
     "build:prod1": "node ./scripts/bump-version.mjs && node ./scripts/clean-movie-www.mjs D:/JJ-TV/movie-www-prod1 && tsc -b && vite build --mode prod1 && node ./scripts/prune-old-assets.mjs D:/JJ-TV/movie-www-prod1",
+    "dev:tiktok": "node ./scripts/prepare-tiktok-minis.mjs && vite --mode tiktok",
+    "build:tiktok": "node ./scripts/prepare-tiktok-minis.mjs && tsc -b && vite build --mode tiktok && minis build",
+    "minis:package": "node ./scripts/prepare-tiktok-minis.mjs && minis build",
+    "minis:dev": "minis dev",
     "lint": "eslint .",
     "preview": "vite preview",
     "i18n:export": "node scripts/i18n-export-locales.mjs",
@@ -83,6 +87,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "sass": "^1.99.0",
+    "tiktok-minis-cli": "^0.0.7",
     "tw-animate-css": "^1.2.9",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",

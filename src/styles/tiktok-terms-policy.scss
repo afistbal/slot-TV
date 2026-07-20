@@ -1,0 +1,84 @@
+.tiktok-terms-policy {
+    min-height: 100%;
+    box-sizing: border-box;
+    padding: calc(18px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));
+    background: #000;
+    color: #fff;
+}
+
+.tiktok-terms-policy__header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 58px;
+}
+
+.tiktok-terms-policy__header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.tiktok-terms-policy__back {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+    color: #fff;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.tiktok-terms-policy__back svg {
+    width: 34px;
+    height: 34px;
+    stroke-width: 1.8;
+}
+
+.tiktok-terms-policy__card {
+    margin-top: 28px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #222;
+}
+
+.tiktok-terms-policy__row {
+    display: flex;
+    min-height: 102px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 24px;
+    color: #f5f5f5;
+    text-decoration: none;
+    font-size: 24px;
+    line-height: 1.2;
+}
+
+.tiktok-terms-policy__row + .tiktok-terms-policy__row {
+    border-top: 1px solid #3b3b3b;
+}
+
+.tiktok-terms-policy__row svg {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    color: #aaa;
+    stroke-width: 1.8;
+}
+
+@media (min-width: 768px) {
+    .tiktok-terms-policy {
+        max-width: 640px;
+        margin: 0 auto;
+        padding-inline: 28px;
+    }
+}

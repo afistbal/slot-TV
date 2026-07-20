@@ -13,11 +13,14 @@ export type ReelShortFooterProps = {
     dockAboveBottomTab?: boolean;
     /** Profile 等页已有反馈入口时隐藏「支援中心」区块 */
     hideSupportCenter?: boolean;
+    /** TikTok Minis：协议改为个人页中的独立入口，Footer 不再重复展示协议链接。 */
+    hideLegalLinks?: boolean;
 };
 
 export function ReelShortFooter({
     dockAboveBottomTab = false,
     hideSupportCenter = false,
+    hideLegalLinks = false,
 }: ReelShortFooterProps) {
     const appVersion = __APP_VERSION__;
     const [aboutOpen, setAboutOpen] = useState(false);
@@ -52,15 +55,19 @@ export function ReelShortFooter({
                             className={cn('reelshort-footer__collapsible', aboutOpen && 'reelshort-footer__collapsible--open')}
                             aria-hidden={!aboutOpen}
                         >
-                            <LegalDocumentLink title="terms_of_service" className="reelshort-footer__collapse-item">
-                                <FormattedMessage id="terms_of_service" />
-                            </LegalDocumentLink>
-                            <LegalDocumentLink title="refund_policy" className="reelshort-footer__collapse-item">
-                                <FormattedMessage id="shopping_tips_link_refund" />
-                            </LegalDocumentLink>
-                            <LegalDocumentLink title="privacy_policy" className="reelshort-footer__collapse-item">
-                                <FormattedMessage id="privacy_policy" />
-                            </LegalDocumentLink>
+                            {hideLegalLinks ? null : (
+                                <>
+                                    <LegalDocumentLink title="terms_of_service" className="reelshort-footer__collapse-item">
+                                        <FormattedMessage id="terms_of_service" />
+                                    </LegalDocumentLink>
+                                    <LegalDocumentLink title="refund_policy" className="reelshort-footer__collapse-item">
+                                        <FormattedMessage id="shopping_tips_link_refund" />
+                                    </LegalDocumentLink>
+                                    <LegalDocumentLink title="privacy_policy" className="reelshort-footer__collapse-item">
+                                        <FormattedMessage id="privacy_policy" />
+                                    </LegalDocumentLink>
+                                </>
+                            )}
                             <div className="reelshort-footer__collapse-item reelshort-footer__collapse-item--version">
                                 <span className="reelshort-footer__versionLabel">
                                     <FormattedMessage id="version" />
@@ -140,21 +147,25 @@ export function ReelShortFooter({
                             <div className="Footer_item_title__7csub">
                                 <FormattedMessage id="footer_about_us" />
                             </div>
-                            <div className="Footer_item_sub_title__VYtUB">
-                                <LegalDocumentLink title="terms_of_service" className="Footer_item_sub_text__EQ_F8">
-                                    <FormattedMessage id="terms_of_service" />
-                                </LegalDocumentLink>
-                            </div>
-                            <div className="Footer_item_sub_title__VYtUB">
-                                <LegalDocumentLink title="refund_policy" className="Footer_item_sub_text__EQ_F8">
-                                    <FormattedMessage id="shopping_tips_link_refund" />
-                                </LegalDocumentLink>
-                            </div>
-                            <div className="Footer_item_sub_title__VYtUB">
-                                <LegalDocumentLink title="privacy_policy" className="Footer_item_sub_text__EQ_F8">
-                                    <FormattedMessage id="privacy_policy" />
-                                </LegalDocumentLink>
-                            </div>
+                            {hideLegalLinks ? null : (
+                                <>
+                                    <div className="Footer_item_sub_title__VYtUB">
+                                        <LegalDocumentLink title="terms_of_service" className="Footer_item_sub_text__EQ_F8">
+                                            <FormattedMessage id="terms_of_service" />
+                                        </LegalDocumentLink>
+                                    </div>
+                                    <div className="Footer_item_sub_title__VYtUB">
+                                        <LegalDocumentLink title="refund_policy" className="Footer_item_sub_text__EQ_F8">
+                                            <FormattedMessage id="shopping_tips_link_refund" />
+                                        </LegalDocumentLink>
+                                    </div>
+                                    <div className="Footer_item_sub_title__VYtUB">
+                                        <LegalDocumentLink title="privacy_policy" className="Footer_item_sub_text__EQ_F8">
+                                            <FormattedMessage id="privacy_policy" />
+                                        </LegalDocumentLink>
+                                    </div>
+                                </>
+                            )}
                             <div className="Footer_item_sub_title__VYtUB">
                                 <div className="reelshort-footer__pc-version-row">
                                     <span className="reelshort-footer__versionLabel">

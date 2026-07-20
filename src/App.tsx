@@ -35,6 +35,27 @@ import { ReelShortBasicsSpin } from "./components/ReelShortBasicsSpin";
 
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
+import { setIsAnonymousFromInfo } from "./lib/clientIsAnonymous";
+import { loginTikTokMinis } from "./lib/tiktokMinisLogin";
+
+/** TikTok 登录最多尝试两次：首次失败后重试一次，避免失败时无限循环。 */
+async function loginTikTokMinisWithOneRetry() {
+    let firstFailure: unknown;
+
+    try {
+        const result = await loginTikTokMinis();
+        if (result.c === 0) {
+            return result;
+        }
+        firstFailure = new Error(result.m || 'TikTok login failed.');
+    } catch (error) {
+        firstFailure = error;
+    }
+
+    console.warn('[TikTok login] First attempt failed; retrying silent login once.', firstFailure);
+    return loginTikTokMinis();
+}
+import { isTikTokPlatform } from "./platform";
 
 /** 旧书签 `/page/checkout/:id`、已废弃的整页收银 → 购物页 */
 function LegacyCheckoutToShoppingRedirect() {
@@ -79,6 +100,7 @@ const UserWallet = lazy(() => import('./pages/user/Wallet'));
 const UserDetail = lazy(() => import('./pages/user/UserDetail'));
 const UserRadixRc = lazy(() => import('./pages/user/RadixRc'));
 const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
+const UserTikTokTermsPolicy = lazy(() => import('./pages/user/TikTokTermsPolicy'));
 const ForDemoPage = lazy(() => import('./pages/user/ForDemo'));
 const VDemoPage = lazy(() => import('./pages/user/VDemo'));
 const AdminWeeklyUpdateTable = lazy(() => import('./pages/admin/WeeklyUpdateTable'));
@@ -280,6 +302,10 @@ const router = createBrowserRouter([
                 element: lazyRoute(UserIosAddHomeGuide),
             },
             {
+                path: 'terms-policy',
+                element: lazyRoute(UserTikTokTermsPolicy),
+            },
+            {
                 path: 'pay/:id',
                 element: <Navigate to="/shopping" replace />,
             },
@@ -373,6 +399,48 @@ function App() {
         /** 与会话接口不依赖 `config` 响应体，与 `config` 并行可显著缩短首屏可交互前总等待 */
         void (async () => {
             try {
+                if (isTikTokPlatform()) {
+                    /**
+                     * TikTok 启动时优先恢复已经建立的本地会话。
+                     * 只有本地会话不存在、已失效，或不是 TikTok 会话时，
+                     * 才重新获取 TTMinis.login() 的一次性 code。
+                     */
+                    const storedLoginMethod = localStorage.getItem('login-method');
+                    if (token && storedLoginMethod === 'tiktok') {
+                        const restored = await refreshSessionFromStoredToken();
+                        if (loadGen !== loadDataGenerationRef.current) {
+                            return;
+                        }
+                        if (restored) {
+                            useRootStore.getState().setSessionBootstrapReady(true);
+                            return;
+                        }
+                    }
+
+                    const tiktok = await loginTikTokMinisWithOneRetry();
+                    if (loadGen !== loadDataGenerationRef.current) {
+                        return;
+                    }
+                    if (tiktok.c !== 0) {
+                        console.error('[TikTok login] Backend exchange failed:', tiktok.m);
+                        return;
+                    }
+
+                    const tiktokToken = tiktok.d.token?.trim();
+                    const tiktokInfo = tiktok.d.info;
+                    if (!tiktokToken || !tiktokInfo) {
+                        console.error('[TikTok login] Backend response is missing token or info.');
+                        return;
+                    }
+
+                    localStorage.setItem('token', tiktokToken);
+                    localStorage.setItem('login-method', 'tiktok');
+                    setIsAnonymousFromInfo(tiktokInfo);
+                    useUserStore.getState().signin(tiktokInfo);
+                    useRootStore.getState().setSessionBootstrapReady(true);
+                    return;
+                }
+
                 if (token) {
                     const ok = await refreshSessionFromStoredToken();
                     if (loadGen !== loadDataGenerationRef.current) {
@@ -408,7 +476,10 @@ function App() {
                 useUserStore.getState().signin(anon.d['info'] as TData);
                 useRootStore.getState().setSessionBootstrapReady(true);
                 trackAnonymousCompleteRegistration();
-            } catch {
+            } catch (error) {
+                if (isTikTokPlatform()) {
+                    console.error('[TikTok login] Silent login failed:', error);
+                }
                 /* 会话失败时保持 sessionBootstrapReady=false */
             }
         })();
@@ -627,7 +698,7 @@ function App() {
         matchPath({ path: '/for-you', end: true }, pathname) != null;
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =
-        install > 0 && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;
+        install > 0 && !isTikTokPlatform() && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;
     useEffect(() => {
         if (rootShowInstallPrompt !== showInstallPrompt) {
             setRootShowInstallPrompt(showInstallPrompt);

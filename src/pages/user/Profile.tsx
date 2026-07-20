@@ -1,4 +1,4 @@
-import { CircleUser } from 'lucide-react';
+import { CircleUser, FileText } from 'lucide-react';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
@@ -22,6 +22,7 @@ import {
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
+import { isTikTokPlatform } from '@/platform';
 import RadixRc from '@/pages/user/RadixRc';
 import FeedbackPanel from '@/pages/user/Feedback';
 import UserDetailPanel from '@/pages/user/UserDetail';
@@ -55,6 +56,7 @@ export default function Component() {
     const [vip, setVip] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPc = useMinWidth768();
+    const isTikTokProfile = isTikTokPlatform() && !isPc;
     const [pcLoginOpen, setPcLoginOpen] = useState(false);
     const [pcTab, setPcTab] = useState<ProfilePcTab>('topup');
     const [profileMyListSubTab, setProfileMyListSubTab] = useState<ProfileMyListSubTab>('favorite');
@@ -298,14 +300,16 @@ export default function Component() {
             </div>
             <div className="rs-profile__loginCardMain rs-profile__loginCardMain--link">
                 <div>
-                    <div className="rs-profile__name">
-                        <div>{userStore.info!['name'] as string}</div>
-                    </div>
+                    {!isTikTokProfile ? (
+                        <div className="rs-profile__name">
+                            <div>{userStore.info!['name'] as string}</div>
+                        </div>
+                    ) : null}
                     {profileUidRow}
                 </div>
             </div>
             </Link>
-            {h5HeaderLogoutBtn}
+            {!isTikTokProfile ? h5HeaderLogoutBtn : null}
         </div>
     );
 
@@ -437,6 +441,15 @@ export default function Component() {
                 </div>
                 <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
             </Link>
+            {isTikTokProfile ? (
+                <Link to="/page/terms-policy" className="rs-profile__menuItem">
+                    <div className="rs-profile__menuLeft">
+                        <FileText className="rs-profile__menuIcon" aria-hidden />
+                        <div className="rs-profile__menuText">Terms &amp; Policy</div>
+                    </div>
+                    <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
+                </Link>
+            ) : null}
         </div>
     );
 
@@ -843,7 +856,11 @@ export default function Component() {
                         {isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard}
                         {h5MyAccountCard}
                         {h5Menu}
-                        <ReelShortFooter dockAboveBottomTab hideSupportCenter />
+                        <ReelShortFooter
+                            dockAboveBottomTab
+                            hideSupportCenter
+                            hideLegalLinks={isTikTokProfile}
+                        />
                     </div>
                 )}
                 <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />

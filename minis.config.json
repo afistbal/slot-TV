@@ -1,0 +1,10 @@
+{
+  "dev": {
+    "host": "0.0.0.0",
+    "port": 5189
+  },
+  "build": {
+    "outputDir": "dist/tiktok",
+    "htmlEntry": "index.tiktok.local.html"
+  }
+}

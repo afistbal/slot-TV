@@ -12,8 +12,10 @@ function resolveApiRequestEncryptionEnabled(): boolean {
         return false;
     }
     if (flag === 'true') {
+        return false;
         return isWebCryptoAvailable();
     }
+    return false;
     return isWebCryptoAvailable();
 }
 
@@ -76,7 +78,9 @@ export async function api<T = TData>(path: string, options?: {
             ...(storedToken ? { Authorization: `Bearer ${storedToken}` } : {}),
             'Accept-Language': localStorage.getItem('locale') ?? 'en',
             Accept: 'application/json',
-            'X-Platform': 'web',
+            'X-Platform': import.meta.env.MODE === 'tiktok' || import.meta.env.VITE_PLATFORM === 'tiktok'
+                ? 'tiktok'
+                : 'web',
             'X-OS': ua.os.name?.toLowerCase() ?? 'unknown',
             'X-Test': localStorage.getItem('test') ?? '',
             'X-Source': localStorage.getItem('source') ?? '',

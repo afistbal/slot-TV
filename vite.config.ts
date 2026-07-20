@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 // import legacy from '@vitejs/plugin-legacy'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { copyFileSync, cpSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from "path"
 
@@ -374,16 +374,72 @@ function patchStaticBrandFiles(outDir: string, brand: BrandConfig, version: stri
   }
 }
 
+/** TikTok Minis CLI 固定校验构建产物根目录的 `index.html`。 */
+function finalizeTikTokMinisEntry(outDir: string): Plugin {
+  return {
+    name: 'finalize-tiktok-minis-entry',
+    closeBundle() {
+      const source = path.join(outDir, 'index.tiktok.html')
+      const target = path.join(outDir, 'index.html')
+      if (!existsSync(source)) {
+        throw new Error(`TikTok Minis entry was not emitted: ${source}`)
+      }
+      renameSync(source, target)
+    },
+  }
+}
+
+/** 开发时让 TikTok 调试桥访问根路径也能拿到 TikTok 专用 HTML 入口。 */
+function serveTikTokMinisEntry(): Plugin {
+  return {
+    name: 'serve-tiktok-minis-entry',
+    configureServer(server) {
+      return () => {
+        server.middlewares.use(async (req, res, next) => {
+          const pathname = req.url?.split('?')[0] ?? ''
+          if (pathname !== '/' && pathname !== '/index.html') {
+            next()
+            return
+          }
+
+          try {
+            const entry = readFileSync(path.join(process.cwd(), 'index.tiktok.html'), 'utf-8')
+            const html = await server.transformIndexHtml(req.url ?? '/', entry)
+            res.statusCode = 200
+            res.setHeader('Content-Type', 'text/html; charset=utf-8')
+            res.end(html)
+          } catch (error) {
+            next(error as Error)
+          }
+        })
+      }
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default ({ mode, command }: { mode: string; command: string }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const isTikTokMinis = mode === 'tiktok' || env.VITE_PLATFORM === 'tiktok'
   const numberedProdMatch = /^prod\d+$/.exec(mode)
   const isProdBuild = mode === 'prod' || mode === 'production'
   const isDevServer = command === 'serve'
-  const outDir = numberedProdMatch ? `D:/JJ-TV/movie-www-${mode}` : isProdBuild ? 'D:/JJ-TV/movie-www-prod' : 'D:/JJ-TV/movie-www'
+  const outDir = isTikTokMinis
+    ? 'dist/tiktok'
+    : numberedProdMatch
+      ? `D:/JJ-TV/movie-www-${mode}`
+      : isProdBuild
+        ? 'D:/JJ-TV/movie-www-prod'
+        : 'D:/JJ-TV/movie-www'
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com'
   const apiOriginForHints = inferApiOriginForPreconnect(env)
   const brand = brandConfigFromEnv(env)
+
+  if (isTikTokMinis && !env.VITE_TIKTOK_MINIS_CLIENT_KEY?.trim()) {
+    throw new Error(
+      'Missing VITE_TIKTOK_MINIS_CLIENT_KEY. Copy .env.tiktok.example to .env.tiktok.local and set the Client Key from TikTok Developer Portal.',
+    )
+  }
 
   return defineConfig({
     define: {
@@ -391,16 +447,21 @@ export default ({ mode, command }: { mode: string; command: string }) => {
     },
     plugins: [
       htmlAssetCacheBust(appVersion, brand),
-      copyShareHtmlFiles(outDir),
-      opNewStatic(outDir, brand, appVersion),
-      patchStaticBrandFiles(outDir, brand, appVersion),
+      ...(!isTikTokMinis ? [
+        copyShareHtmlFiles(outDir),
+        opNewStatic(outDir, brand, appVersion),
+        patchStaticBrandFiles(outDir, brand, appVersion),
+      ] : [
+        finalizeTikTokMinisEntry(outDir),
+        serveTikTokMinisEntry(),
+      ]),
       injectApiOriginPreconnect(apiOriginForHints),
       react(),
       tailwindcss(),
       // legacy({
       //   targets: ['defaults', 'not IE 11'],
       // }),
-      VitePWA({
+      ...(!isTikTokMinis ? [VitePWA({
         registerType: 'prompt',
         devOptions: {
           enabled: !isDevServer,
@@ -429,17 +490,19 @@ export default ({ mode, command }: { mode: string; command: string }) => {
           ],
           globIgnores: ['**/share*', '**/op_new/**', 'airwallex.html'],
         },
-      })
+      })] : [])
     ],
     build: {
       outDir,
       // 由 `npm run build` 前置脚本清理 outDir，保留 `.git` / `.well-known` / Google 验证 html 等
-      emptyOutDir: false,
+      emptyOutDir: isTikTokMinis,
       rollupOptions: {
-        input: {
-          index: 'index.html',
-          share: 'share.html',
-        },
+        input: isTikTokMinis
+          ? { index: 'index.tiktok.html' }
+          : {
+              index: 'index.html',
+              share: 'share.html',
+            },
       }
     },
     resolve: {
@@ -450,7 +513,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
     },
     server: {
       host: '0.0.0.0',
-      port: 5188,
+      port: isTikTokMinis ? 5189 : 5188,
       proxy: {
         '/api': {
           target: apiProxyTarget,
@@ -461,7 +524,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
     },
     preview: {
       host: '0.0.0.0',
-      port: 5188,
+      port: isTikTokMinis ? 5189 : 5188,
       proxy: {
         '/api': {
           target: apiProxyTarget,

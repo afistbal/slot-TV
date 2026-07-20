@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- TikTok Minis CLI requires this to be the first script in <head>. -->
+  <script src="https://connect.tiktok-minis.com/drama/sdk.js"></script>
+  <script>
+    TTMinis.init({
+      clientKey: "%VITE_TIKTOK_MINIS_CLIENT_KEY%",
+    });
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000000" />
+  <title>YogoShort</title>
+  <style>
+    html,
+    body,
+    #root {
+      height: 100%;
+      margin: 0;
+      background-color: #000000;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <div id="top-layer"></div>
+  <script type="module" src="/src/main.tiktok.tsx"></script>
+</body>
+
+</html>
