@@ -12,8 +12,22 @@ import { ensureForyouMediaPreconnect, resolveFeedVideoUrl } from '@/pages/user/F
 import { getForyouFeedAudienceKey, useForyouFeedStore } from '@/stores/foryouFeed';
 import type { IForYouFeedItem, IForYouListPayload } from '@/types/foryouFeed';
 
-function inferHasMore(payload: IForYouListPayload): boolean {
-    return payload.has_more === true;
+function inferHasMore(payload: IForYouListPayload, fallbackPerPage: number): boolean {
+    const rows = payload.data;
+    if (!rows.length) {
+        return false;
+    }
+    if (payload.has_more === true) {
+        return true;
+    }
+    if (payload.has_more === false) {
+        return false;
+    }
+    const batchSize = payload.per_page ?? payload.count ?? fallbackPerPage;
+    if (batchSize > 0 && rows.length >= batchSize) {
+        return true;
+    }
+    return false;
 }
 
 function mapRowsToPlayerItems(rows: IForYouFeedItem[], staticBase: string): DouyinFeedVideoItem[] {
@@ -104,8 +118,9 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
                 setHasMore(false);
             } else {
                 const rows = res.payload.data;
+                const pp = res.payload.per_page ?? res.payload.count ?? FORYOU_DEFAULT_PER_PAGE;
                 nextPageRef.current = (res.payload.current_page ?? 1) + 1;
-                applyList(rows, inferHasMore(res.payload));
+                applyList(rows, inferHasMore(res.payload, pp));
                 setLoadError(null);
             }
             setLoading(false);
@@ -134,6 +149,7 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
                 return;
             }
             const incoming = res.payload.data;
+            const batchSize = res.payload.per_page ?? res.payload.count ?? FORYOU_DEFAULT_PER_PAGE;
             if (!incoming.length) {
                 setHasMore(false);
                 return;
@@ -143,7 +159,7 @@ export function useForDemoFeed(sessionBootstrapReady: boolean, staticBase: strin
                     ? res.payload.current_page + 1
                     : page + 1;
             const merged = mergeForyouFeedItems(base, incoming);
-            applyList(merged, inferHasMore(res.payload));
+            applyList(merged, inferHasMore(res.payload, batchSize));
         } finally {
             setLoadingMore(false);
             fetchLockRef.current = false;

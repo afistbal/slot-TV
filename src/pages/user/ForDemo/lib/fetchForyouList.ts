@@ -1,4 +1,5 @@
 import { api } from '@/api';
+import { FORYOU_DEFAULT_PER_PAGE } from '@/components/foryou-feed/foryouConstants';
 import { skipRemoteApi } from '@/env';
 import type { IForYouFeedItem, IForYouFeedTag, IForYouListPayload } from '@/types/foryouFeed';
 import { normalizePlayerTags } from '@/lib/normalizePlayerTags';
@@ -74,7 +75,18 @@ function normalizePayload(d: unknown): IForYouListPayload {
     const perPage = Number(bag['per_page'] ?? 0);
     const currentPage = Number(bag['current_page'] ?? 1);
     const hasMoreRaw = bag['has_more'];
-    const hasMore = hasMoreRaw === true || hasMoreRaw === 1 || hasMoreRaw === '1';
+    const batchSize = perPage || count || FORYOU_DEFAULT_PER_PAGE;
+    /** 满页时继续请求下一页；老接口没有 has_more 时按返回条数推断。 */
+    const hasMore =
+        hasMoreRaw === true ||
+        hasMoreRaw === 1 ||
+        hasMoreRaw === '1' ||
+        (hasMoreRaw !== false &&
+            hasMoreRaw !== 0 &&
+            hasMoreRaw !== '0' &&
+            rows.length > 0 &&
+            batchSize > 0 &&
+            rows.length >= batchSize);
 
     return {
         count,
