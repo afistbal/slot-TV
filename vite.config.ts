@@ -375,6 +375,15 @@ function patchStaticBrandFiles(outDir: string, brand: BrandConfig, version: stri
 }
 
 /** TikTok Minis CLI 固定校验构建产物根目录的 `index.html`。 */
+function injectTikTokMinisClientKey(clientKey: string): Plugin {
+  return {
+    name: 'inject-tiktok-minis-client-key',
+    transformIndexHtml(html) {
+      return html.replaceAll('%VITE_TIKTOK_MINIS_CLIENT_KEY%', clientKey)
+    },
+  }
+}
+
 function finalizeTikTokMinisEntry(outDir: string): Plugin {
   return {
     name: 'finalize-tiktok-minis-entry',
@@ -419,7 +428,12 @@ function serveTikTokMinisEntry(): Plugin {
 
 // https://vite.dev/config/
 export default ({ mode, command }: { mode: string; command: string }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = {
+    // TikTok variant modes (for example `tiktok-prod`) inherit the local
+    // Minis credentials, while their own env file controls the API endpoint.
+    ...(mode.startsWith('tiktok') ? loadEnv('tiktok', process.cwd(), '') : {}),
+    ...loadEnv(mode, process.cwd(), ''),
+  }
   const isTikTokMinis = mode === 'tiktok' || env.VITE_PLATFORM === 'tiktok'
   const numberedProdMatch = /^prod\d+$/.exec(mode)
   const isProdBuild = mode === 'prod' || mode === 'production'
@@ -452,6 +466,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
         opNewStatic(outDir, brand, appVersion),
         patchStaticBrandFiles(outDir, brand, appVersion),
       ] : [
+        injectTikTokMinisClientKey(env.VITE_TIKTOK_MINIS_CLIENT_KEY.trim()),
         finalizeTikTokMinisEntry(outDir),
         serveTikTokMinisEntry(),
       ]),

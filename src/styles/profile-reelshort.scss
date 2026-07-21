@@ -96,6 +96,55 @@
     display: block;
 }
 
+/** TikTok Minis Profile：头像与 UID 按移动端设计稿上下居中排列。 */
+.rs-profile--tiktok {
+    .rs-profile__content {
+        align-items: stretch;
+    }
+
+    .rs-profile__loginCard,
+    .rs-profile__loginCard--tiktok {
+        box-sizing: border-box;
+        width: 100%;
+        margin: calc(24 / 375 * var(--app-vw)) 0 calc(18 / 375 * var(--app-vw));
+        padding: 0 calc(16 / 375 * var(--app-vw));
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: calc(8 / 375 * var(--app-vw));
+    }
+
+    .rs-profile__loginCardUserLink {
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: calc(8 / 375 * var(--app-vw));
+        text-align: center;
+    }
+
+    .rs-profile__avatarWrap {
+        width: calc(64 / 375 * var(--app-vw));
+        height: calc(64 / 375 * var(--app-vw));
+    }
+
+    .rs-profile__avatarGuestImg {
+        width: calc(64 / 375 * var(--app-vw));
+        height: calc(64 / 375 * var(--app-vw));
+    }
+
+    .rs-profile__loginCardMain,
+    .rs-profile__loginCardMain--link {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .rs-profile__vip {
+        justify-content: center;
+    }
+}
+
 .rs-profile__loginCardMain {
     flex: 1 1 auto;
     min-width: 0;

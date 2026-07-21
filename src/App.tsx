@@ -416,29 +416,29 @@ function App() {
         void (async () => {
             try {
                 if (isTikTokPlatform()) {
-                    /**
-                     * TikTok 启动时优先恢复已经建立的本地会话。
-                     * 只有本地会话不存在、已失效，或不是 TikTok 会话时，
-                     * 才重新获取 TTMinis.login() 的一次性 code。
-                     */
-                    const storedLoginMethod = localStorage.getItem('login-method');
-                    if (token && storedLoginMethod === 'tiktok') {
-                        const restored = await refreshSessionFromStoredToken();
-                        if (loadGen !== loadDataGenerationRef.current) {
-                            return;
-                        }
-                        if (restored) {
-                            useRootStore.getState().setSessionBootstrapReady(true);
-                            return;
-                        }
-                    }
+                    /** 测试阶段每次进入 TikTok Minis 都重新换取本站会话 token。 */
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('login-method');
 
-                    const tiktok = await loginTikTokMinisWithOneRetry();
-                    if (loadGen !== loadDataGenerationRef.current) {
-                        return;
+                    /**
+                     * 本地扫码调试时，页面经常先于手机完成连接。
+                     * 首次 login 失败后持续重试，扫码成功后立即重新请求 login/tiktok。
+                     */
+                    let tiktok: Awaited<ReturnType<typeof loginTikTokMinis>> | null = null;
+                    while (loadGen === loadDataGenerationRef.current && !tiktok) {
+                        try {
+                            const result = await loginTikTokMinisWithOneRetry();
+                            if (result.c === 0) {
+                                tiktok = result;
+                                break;
+                            }
+                            console.warn('[TikTok login] Backend exchange failed; waiting for scan and retrying:', result.m);
+                        } catch (error) {
+                            console.warn('[TikTok login] Waiting for TikTok scan/bridge before retrying:', error);
+                        }
+                        await waitForTikTokBridge(2000);
                     }
-                    if (tiktok.c !== 0) {
-                        console.error('[TikTok login] Backend exchange failed:', tiktok.m);
+                    if (loadGen !== loadDataGenerationRef.current || !tiktok) {
                         return;
                     }
 

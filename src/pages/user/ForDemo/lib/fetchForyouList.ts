@@ -4,7 +4,6 @@ import type { IForYouFeedItem, IForYouFeedTag, IForYouListPayload } from '@/type
 import { normalizePlayerTags } from '@/lib/normalizePlayerTags';
 import { resolveVideoFavorite } from '@/stores/videoFavorite';
 
-import { FORYOU_DEFAULT_PER_PAGE } from './foryouConstants';
 
 /** 文档：`GET {{HOST}}/api/foryou` */
 export const FORYOU_LIST_API_PATH = 'foryou';
@@ -75,18 +74,7 @@ function normalizePayload(d: unknown): IForYouListPayload {
     const perPage = Number(bag['per_page'] ?? 0);
     const currentPage = Number(bag['current_page'] ?? 1);
     const hasMoreRaw = bag['has_more'];
-    const batchSize = perPage || count || FORYOU_DEFAULT_PER_PAGE;
-    /** 满页（如 count=10 且返回 10 条）仍应允许续拉，再请求 /api/foryou 做拼接 */
-    const hasMore =
-        hasMoreRaw === true ||
-        hasMoreRaw === 1 ||
-        hasMoreRaw === '1' ||
-        (hasMoreRaw !== false &&
-            hasMoreRaw !== 0 &&
-            hasMoreRaw !== '0' &&
-            rows.length > 0 &&
-            batchSize > 0 &&
-            rows.length >= batchSize);
+    const hasMore = hasMoreRaw === true || hasMoreRaw === 1 || hasMoreRaw === '1';
 
     return {
         count,

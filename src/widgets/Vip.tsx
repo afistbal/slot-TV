@@ -19,6 +19,8 @@ import { toast } from "sonner";
 // import Adjust from "@adjustcom/adjust-web-sdk";
 import Payment from "./Payment";
 import Countdown from "./Countdown";
+import { isTikTokPlatform } from '@/platform';
+import TikTokPaymentPage from '@/pages/user/TikTokPaymentPage';
 
 interface Product {
     id: number,
@@ -28,7 +30,28 @@ interface Product {
     renewal_price: string,
 }
 
-export default function Vip({ open, from, onOpenChange }: { open: boolean, from: string, onOpenChange?: (open: boolean) => void }) {
+type VipProps = {
+    open: boolean;
+    from: string;
+    onOpenChange?: (open: boolean) => void;
+};
+
+export default function Vip(props: VipProps) {
+    if (isTikTokPlatform()) {
+        if (!props.open) return null;
+        return (
+            <div className="fixed inset-0 z-[100] overflow-auto bg-black/80">
+                <TikTokPaymentPage
+                    layout="embed"
+                    onEmbedClose={() => props.onOpenChange?.(false)}
+                />
+            </div>
+        );
+    }
+    return <WebVip {...props} />;
+}
+
+function WebVip({ open, from, onOpenChange }: VipProps) {
     const isVipUser = useUserStore((s) => s.signed && Boolean(s.info?.['is_vip']));
     const intl = useIntl();
     const [current, setCurrent] = useState(1);
@@ -70,7 +93,7 @@ export default function Vip({ open, from, onOpenChange }: { open: boolean, from:
     // }
 
     async function handleSubmit() {
-        let result = await api<TData>('pay/create', {
+        const result = await api<TData>('pay/create', {
             method: 'post',
             data: buildPayCreateData({
                 payment: 1,

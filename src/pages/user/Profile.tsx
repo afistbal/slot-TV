@@ -280,7 +280,7 @@ export default function Component() {
     );
 
     const loginCardSigned = userStore.signed && !userStore.isAnonymous() && (
-        <div className="rs-profile__loginCard">
+        <div className={cn('rs-profile__loginCard', isTikTokProfile && 'rs-profile__loginCard--tiktok')}>
             <Link to="/user/detail" className="rs-profile__loginCardUserLink">
             <div className="rs-profile__avatarWrap">
                 {avatarUrl ? (
@@ -314,7 +314,7 @@ export default function Component() {
     );
 
     const loginCardGuest = (
-        <div className="rs-profile__loginCard">
+        <div className={cn('rs-profile__loginCard', isTikTokProfile && 'rs-profile__loginCard--tiktok')}>
             <div className="rs-profile__avatarWrap">
                 <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
             </div>
@@ -680,7 +680,7 @@ export default function Component() {
     );
 
     return (
-        <div className={cn('rs-profile', isPc && 'rs-profile--pc')}>
+        <div className={cn('rs-profile', isPc && 'rs-profile--pc', isTikTokProfile && 'rs-profile--tiktok')}>
             <div
                 ref={scrollRef}
                 className={cn('rs-profile__scroll', isPc && 'rs-profile__scroll--pc')}

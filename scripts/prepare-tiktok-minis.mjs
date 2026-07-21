@@ -4,8 +4,13 @@ import { fileURLToPath } from 'node:url'
 import { loadEnv } from 'vite'
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const mode = process.argv[2] || 'tiktok'
 const clientKey = String({
+  // Keep the existing local TikTok credentials available for variant modes
+  // such as `tiktok-prod`; the variant env file only needs to override API
+  // settings.
   ...loadEnv('tiktok', rootDir, ''),
+  ...loadEnv(mode, rootDir, ''),
   ...process.env,
 }.VITE_TIKTOK_MINIS_CLIENT_KEY ?? '').trim()
 

@@ -87,8 +87,9 @@ export async function api<T = TData>(path: string, options?: {
             ...options?.headers,
         };
 
-        const useEncryption = resolveApiRequestEncryptionEnabled();
-        if (!useEncryption && import.meta.env.DEV && !loggedInsecureCryptoFallback) {
+        const requestMethod = options?.method ?? 'post';
+        const useEncryption = requestMethod === 'post' && resolveApiRequestEncryptionEnabled();
+        if (requestMethod === 'post' && !useEncryption && import.meta.env.DEV && !loggedInsecureCryptoFallback) {
             loggedInsecureCryptoFallback = true;
             console.warn(
                 '[api] Web Crypto 不可用（常见于 http://局域网IP），POST 请求将以明文发送；localhost 或 https 下会自动加密',
@@ -107,11 +108,22 @@ export async function api<T = TData>(path: string, options?: {
 
         const response = await ky(requestPath, {
             prefixUrl: apiBaseURL,
-            method: 'post',
+            method: requestMethod,
             headers: requestHeaders,
             timeout: 30000,
-            json: !useEncryption ? payload : undefined,
-            body: useEncryption ? requestBody : undefined,
+            ...(requestMethod === 'get'
+                ? {
+                      searchParams: new URLSearchParams(
+                          Object.entries(payload).reduce<Record<string, string>>((params, [key, value]) => {
+                              if (value != null) params[key] = String(value);
+                              return params;
+                          }, {}),
+                      ),
+                  }
+                : {
+                      json: !useEncryption ? payload : undefined,
+                      body: useEncryption ? requestBody : undefined,
+                  }),
             throwHttpErrors: false,
         });
 

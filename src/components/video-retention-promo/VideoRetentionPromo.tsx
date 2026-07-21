@@ -17,6 +17,7 @@ import { movieCoverUrlFromInfo } from '@/lib/movieCoverUrl';
 import { resolveSubscriptionPeriod } from '@/lib/subscriptionPlanRenewText';
 import { useConfigStore } from '@/stores/config';
 import { useVideoShoppingProductsStore } from '@/stores/videoShoppingProducts';
+import { isTikTokPlatform } from '@/platform';
 import { useRootStore } from '@/stores/root';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import '@/styles/video-retention-promo.scss';
@@ -799,6 +800,7 @@ export function useVideoRetentionCommerce({
     onVipOpenChange,
     episodeRowId,
 }: UseVideoRetentionCommerceOptions): RetentionCommerceWire {
+    const isTikTok = isTikTokPlatform();
     const products = useVideoShoppingProductsStore((s) => s.products);
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
@@ -1143,6 +1145,20 @@ export function useVideoRetentionCommerce({
     }, [clearPromo, closeVipWithoutRetentionRestart, openStep, revealPromo, revealStep3AtZero]);
 
     const onVipEmbedClose = useCallback(() => {
+        if (isTikTok) {
+            // TikTok uses native Minis payment and must not enter the H5
+            // retention flow when its payment drawer is dismissed.
+            checkoutFromStepRef.current = null;
+            checkoutViaDismissRef.current = false;
+            checkoutViaCountdownRef.current = false;
+            setCheckoutRequest(null);
+            setInitialCheckoutPayment(undefined);
+            setCheckoutModalPrefetch(false);
+            clearPromo();
+            setFullyDismissed(true);
+            closeVipWithoutRetentionRestart();
+            return;
+        }
         const inCheckoutStack =
             checkoutFromStepRef.current != null || checkoutRequestRef.current != null;
         const promoInProgress = stepRef.current != null;
@@ -1167,7 +1183,7 @@ export function useVideoRetentionCommerce({
             startRetentionFlow();
         }
         onVipOpenChange(false);
-    }, [clearPromo, closeVipWithoutRetentionRestart, offers.length, onVipOpenChange, startRetentionFlow]);
+    }, [clearPromo, closeVipWithoutRetentionRestart, isTikTok, offers.length, onVipOpenChange, startRetentionFlow]);
 
     const activeOfferRaw = step != null ? resolveRetentionOfferForStep(offers, step) : null;
     const activeOffer =

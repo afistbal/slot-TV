@@ -17,8 +17,10 @@ export interface PlatformAuth {
 }
 
 export interface PlatformPayment {
-    /** Reserved for the platform-specific payment flow in DEV-05. */
+    /** Whether the current platform exposes a native payment flow. */
     readonly supported: boolean;
+    /** Starts a native payment for a server-created trade order. */
+    pay?: (tradeOrderId: string) => Promise<unknown>;
 }
 
 export interface PlatformPlayer {
