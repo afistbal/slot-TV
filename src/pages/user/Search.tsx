@@ -444,7 +444,7 @@ function SearchPcBookItem({ item }: { item: SearchRowItem }) {
             <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
             <div className="rs-bi-poster">
                 <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
-                    <VideoPosterLazyCover src={imgSrc} />
+                    <VideoPosterLazyCover src={imgSrc} imageClassName="rs-search-page__posterImage" />
                 </Link>
                 <div className="rs-bi-playMask">
                     <div className="rs-bi-item-mask" />
@@ -1820,7 +1820,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                         className="rs-search-page__card"
                                                     >
                                                         <Image
-                                                            height={1.3325}
+                                                            height={1.5}
                                                             width="100%"
                                                             alt={item.title}
                                                             src={
@@ -1830,6 +1830,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                                 ) ?? ''
                                                             }
                                                             className="rs-search-page__poster"
+                                                            imageClassName="rs-search-page__posterImage"
                                                         />
                                                         <div className="rs-search-page__title">{item.title}</div>
                                                     </Link>

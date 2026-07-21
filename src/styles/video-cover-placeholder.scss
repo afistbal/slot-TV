@@ -1,5 +1,13 @@
 /** 视频封面未加载：logo 占位层背景（与 ReelShort 封面骨架一致） */
 .video-cover-placeholder {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0.5rem;
     background: #212121;
 
     &__logo {
@@ -12,6 +20,25 @@
         pointer-events: none;
         user-select: none;
     }
+}
+
+/** 占位内容层：覆盖封面容器，避免在 JSX 中堆叠定位工具类 */
+.video-cover-placeholder__inner {
+    position: absolute;
+    inset: 0;
+}
+
+/** 懒加载封面图的通用基础样式 */
+.video-poster-lazy-cover__image {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 /** 封面骨架：静态灰底 + logo，不用 Tailwind `animate-pulse` */

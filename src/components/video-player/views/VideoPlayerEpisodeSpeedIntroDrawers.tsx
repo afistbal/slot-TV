@@ -275,7 +275,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                             <div className="video-h5-drawer__introTop">
                                 <div className="video-h5-drawer__introPoster">
                                     <Image
-                                        height={1.3325}
+                                        height={1.5}
                                         src={resolveVideoPosterUrl(staticBase, data.info, data.info.id)}
                                         alt={data.info.title}
                                     />

@@ -160,19 +160,19 @@
     }
 }
 
-/* --- 列表封面：24vw × 32vw，圆角 1.6vw，右侧间距 4vw --- */
+/* --- 列表封面：24vw × 36vw（2:3），圆角 1.6vw，右侧间距 4vw --- */
 .rs-my-list__cover {
     position: relative;
     flex-shrink: 0;
     width: calc(24 / 100 * var(--app-vw));
-    height: calc(32 / 100 * var(--app-vw));
+    height: calc(36 / 100 * var(--app-vw));
     margin-right: calc(4 / 100 * var(--app-vw));
     overflow: hidden;
     border-radius: calc(1.6 / 100 * var(--app-vw));
 
     @media (min-width: 768px) {
         width: 90px;
-        height: 120px;
+        height: 135px;
         margin-right: 15px;
         border-radius: 6px;
     }
@@ -192,6 +192,8 @@
 .rs-my-list__cover .lazy-load-image-wrapper img,
 .rs-my-list__cover > img {
     border-radius: inherit;
+    object-fit: cover;
+    object-position: 50% 50%;
 }
 
 /* 与骨架层叠：无 wrapper 时 img 与 Skeleton 为兄弟节点 */

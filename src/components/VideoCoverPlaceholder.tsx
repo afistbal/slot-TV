@@ -7,7 +7,7 @@ export function VideoCoverPlaceholder({ className }: { className?: string }) {
     return (
         <div
             className={cn(
-                'video-cover-placeholder flex h-full w-full flex-col items-center justify-center p-2',
+                'video-cover-placeholder',
                 className,
             )}
             aria-hidden
@@ -34,7 +34,7 @@ export function VideoCoverPlaceholderShell({
 }) {
     return (
         <div className={cn('video-cover-skeleton', className)} aria-hidden>
-            <VideoCoverPlaceholder className={cn('absolute inset-0', innerClassName)} />
+            <VideoCoverPlaceholder className={cn('video-cover-placeholder__inner', innerClassName)} />
         </div>
     );
 }
