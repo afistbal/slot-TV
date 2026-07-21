@@ -4,6 +4,18 @@
  * 尺寸统一用 `var(--app-vw)`（min(100vw,480px)）；≥768px 时主内容区与海报见下方 `@media (min-width: 768px)`，不改动 ≤767 的 H5。
  */
 
+// --- 首页封面裁剪策略 ---
+// 先按首页真实 DOM 类型设置锚点；后续新增类型只需覆盖这个变量，不改动通用图片规则。
+.HomePage_content__DZ4dU.HomePage_type_1__uTWfT {
+    // type_1 的源图比例混杂，默认居中，实际裁剪由源图比例适配决定。
+    --home-book-cover-object-position: 50% 50%;
+}
+
+.HomePage_content__DZ4dU.HomePage_type_5__SK5Rv {
+    // type_5 当前以 3:4 封面为主，保持居中裁剪。
+    --home-book-cover-object-position: 50% 50%;
+}
+
 // --- BookItem（对标镜像）---
 .BookItem_bookItem__wWmbf {
     width: calc(36.8 * var(--app-vw) / 100);
@@ -24,10 +36,31 @@
 
     .BookItem_cover__W2qbR {
         width: calc(36.8 * var(--app-vw) / 100);
-        height: calc(49.06667 * var(--app-vw) / 100);
+        height: calc(55.2 * var(--app-vw) / 100);
         border-radius: calc(1.6 * var(--app-vw) / 100);
         overflow: hidden;
         position: relative;
+        background: #212121;
+
+        // 首页卡片统一铺满封面；保留背景层作为旧 DOM/加载切换时的兜底。
+        &::before {
+            content: '';
+            position: absolute;
+            inset: -12px;
+            z-index: 0;
+            background-image: var(--home-cover-backdrop-image);
+            background-position: center;
+            background-size: cover;
+            filter: blur(14px);
+            opacity: 0;
+            transform: scale(1.04);
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+        }
+
+        &:has(.BookItem_coverImg[data-home-cover-fit='contain'])::before {
+            opacity: 0.9;
+        }
 
         .BookItem_coverPlaceholder {
             position: absolute;
@@ -55,25 +88,25 @@
 
         .lazy-load-image-wrapper {
             position: absolute;
-            inset: -1px;
+            inset: 0;
             z-index: 1;
             display: block;
-            width: auto;
-            height: auto;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             border-radius: inherit;
         }
 
         .BookItem_coverImg {
             position: absolute;
-            inset: -1px;
+            inset: 0;
             z-index: 1;
-            width: auto;
-            height: auto;
-            min-width: calc(100% + 2px);
-            min-height: calc(100% + 2px);
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
             object-fit: cover;
-            object-position: center;
+            object-position: var(--home-book-cover-object-position, 50% 50%);
             display: block;
             border-radius: inherit;
             transform-origin: center center;
@@ -81,6 +114,12 @@
             will-change: transform;
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
+        }
+
+        .BookItem_coverImg[data-home-cover-fit='contain'] {
+            object-fit: cover;
+            object-position: 50% 50%;
+            transform: none;
         }
 
         /* 旧版 bundle 若仍输出遮罩 DOM，强制不显示 */
@@ -169,7 +208,7 @@
 
         .BookItem_cover__W2qbR {
             width: calc(43.2 * var(--app-vw) / 100);
-            height: calc(57.6 * var(--app-vw) / 100);
+            height: calc(64.8 * var(--app-vw) / 100);
         }
     }
 
@@ -372,7 +411,7 @@
                 .BookItem_cover__W2qbR {
                     width: 100%;
                     height: auto;
-                    aspect-ratio: 3 / 4;
+                    aspect-ratio: 2 / 3;
                 }
 
                 /* 标题固定两行高度，同行卡片顶边对齐 */
@@ -451,7 +490,7 @@
         width: 100% !important;
         max-width: 100%;
         height: auto !important;
-        aspect-ratio: 36.8 / 49.06667;
+        aspect-ratio: 2 / 3;
     }
 
     .HomePage_reelSlider__root .Slider_sliderContainer__2F8gq {
@@ -720,7 +759,7 @@
         .BookItem_cover__W2qbR {
             width: 100%;
             height: auto;
-            aspect-ratio: 36.8 / 49.06667;
+            aspect-ratio: 2 / 3;
             border-radius: 6px;
         }
     }
@@ -729,7 +768,7 @@
         border-radius: 6px;
     }
 
-    /* PC type5 与对站一致：多列网格与 type1 同，封面也用车位 36.8×49.07（H5 仍用 43.2×57.6 分栏在 ≤767 段） */
+    /* PC type5 与 type1 同用 2:3 封面比例，H5 也保持统一。 */
     .home-page
         .HomePage_main__BzEnK
         .HomePage_content__DZ4dU.HomePage_type_5__SK5Rv.HomePage_type_5--pc
@@ -739,7 +778,7 @@
         .BookItem_cover__W2qbR {
             width: 100%;
             height: auto;
-            aspect-ratio: 36.8 / 49.06667;
+            aspect-ratio: 2 / 3;
             border-radius: 6px;
         }
     }

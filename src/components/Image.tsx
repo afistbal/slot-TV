@@ -9,12 +9,14 @@ export default function Image({
     src,
     alt,
     className,
+    imageClassName,
     children,
 }: {
     height: number;
     src: string;
     alt: string;
     className?: string;
+    imageClassName?: string;
     width?: string;
     children?: React.ReactNode;
 }) {
@@ -40,7 +42,10 @@ export default function Image({
                         setLoaded(false);
                         e.currentTarget.style.opacity = '0';
                     }}
-                    className="absolute top-0 left-0 z-[1] h-full w-full rounded-md object-cover opacity-0 transition-opacity duration-300"
+                    className={cn(
+                        'absolute top-0 left-0 z-[1] h-full w-full rounded-md object-cover opacity-0 transition-opacity duration-300',
+                        imageClassName,
+                    )}
                 />
             ) : null}
             {children}

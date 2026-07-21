@@ -52,7 +52,7 @@ export function VideoPlayerPcIntroDrawer({
                 <div className="video-pc-intro-drawer__header">
                     <div className="video-pc-intro-drawer__poster shrink-0">
                         <Image
-                            height={1.3325}
+                            height={1.5}
                             src={resolveVideoPosterUrl(staticBase, data.info, data.info.id)}
                             alt={data.info.title}
                         />

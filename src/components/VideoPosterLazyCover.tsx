@@ -37,15 +37,22 @@ export function VideoPosterLazyCover({
                     src={src}
                     visibleByDefault={priority}
                     onLoad={(e) => {
-                        e.currentTarget.style.opacity = '1';
+                        const image = e.currentTarget;
+                        const cover = image.closest<HTMLElement>('.BookItem_cover__W2qbR');
+
+                        if (cover) {
+                            // 首页封面统一横向铺满，纵向居中适度裁剪，避免出现明显的左右空区。
+                            image.dataset.homeCoverFit = 'cover';
+                            cover.style.removeProperty('--home-cover-contained-scale');
+                            cover.style.removeProperty('--home-cover-backdrop-image');
+                        }
+
+                        image.style.opacity = '1';
                     }}
                     onError={(e) => {
                         e.currentTarget.style.opacity = '0';
                     }}
-                    className={cn(
-                        'absolute inset-0 z-[1] h-full w-full object-cover opacity-0 transition-opacity duration-300',
-                        imageClassName,
-                    )}
+                    className={cn('video-poster-lazy-cover__image', imageClassName)}
                 />
             ) : null}
         </>
