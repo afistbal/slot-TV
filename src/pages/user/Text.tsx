@@ -111,7 +111,7 @@ function PrivacyPolicyBody() {
     return (
         <>
             <p>
-                This Privacy Policy describes how [{BRAND_DISPLAY_NAME}] (&quot;we,&quot; &quot;us,&quot; or
+                This Privacy Policy describes how WESHOW TECHNOLOGY SDN. BHD. (&quot;we,&quot; &quot;us,&quot; or
                 &quot;our&quot;) collects, uses, stores, and discloses information when you use our software
                 application (&quot;the Software&quot;). By using the Software, you consent to the practices described in
                 this Privacy Policy.
