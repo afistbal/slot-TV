@@ -3,9 +3,11 @@ import {
     getStoredFbp,
     getStoredFbc,
     isFacebookAnalytics,
+    isTikTokAnalytics,
     syncFbAttributionCache,
     type FbLogEventName,
 } from '@/lib/fbAttribution';
+import { getStoredTtclid, syncAdAttributionCache } from '@/lib/adAttribution';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useUserStore } from '@/stores/user';
 
@@ -107,6 +109,7 @@ function fbPayloadForEvent(
 /** 上报 `log`：user + event + status + 请求三要素（url / params / response） */
 export async function reportPayLog(input: ReportPayLogInput): Promise<void> {
     syncFbAttributionCache();
+    syncAdAttributionCache();
     const { user } = getUserContext();
     const payload: Record<string, unknown> = {
         user,
@@ -133,6 +136,12 @@ export async function reportPayLog(input: ReportPayLogInput): Promise<void> {
     const fb = fbPayloadForEvent(input.event, input.eventId);
     if (fb) {
         payload.fb = fb;
+    }
+    if (isTikTokAnalytics()) {
+        const ttclid = getStoredTtclid();
+        if (ttclid) {
+            payload.ttclid = ttclid;
+        }
     }
 
     try {

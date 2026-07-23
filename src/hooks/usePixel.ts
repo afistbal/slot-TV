@@ -8,16 +8,20 @@ type FacebookPixelInstance = {
 };
 
 interface TiktokPixel {
-    init(pixelId: string, advancedMatching?: {}, options?: {
+    init(pixelId: string, advancedMatching?: Record<string, unknown>, options?: {
         debug: boolean;
     }): Promise<void>;
     pageView(): void;
-    track(event: unknown, data: unknown): void;
+    track(event: unknown, data: unknown, options?: { event_id?: string }): void;
+};
+
+type TikTokTrackOptions = {
+    event_id?: string;
 };
 
 interface IPixel {
     instance: unknown | null;
-    track(name: unknown, data?: unknown): void;
+    track(name: unknown, data?: unknown, options?: TikTokTrackOptions): void;
 }
 
 class _Facebook implements IPixel {
@@ -31,9 +35,9 @@ class _Facebook implements IPixel {
 class _Tiktok {
     instance: TiktokPixel | null = null;
 
-    public track(name: unknown, data?: unknown) {
+    public track(name: unknown, data?: unknown, options?: TikTokTrackOptions) {
         // 支付
-        this.instance?.track(name, data);
+        this.instance?.track(name, data, options);
     }
 }
 
@@ -44,14 +48,18 @@ class Pixel {
         this.instance.push(instance);
     }
 
-    public track(name: unknown, data?: unknown) {
+    public track(name: unknown, data?: unknown, options?: TikTokTrackOptions) {
         const raw = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
         this.instance.forEach((instance) => {
             const payload =
                 instance instanceof _Facebook
                     ? normalizeFbCommerceData(raw)
                     : normalizeCommerceData(raw);
-            instance.track(name, payload);
+            if (instance instanceof _Tiktok) {
+                instance.track(name, payload, options);
+            } else {
+                instance.track(name, payload);
+            }
         });
     }
 }
@@ -368,7 +376,8 @@ function trackFbStandardEvent(
     if (isTikTokAnalytics()) {
         singleton.track(
             eventName,
-            eventId ? { ...normalizeCommerceData(data), eventID: eventId } : normalizeCommerceData(data),
+            normalizeCommerceData(data),
+            eventId ? { event_id: eventId } : undefined,
         );
         return;
     }
@@ -403,7 +412,8 @@ export function trackFbPurchase(
         const payload = normalizeCommerceData(data);
         singleton.track(
             'CompletePayment',
-            eventId ? { ...payload, eventID: eventId } : payload,
+            payload,
+            eventId ? { event_id: eventId } : undefined,
         );
         return;
     }

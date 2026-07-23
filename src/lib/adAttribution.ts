@@ -132,7 +132,7 @@ function syncFromSource(): void {
 /**
  * 进站 / 路由变化：
  * - `from_source` 首触写入；source 变为 A100* 且 URL 含 fb/tiktok 时可覆盖
- * - `ttclid` 首触写入，不覆盖
+ * - URL 带非空 `ttclid` 时更新为最新点击值
  */
 export function syncAdAttributionCache(): void {
     syncFromSource();
@@ -140,9 +140,7 @@ export function syncAdAttributionCache(): void {
     const ttclid = ttclidFromLocation();
     if (ttclid) {
         try {
-            if (!localStorage.getItem(TTCLID_KEY)) {
-                writeTtclid(ttclid);
-            }
+            writeTtclid(ttclid);
         } catch {
             /* noop */
         }
