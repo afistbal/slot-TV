@@ -34,7 +34,7 @@
 
     点击 Open / 封面 / CTA：
       Android → Deep Link，visibilitychange 未唤起则回退 Google Play
-      iOS     → 打开 App，未安装则回退 App Store
+      iOS     → Deep Link，未安装则回退 App Store
       PC      → /video/{id}/{集数}
     测试 Web 域名：testwww.yogoshort.com；正式：yogoshort.com
   -->
@@ -393,8 +393,9 @@
 
   <script>
     var APP_SCHEME_BASE = 'open://yogo.com/movie';
-    var IOS_APP_SCHEME = 'com.yogotv.app://open';
+    var IOS_APP_SCHEME_BASE = 'com.yogotv.app://open';
     var APP_STORE_URL = 'https://apps.apple.com/us/app/yogotv/id6751373638';
+    var ADJUST_TRACKER_URL = '';
     var __host = location.hostname || '';
     var __isLocal = !__host || __host === 'localhost' || __host === '127.0.0.1';
     var __isTestEnv = /test/i.test(__host) || __isLocal;
@@ -403,7 +404,10 @@
 
     var TRACKING_KEYS = [
       'fbclid', 'fbc', 'fbp', 'gclid', 'ttclid',
-      'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id'
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id',
+      'adj_t', 'adjust_t', 'adj_sub1', 'adj_sub2', 'adj_sub3', 'adj_sub4', 'adj_sub5',
+      'label', 'campaign', 'adgroup', 'creative',
+      'adj_c_id', 'adj_ad_id', 'adj_adgroup_id', 'adj_channel', 'adj_siteid', 'adj_sub_siteid'
     ];
 
     function getApiBaseUrl() {
@@ -538,11 +542,19 @@
       return appendParamsToUrl(url, collectTrackingParams());
     }
 
+    function buildAppDeepLink(schemeBaseUrl, movieId, episodeNum) {
+      var routeParams = new URLSearchParams();
+      routeParams.set('movieId', movieId || '');
+      routeParams.set('episodeNum', episodeNum || '1');
+      return appendParamsToUrl(appendParamsToUrl(schemeBaseUrl, routeParams), collectTrackingParams());
+    }
+
     function buildDeepLink(movieId, episodeNum) {
-      var url = APP_SCHEME_BASE
-        + '?movieId=' + encodeURIComponent(movieId || '')
-        + '&episodeNum=' + encodeURIComponent(episodeNum || '1');
-      return appendParamsToUrl(url, collectTrackingParams());
+      return buildAppDeepLink(APP_SCHEME_BASE, movieId, episodeNum);
+    }
+
+    function buildIosDeepLink(movieId, episodeNum) {
+      return buildAppDeepLink(IOS_APP_SCHEME_BASE, movieId, episodeNum);
     }
 
     function buildGooglePlayUrl() {
@@ -553,6 +565,36 @@
       });
       var referrer = referrerParts.join('%26');
       return 'https://play.google.com/store/apps/details?id=' + encodeURIComponent(APP_PACKAGE) + '&referrer=' + referrer;
+    }
+
+    function getAdjustTrackerUrl() {
+      return getUrlParam('adjust_tracker_url') || getUrlParam('adjust_url') || ADJUST_TRACKER_URL;
+    }
+
+    function buildAdjustTrackerUrl(movieId, episodeNum, schemeBaseUrl, fallbackUrl) {
+      var trackerUrl = getAdjustTrackerUrl();
+      if (!trackerUrl) return '';
+
+      var url;
+      try {
+        url = new URL(trackerUrl);
+      } catch (e) {
+        return '';
+      }
+
+      collectTrackingParams().forEach(function (value, key) {
+        if (!url.searchParams.has(key)) {
+          url.searchParams.set(key, value);
+        }
+      });
+
+      if (!url.searchParams.has('deep_link')) {
+        url.searchParams.set('deep_link', buildAppDeepLink(schemeBaseUrl, movieId, episodeNum));
+      }
+      if (fallbackUrl && !url.searchParams.has('redirect')) {
+        url.searchParams.set('redirect', fallbackUrl);
+      }
+      return url.toString();
     }
 
     function isAndroid() {
@@ -602,13 +644,19 @@
       window.location.href = schemeUrl;
     }
 
-    /** Android：Deep Link + visibilitychange 回退商店；iOS：尝试打开 App，超时后回退 App Store；PC→/video */
+    /** Android/iOS：带内容 Deep Link；有 Adjust tracker 时优先走 Adjust；PC→/video */
     function openApp() {
       var route = parseRouteParams();
       var googleUrl = buildGooglePlayUrl();
       var schemeUrl = buildDeepLink(route.movieId, route.episodeNum);
 
       if (isAndroid()) {
+        var androidAdjustUrl = buildAdjustTrackerUrl(route.movieId, route.episodeNum, APP_SCHEME_BASE, googleUrl);
+        if (androidAdjustUrl) {
+          window.location.href = androidAdjustUrl;
+          return;
+        }
+
         var isOpenApp = false;
 
         document.addEventListener('visibilitychange', function () {
@@ -624,7 +672,12 @@
       }
 
       if (isIos()) {
-        launchAppWithFallback(IOS_APP_SCHEME, APP_STORE_URL);
+        var iosAdjustUrl = buildAdjustTrackerUrl(route.movieId, route.episodeNum, IOS_APP_SCHEME_BASE, APP_STORE_URL);
+        if (iosAdjustUrl) {
+          window.location.href = iosAdjustUrl;
+          return;
+        }
+        launchAppWithFallback(buildIosDeepLink(route.movieId, route.episodeNum), APP_STORE_URL);
         return;
       }
 
