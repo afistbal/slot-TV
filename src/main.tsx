@@ -9,6 +9,7 @@ const PWA_SERVICE_WORKER_URL = '/sw.js'
 const PWA_FORCE_RELOAD_MESSAGE = 'PWA_FORCE_RELOAD'
 const PWA_FORCE_RELOAD_ACK_MESSAGE = 'PWA_FORCE_RELOAD_ACK'
 const PWA_DEFERRED_RELOAD_STORAGE_KEY = 'slot:pwa-deferred-reload'
+const PWA_VERSION_RELOAD_STORAGE_KEY = `slot:pwa-reloaded:${__APP_VERSION__}`
 let reloadingForPwaUpdate = false
 const hadServiceWorkerController = 'serviceWorker' in navigator && Boolean(navigator.serviceWorker.controller)
 
@@ -47,6 +48,17 @@ function clearDeferredPwaReload(): void {
 
 function reloadForPwaUpdate(): void {
   if (reloadingForPwaUpdate) return
+
+  try {
+    if (window.sessionStorage.getItem(PWA_VERSION_RELOAD_STORAGE_KEY) === '1') {
+      clearDeferredPwaReload()
+      return
+    }
+    window.sessionStorage.setItem(PWA_VERSION_RELOAD_STORAGE_KEY, '1')
+  } catch {
+    // Ignore storage failures; the in-memory guard still prevents duplicate
+    // reloads within the lifetime of this document.
+  }
 
   reloadingForPwaUpdate = true
   clearDeferredPwaReload()
