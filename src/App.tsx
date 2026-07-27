@@ -117,6 +117,7 @@ const UserDetail = lazy(() => import('./pages/user/UserDetail'));
 const UserRadixRc = lazy(() => import('./pages/user/RadixRc'));
 const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
 const UserTikTokTermsPolicy = lazy(() => import('./pages/user/TikTokTermsPolicy'));
+const VePlayerTestPage = lazy(() => import('./pages/user/VePlayerTest'));
 const ForDemoPage = lazy(() => import('./pages/user/ForDemo'));
 const VDemoPage = lazy(() => import('./pages/user/VDemo'));
 const AdminWeeklyUpdateTable = lazy(() => import('./pages/admin/WeeklyUpdateTable'));
@@ -157,6 +158,11 @@ function ErrorBoundary() {
 }
 
 const router = createBrowserRouter([
+    {
+        path: '/veplayer-test',
+        element: lazyRoute(VePlayerTestPage),
+        errorElement: <ErrorBoundary />,
+    },
     {
         path: '/',
         element: lazyRoute(LayoutUser),

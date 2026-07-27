@@ -34,7 +34,7 @@
 
     点击 Open / 封面 / CTA：
       Android → Deep Link，visibilitychange 未唤起则回退 Google Play
-      iOS     → H5 /share/{id}?v={集数}
+      iOS     → 打开 App，未安装则回退 App Store
       PC      → /video/{id}/{集数}
     测试 Web 域名：testwww.yogoshort.com；正式：yogoshort.com
   -->
@@ -393,6 +393,8 @@
 
   <script>
     var APP_SCHEME_BASE = 'open://yogo.com/movie';
+    var IOS_APP_SCHEME = 'com.yogotv.app://open';
+    var APP_STORE_URL = 'https://apps.apple.com/us/app/yogotv/id6751373638';
     var __host = location.hostname || '';
     var __isLocal = !__host || __host === 'localhost' || __host === '127.0.0.1';
     var __isTestEnv = /test/i.test(__host) || __isLocal;
@@ -558,10 +560,49 @@
     }
 
     function isIos() {
-      return /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      return /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
-    /** Android：Deep Link + visibilitychange 回退商店；iOS→H5；PC→/video */
+    function launchAppWithFallback(schemeUrl, fallbackUrl) {
+      var didOpenApp = false;
+      var fallbackTimer = null;
+
+      function cleanup() {
+        if (fallbackTimer !== null) {
+          window.clearTimeout(fallbackTimer);
+          fallbackTimer = null;
+        }
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('pagehide', handlePageHide);
+      }
+
+      function handleVisibilityChange() {
+        if (document.visibilityState === 'hidden') {
+          didOpenApp = true;
+          cleanup();
+        }
+      }
+
+      function handlePageHide() {
+        didOpenApp = true;
+        cleanup();
+      }
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('pagehide', handlePageHide);
+
+      fallbackTimer = window.setTimeout(function () {
+        cleanup();
+        if (!didOpenApp && document.visibilityState !== 'hidden') {
+          window.location.href = fallbackUrl;
+        }
+      }, 2000);
+
+      window.location.href = schemeUrl;
+    }
+
+    /** Android：Deep Link + visibilitychange 回退商店；iOS：尝试打开 App，超时后回退 App Store；PC→/video */
     function openApp() {
       var route = parseRouteParams();
       var googleUrl = buildGooglePlayUrl();
@@ -583,7 +624,7 @@
       }
 
       if (isIos()) {
-        window.location.href = buildH5ShareUrl(route.movieId, route.episodeNum);
+        launchAppWithFallback(IOS_APP_SCHEME, APP_STORE_URL);
         return;
       }
 
