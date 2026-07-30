@@ -1,4 +1,4 @@
-import { api, type IPagination, type TData } from '@/api';
+import { api, type TData } from '@/api';
 import Loader from '@/components/Loader';
 import { useConfigStore } from '@/stores/config';
 import { Copy, Download, Eye, X } from 'lucide-react';
@@ -7,7 +7,16 @@ import { toast } from 'sonner';
 import { movieCoverImagePath, movieCoverUrl } from '@/lib/movieCoverUrl';
 
 const COS_FALLBACK_BASE = 'https://cos.yogoshort.com';
-const LIST_DEFAULT_PER_PAGE = 200;
+const CLIENT_PAGE_SIZE = 200;
+const CREATED_TIME_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+});
 
 function pickText(row: TData, keys: string[], fallback = '—') {
     for (const key of keys) {
@@ -21,6 +30,16 @@ function pickText(row: TData, keys: string[], fallback = '—') {
 
 function rowTitle(row: TData): string {
     return pickText(row, ['titile', 'title', 'name', 'book_title'], '');
+}
+
+function formatCreatedHour(value: unknown): string {
+    if (value == null || String(value).trim() === '') return '';
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return String(value);
+    const parts = Object.fromEntries(
+        CREATED_TIME_FORMATTER.formatToParts(date).map((part) => [part.type, part.value]),
+    );
+    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 function joinUrl(base: string, path: string) {
@@ -136,8 +155,14 @@ type DramaRow = {
     id: string;
     movieId: number;
     title: string;
+    createdAt: string;
     coverUrl: string;
     coverImageFile: string;
+};
+
+type MovieListPayload = {
+    data?: TData[];
+    count?: number;
 };
 
 type MovieEpisodeRow = {
@@ -209,10 +234,17 @@ function CopyButton({ text, className = '' }: { text: string; className?: string
 function NameCell({ record }: { record: DramaRow }) {
     const title = record.title || '—';
     return (
-        <p className="m-0 text-[13px] font-medium leading-snug text-slate-800 break-words">
-            {title}
-            <CopyButton text={record.title} className="ml-0.5" />
-        </p>
+        <div className="min-w-0">
+            <p className="m-0 text-[13px] font-medium leading-snug text-slate-800 break-words">
+                {title}
+                <CopyButton text={record.title} className="ml-0.5" />
+            </p>
+            {record.createdAt ? (
+                <time className="mt-1.5 block text-xs tabular-nums text-slate-500">
+                    创建时间：{record.createdAt}
+                </time>
+            ) : null}
+        </div>
     );
 }
 
@@ -496,8 +528,7 @@ export default function Component() {
     const [appliedTitle, setAppliedTitle] = useState('');
     const [apiList, setApiList] = useState<TData[]>([]);
     const [total, setTotal] = useState(0);
-    const [listPerPage, setListPerPage] = useState(LIST_DEFAULT_PER_PAGE);
-    const [serverPage, setServerPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [hasFetched, setHasFetched] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -509,12 +540,11 @@ export default function Component() {
         setDetailMovieTitle(row.title);
     }, []);
 
-    const fetchPage = useCallback(async (page: number): Promise<boolean> => {
+    const fetchList = useCallback(async (): Promise<boolean> => {
         setLoading(true);
         try {
-            const res = await api<IPagination>('movie/listnew', {
+            const res = await api<MovieListPayload>('movie/listnew', {
                 loading: false,
-                data: { page },
             });
             if (res.c !== 0) {
                 toast.error(res.m || '加载失败');
@@ -526,9 +556,8 @@ export default function Component() {
             const d = res.d;
             const data = Array.isArray(d?.data) ? d.data : [];
             setApiList(data);
-            setTotal(Number(d?.count) || data.length);
-            setListPerPage(Number(d?.per_page) || LIST_DEFAULT_PER_PAGE);
-            setServerPage(Number(d?.current_page) || page);
+            setTotal(data.length);
+            setCurrentPage(1);
             setHasFetched(true);
             return true;
         } catch {
@@ -543,16 +572,16 @@ export default function Component() {
     }, []);
 
     const handleRefresh = useCallback(async () => {
-        const ok = await fetchPage(serverPage);
+        const ok = await fetchList();
         if (ok) {
             setAppliedTitle(titleKeyword.trim());
             window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
         }
-    }, [fetchPage, serverPage, titleKeyword]);
+    }, [fetchList, titleKeyword]);
 
     useEffect(() => {
-        void fetchPage(serverPage);
-    }, [fetchPage, serverPage]);
+        void fetchList();
+    }, [fetchList]);
 
     const handleFilterTitle = useCallback(() => {
         if (!hasFetched) {
@@ -560,7 +589,14 @@ export default function Component() {
             return;
         }
         setAppliedTitle(titleKeyword.trim());
+        setCurrentPage(1);
     }, [hasFetched, titleKeyword]);
+
+    const handleClearTitle = useCallback(() => {
+        setTitleKeyword('');
+        setAppliedTitle('');
+        setCurrentPage(1);
+    }, []);
 
     const filteredApiList = useMemo(() => {
         const kw = appliedTitle.trim().toLowerCase();
@@ -580,6 +616,7 @@ export default function Component() {
                     id,
                     movieId,
                     title: rowTitle(row),
+                    createdAt: formatCreatedHour(row['created_at']),
                     coverUrl: movieCoverUrl(row, staticBase, { fallbackId: movieId }) ?? '',
                     coverImageFile: coverPath ? imageBasename(coverPath) : '',
                 },
@@ -587,7 +624,11 @@ export default function Component() {
         });
     }, [filteredApiList, staticBase]);
 
-    const serverTotalPage = Math.max(1, Math.ceil(total / listPerPage));
+    const totalPage = Math.max(1, Math.ceil(rows.length / CLIENT_PAGE_SIZE));
+    const pageRows = useMemo(
+        () => rows.slice((currentPage - 1) * CLIENT_PAGE_SIZE, currentPage * CLIENT_PAGE_SIZE),
+        [currentPage, rows],
+    );
     const emptyText = loading ? '加载中…' : hasFetched ? '暂无数据' : '请点击「更新列表」拉取数据';
 
     return (
@@ -606,39 +647,13 @@ export default function Component() {
                     background: #cbd5e1;
                     border-radius: 4px;
                 }
-                .week-data-page .week-data-list-head {
-                    position: sticky;
-                    top: 0;
-                    z-index: 20;
-                }
-                .week-data-page .week-data-name-sticky {
-                    position: sticky;
-                    left: 0;
-                    z-index: 5;
-                    flex: 1 1 240px;
-                    min-width: 200px;
-                    max-width: 420px;
-                    padding-right: 12px;
-                    background: inherit;
-                }
-                .week-data-page .week-data-list-head .week-data-name-sticky {
-                    z-index: 25;
-                    background: #ecf5ff;
-                }
                 .week-data-page .week-data-row:nth-child(odd) {
                     background: #fff;
                 }
                 .week-data-page .week-data-row:nth-child(even) {
                     background: #fafbfc;
                 }
-                .week-data-page .week-data-row:nth-child(odd) .week-data-name-sticky {
-                    background: #fff;
-                }
-                .week-data-page .week-data-row:nth-child(even) .week-data-name-sticky {
-                    background: #fafbfc;
-                }
-                .week-data-page .week-data-row:hover,
-                .week-data-page .week-data-row:hover .week-data-name-sticky {
+                .week-data-page .week-data-row:hover {
                     background: #f5f9ff !important;
                 }
             `}</style>
@@ -662,18 +677,32 @@ export default function Component() {
                     </button>
                     <div className="flex flex-wrap items-center gap-1.5">
                         <span className="shrink-0 text-xs font-medium text-slate-600">名称：</span>
-                        <input
-                            type="text"
-                            className="h-6 w-[160px] max-w-full rounded border border-slate-300 bg-white px-1.5 text-xs disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                            placeholder={hasFetched ? '模糊匹配 title' : '拉取完成后可输入'}
-                            disabled={!hasFetched}
-                            value={titleKeyword}
-                            maxLength={128}
-                            onChange={(e) => setTitleKeyword(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleFilterTitle();
-                            }}
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                className="h-6 w-[240px] max-w-full rounded border border-slate-300 bg-white py-0 pl-1.5 pr-7 text-xs disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                                placeholder={hasFetched ? '模糊匹配 title' : '拉取完成后可输入'}
+                                disabled={!hasFetched}
+                                value={titleKeyword}
+                                maxLength={128}
+                                onChange={(e) => setTitleKeyword(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleFilterTitle();
+                                }}
+                            />
+                            {titleKeyword || appliedTitle ? (
+                                <button
+                                    type="button"
+                                    className="absolute right-1 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40"
+                                    aria-label="清除名称搜索"
+                                    title="清除"
+                                    disabled={!hasFetched || loading}
+                                    onClick={handleClearTitle}
+                                >
+                                    <X size={13} />
+                                </button>
+                            ) : null}
+                        </div>
                         <button
                             type="button"
                             className="h-7 rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm disabled:opacity-50"
@@ -691,55 +720,48 @@ export default function Component() {
                     <div className="flex min-h-[200px] items-center justify-center p-8">
                         <Loader />
                     </div>
-                ) : rows.length === 0 ? (
+                ) : pageRows.length === 0 ? (
                     <div className="px-6 py-16 text-center text-sm text-slate-400">{emptyText}</div>
                 ) : (
-                    <div className="min-w-[520px]">
-                        <div className="week-data-list-head flex items-center gap-4 border-b border-slate-200 bg-[#ecf5ff] px-4 py-2.5 text-xs font-semibold text-[#303133]">
-                            <div className="week-data-name-sticky">名称</div>
-                            <div className="w-[72px] shrink-0 text-center">封面</div>
-                            <div className="w-[64px] shrink-0 text-center">操作</div>
-                        </div>
-                        <ul className="m-0 list-none divide-y divide-slate-100 p-0">
-                            {rows.map((row) => (
-                                <li key={row.key} className="week-data-row flex items-center gap-4 px-4 py-2.5">
-                                    <div className="week-data-name-sticky">
-                                        <NameCell record={row} />
-                                    </div>
-                                    <div className="flex w-[72px] shrink-0 justify-center">
-                                        <CoverCell record={row} onPreview={setPreviewUrl} />
-                                    </div>
-                                    <div className="flex w-[64px] shrink-0 justify-center">
-                                        <ActionCell record={row} onDetail={openDetail} />
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                    <ul className="m-0 grid list-none grid-cols-1 gap-px bg-white p-0 lg:grid-cols-2">
+                        {pageRows.map((row) => (
+                            <li key={row.key} className="week-data-row flex min-w-0 items-center gap-3 px-4 py-2.5">
+                                <div className="min-w-0 flex-1">
+                                    <NameCell record={row} />
+                                </div>
+                                <div className="flex w-[72px] shrink-0 justify-center">
+                                    <CoverCell record={row} onPreview={setPreviewUrl} />
+                                </div>
+                                <div className="flex w-[64px] shrink-0 justify-center">
+                                    <ActionCell record={row} onDetail={openDetail} />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
 
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-[#d9ecff] bg-[#ecf5ff] px-4 py-2.5">
                 <div className="text-xs text-[#606266]">
-                    匹配 {rows.length} 部{appliedTitle ? '（已筛选）' : ''}
+                    匹配 {rows.length} 部{appliedTitle ? '（已筛选）' : ''} · 当前页 {pageRows.length} 部
                 </div>
                 <div className="flex items-center gap-1.5">
                     <button
                         type="button"
                         className="rounded border border-[#b3d8ff] bg-white px-2 py-0.5 text-xs font-medium text-[#409eff] disabled:opacity-40"
-                        disabled={serverPage <= 1 || loading}
-                        onClick={() => setServerPage((p) => p - 1)}
+                        disabled={currentPage <= 1 || loading}
+                        onClick={() => setCurrentPage((p) => p - 1)}
                     >
                         上一页
                     </button>
                     <div className="text-xs font-medium text-[#303133]">
-                        第 {serverPage} / {serverTotalPage} 页
+                        第 {currentPage} / {totalPage} 页
                     </div>
                     <button
                         type="button"
                         className="rounded border border-[#b3d8ff] bg-white px-2 py-0.5 text-xs font-medium text-[#409eff] disabled:opacity-40"
-                        disabled={serverPage >= serverTotalPage || loading}
-                        onClick={() => setServerPage((p) => p + 1)}
+                        disabled={currentPage >= totalPage || loading}
+                        onClick={() => setCurrentPage((p) => p + 1)}
                     >
                         下一页
                     </button>
