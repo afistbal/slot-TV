@@ -149,13 +149,7 @@ type MovieEpisodeRow = {
     [key: string]: unknown;
 };
 
-type MovieDetailPayload = {
-    list?: MovieEpisodeRow[];
-    episodes?: MovieEpisodeRow[];
-    data?: MovieEpisodeRow[];
-    info?: Record<string, unknown>;
-    [key: string]: unknown;
-};
+type MovieDetailPayload = MovieEpisodeRow[];
 
 type EpisodeDisplayRow = {
     key: string;
@@ -170,9 +164,7 @@ function movieIdFromRow(row: TData): number | null {
 }
 
 function episodesFromDetailPayload(d: MovieDetailPayload | undefined): MovieEpisodeRow[] {
-    if (!d) return [];
-    const raw = d.list ?? d.episodes ?? d.data;
-    return Array.isArray(raw) ? raw : [];
+    return Array.isArray(d) ? d : [];
 }
 
 function subtitleUrlFromEpisode(item: MovieEpisodeRow): string {
