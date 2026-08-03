@@ -1,13 +1,14 @@
 import { api, type TData } from '@/api';
 import Loader from '@/components/Loader';
 import { useConfigStore } from '@/stores/config';
-import { Copy, Download, Eye, X } from 'lucide-react';
+import { Copy, Download, Eye, EyeOff, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { movieCoverImagePath, movieCoverUrl } from '@/lib/movieCoverUrl';
 
 const COS_FALLBACK_BASE = 'https://cos.yogoshort.com';
 const CLIENT_PAGE_SIZE = 200;
+const PROXY_AGENT_STORAGE_KEY = 'weekly-update-x-proxy-agent';
 const CREATED_TIME_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
     year: 'numeric',
@@ -182,6 +183,99 @@ type EpisodeDisplayRow = {
     videoUrl: string;
     subtitleUrl: string;
 };
+
+function PasswordModal({
+    open,
+    submitting,
+    error,
+    canCancel,
+    value,
+    onChange,
+    onSubmit,
+    onCancel,
+}: {
+    open: boolean;
+    submitting: boolean;
+    error: string;
+    canCancel: boolean;
+    value: string;
+    onChange: (value: string) => void;
+    onSubmit: () => void;
+    onCancel: () => void;
+}) {
+    const [showPassword, setShowPassword] = useState(false);
+
+    useEffect(() => {
+        if (open) setShowPassword(false);
+    }, [open]);
+
+    if (!open) return null;
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-4">
+            <form
+                className="w-full max-w-xl rounded-xl bg-white p-6 shadow-2xl"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    onSubmit();
+                }}
+            >
+                <h2 className="m-0 text-base font-semibold text-slate-900">
+                    {canCancel ? '更换密码' : '密码验证'}
+                </h2>
+                <p className="mb-4 mt-1.5 text-xs leading-5 text-slate-500">
+                    验证成功后才会展示最新更新数据。
+                </p>
+                <label className="block text-xs font-medium text-slate-700" htmlFor="weekly-update-password">
+                    密码
+                </label>
+                <div className="relative mt-1.5">
+                    <input
+                        id="weekly-update-password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoFocus
+                        autoComplete="off"
+                        className="h-10 w-full rounded-md border border-slate-300 bg-white py-0 pl-3 pr-11 font-mono text-[15px] font-semibold text-slate-950 caret-slate-950 outline-none placeholder:text-slate-400 focus:border-[#409eff] focus:ring-2 focus:ring-[#409eff]/15"
+                        style={{ WebkitTextFillColor: '#020617', opacity: 1 }}
+                        value={value}
+                        disabled={submitting}
+                        onChange={(event) => onChange(event.target.value)}
+                    />
+                    <button
+                        type="button"
+                        className="absolute right-1 top-1/2 inline-flex h-8 w-9 -translate-y-1/2 items-center justify-center rounded text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+                        aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                        title={showPassword ? '隐藏密码' : '显示密码'}
+                        disabled={submitting}
+                        onClick={() => setShowPassword((shown) => !shown)}
+                    >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                </div>
+                {error ? <p className="mb-0 mt-2 text-xs text-red-600">{error}</p> : null}
+                <div className="mt-5 flex justify-end gap-2">
+                    {canCancel ? (
+                        <button
+                            type="button"
+                            className="h-8 rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 disabled:opacity-50"
+                            disabled={submitting}
+                            onClick={onCancel}
+                        >
+                            取消
+                        </button>
+                    ) : null}
+                    <button
+                        type="submit"
+                        className="h-8 rounded-md border border-[#409eff] bg-[#409eff] px-4 text-xs font-medium text-white disabled:opacity-50"
+                        disabled={submitting || !value.trim()}
+                    >
+                        {submitting ? '验证中…' : '确认'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
 
 function movieIdFromRow(row: TData): number | null {
     const n = Number(row['id']);
@@ -529,59 +623,130 @@ export default function Component() {
     const [apiList, setApiList] = useState<TData[]>([]);
     const [total, setTotal] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [hasFetched, setHasFetched] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [detailMovieId, setDetailMovieId] = useState<number | null>(null);
     const [detailMovieTitle, setDetailMovieTitle] = useState('');
+    const [proxyAgent, setProxyAgent] = useState('');
+    const [accessState, setAccessState] = useState<'checking' | 'locked' | 'authorized'>('checking');
+    const [passwordOpen, setPasswordOpen] = useState(false);
+    const [passwordValue, setPasswordValue] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
 
     const openDetail = useCallback((row: DramaRow) => {
         setDetailMovieId(row.movieId);
         setDetailMovieTitle(row.title);
     }, []);
 
-    const fetchList = useCallback(async (): Promise<boolean> => {
+    const fetchList = useCallback(async (agentValue: string, notifyOnError = true): Promise<boolean> => {
         setLoading(true);
         try {
             const res = await api<MovieListPayload>('movie/listnew', {
                 loading: false,
+                headers: {
+                    'x-proxy-agent': agentValue,
+                },
+                toastOnError: false,
             });
             if (res.c !== 0) {
-                toast.error(res.m || '加载失败');
-                setApiList([]);
-                setTotal(0);
-                setHasFetched(false);
+                if (notifyOnError) toast.error(res.m || '密码验证失败');
                 return false;
             }
             const d = res.d;
             const data = Array.isArray(d?.data) ? d.data : [];
+            if (data.length === 0) {
+                if (notifyOnError) toast.error('未获取到数据，请检查密码');
+                return false;
+            }
             setApiList(data);
             setTotal(data.length);
             setCurrentPage(1);
             setHasFetched(true);
             return true;
         } catch {
-            toast.error('网络异常');
-            setApiList([]);
-            setTotal(0);
-            setHasFetched(false);
+            if (notifyOnError) toast.error('网络异常');
             return false;
         } finally {
             setLoading(false);
         }
     }, []);
 
+    const lockPage = useCallback(() => {
+        localStorage.removeItem(PROXY_AGENT_STORAGE_KEY);
+        setProxyAgent('');
+        setApiList([]);
+        setTotal(0);
+        setHasFetched(false);
+        setAccessState('locked');
+        setChangingPassword(false);
+        setPasswordValue('');
+        setPasswordError('密码已失效，请重新输入');
+        setPasswordOpen(true);
+    }, []);
+
     const handleRefresh = useCallback(async () => {
-        const ok = await fetchList();
+        const ok = await fetchList(proxyAgent);
         if (ok) {
             setAppliedTitle(titleKeyword.trim());
             window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        } else {
+            lockPage();
         }
-    }, [fetchList, titleKeyword]);
+    }, [fetchList, lockPage, proxyAgent, titleKeyword]);
 
     useEffect(() => {
-        void fetchList();
+        const savedAgent = localStorage.getItem(PROXY_AGENT_STORAGE_KEY)?.trim() ?? '';
+        if (!savedAgent) {
+            setAccessState('locked');
+            setPasswordOpen(true);
+            return;
+        }
+
+        void (async () => {
+            const ok = await fetchList(savedAgent, false);
+            if (ok) {
+                setProxyAgent(savedAgent);
+                setAccessState('authorized');
+                return;
+            }
+            localStorage.removeItem(PROXY_AGENT_STORAGE_KEY);
+            setAccessState('locked');
+            setPasswordError('保存的密码已失效，请重新输入');
+            setPasswordOpen(true);
+        })();
     }, [fetchList]);
+
+    const handlePasswordSubmit = useCallback(async () => {
+        const candidate = passwordValue.trim();
+        if (!candidate) return;
+
+        setPasswordSubmitting(true);
+        setPasswordError('');
+        const ok = await fetchList(candidate, false);
+        setPasswordSubmitting(false);
+        if (!ok) {
+            setPasswordError('验证失败，请检查密码后重试');
+            return;
+        }
+
+        localStorage.setItem(PROXY_AGENT_STORAGE_KEY, candidate);
+        setProxyAgent(candidate);
+        setAccessState('authorized');
+        setPasswordOpen(false);
+        setChangingPassword(false);
+        setPasswordValue('');
+        toast.success('验证成功');
+    }, [fetchList, passwordValue]);
+
+    const openPasswordChange = useCallback(() => {
+        setChangingPassword(true);
+        setPasswordValue(proxyAgent);
+        setPasswordError('');
+        setPasswordOpen(true);
+    }, [proxyAgent]);
 
     const handleFilterTitle = useCallback(() => {
         if (!hasFetched) {
@@ -631,6 +796,24 @@ export default function Component() {
     );
     const emptyText = loading ? '加载中…' : hasFetched ? '暂无数据' : '请点击「更新列表」拉取数据';
 
+    if (accessState !== 'authorized') {
+        return (
+            <div className="flex h-full min-h-[320px] items-center justify-center bg-[#f0f2f5]">
+                {accessState === 'checking' ? <Loader /> : null}
+                <PasswordModal
+                    open={passwordOpen}
+                    submitting={passwordSubmitting}
+                    error={passwordError}
+                    canCancel={false}
+                    value={passwordValue}
+                    onChange={setPasswordValue}
+                    onSubmit={() => void handlePasswordSubmit()}
+                    onCancel={() => undefined}
+                />
+            </div>
+        );
+    }
+
     return (
         <div className="week-data-page flex h-full min-h-0 flex-col gap-4 bg-[#f0f2f5] p-5 text-xs text-slate-900 md:p-8">
             <style>{`
@@ -660,9 +843,18 @@ export default function Component() {
 
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <h1 className="m-0 text-base font-semibold text-[#303133]">最新更新</h1>
-                {hasFetched ? (
-                    <span className="text-xs text-slate-500">共 {total} 部 · 匹配 {filteredApiList.length} 部</span>
-                ) : null}
+                <div className="flex items-center gap-3">
+                    {hasFetched ? (
+                        <span className="text-xs text-slate-500">共 {total} 部 · 匹配 {filteredApiList.length} 部</span>
+                    ) : null}
+                    <button
+                        type="button"
+                        className="text-xs font-medium text-[#409eff] hover:text-[#337ecc] hover:underline"
+                        onClick={openPasswordChange}
+                    >
+                        更换密码
+                    </button>
+                </div>
             </div>
 
             <div className="rounded-lg border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
@@ -795,6 +987,22 @@ export default function Component() {
                     />
                 </div>
             ) : null}
+
+            <PasswordModal
+                open={passwordOpen}
+                submitting={passwordSubmitting}
+                error={passwordError}
+                canCancel={changingPassword}
+                value={passwordValue}
+                onChange={setPasswordValue}
+                onSubmit={() => void handlePasswordSubmit()}
+                onCancel={() => {
+                    setPasswordOpen(false);
+                    setChangingPassword(false);
+                    setPasswordValue('');
+                    setPasswordError('');
+                }}
+            />
         </div>
     );
 }
