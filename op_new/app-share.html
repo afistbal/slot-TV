@@ -411,10 +411,7 @@
     ];
 
     function getApiBaseUrl() {
-      var host = location.hostname || '';
-      var isLocal = !host || host === 'localhost' || host === '127.0.0.1';
-      var isTest = /test/i.test(host) || isLocal;
-      return isTest ? 'https://test.yogoshort.com/api' : 'https://i.yogoshort.com/api';
+      return 'https://i.yogoshort.com/api';
     }
 
     function getUrlParam(name) {
@@ -567,34 +564,54 @@
       return 'https://play.google.com/store/apps/details?id=' + encodeURIComponent(APP_PACKAGE) + '&referrer=' + referrer;
     }
 
-    function getAdjustTrackerUrl() {
+    function getLegacyAdjustTrackerUrl() {
       return getUrlParam('adjust_tracker_url') || getUrlParam('adjust_url') || ADJUST_TRACKER_URL;
     }
 
-    function buildAdjustTrackerUrl(movieId, episodeNum, schemeBaseUrl, fallbackUrl) {
-      var trackerUrl = getAdjustTrackerUrl();
-      if (!trackerUrl) return '';
-
-      var url;
+    function parseLegacyAdjustTrackerUrl() {
+      var trackerUrl = getLegacyAdjustTrackerUrl();
+      if (!trackerUrl) return null;
       try {
-        url = new URL(trackerUrl);
+        return new URL(trackerUrl);
       } catch (e) {
+        return null;
+      }
+    }
+
+    function getAdjustToken(legacyUrl) {
+      var token = getUrlParam('adjust_token').trim();
+      if (!token && legacyUrl) {
+        var pathParts = legacyUrl.pathname.split('/').filter(Boolean);
+        token = pathParts.length ? pathParts[pathParts.length - 1] : '';
+      }
+      return /^[a-zA-Z0-9_-]+$/.test(token) ? token : '';
+    }
+
+    function getAdjustParam(name, legacyUrl) {
+      var value = getUrlParam(name);
+      if (!value && legacyUrl) value = legacyUrl.searchParams.get(name) || '';
+      return value;
+    }
+
+    function buildAdjustTrackerUrl(movieId, episodeNum, schemeBaseUrl, fallbackUrl) {
+      var legacyUrl = parseLegacyAdjustTrackerUrl();
+      var token = getAdjustToken(legacyUrl);
+      if (!token) {
+        console.warn('[app-share][adjust-url] missing or invalid adjust token');
         return '';
       }
+      var url = new URL('https://app.adjust.com/' + encodeURIComponent(token));
 
-      collectTrackingParams().forEach(function (value, key) {
-        if (!url.searchParams.has(key)) {
-          url.searchParams.set(key, value);
-        }
+      ['campaign', 'adgroup', 'creative', 'fbclid', 'ttclid'].forEach(function (key) {
+        var value = getAdjustParam(key, legacyUrl);
+        if (value) url.searchParams.set(key, value);
       });
 
-      if (!url.searchParams.has('deep_link')) {
-        url.searchParams.set('deep_link', buildAppDeepLink(schemeBaseUrl, movieId, episodeNum));
-      }
-      if (fallbackUrl && !url.searchParams.has('redirect')) {
-        url.searchParams.set('redirect', fallbackUrl);
-      }
-      return url.toString();
+      url.searchParams.set('deep_link', buildAppDeepLink(schemeBaseUrl, movieId, episodeNum));
+      if (fallbackUrl) url.searchParams.set('redirect', fallbackUrl);
+      var adjustUrl = url.toString();
+      console.log('[app-share][adjust-url]', adjustUrl);
+      return adjustUrl;
     }
 
     function isAndroid() {
@@ -780,6 +797,19 @@
       var ctaBtn = document.getElementById('ctaBtn');
       var posterWrap = document.getElementById('posterWrap');
       var loadingMask = document.getElementById('loadingMask');
+
+      // 页面打开时输出一次最终 Adjust URL，便于检查投放参数。
+      if (getLegacyAdjustTrackerUrl() || getUrlParam('adjust_token')) {
+        var previewLegacyUrl = parseLegacyAdjustTrackerUrl();
+        var previewAdgroup = getAdjustParam('adgroup', previewLegacyUrl);
+        var previewIsIos = /ios/i.test(previewAdgroup);
+        buildAdjustTrackerUrl(
+          route.movieId,
+          route.episodeNum,
+          previewIsIos ? IOS_APP_SCHEME_BASE : APP_SCHEME_BASE,
+          previewIsIos ? APP_STORE_URL : buildGooglePlayUrl()
+        );
+      }
 
       headerOpenBtn.addEventListener('click', openApp);
       ctaBtn.addEventListener('click', openApp);
