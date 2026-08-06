@@ -11,8 +11,14 @@ export const BRAND_COPYRIGHT_COMPANY =
     (import.meta.env.VITE_BRAND_COPYRIGHT_COMPANY || '').trim();
 export const BRAND_COPYRIGHT_YEAR = new Date().getFullYear();
 
+const brandCopyrightSuffix = BRAND_COPYRIGHT_COMPANY
+    ? import.meta.env.VITE_BRAND_COPYRIGHT_COMPANY_BEFORE_YEAR === 'true'
+        ? `${BRAND_COPYRIGHT_COMPANY} ${BRAND_COPYRIGHT_YEAR}`
+        : `${BRAND_COPYRIGHT_YEAR} ${BRAND_COPYRIGHT_COMPANY}`
+    : `${BRAND_COPYRIGHT_YEAR}`;
+
 export const BRAND_COPYRIGHT_LINE_1 =
-    `${BRAND_DISPLAY_NAME} | All Rights Reserved | ${BRAND_COPYRIGHT_YEAR}${BRAND_COPYRIGHT_COMPANY ? ` ${BRAND_COPYRIGHT_COMPANY}` : ''}`;
+    `${BRAND_DISPLAY_NAME} | All Rights Reserved | ${brandCopyrightSuffix}`;
 
 function normalizePublicBase(value: string): string {
     const trimmed = value.trim();

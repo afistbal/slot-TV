@@ -39,6 +39,7 @@ interface ImportMetaEnv {
   readonly VITE_BRAND_DESCRIPTION?: string;
   readonly VITE_BRAND_CONTACT_EMAIL?: string;
   readonly VITE_BRAND_COPYRIGHT_COMPANY?: string;
+  readonly VITE_BRAND_COPYRIGHT_COMPANY_BEFORE_YEAR?: string;
   readonly VITE_BRAND_ASSET_BASE?: string;
   readonly VITE_BRAND_COIN_ICON_SRC?: string;
   readonly VITE_BRAND_LEGAL_SITE_URL?: string;

@@ -127,6 +127,7 @@ export function VDemoH5PlayerShell({
     } = useVideoPlayerShare(data, staticBase, episodeNo);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
+    const tiktokAutoLaunchedEpisodeIdsRef = useRef(new Set<number>());
     const getTikTokLockedPosterUrl = useCallback(
         (_item: DouyinFeedVideoItem, index: number) => {
             if (!isTikTokPlatform()) return '';
@@ -157,13 +158,20 @@ export function VDemoH5PlayerShell({
             const lastAttemptAt = lastTikTokPrewarmAtRef.current.get(episodeId) ?? 0;
             if (now - lastAttemptAt < 5_000) return;
             lastTikTokPrewarmAtRef.current.set(episodeId, now);
+            if (tiktokAutoLaunchedEpisodeIdsRef.current.has(episodeId)) return;
+            tiktokAutoLaunchedEpisodeIdsRef.current.add(episodeId);
 
-            void prepareTikTokRewardedEpisodeUnlock(episodeId).catch((error) => {
-                console.warn('[TikTok ad unlock] Prepare failed.', {
-                    episodeId,
-                    error,
+            void prepareTikTokRewardedEpisodeUnlock(episodeId)
+                .then(() => {
+                    vipCommerceRef.current?.openRewardedAd(episodeId);
+                })
+                .catch((error) => {
+                    tiktokAutoLaunchedEpisodeIdsRef.current.delete(episodeId);
+                    console.warn('[TikTok ad unlock] Prepare failed.', {
+                        episodeId,
+                        error,
+                    });
                 });
-            });
         },
         [data.episodes, resolveEpisodeCellLocked],
     );
