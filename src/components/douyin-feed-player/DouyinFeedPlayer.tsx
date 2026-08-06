@@ -83,6 +83,7 @@ export function DouyinFeedPlayer({
     onFullscreenUiChange,
     feedNavigateRef,
     isItemLocked,
+    getLockedPosterUrl,
     onIncomingIndex,
 }: DouyinFeedPlayerProps) {
     const isVideoH5Feed = Boolean(className?.includes('v-demo-h5-player'));
@@ -1131,6 +1132,7 @@ export function DouyinFeedPlayer({
             {playbackItems.map((item, index) => {
                 const slot = slots.find((s) => s.index === index);
                 const locked = Boolean(isItemLocked?.(item, index));
+                const lockedPosterUrl = locked ? getLockedPosterUrl?.(item, index).trim() : '';
                 const feedAttrs = getFeedItemDataAttrs(index === activeIndex);
                 return (
                     <div
@@ -1186,7 +1188,19 @@ export function DouyinFeedPlayer({
                             <div
                                 className="douyin-feed-player__cover douyin-feed-player__cover--locked"
                                 aria-hidden
-                            />
+                            >
+                                {lockedPosterUrl ? (
+                                    <>
+                                        <img
+                                            className="douyin-feed-player__locked-poster"
+                                            src={lockedPosterUrl}
+                                            alt=""
+                                            draggable={false}
+                                        />
+                                        <div className="douyin-feed-player__locked-poster-shade" />
+                                    </>
+                                ) : null}
+                            </div>
                         ) : showLoadingAnimation ? (
                             <div className="douyin-feed-player__cover" aria-hidden>
                                 <img

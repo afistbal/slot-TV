@@ -23,6 +23,7 @@ declare module 'xgplayer/dist/index.min.css';
 
 interface ImportMetaEnv {
   readonly VITE_PLATFORM?: string;
+  readonly VITE_TIKTOK_WEB_TEST?: string;
   readonly VITE_TIKTOK_MONETIZATION_MODE?: 'iaa' | 'iap';
   readonly VITE_TIKTOK_REWARDED_AD_UNIT_ID?: string;
   readonly VITE_SKIP_API?: string;

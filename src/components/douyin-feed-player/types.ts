@@ -53,6 +53,8 @@ export type DouyinFeedPlayerProps = {
     feedNavigateRef?: MutableRefObject<DouyinFeedNavigateHandle | null>;
     /** 业务锁态：当前项无 URL 时展示黑底，避免误显示播放器 loading。 */
     isItemLocked?: (item: DouyinFeedVideoItem, index: number) => boolean;
+    /** Optional locked-item poster. Callers that omit it retain the existing black cover. */
+    getLockedPosterUrl?: (item: DouyinFeedVideoItem, index: number) => string;
     /** Notifies the business layer when a swipe is approaching another item. */
     onIncomingIndex?: (index: number, direction: FeedNavigateDirection) => void;
 };

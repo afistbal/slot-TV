@@ -38,6 +38,7 @@ import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUser
 import { setIsAnonymousFromInfo } from "./lib/clientIsAnonymous";
 import { loginTikTokMinis } from "./lib/tiktokMinisLogin";
 import { initializeTikTokAds } from "./lib/tiktokAds";
+import { isTikTokWebTestMode } from "./platform/tiktok/webTest";
 
 const TIKTOK_LOGIN_RETRY_DELAYS_MS = [1200, 2000, 3500];
 
@@ -423,6 +424,35 @@ function App() {
         void (async () => {
             try {
                 if (isTikTokPlatform()) {
+                    if (isTikTokWebTestMode()) {
+                        /**
+                         * Keep TikTok UI/business branches active in a normal browser,
+                         * while bootstrapping them with a regular backend session.
+                         */
+                        console.info('[TikTok web test] Native login is bypassed; using a browser session.');
+                        if (token) {
+                            const ok = await refreshSessionFromStoredToken();
+                            if (loadGen !== loadDataGenerationRef.current) return;
+                            if (ok) {
+                                localStorage.setItem('login-method', 'tiktok');
+                                useRootStore.getState().setSessionBootstrapReady(true);
+                                void initializeTikTokAds();
+                                return;
+                            }
+                            localStorage.removeItem('token');
+                        }
+
+                        const anon = await loginAnonymous({ toastOnError: false });
+                        if (loadGen !== loadDataGenerationRef.current || anon.c !== 0) return;
+                        localStorage.setItem('token', anon.d['token'] as string);
+                        localStorage.setItem('login-method', 'tiktok');
+                        useUserStore.getState().signin(anon.d['info'] as TData);
+                        useRootStore.getState().setSessionBootstrapReady(true);
+                        void initializeTikTokAds();
+                        trackAnonymousCompleteRegistration();
+                        return;
+                    }
+
                     /** 测试阶段每次进入 TikTok Minis 都重新换取本站会话 token。 */
                     localStorage.removeItem('token');
                     localStorage.removeItem('login-method');

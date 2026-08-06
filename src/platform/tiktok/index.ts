@@ -3,6 +3,7 @@ import type {
     PlatformRewardedAdResult,
     PlatformSilentLoginResult,
 } from '../types';
+import { isTikTokWebTestMode } from './webTest';
 
 type TikTokLoginResponse = {
     authResponse?: {
@@ -107,6 +108,11 @@ async function silentLogin(): Promise<PlatformSilentLoginResult> {
 }
 
 async function payTikTokTradeOrder(tradeOrderId: string): Promise<unknown> {
+    if (isTikTokWebTestMode()) {
+        console.info('[TikTok web test] Simulated successful payment.', { tradeOrderId });
+        return { is_success: true, trade_order_id: tradeOrderId, mock: true };
+    }
+
     const sdk = getTikTokPaymentSdk();
 
     return new Promise((resolve, reject) => {
@@ -161,6 +167,21 @@ async function showTikTokRewardedAd(adUnitId: string): Promise<PlatformRewardedA
     const normalizedAdUnitId = adUnitId.trim();
     if (!normalizedAdUnitId) {
         throw new Error('TikTok rewarded ad placement is not configured.');
+    }
+
+    if (isTikTokWebTestMode()) {
+        const isEnded = window.confirm(
+            `TikTok rewarded ad web test\n\nAd unit: ${normalizedAdUnitId}\n\n`+
+            'Choose OK to simulate watching the full ad. Choose Cancel to simulate closing it early.',
+        );
+        console.info('[TikTok web test] Simulated rewarded ad result.', {
+            adUnitId: normalizedAdUnitId,
+            isEnded,
+        });
+        return {
+            isEnded,
+            raw: { mock: true, adUnitId: normalizedAdUnitId, isEnded },
+        };
     }
 
     const sdk = getTikTokAdsSdk();

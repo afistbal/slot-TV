@@ -17,7 +17,6 @@ import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { isTikTokPlatform } from '@/platform';
 import { isTikTokIapMode } from '@/lib/tiktokMonetization';
 import {
-    TikTokRewardedUnlockError,
     unlockTikTokEpisodeWithRewardedAd,
 } from '@/lib/tiktokRewardedEpisodeUnlock';
 import { toast } from 'sonner';
@@ -83,10 +82,8 @@ export const VideoPlayerVipCommerce = forwardRef<
     ref,
 ) {
     const [vip, setVip] = useState(false);
-    const [showRewardedFallback, setShowRewardedFallback] = useState(false);
     const rewardedAdBusyRef = useRef(false);
-    const autoAttemptedEpisodeRef = useRef(0);
-    const useTikTokIaa = isTikTokPlatform() && !isTikTokIapMode();
+    const useTikTokIaa = variant === 'h5' && isTikTokPlatform() && !isTikTokIapMode();
 
     const retention = useVideoRetentionCommerce({
         variant,
@@ -99,8 +96,6 @@ export const VideoPlayerVipCommerce = forwardRef<
     const showRewardedAd = useCallback(async () => {
         if (rewardedAdBusyRef.current || !episodeRowId) return;
         rewardedAdBusyRef.current = true;
-        setShowRewardedFallback(false);
-        toast.loading('Loading ad...', { id: 'tiktok-rewarded-ad' });
         try {
             const result = await unlockTikTokEpisodeWithRewardedAd(episodeRowId);
             toast.success('Ad completed. Episode unlocked.', {
@@ -108,18 +103,9 @@ export const VideoPlayerVipCommerce = forwardRef<
             });
             onPaySuccessEpisodeDetail(result.episode);
         } catch (error) {
-            if (error instanceof TikTokRewardedUnlockError) {
-                setShowRewardedFallback(true);
-            }
-            toast.error(
-                error instanceof TikTokRewardedUnlockError && error.phase === 'complete'
-                    ? 'Ad completed, but episode unlock failed.'
-                    : 'Ad was not completed.',
-                {
-                    id: 'tiktok-rewarded-ad',
-                    description: error instanceof Error ? error.message : undefined,
-                },
-            );
+            // TikTok 锁定页本身就是失败/未解锁状态的反馈，不额外弹出错误提示。
+            toast.dismiss('tiktok-rewarded-ad');
+            console.warn('[TikTok ad unlock] Unlock attempt did not complete.', error);
         } finally {
             rewardedAdBusyRef.current = false;
         }
@@ -161,15 +147,7 @@ export const VideoPlayerVipCommerce = forwardRef<
 
     useEffect(() => {
         setVip(false);
-        setShowRewardedFallback(false);
     }, [episodeRowId]);
-
-    useEffect(() => {
-        if (!useTikTokIaa || !locked || !episodeRowId) return;
-        if (autoAttemptedEpisodeRef.current === episodeRowId) return;
-        autoAttemptedEpisodeRef.current = episodeRowId;
-        void showRewardedAd();
-    }, [episodeRowId, locked, showRewardedAd, useTikTokIaa]);
 
     /** 非 VIP 且 locked 时自动弹出 rs-shopping；VIP 或解锁后关闭；挽留进行中不抢弹 */
     useEffect(() => {
@@ -197,7 +175,7 @@ export const VideoPlayerVipCommerce = forwardRef<
 
     const vipHeaderEpisodeUnlockCoins = episode?.unlock_coins;
     const rewardedFallbackOverlay =
-        useTikTokIaa && locked && showRewardedFallback ? (
+        useTikTokIaa && locked ? (
             <TikTokRewardedFallbackOverlay posterUrl={posterUrl} onRetry={openVip} />
         ) : null;
 

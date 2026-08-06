@@ -9,6 +9,7 @@ function configuredDefaultRewardedAdUnitId(): string {
 let allowedRewardedAdUnitIds = new Set<string>(
     [configuredDefaultRewardedAdUnitId()].filter(Boolean),
 );
+let firstBackendRewardedAdUnitId = '';
 
 function adUnitIdFromLocation(): string {
     if (typeof window === 'undefined') return '';
@@ -49,8 +50,10 @@ function cacheRewardedAdUnitId(adUnitId: string): void {
  */
 export function setTikTokRewardedAdUnitIds(adUnitIds: readonly string[]): void {
     const defaultAdUnitId = configuredDefaultRewardedAdUnitId();
+    const normalizedAdUnitIds = adUnitIds.map((id) => id.trim()).filter(Boolean);
+    firstBackendRewardedAdUnitId = normalizedAdUnitIds[0] ?? '';
     allowedRewardedAdUnitIds = new Set(
-        [defaultAdUnitId, ...adUnitIds.map((id) => id.trim())].filter(Boolean),
+        [defaultAdUnitId, ...normalizedAdUnitIds].filter(Boolean),
     );
 }
 
@@ -71,6 +74,7 @@ export function isTikTokIapMode(): boolean {
 
 export function getTikTokRewardedAdUnitId(): string {
     const defaultAdUnitId = configuredDefaultRewardedAdUnitId();
+    const fallbackAdUnitId = defaultAdUnitId || firstBackendRewardedAdUnitId;
     const urlAdUnitId = adUnitIdFromLocation();
 
     if (urlAdUnitId) {
@@ -78,7 +82,7 @@ export function getTikTokRewardedAdUnitId(): string {
             cacheRewardedAdUnitId(urlAdUnitId);
             return urlAdUnitId;
         }
-        return defaultAdUnitId;
+        return fallbackAdUnitId;
     }
 
     const cachedAdUnitId = getCachedRewardedAdUnitId();
@@ -86,5 +90,5 @@ export function getTikTokRewardedAdUnitId(): string {
         return cachedAdUnitId;
     }
 
-    return defaultAdUnitId;
+    return fallbackAdUnitId;
 }

@@ -11,7 +11,7 @@ export function TikTokRewardedFallbackOverlay({
     onRetry,
 }: TikTokRewardedFallbackOverlayProps) {
     return (
-        <div className="absolute inset-0 z-[9] overflow-hidden bg-black text-white">
+        <div className="pointer-events-none absolute inset-0 z-[9] overflow-hidden bg-black text-white">
             {posterUrl ? (
                 <img
                     src={posterUrl}
@@ -29,7 +29,7 @@ export function TikTokRewardedFallbackOverlay({
                     <button
                         type="button"
                         onClick={onRetry}
-                        className="mt-5 min-h-12 w-full rounded-lg bg-[#ff3d5d] px-8 py-3 text-base font-semibold text-white active:opacity-85"
+                        className="pointer-events-auto mt-5 min-h-12 w-full rounded-lg bg-[#ff3d5d] px-8 py-3 text-base font-semibold text-white active:opacity-85"
                     >
                         <FormattedMessage id="unlock_now" />
                     </button>

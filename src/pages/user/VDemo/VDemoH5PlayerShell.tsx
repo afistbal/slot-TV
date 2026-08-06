@@ -38,6 +38,7 @@ import {
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import { cn } from '@/lib/utils';
+import { resolveStaticMediaUrl } from '@/lib/resolveStaticMediaUrl';
 import { isTikTokPlatform } from '@/platform';
 import { prepareTikTokRewardedEpisodeUnlock } from '@/lib/tiktokRewardedEpisodeUnlock';
 
@@ -125,6 +126,20 @@ export function VDemoH5PlayerShell({
     } = useVideoPlayerShare(data, staticBase, episodeNo);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
+    const getTikTokLockedPosterUrl = useCallback(
+        (_item: DouyinFeedVideoItem, index: number) => {
+            if (!isTikTokPlatform()) return '';
+            const episodeImage = String(data.episodes[index]?.image ?? '').trim();
+            return episodeImage
+                ? resolveStaticMediaUrl(episodeImage, staticBase)
+                : shareCardPosterUrl;
+        },
+        [data.episodes, shareCardPosterUrl, staticBase],
+    );
+    const activeTikTokLockedPosterUrl = getTikTokLockedPosterUrl(
+        activePlayerItem,
+        activeIndex,
+    );
 
     useEffect(() => {
         setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
@@ -240,6 +255,7 @@ export function VDemoH5PlayerShell({
                     />
                 }
                 isItemLocked={isFeedItemLocked}
+                getLockedPosterUrl={isTikTokPlatform() ? getTikTokLockedPosterUrl : undefined}
                 onIncomingIndex={isTikTokPlatform() ? handleIncomingIndex : undefined}
             />
             <VideoPlayerH5ColdUnmuteOverlay
@@ -284,7 +300,11 @@ export function VDemoH5PlayerShell({
                 shareShowControls={shareShowControls}
                 onToggleShareShowControls={() => setShareShowControls((v) => !v)}
                 onClearShareEmbedCode={() => setShareEmbedCode('')}
-                posterUrl={shareCardPosterUrl}
+                posterUrl={
+                    isTikTokPlatform() && activeLocked
+                        ? activeTikTokLockedPosterUrl
+                        : shareCardPosterUrl
+                }
                 title={data.info.title}
                 onShareAction={handleShareAction}
                 onCopyEmbedCode={handleCopyEmbedCode}
