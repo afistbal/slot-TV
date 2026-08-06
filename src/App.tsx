@@ -37,6 +37,7 @@ import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
 import { setIsAnonymousFromInfo } from "./lib/clientIsAnonymous";
 import { loginTikTokMinis } from "./lib/tiktokMinisLogin";
+import { initializeTikTokAds } from "./lib/tiktokAds";
 
 const TIKTOK_LOGIN_RETRY_DELAYS_MS = [1200, 2000, 3500];
 
@@ -459,6 +460,7 @@ function App() {
                     localStorage.setItem('login-method', 'tiktok');
                     setIsAnonymousFromInfo(tiktokInfo);
                     useUserStore.getState().signin(tiktokInfo);
+                    void initializeTikTokAds();
                     useRootStore.getState().setSessionBootstrapReady(true);
                     return;
                 }

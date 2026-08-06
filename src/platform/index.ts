@@ -2,7 +2,12 @@ import { tiktokPlatform } from './tiktok';
 import type { AppPlatform, PlatformKind } from './types';
 import { webPlatform } from './web';
 
-export type { AppPlatform, PlatformKind, PlatformSilentLoginResult } from './types';
+export type {
+    AppPlatform,
+    PlatformKind,
+    PlatformRewardedAdResult,
+    PlatformSilentLoginResult,
+} from './types';
 
 function configuredPlatform(): PlatformKind {
     return import.meta.env.MODE === 'tiktok' || import.meta.env.VITE_PLATFORM === 'tiktok'

@@ -11,6 +11,14 @@ interface TikTokMinisPaymentResult {
   error?: unknown;
 }
 
+interface TikTokRewardedVideoAd {
+  show(): Promise<unknown>;
+  onClose(callback: (result: { isEnded: boolean }) => void): void;
+  offClose?(callback: (result: { isEnded: boolean }) => void): void;
+  onError(callback: (error?: unknown) => void): void;
+  offError?(callback: (error?: unknown) => void): void;
+}
+
 interface TikTokVePlayerOptions {
   id: string;
   vid: string;
@@ -37,6 +45,8 @@ interface TikTokVePlayerConstructor {
 interface TikTokMinisSdk {
   init(options: { clientKey: string }): void;
   login(callback: (result: TikTokMinisLoginResult) => void): void;
+  canIUse?(schema: string): boolean;
+  createRewardedVideoAd?(options: { adUnitId: string }): TikTokRewardedVideoAd;
   getPlayer?(
     channel?: 'byteplus' | 'volcengine',
   ): Promise<TikTokVePlayerConstructor>;

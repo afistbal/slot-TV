@@ -30,6 +30,7 @@ import {
 } from '@/lib/subscriptionPlanRenewText';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import TikTokPaymentPage from '@/pages/user/TikTokPaymentPage';
+import TikTokRewardedAdPage from '@/pages/user/TikTokRewardedAdPage';
 import { ShoppingPaidServiceAgreementContent } from '@/pages/user/ShoppingPaidServiceAgreementContent';
 import { MembershipInlinePanel } from '@/pages/user/Membership';
 import { refreshSessionFromStoredToken } from '@/lib/refreshSessionFromStoredToken';
@@ -45,6 +46,7 @@ import {
 } from '@/stores/videoShoppingProducts';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { isTikTokPlatform } from '@/platform';
+import { isTikTokIapMode } from '@/lib/tiktokMonetization';
 import '@/styles/shopping-reelshort.scss';
 import '@/styles/checkout-reelshort.scss';
 
@@ -206,6 +208,18 @@ export function getCachedShoppingProducts(from: ProductFromKey): Product[] | und
 
 export default function RadixRc(props: RadixRcProps = {}) {
     if (isTikTokPlatform()) {
+        // IAP is intentionally retained behind this switch because it may be
+        // enabled again later. The current TikTok product mode is IAA-only.
+        if (!isTikTokIapMode()) {
+            return (
+                <TikTokRewardedAdPage
+                    layout={props.layout}
+                    onEmbedClose={props.onEmbedClose}
+                    embedVideoEpisodeRowId={props.embedVideoEpisodeRowId}
+                    onEmbedRewardSuccessEpisodeDetail={props.onEmbedPaySuccessEpisodeDetail}
+                />
+            );
+        }
         return (
             <TikTokPaymentPage
                 layout={props.layout}

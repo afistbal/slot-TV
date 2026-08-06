@@ -52,6 +52,7 @@ import {
 import { usePcPlayerRightRailAlign } from '@/components/video-player/usePcPlayerRightRailAlign';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
+import { isTikTokPlatform } from '@/platform';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
@@ -407,7 +408,7 @@ export function VDemoPcPlayerShell({
                             visible={coldUnmuteVisible && !activeLocked}
                             onTapToUnmute={handleTapToUnmute}
                         />
-                        {activeLocked ? (
+                        {activeLocked && !isTikTokPlatform() ? (
                             <div className="video-player-ui pointer-events-auto absolute inset-0 z-10">
                                 <VideoPlayerLockOverlay
                                     onUnlock={() => vipCommerceRef.current?.openVip()}

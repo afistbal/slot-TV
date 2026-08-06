@@ -1,9 +1,9 @@
-/**
- * v-demo：active 集每次滑入都�?`movie/episode`，刷�?lock / can_unlock 等展示态�?
- */
+/** Fetch the active episode on every slide to refresh lock/can_unlock state. */
 import { api } from '@/api';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { isEpisodeDetailLocked } from '@/components/video-player/videoPlayerUtils';
+import { isTikTokPlatform } from '@/platform';
+import { isTikTokIapMode } from '@/lib/tiktokMonetization';
 
 const activeEpisodeCache = new Map<number, IPlayerEpisode>();
 const inflightById = new Map<number, Promise<IPlayerEpisode | null>>();
@@ -43,7 +43,13 @@ export async function fetchVDemoActiveEpisode(
         return existing;
     }
 
-    const autoUnlock = viewerIsVip ? 0 : 1;
+    // TikTok IAA must never fall through to the legacy coin auto-unlock path.
+    // Keep the old behavior available behind the IAP mode for a later launch.
+    const autoUnlock = isTikTokPlatform() && !isTikTokIapMode()
+        ? 0
+        : viewerIsVip
+          ? 0
+          : 1;
     const task = (async (): Promise<IPlayerEpisode | null> => {
         try {
             const result = await api<IPlayerEpisode>('movie/episode', {

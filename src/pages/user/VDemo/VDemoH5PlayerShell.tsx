@@ -38,6 +38,8 @@ import {
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import { cn } from '@/lib/utils';
+import { isTikTokPlatform } from '@/platform';
+import { prepareTikTokRewardedEpisodeUnlock } from '@/lib/tiktokRewardedEpisodeUnlock';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { useVDemoActiveEpisode } from './vDemoShellEpisode';
@@ -94,6 +96,7 @@ export function VDemoH5PlayerShell({
     const hasNext = activeIndex < data.episodes.length - 1;
     const episodeRef = useRef<HTMLDivElement>(null);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
+    const lastTikTokPrewarmAtRef = useRef<Map<number, number>>(new Map());
 
     const [favorite, setFavorite] = useState(() =>
         resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
@@ -169,6 +172,27 @@ export function VDemoH5PlayerShell({
         [activeIndex],
     );
 
+    const handleIncomingIndex = useCallback(
+        (index: number) => {
+            if (!isTikTokPlatform()) return;
+            const row = data.episodes[index];
+            const episodeId = Number(row?.id);
+            if (!episodeId || !isVDemoEpisodeLocked(row, true)) return;
+
+            const now = Date.now();
+            const lastAttemptAt = lastTikTokPrewarmAtRef.current.get(episodeId) ?? 0;
+            if (now - lastAttemptAt < 5_000) return;
+            lastTikTokPrewarmAtRef.current.set(episodeId, now);
+            void prepareTikTokRewardedEpisodeUnlock(episodeId).catch((error) => {
+                console.warn('[TikTok ad unlock] Swipe prewarm failed.', {
+                    episodeId,
+                    error,
+                });
+            });
+        },
+        [data.episodes],
+    );
+
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
     const handleBack = useVideoPlayerBack();
@@ -216,12 +240,13 @@ export function VDemoH5PlayerShell({
                     />
                 }
                 isItemLocked={isFeedItemLocked}
+                onIncomingIndex={isTikTokPlatform() ? handleIncomingIndex : undefined}
             />
             <VideoPlayerH5ColdUnmuteOverlay
                 visible={coldUnmuteVisible && !activeLocked}
                 onTapToUnmute={handleTapToUnmute}
             />
-            {activeLocked ? (
+            {activeLocked && !isTikTokPlatform() ? (
                 <VideoPlayerLockOverlay
                     variant="h5"
                     onUnlock={() => vipCommerceRef.current?.openVip()}

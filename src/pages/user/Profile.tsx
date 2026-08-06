@@ -853,8 +853,10 @@ export default function Component() {
                         {userStore.signed && !userStore.isAnonymous()
                             ? loginCardSigned
                             : loginCardGuest}
-                        {isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard}
-                        {h5MyAccountCard}
+                        {!isTikTokProfile
+                            ? (isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard)
+                            : null}
+                        {!isTikTokProfile ? h5MyAccountCard : null}
                         {h5Menu}
                         <ReelShortFooter
                             dockAboveBottomTab
@@ -863,7 +865,9 @@ export default function Component() {
                         />
                     </div>
                 )}
-                <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
+                {!isTikTokProfile ? (
+                    <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
+                ) : null}
                 {isPc ? <PcLoginDialog open={pcLoginOpen} onOpenChange={setPcLoginOpen} /> : null}
             </div>
         </div>

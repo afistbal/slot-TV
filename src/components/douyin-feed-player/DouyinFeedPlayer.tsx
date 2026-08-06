@@ -11,6 +11,7 @@ import type Player from 'xgplayer';
 
 import { cn } from '@/lib/utils';
 import mountLoadingGif from '@/assets/icons/loading.gif';
+import { isTikTokPlatform } from '@/platform';
 
 import { DouyinPlayerControls } from './controls/DouyinPlayerControls';
 import { isIosNativeVideoFullscreen } from './controls/feedPlayerFullscreen';
@@ -82,8 +83,10 @@ export function DouyinFeedPlayer({
     onFullscreenUiChange,
     feedNavigateRef,
     isItemLocked,
+    onIncomingIndex,
 }: DouyinFeedPlayerProps) {
     const isVideoH5Feed = Boolean(className?.includes('v-demo-h5-player'));
+    const showLoadingAnimation = !isTikTokPlatform();
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const playerByIndexRef = useRef<Map<number, Player>>(new Map());
@@ -104,6 +107,8 @@ export function DouyinFeedPlayer({
     onIndexChangeRef.current = onIndexChange;
     const onNextEpisodeRef = useRef(onNextEpisode);
     onNextEpisodeRef.current = onNextEpisode;
+    const onIncomingIndexRef = useRef(onIncomingIndex);
+    onIncomingIndexRef.current = onIncomingIndex;
     const showNextEpisodeRef = useRef(showNextEpisode);
     showNextEpisodeRef.current = showNextEpisode;
     const playbackItemsLengthRef = useRef(items.length);
@@ -778,6 +783,7 @@ export function DouyinFeedPlayer({
                 const target = Math.min(active + 1, maxIdx);
                 if (progress >= 0.3) {
                     prepareIncomingIndex(target);
+                    onIncomingIndexRef.current?.(target, 'next');
                 }
                 if (progress >= 0.55 && target !== active) {
                     markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
@@ -793,6 +799,7 @@ export function DouyinFeedPlayer({
                 const target = Math.max(active - 1, 0);
                 if (progress >= 0.3) {
                     prepareIncomingIndex(target);
+                    onIncomingIndexRef.current?.(target, 'prev');
                 }
                 if (progress >= 0.55 && target !== active) {
                     markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
@@ -1180,7 +1187,7 @@ export function DouyinFeedPlayer({
                                 className="douyin-feed-player__cover douyin-feed-player__cover--locked"
                                 aria-hidden
                             />
-                        ) : (
+                        ) : showLoadingAnimation ? (
                             <div className="douyin-feed-player__cover" aria-hidden>
                                 <img
                                     className="douyin-feed-player__cover-loading-img"
@@ -1189,6 +1196,8 @@ export function DouyinFeedPlayer({
                                     draggable={false}
                                 />
                             </div>
+                        ) : (
+                            <div className="douyin-feed-player__cover" aria-hidden />
                         )}
                     </div>
                 );

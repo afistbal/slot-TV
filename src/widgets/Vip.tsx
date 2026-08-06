@@ -21,6 +21,8 @@ import Payment from "./Payment";
 import Countdown from "./Countdown";
 import { isTikTokPlatform } from '@/platform';
 import TikTokPaymentPage from '@/pages/user/TikTokPaymentPage';
+import TikTokRewardedAdPage from '@/pages/user/TikTokRewardedAdPage';
+import { isTikTokIapMode } from '@/lib/tiktokMonetization';
 
 interface Product {
     id: number,
@@ -41,10 +43,18 @@ export default function Vip(props: VipProps) {
         if (!props.open) return null;
         return (
             <div className="fixed inset-0 z-[100] overflow-auto bg-black/80">
-                <TikTokPaymentPage
-                    layout="embed"
-                    onEmbedClose={() => props.onOpenChange?.(false)}
-                />
+                {isTikTokIapMode() ? (
+                    // Retained for a possible later TikTok IAP launch.
+                    <TikTokPaymentPage
+                        layout="embed"
+                        onEmbedClose={() => props.onOpenChange?.(false)}
+                    />
+                ) : (
+                    <TikTokRewardedAdPage
+                        layout="embed"
+                        onEmbedClose={() => props.onOpenChange?.(false)}
+                    />
+                )}
             </div>
         );
     }

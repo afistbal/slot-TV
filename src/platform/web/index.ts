@@ -9,6 +9,7 @@ export const webPlatform: AppPlatform = {
     kind: 'web',
     auth: {},
     payment: { supported: true },
+    ads: { supported: false },
     player: { provider: 'web' },
     lifecycle: { supported: false },
     navigation: { supported: false },

@@ -5,6 +5,7 @@ import { FormattedMessage } from 'react-intl';
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import { cn } from '@/lib/utils';
 import { formatFavoriteCountK } from '@/components/video-player/videoPlayerUtils';
+import { isTikTokPlatform } from '@/platform';
 
 function SideActionItem({
     icon,
@@ -57,6 +58,8 @@ export function VideoPlayerSideActions({
     onShareClick,
     className,
 }: VideoPlayerSideActionsProps) {
+    const showVipAction = !isTikTokPlatform() && showVip && onVipClick;
+
     return (
         <div
             className={cn(
@@ -67,7 +70,7 @@ export function VideoPlayerSideActions({
             )}
             data-vertical-swipe-ignore
         >
-            {showVip && onVipClick ? (
+            {showVipAction ? (
                 <SideActionItem
                     icon={<Crown className="h-8 w-8 fill-[#ffd000] text-[#ffd000]" aria-hidden />}
                     label={<FormattedMessage id="shopping_vip_fab_label" />}

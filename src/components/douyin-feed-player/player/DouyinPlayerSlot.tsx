@@ -4,6 +4,7 @@ import type Player from 'xgplayer';
 import mountLoadingGif from '@/assets/icons/loading.gif';
 import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { cn } from '@/lib/utils';
+import { isTikTokPlatform } from '@/platform';
 
 import { FeedCenterPlayButton } from '../controls/FeedCenterPlayButton';
 import { FeedSubtitleOverlay } from '../controls/FeedSubtitleOverlay';
@@ -44,6 +45,7 @@ export function DouyinPlayerSlot({
     const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
     const [mountLoadingVisible, setMountLoadingVisible] = useState(true);
     const isDesktop = useVideoPlayerDesktop();
+    const showLoadingAnimation = !isTikTokPlatform();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
     /** PC 9:16 由外层 video-player-pc-shell 舞台约束；H5 NetShort 式 9:16 居中露黑边 */
@@ -156,7 +158,7 @@ export function DouyinPlayerSlot({
                         className="douyin-player-slot__mount"
                         role="presentation"
                     />
-                    {mountLoadingVisible ? (
+                    {showLoadingAnimation && mountLoadingVisible ? (
                         <div className="douyin-player-slot__mount-loading" aria-hidden>
                             <img
                                 className="douyin-player-slot__mount-loading-img"
@@ -173,14 +175,16 @@ export function DouyinPlayerSlot({
                 </div>
             ) : (
                 <div className={cn(stageClassName, 'douyin-player-slot__placeholder')} aria-hidden>
-                    <div className="douyin-player-slot__mount-loading">
-                        <img
-                            className="douyin-player-slot__mount-loading-img"
-                            src={mountLoadingGif}
-                            alt=""
-                            draggable={false}
-                        />
-                    </div>
+                    {showLoadingAnimation ? (
+                        <div className="douyin-player-slot__mount-loading">
+                            <img
+                                className="douyin-player-slot__mount-loading-img"
+                                src={mountLoadingGif}
+                                alt=""
+                                draggable={false}
+                            />
+                        </div>
+                    ) : null}
                 </div>
             )}
         </div>

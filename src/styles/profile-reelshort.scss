@@ -102,6 +102,11 @@
         align-items: stretch;
     }
 
+    /* Keep the compact legal/contact block directly above the bottom tab. */
+    .rs-profile__content > .reelshort-footer {
+        margin-top: auto;
+    }
+
     .rs-profile__loginCard,
     .rs-profile__loginCard--tiktok {
         box-sizing: border-box;

@@ -23,6 +23,18 @@ export interface PlatformPayment {
     pay?: (tradeOrderId: string) => Promise<unknown>;
 }
 
+export interface PlatformRewardedAdResult {
+    /** TikTok only grants the reward when the video reached its natural end. */
+    isEnded: boolean;
+    /** Unmodified SDK close callback, kept for device debugging and telemetry. */
+    raw?: unknown;
+}
+
+export interface PlatformAds {
+    readonly supported: boolean;
+    showRewarded?: (adUnitId: string) => Promise<PlatformRewardedAdResult>;
+}
+
 export interface PlatformPlayer {
     /** Reserved for the platform-specific player adapter in DEV-04. */
     readonly provider: 'web' | 'veplayer';
@@ -42,6 +54,7 @@ export interface AppPlatform {
     readonly kind: PlatformKind;
     readonly auth: PlatformAuth;
     readonly payment: PlatformPayment;
+    readonly ads: PlatformAds;
     readonly player: PlatformPlayer;
     readonly lifecycle: PlatformLifecycle;
     readonly navigation: PlatformNavigation;

@@ -80,7 +80,8 @@
 
 ## 3. 权益与商品（BE-03，变现方案确定后）
 
-先由产品决定 IAP、IAA 或两者。接口名称可与现有 H5 不同，避免把 PayPal/Airwallex 的字段套到 TikTok。
+当前 TikTok 首发固定采用 IAA 奖励广告；IAP 前端实现保留但不展示，后续可通过
+`VITE_TIKTOK_MONETIZATION_MODE=iap` 恢复。现有 Web H5 支付流程不变。
 
 最小接口清单：
 
@@ -88,8 +89,23 @@
 | --- | --- |
 | `GET /api/tiktok/minis/products` | 返回 TikTok 可售商品和 TikTok SKU，不返回 H5 支付参数。 |
 | `POST /api/tiktok/minis/orders` | 创建本站订单并返回 TikTok `TTMinis.pay` 所需参数。 |
-| `POST /api/tiktok/minis/ads/reward` | 广告完成后的服务端权益核验/刷新。 |
+| `GET /api/tiktok/ads` | 返回后台已启用的 TikTok 广告位集合。 |
+| `POST /api/movie/episode/tiktok-ad/start` | 创建短期广告解锁会话。 |
+| `POST /api/movie/episode/tiktok-ad/complete` | 完成广告解锁并返回剧集播放数据。 |
 | TikTok -> 后端 webhook | 订单状态回调验签、幂等入账、补单。 |
+
+当前 TikTok 奖励广告解锁流程：
+
+1. 进入 TikTok 应用并完成登录后，调用 `GET /api/tiktok/ads` 获取已启用广告位。
+2. 滑动即将进入锁定剧集时，调用 `POST /api/movie/episode/tiktok-ad/start`，发送
+   `episode_id` 和 `ad_id`，提前获取短期 `unlock_token`。
+3. 客户端通过 `TTMinis.createRewardedVideoAd({ adUnitId })` 展示广告。
+4. 仅当广告关闭结果为 `isEnded=true` 时，调用
+   `POST /api/movie/episode/tiktok-ad/complete`，发送 `episode_id`、`ad_id` 和 `unlock_token`。
+5. `complete` 成功响应直接返回包含 `lock=false` 和播放地址的 `IPlayerEpisode`，前端不再调用旧的
+   `POST movie/episode` 广告解锁分支。
+
+TikTok 当前没有公开的广告完成服务端验签凭证，因此后端仍需按用户、剧集、广告位和短期凭证做幂等与频控。
 
 ## 4. 前端接入顺序
 

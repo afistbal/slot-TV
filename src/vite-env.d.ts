@@ -22,6 +22,9 @@ declare module 'xgplayer-mp4' {
 declare module 'xgplayer/dist/index.min.css';
 
 interface ImportMetaEnv {
+  readonly VITE_PLATFORM?: string;
+  readonly VITE_TIKTOK_MONETIZATION_MODE?: 'iaa' | 'iap';
+  readonly VITE_TIKTOK_REWARDED_AD_UNIT_ID?: string;
   readonly VITE_SKIP_API?: string;
   readonly VITE_PWA_INSTALL_PROMPT?: string;
   /** 设为 `false` 关闭 H5 底部四栏 Tab */
