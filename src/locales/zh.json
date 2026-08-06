@@ -176,6 +176,7 @@
     "login_failed": "登入失敗: {eason}",
     "watch_ad": "觀看廣告",
     "unlock_now_ad": "觀看廣告後解鎖",
+    "watch_unlock_video_miss_tips": "中間的劇情也很精彩，別錯過！",
     "users": "用戶",
     "user": "用戶",
     "user_total": "🙍‍♂️用戶數量 {total}",

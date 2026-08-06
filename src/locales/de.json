@@ -164,6 +164,7 @@
     "login_failed": "Anmeldung fehlgeschlagen: {eason}",
     "watch_ad": "Werbung ansehen",
     "unlock_now_ad": "Durch Ansehen einer Werbung freischalten",
+    "watch_unlock_video_miss_tips": "Die Geschichten dazwischen sind auch sehr spannend. Verpasse sie nicht!",
     "users": "Benutzer",
     "user": "Benutzer",
     "user_total": "🙍‍♂️Anzahl der Benutzer {total}",

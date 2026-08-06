@@ -175,6 +175,7 @@
     "login_failed": "Login Failed: {eason}",
     "watch_ad": "Watch AD",
     "unlock_now_ad": "Unlock by watching an ad",
+    "watch_unlock_video_miss_tips": "The stories in between are also very interesting. Don't miss out!",
     "users": "Users",
     "user": "User",
     "user_total": "🙍‍♂️User Count {total}",

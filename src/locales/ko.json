@@ -164,6 +164,7 @@
     "login_failed": "로그인 실패: {reason}",
     "watch_ad": "광고 시청",
     "unlock_now_ad": "광고를 보고 잠금 해제",
+    "watch_unlock_video_miss_tips": "중간 이야기들도 정말 흥미롭습니다. 놓치지 마세요!",
     "users": "사용자",
     "user": "사용자",
     "user_total": "🙍‍♂️사용자 수 {total}명",

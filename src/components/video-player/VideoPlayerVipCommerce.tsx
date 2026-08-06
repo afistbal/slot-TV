@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 
 export type VideoPlayerVipCommerceHandle = {
     openVip: () => void;
+    openRewardedAd: (episodeRowId?: number) => void;
     closeVip: () => void;
     toggleVip: (ev?: MouseEvent) => void;
 };
@@ -51,6 +52,10 @@ export type VideoPlayerVipCommerceProps = {
      * 为 true 且 `viewerIsVip === false` 时展示 VIP/解锁入口。
      */
     locked: boolean;
+    /** TikTok only: a prior episode must be unlocked before this one can show an ad. */
+    tiktokEpisodeOrderBlocked?: boolean;
+    /** Disable when the TikTok lock overlay is rendered inside the feed slide. */
+    showTikTokLockedOverlay?: boolean;
     episode?: IPlayerEpisode;
     viewerIsVip: boolean;
     onPaySuccessEpisodeDetail: (episode: IPlayerEpisode) => void;
@@ -64,6 +69,8 @@ export const VideoPlayerVipCommerce = forwardRef<
         variant,
         episodeRowId,
         locked,
+        tiktokEpisodeOrderBlocked = false,
+        showTikTokLockedOverlay = true,
         episode,
         viewerIsVip,
         onPaySuccessEpisodeDetail,
@@ -93,11 +100,11 @@ export const VideoPlayerVipCommerce = forwardRef<
         episodeRowId,
     });
 
-    const showRewardedAd = useCallback(async () => {
-        if (rewardedAdBusyRef.current || !episodeRowId) return;
+    const showRewardedAd = useCallback(async (targetEpisodeRowId = episodeRowId) => {
+        if (rewardedAdBusyRef.current || !targetEpisodeRowId) return;
         rewardedAdBusyRef.current = true;
         try {
-            const result = await unlockTikTokEpisodeWithRewardedAd(episodeRowId);
+            const result = await unlockTikTokEpisodeWithRewardedAd(targetEpisodeRowId);
             toast.success('Ad completed. Episode unlocked.', {
                 id: 'tiktok-rewarded-ad',
             });
@@ -113,15 +120,24 @@ export const VideoPlayerVipCommerce = forwardRef<
 
     const openVip = useCallback(() => {
         if (useTikTokIaa) {
+            if (tiktokEpisodeOrderBlocked) return;
             void showRewardedAd();
             return;
         }
         setVip(true);
-    }, [showRewardedAd, useTikTokIaa]);
+    }, [showRewardedAd, tiktokEpisodeOrderBlocked, useTikTokIaa]);
 
     const closeVip = useCallback(() => {
         setVip(false);
     }, []);
+
+    const openRewardedAd = useCallback(
+        (targetEpisodeRowId?: number) => {
+            if (!useTikTokIaa) return;
+            void showRewardedAd(targetEpisodeRowId);
+        },
+        [showRewardedAd, useTikTokIaa],
+    );
 
     const toggleVip = useCallback(
         (ev?: MouseEvent) => {
@@ -131,16 +147,18 @@ export const VideoPlayerVipCommerce = forwardRef<
                 return;
             }
             if (useTikTokIaa) {
+                if (tiktokEpisodeOrderBlocked) return;
                 void showRewardedAd();
                 return;
             }
             setVip((open) => !open);
         },
-        [showRewardedAd, useTikTokIaa, viewerIsVip],
+        [showRewardedAd, tiktokEpisodeOrderBlocked, useTikTokIaa, viewerIsVip],
     );
 
-    useImperativeHandle(ref, () => ({ openVip, closeVip, toggleVip }), [
+    useImperativeHandle(ref, () => ({ openVip, openRewardedAd, closeVip, toggleVip }), [
         openVip,
+        openRewardedAd,
         closeVip,
         toggleVip,
     ]);
@@ -175,8 +193,12 @@ export const VideoPlayerVipCommerce = forwardRef<
 
     const vipHeaderEpisodeUnlockCoins = episode?.unlock_coins;
     const rewardedFallbackOverlay =
-        useTikTokIaa && locked ? (
-            <TikTokRewardedFallbackOverlay posterUrl={posterUrl} onRetry={openVip} />
+        useTikTokIaa && locked && showTikTokLockedOverlay ? (
+            <TikTokRewardedFallbackOverlay
+                posterUrl={posterUrl}
+                onRetry={openVip}
+                episodeOrderBlocked={tiktokEpisodeOrderBlocked}
+            />
         ) : null;
 
     if (variant === 'pc') {

@@ -164,6 +164,7 @@
     "login_failed": "Đăng nhập thất bại: {reason}",
     "watch_ad": "Xem quảng cáo",
     "unlock_now_ad": "Mở khóa bằng cách xem quảng cáo",
+    "watch_unlock_video_miss_tips": "Những câu chuyện ở giữa cũng rất hấp dẫn. Đừng bỏ lỡ!",
     "users": "Người dùng",
     "user": "Người dùng",
     "user_total": "🙍‍♂️Tổng số người dùng {total}",

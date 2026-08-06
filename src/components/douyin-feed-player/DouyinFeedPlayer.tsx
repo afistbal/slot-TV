@@ -84,7 +84,9 @@ export function DouyinFeedPlayer({
     feedNavigateRef,
     isItemLocked,
     getLockedPosterUrl,
+    renderLockedOverlay,
     onIncomingIndex,
+    preventNextFromLockedItem = false,
 }: DouyinFeedPlayerProps) {
     const isVideoH5Feed = Boolean(className?.includes('v-demo-h5-player'));
     const showLoadingAnimation = !isTikTokPlatform();
@@ -110,6 +112,10 @@ export function DouyinFeedPlayer({
     onNextEpisodeRef.current = onNextEpisode;
     const onIncomingIndexRef = useRef(onIncomingIndex);
     onIncomingIndexRef.current = onIncomingIndex;
+    const isItemLockedRef = useRef(isItemLocked);
+    isItemLockedRef.current = isItemLocked;
+    const preventNextFromLockedItemRef = useRef(preventNextFromLockedItem);
+    preventNextFromLockedItemRef.current = preventNextFromLockedItem;
     const showNextEpisodeRef = useRef(showNextEpisode);
     showNextEpisodeRef.current = showNextEpisode;
     const playbackItemsLengthRef = useRef(items.length);
@@ -647,6 +653,14 @@ export function DouyinFeedPlayer({
     const navigate = useCallback(
         (direction: FeedNavigateDirection) => {
             const current = activeIndexRef.current;
+            if (
+                direction !== 'prev'
+                && preventNextFromLockedItemRef.current
+                && Boolean(isItemLockedRef.current?.(playbackItemsRef.current[current], current))
+            ) {
+                scrollToIndex(current, 'auto');
+                return;
+            }
             const delta = direction === 'prev' ? -1 : 1;
             const next = Math.min(
                 Math.max(0, current + delta),
@@ -780,6 +794,13 @@ export function DouyinFeedPlayer({
             const maxIdx = playbackItemsLengthRef.current - 1;
 
             if (rawIndex > active) {
+                if (
+                    preventNextFromLockedItemRef.current
+                    && Boolean(isItemLockedRef.current?.(playbackItemsRef.current[active], active))
+                ) {
+                    root.scrollTop = active * height;
+                    return;
+                }
                 const progress = rawIndex - active;
                 const target = Math.min(active + 1, maxIdx);
                 if (progress >= 0.3) {
@@ -1185,22 +1206,25 @@ export function DouyinFeedPlayer({
                                 ) : null}
                             </>
                         ) : locked ? (
-                            <div
-                                className="douyin-feed-player__cover douyin-feed-player__cover--locked"
-                                aria-hidden
-                            >
-                                {lockedPosterUrl ? (
-                                    <>
-                                        <img
-                                            className="douyin-feed-player__locked-poster"
-                                            src={lockedPosterUrl}
-                                            alt=""
-                                            draggable={false}
-                                        />
-                                        <div className="douyin-feed-player__locked-poster-shade" />
-                                    </>
-                                ) : null}
-                            </div>
+                            <>
+                                <div
+                                    className="douyin-feed-player__cover douyin-feed-player__cover--locked"
+                                    aria-hidden
+                                >
+                                    {lockedPosterUrl ? (
+                                        <>
+                                            <img
+                                                className="douyin-feed-player__locked-poster"
+                                                src={lockedPosterUrl}
+                                                alt=""
+                                                draggable={false}
+                                            />
+                                            <div className="douyin-feed-player__locked-poster-shade" />
+                                        </>
+                                    ) : null}
+                                </div>
+                                {renderLockedOverlay?.(item, index)}
+                            </>
                         ) : showLoadingAnimation ? (
                             <div className="douyin-feed-player__cover" aria-hidden>
                                 <img

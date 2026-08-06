@@ -21,6 +21,7 @@ import { VideoPlayerH5BackBar } from '@/components/video-player/VideoPlayerH5Bac
 import { VideoPlayerH5ColdUnmuteOverlay } from '@/components/video-player/VideoPlayerH5ColdUnmuteOverlay';
 import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
 import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
+import { TikTokRewardedFallbackOverlay } from '@/components/video-player/TikTokRewardedFallbackOverlay';
 import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
 import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
 import { useVideoPlayerBack } from '@/components/video-player/useVideoPlayerBack';
@@ -136,6 +137,60 @@ export function VDemoH5PlayerShell({
         },
         [data.episodes, shareCardPosterUrl, staticBase],
     );
+    const firstLockedIndex = data.episodes.findIndex(resolveEpisodeCellLocked);
+    const tiktokEpisodeOrderBlocked = Boolean(
+        isTikTokPlatform()
+        && !viewerIsVip
+        && activeLocked
+        && firstLockedIndex >= 0
+        && activeIndex > firstLockedIndex,
+    );
+    const prepareTikTokEpisodeAtIndex = useCallback(
+        (index: number) => {
+            if (!isTikTokPlatform()) return;
+            const firstLocked = data.episodes.findIndex(resolveEpisodeCellLocked);
+            if (firstLocked < 0 || index !== firstLocked) return;
+
+            const episodeId = Number(data.episodes[index]?.id);
+            if (!episodeId) return;
+            const now = Date.now();
+            const lastAttemptAt = lastTikTokPrewarmAtRef.current.get(episodeId) ?? 0;
+            if (now - lastAttemptAt < 5_000) return;
+            lastTikTokPrewarmAtRef.current.set(episodeId, now);
+
+            void prepareTikTokRewardedEpisodeUnlock(episodeId).catch((error) => {
+                console.warn('[TikTok ad unlock] Prepare failed.', {
+                    episodeId,
+                    error,
+                });
+            });
+        },
+        [data.episodes, resolveEpisodeCellLocked],
+    );
+    const renderTikTokLockedOverlay = useCallback(
+        (item: DouyinFeedVideoItem, index: number) => {
+            if (!isTikTokPlatform()) return null;
+            const episodeOrderBlocked = Boolean(
+                !viewerIsVip
+                && firstLockedIndex >= 0
+                && index > firstLockedIndex,
+            );
+            return (
+                <TikTokRewardedFallbackOverlay
+                    posterUrl={getTikTokLockedPosterUrl(item, index)}
+                    episodeOrderBlocked={episodeOrderBlocked}
+                    onRetry={() => {
+                        if (!episodeOrderBlocked) {
+                            vipCommerceRef.current?.openRewardedAd(
+                                Number(data.episodes[index]?.id),
+                            );
+                        }
+                    }}
+                />
+            );
+        },
+        [data.episodes, firstLockedIndex, getTikTokLockedPosterUrl, viewerIsVip],
+    );
     const activeTikTokLockedPosterUrl = getTikTokLockedPosterUrl(
         activePlayerItem,
         activeIndex,
@@ -182,31 +237,24 @@ export function VDemoH5PlayerShell({
             if (listIndex === activeIndex) {
                 return;
             }
+            prepareTikTokEpisodeAtIndex(listIndex);
             feedNavigateRef.current?.goToIndex(listIndex);
         },
-        [activeIndex],
+        [activeIndex, prepareTikTokEpisodeAtIndex],
     );
 
     const handleIncomingIndex = useCallback(
         (index: number) => {
-            if (!isTikTokPlatform()) return;
-            const row = data.episodes[index];
-            const episodeId = Number(row?.id);
-            if (!episodeId || !isVDemoEpisodeLocked(row, true)) return;
-
-            const now = Date.now();
-            const lastAttemptAt = lastTikTokPrewarmAtRef.current.get(episodeId) ?? 0;
-            if (now - lastAttemptAt < 5_000) return;
-            lastTikTokPrewarmAtRef.current.set(episodeId, now);
-            void prepareTikTokRewardedEpisodeUnlock(episodeId).catch((error) => {
-                console.warn('[TikTok ad unlock] Swipe prewarm failed.', {
-                    episodeId,
-                    error,
-                });
-            });
+            prepareTikTokEpisodeAtIndex(index);
         },
-        [data.episodes],
+        [prepareTikTokEpisodeAtIndex],
     );
+
+    useEffect(() => {
+        if (activeLocked) {
+            prepareTikTokEpisodeAtIndex(activeIndex);
+        }
+    }, [activeIndex, activeLocked, prepareTikTokEpisodeAtIndex]);
 
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
@@ -256,7 +304,9 @@ export function VDemoH5PlayerShell({
                 }
                 isItemLocked={isFeedItemLocked}
                 getLockedPosterUrl={isTikTokPlatform() ? getTikTokLockedPosterUrl : undefined}
+                renderLockedOverlay={isTikTokPlatform() ? renderTikTokLockedOverlay : undefined}
                 onIncomingIndex={isTikTokPlatform() ? handleIncomingIndex : undefined}
+                preventNextFromLockedItem={isTikTokPlatform()}
             />
             <VideoPlayerH5ColdUnmuteOverlay
                 visible={coldUnmuteVisible && !activeLocked}
@@ -291,6 +341,8 @@ export function VDemoH5PlayerShell({
                 variant="h5"
                 episodeRowId={activeRow?.id ?? 0}
                 locked={activeLocked}
+                tiktokEpisodeOrderBlocked={tiktokEpisodeOrderBlocked}
+                showTikTokLockedOverlay={false}
                 episode={episode}
                 viewerIsVip={viewerIsVip}
                 onPaySuccessEpisodeDetail={handlePaySuccessEpisodeDetail}

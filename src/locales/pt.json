@@ -164,6 +164,7 @@
     "login_failed": "Login Falhou: {eason}",
     "watch_ad": "Assistir Anúncio",
     "unlock_now_ad": "Desbloquear assistindo a um anúncio",
+    "watch_unlock_video_miss_tips": "As histórias entre eles também são muito interessantes. Não perca!",
     "users": "Usuários",
     "user": "Usuário",
     "user_total": "🙍‍♂️Contagem de Usuários {total}",

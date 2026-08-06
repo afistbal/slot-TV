@@ -164,6 +164,7 @@
     "login_failed": "Giriş Başarısız: {eason}",
     "watch_ad": "Reklam İzle",
     "unlock_now_ad": "Reklam izleyerek kilidi aç",
+    "watch_unlock_video_miss_tips": "Aradaki hikayeler de çok ilgi çekici. Sakın kaçırma!",
     "users": "Kullanıcılar",
     "user": "Kullanıcı",
     "user_total": "🙍‍♂️Kullanıcı Sayısı {total}",

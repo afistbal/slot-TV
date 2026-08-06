@@ -14,6 +14,7 @@
     "build:prod1": "node ./scripts/bump-version.mjs && node ./scripts/clean-movie-www.mjs D:/JJ-TV/movie-www-prod1 && tsc -b && vite build --mode prod1 && node ./scripts/prune-old-assets.mjs D:/JJ-TV/movie-www-prod1",
     "dev:tiktok": "node ./scripts/prepare-tiktok-minis.mjs && vite --mode tiktok",
     "dev:tiktok:web": "node ./scripts/prepare-tiktok-minis.mjs tiktok-web && vite --mode tiktok-web",
+    "prod:tiktok:web": "node ./scripts/prepare-tiktok-minis.mjs tiktok-web-prod && vite --mode tiktok-web-prod",
     "prod:tiktok": "node ./scripts/prepare-tiktok-minis.mjs tiktok-prod && vite --mode tiktok-prod",
     "build:tiktok": "node ./scripts/prepare-tiktok-minis.mjs && tsc -b && vite build --mode tiktok && minis build",
     "build:prod:tiktok": "node ./scripts/prepare-tiktok-minis.mjs tiktok-prod && tsc -b && vite build --mode tiktok-prod && minis build",

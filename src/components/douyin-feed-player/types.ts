@@ -55,8 +55,12 @@ export type DouyinFeedPlayerProps = {
     isItemLocked?: (item: DouyinFeedVideoItem, index: number) => boolean;
     /** Optional locked-item poster. Callers that omit it retain the existing black cover. */
     getLockedPosterUrl?: (item: DouyinFeedVideoItem, index: number) => string;
+    /** Optional content rendered inside each locked slide so it moves with that slide. */
+    renderLockedOverlay?: (item: DouyinFeedVideoItem, index: number) => ReactNode;
     /** Notifies the business layer when a swipe is approaching another item. */
     onIncomingIndex?: (index: number, direction: FeedNavigateDirection) => void;
+    /** Prevents advancing past the current item while it is locked. */
+    preventNextFromLockedItem?: boolean;
 };
 export type PlayerSlotState = {
     index: number;
