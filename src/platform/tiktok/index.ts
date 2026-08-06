@@ -170,17 +170,12 @@ async function showTikTokRewardedAd(adUnitId: string): Promise<PlatformRewardedA
     }
 
     if (isTikTokWebTestMode()) {
-        const isEnded = window.confirm(
-            `TikTok rewarded ad web test\n\nAd unit: ${normalizedAdUnitId}\n\n`+
-            'Choose OK to simulate watching the full ad. Choose Cancel to simulate closing it early.',
-        );
-        console.info('[TikTok web test] Simulated rewarded ad result.', {
+        console.info('[TikTok web test] Simulated completed rewarded ad.', {
             adUnitId: normalizedAdUnitId,
-            isEnded,
         });
         return {
-            isEnded,
-            raw: { mock: true, adUnitId: normalizedAdUnitId, isEnded },
+            isEnded: true,
+            raw: { mock: true, adUnitId: normalizedAdUnitId, isEnded: true },
         };
     }
 

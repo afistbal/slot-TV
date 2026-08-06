@@ -105,9 +105,6 @@ export const VideoPlayerVipCommerce = forwardRef<
         rewardedAdBusyRef.current = true;
         try {
             const result = await unlockTikTokEpisodeWithRewardedAd(targetEpisodeRowId);
-            toast.success('Ad completed. Episode unlocked.', {
-                id: 'tiktok-rewarded-ad',
-            });
             onPaySuccessEpisodeDetail(result.episode);
         } catch (error) {
             // TikTok 锁定页本身就是失败/未解锁状态的反馈，不额外弹出错误提示。
