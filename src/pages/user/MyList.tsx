@@ -8,6 +8,7 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
+import { isTikTokPlatform } from '@/platform';
 import '@/styles/my-list-reelshort.scss';
 import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
 
@@ -17,6 +18,7 @@ type MyListLocationState = {
 
 export default function Component() {
     const isPc = useMinWidth768();
+    const isTikTokMyList = isTikTokPlatform() && !isPc;
     const intl = useIntl();
     const location = useLocation();
     const navigate = useNavigate();
@@ -60,7 +62,7 @@ export default function Component() {
     if (!isPc) {
         return (
             <div className="rs-my-list-page rs-my-list-page--h5 flex h-full min-h-0 flex-col bg-app-canvas text-white">
-                {showTopBar ? (
+                {showTopBar && !isTikTokMyList ? (
                     <ReelShortTopNav leftAction="none" showSearch={false} showRightActions={false} />
                 ) : null}
                 <div className="rs-my-list-page__scroll flex min-h-0 min-w-0 flex-1 flex-col">

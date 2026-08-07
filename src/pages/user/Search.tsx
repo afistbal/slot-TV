@@ -44,6 +44,7 @@ import {
 } from '@/lib/movieTagLabels';
 import iconTag from '@/assets/images/icon_tag@2x.png';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import { isTikTokPlatform } from '@/platform';
 import '@/styles/search-reelshort.scss';
 import '@/styles/shelf-reelshort.scss';
 
@@ -528,6 +529,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     const isH5TagSearchPage = isTagSearchPage && !isPc;
     const isPcTagSearchPage = isTagSearchPage && isPc;
     const isH5InnerNavPage = isH5SearchPage || isH5TagSearchPage;
+    const isTikTokInnerSearchPage = isTikTokPlatform() && isH5InnerNavPage;
     const tagLabelFromUrl = isTagSearchPage ? readTagLabelFromSearch(location.search) : '';
     const tagKeyFromUrl = isTagSearchPage ? readMovieTagFromSearch(location.search) : '';
     const activeTagKey = searchStore.tag || tagKeyFromUrl;
@@ -1265,20 +1267,32 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 ref={scrollRef}
                 onScroll={handleScrollEnd}
             >
-                <ReelShortTopNav
-                    scrollParentRef={scrollRef}
-                    showPrimaryNav={isCategoriesPage}
-                    leftAction={isCategoriesPage ? 'none' : isH5InnerNavPage ? 'back' : 'menu'}
-                    showRightActions={!isH5InnerNavPage}
-                    showSearch={isCategoriesPage}
-                    showProfile={!isCategoriesPage && !isH5InnerNavPage}
-                    showLanguage={!isH5InnerNavPage}
-                    showHistory={!isH5InnerNavPage}
-                />
+                {!isTikTokInnerSearchPage ? (
+                    <ReelShortTopNav
+                        scrollParentRef={scrollRef}
+                        showPrimaryNav={isCategoriesPage}
+                        leftAction={isCategoriesPage ? 'none' : isH5InnerNavPage ? 'back' : 'menu'}
+                        showRightActions={!isH5InnerNavPage}
+                        showSearch={isCategoriesPage}
+                        showProfile={!isCategoriesPage && !isH5InnerNavPage}
+                        showLanguage={!isH5InnerNavPage}
+                        showHistory={!isH5InnerNavPage}
+                    />
+                ) : null}
 
                 {showH5SearchBar ? (
                 <div className="rs-search-page__barPad md:hidden">
                     <div role="search-bar" className="rs-search-page__bar">
+                        {isTikTokInnerSearchPage ? (
+                            <button
+                                type="button"
+                                className="rs-search-page__barBack"
+                                onClick={() => navigate(-1)}
+                                aria-label={intl.formatMessage({ id: 'back', defaultMessage: 'Back' })}
+                            >
+                                <ChevronLeft aria-hidden />
+                            </button>
+                        ) : null}
                         <div className="rs-search-page__barInner">
                             <SearchIcon16 className="rs-search-page__barIcon" />
                             <input

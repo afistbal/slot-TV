@@ -685,15 +685,17 @@ export default function Component() {
                 ref={scrollRef}
                 className={cn('rs-profile__scroll', isPc && 'rs-profile__scroll--pc')}
             >
-                <ReelShortTopNav
-                    scrollParentRef={scrollRef}
-                    /* PC?????????? brand-cluster ?? ? ????????H5 ?????/?? subnav */
-                    showPrimaryNav={isPc}
-                    showSearch={isPc}
-                    showProfile={false}
-                    leftAction={isPc ? 'menu' : 'none'}
-                    rightActionsMode={isPc ? 'profilePc' : 'default'}
-                />
+                {!isTikTokProfile ? (
+                    <ReelShortTopNav
+                        scrollParentRef={scrollRef}
+                        /* PC?????????? brand-cluster ?? ? ????????H5 ?????/?? subnav */
+                        showPrimaryNav={isPc}
+                        showSearch={isPc}
+                        showProfile={false}
+                        leftAction={isPc ? 'menu' : 'none'}
+                        rightActionsMode={isPc ? 'profilePc' : 'default'}
+                    />
+                ) : null}
                 {isPc ? (
                     <>
                         <div className="rs-profile__pc-dashboard">

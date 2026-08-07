@@ -35,6 +35,7 @@ import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
 import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
 import { prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
+import { isTikTokPlatform } from '@/platform';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -851,6 +852,7 @@ export function ReelShortTopNav({
   const navigate = useNavigate();
   const profilePcActions = rightActionsMode === 'profilePc' && isMd;
   const intl = useIntl();
+  const isTikTok = isTikTokPlatform();
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerSolid, setHeaderSolid] = useState(false);
   const allowTransparent = showPrimaryNav;
@@ -937,6 +939,7 @@ export function ReelShortTopNav({
       <header
         className={cn(
           'reelshort-topnav',
+          isTikTok && 'reelshort-topnav--tiktok',
           headerSolid ? 'reelshort-topnav--solid' : 'reelshort-topnav--transparent',
         )}
       >
@@ -970,18 +973,46 @@ export function ReelShortTopNav({
             </div>
 
             <div className="reelshort-topnav__brand-cluster reelshort-topnav__brand-cluster--with-primary">
-              <Link to="/" className="reelshort-topnav__brand-link">
-                <img
-                  src={BRAND_TOPNAV_WORDMARK_SRC}
-                  alt={BRAND_DISPLAY_NAME}
-                  className="reelshort-topnav__brand-wordmark"
-                  width={BRAND_TOPNAV_WORDMARK_WIDTH}
-                  height={BRAND_TOPNAV_WORDMARK_HEIGHT}
-                  decoding="async"
-                  loading="eager"
-                  fetchPriority="high"
-                />
-              </Link>
+              {!isTikTok ? (
+                <Link to="/" className="reelshort-topnav__brand-link">
+                  <img
+                    src={BRAND_TOPNAV_WORDMARK_SRC}
+                    alt={BRAND_DISPLAY_NAME}
+                    className="reelshort-topnav__brand-wordmark"
+                    width={BRAND_TOPNAV_WORDMARK_WIDTH}
+                    height={BRAND_TOPNAV_WORDMARK_HEIGHT}
+                    decoding="async"
+                    loading="eager"
+                    fetchPriority="high"
+                  />
+                </Link>
+              ) : null}
+              {isTikTok && showPrimaryNav ? (
+                <nav
+                  className="reelshort-topnav__h5-subnav reelshort-topnav__h5-subnav--tiktok-inline"
+                  aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
+                >
+                  <NavLink
+                    to="/"
+                    end
+                    className={({ isActive }) =>
+                      cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
+                    }
+                  >
+                    <FormattedMessage id="home" />
+                  </NavLink>
+                  <NavLink
+                    to="/categories"
+                    onPointerEnter={prefetchSearchRouteChunk}
+                    onPointerDown={prefetchSearchRouteChunk}
+                    className={({ isActive }) =>
+                      cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
+                    }
+                  >
+                    <FormattedMessage id="nav_categories" />
+                  </NavLink>
+                </nav>
+              ) : null}
               <nav
                 className="reelshort-topnav__pc-primary-nav"
                 aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
@@ -1047,7 +1078,7 @@ export function ReelShortTopNav({
             </div>
           </div>
 
-          {showPrimaryNav ? (
+          {showPrimaryNav && !isTikTok ? (
             <nav
               className="reelshort-topnav__h5-subnav"
               aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}

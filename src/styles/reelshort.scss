@@ -522,6 +522,25 @@ a.reelshort-topnav__brand-link {
     }
 }
 
+/* TikTok custom navbar already owns the logo row; keep tabs and search on one shared line. */
+.reelshort-topnav__h5-subnav--tiktok-inline {
+    position: relative;
+    top: -4px;
+    width: auto;
+    height: auto;
+    align-items: center;
+    padding: 0;
+}
+
+/* TikTok Minis already has its own navbar row above this one. Keep the home tabs compact. */
+@media (max-width: 767px) {
+    .reelshort-topnav--tiktok .reelshort-topnav__row {
+        min-height: 36px;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
+
 .reelshort-topnav--transparent .reelshort-topnav__h5-subnav {
     background: transparent;
 }

@@ -41,6 +41,25 @@
         }
     }
 
+    &__barBack {
+        display: inline-flex;
+        width: 32px;
+        height: 42px;
+        flex: 0 0 32px;
+        align-items: center;
+        justify-content: flex-start;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: #fff;
+        cursor: pointer;
+
+        svg {
+            width: 24px;
+            height: 24px;
+        }
+    }
+
     &__barInner {
         display: flex;
         height: min(11.2vw, 2.625rem);

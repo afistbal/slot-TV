@@ -9,8 +9,82 @@
     TTMinis.init({
       clientKey: "%VITE_TIKTOK_MINIS_CLIENT_KEY%",
     });
+
+    if (TTMinis.canIUse && TTMinis.canIUse("setNavigationBarColor")) {
+      TTMinis.setNavigationBarColor({
+        frontColor: "#ffffff",
+        backgroundColor: "#000000",
+      }, function () {});
+    }
+
+    function syncTikTokMinisNavbarMetrics() {
+      if (
+        !TTMinis.canIUse ||
+        !TTMinis.canIUse("getMenuButtonBoundingClientRect") ||
+        typeof TTMinis.getMenuButtonBoundingClientRect !== "function"
+      ) {
+        return;
+      }
+
+      var rect;
+      try {
+        rect = TTMinis.getMenuButtonBoundingClientRect();
+      } catch (_) {
+        return;
+      }
+
+      if (!rect || rect.bottom <= rect.top) {
+        return;
+      }
+
+      /*
+       * The official rectangle is expressed in screen pixels. Android Minis
+       * can return physical pixels while the H5 viewport uses CSS pixels.
+       * Convert units only when the reported right edge exceeds the CSS viewport.
+      */
+      var scale = 1;
+      var dpr = window.devicePixelRatio || 1;
+      var isAndroid = /Android/i.test(window.navigator.userAgent);
+      if (isAndroid && dpr > 1) {
+        scale = 1 / dpr;
+      } else if (rect.right > window.innerWidth && dpr > 1) {
+        scale = 1 / dpr;
+      }
+
+      var center = ((rect.top + rect.bottom) / 2) * scale;
+
+      document.documentElement.style.setProperty(
+        "--tiktok-minis-navbar-logo-center-y",
+        center + "px",
+      );
+      document.documentElement.style.setProperty(
+        "--tiktok-minis-navbar-height",
+        rect.bottom * scale + "px",
+      );
+    }
+
+    syncTikTokMinisNavbarMetrics();
+    window.addEventListener("load", syncTikTokMinisNavbarMetrics);
+    window.addEventListener("resize", syncTikTokMinisNavbarMetrics);
+
+    function syncTikTokMinisNavbarVisibility() {
+      var hideNavbar = /^\/(?:foryou|video)(?:\/|$)/.test(window.location.pathname);
+      document.documentElement.classList.toggle("tiktok-minis-navbar-hidden", hideNavbar);
+    }
+
+    syncTikTokMinisNavbarVisibility();
+    window.addEventListener("popstate", syncTikTokMinisNavbarVisibility);
+
+    ["pushState", "replaceState"].forEach(function (method) {
+      var original = history[method];
+      history[method] = function () {
+        var result = original.apply(this, arguments);
+        syncTikTokMinisNavbarVisibility();
+        return result;
+      };
+    });
   </script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
   <title>YogoShort</title>
   <style>
@@ -21,10 +95,63 @@
       margin: 0;
       background-color: #000000;
     }
+
+    :root {
+      --tiktok-minis-navbar-height: calc(env(safe-area-inset-top, 0px) + 46px);
+      --tiktok-minis-navbar-logo-center-y: calc(env(safe-area-inset-top, 0px) + 23px);
+    }
+
+    body {
+      box-sizing: border-box;
+      padding-top: var(--tiktok-minis-navbar-height);
+    }
+
+    html.tiktok-minis-navbar-hidden body {
+      padding-top: 0;
+    }
+
+    html.tiktok-minis-navbar-hidden #tiktok-minis-custom-navbar {
+      display: none;
+    }
+
+    /*
+     * /foryou and /video use their own left-side player controls while TikTok
+     * keeps the native capsule on the right. Align both sides to one centerline.
+     */
+    html.tiktok-minis-navbar-hidden body .video-player-h5-topbar,
+    html.tiktok-minis-navbar-hidden body .for-demo-feed-back-topbar {
+      top: calc(var(--tiktok-minis-navbar-logo-center-y) - 20px) !important;
+      padding-top: 0 !important;
+    }
+
+    #tiktok-minis-custom-navbar {
+      position: fixed;
+      z-index: 2147483000;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: var(--tiktok-minis-navbar-height);
+      background: #000000;
+      pointer-events: none;
+    }
+
+    #tiktok-minis-custom-navbar img {
+      position: absolute;
+      top: var(--tiktok-minis-navbar-logo-center-y);
+      left: 50%;
+      width: auto;
+      height: 28px;
+      max-width: 132px;
+      object-fit: contain;
+      transform: translate(-50%, -50%);
+    }
   </style>
 </head>
 
 <body>
+  <div id="tiktok-minis-custom-navbar" aria-hidden="true">
+    <img src="/brands/yogoshort/web_logo.webp" alt="" />
+  </div>
   <div id="root"></div>
   <div id="top-layer"></div>
   <script type="module" src="/src/main.tiktok.tsx"></script>
