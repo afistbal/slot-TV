@@ -31,11 +31,14 @@
 
     分享链接示例：
       https://yogoshort.com/op_new/app-share.html?id=9846&episode=1
+        &p0=AdjustToken
+        &p1={{campaign.name}}&p2={{campaign.id}}
+        &p3={{adset.name}}&p4={{adset.id}}
+        &p5={{ad.name}}&p6={{ad.id}}
 
     点击 Open / 封面 / CTA：
-      Android → Deep Link，visibilitychange 未唤起则回退 Google Play
-      iOS     → Deep Link，未安装则回退 App Store
-      PC      → /video/{id}/{集数}
+      带 p0 → 顶层进入 Adjust 跟踪链接，再由 Adjust 跳商店
+      无 p0 → 保留自然量原流程（App Deep Link / 商店 / PC 播放页）
     测试 Web 域名：testwww.yogoshort.com；正式：yogoshort.com
   -->
   <script>
@@ -200,6 +203,10 @@
       font-weight: 500;
       line-height: 1;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       -webkit-tap-highlight-color: transparent;
@@ -336,6 +343,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      text-decoration: none;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeLegibility;
@@ -367,7 +375,7 @@
           <div class="topbar__sub">Continue Watching</div>
         </div>
       </div>
-      <button type="button" class="topbar__open" id="headerOpenBtn">Open</button>
+      <a class="topbar__open" id="headerOpenBtn" href="#">Open</a>
     </header>
 
     <main class="content">
@@ -387,7 +395,7 @@
     </main>
 
     <div class="bottom">
-      <button type="button" class="cta-btn" id="ctaBtn">Open YogoShort</button>
+      <a class="cta-btn" id="ctaBtn" href="#">Open YogoShort</a>
     </div>
   </div>
 
@@ -414,9 +422,63 @@
       return 'https://i.yogoshort.com/api';
     }
 
+    function loadFacebookPixel(pixelId) {
+      var id = String(pixelId || '').trim();
+      if (!/^\d{5,30}$/.test(id)) return false;
+
+      if (typeof window.fbq !== 'function') {
+        var fbq = function () {
+          if (fbq.callMethod) {
+            fbq.callMethod.apply(fbq, arguments);
+          } else {
+            fbq.queue.push(arguments);
+          }
+        };
+        fbq.queue = [];
+        fbq.loaded = true;
+        fbq.version = '2.0';
+        window.fbq = fbq;
+        window._fbq = fbq;
+
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+        document.head.appendChild(script);
+      }
+
+      window.fbq('init', id);
+      window.fbq('trackSingle', id, 'PageView', {
+        eventSourceUrl: location.href
+      });
+      return true;
+    }
+
+    /** Pixel ID 只从可信的公开配置读取；access token 不允许进入浏览器。 */
+    function initFacebookPixelFromConfig() {
+      return fetch(getApiBaseUrl() + '/config', {
+        headers: {
+          Accept: 'application/json',
+          'X-Platform': 'web'
+        }
+      }).then(function (r) {
+        return r.json();
+      }).then(function (res) {
+        var analyzation = res && res.c === 0 && res.d
+          ? res.d.analyzation
+          : null;
+        if (!analyzation || analyzation.type !== 'facebook') return false;
+        return loadFacebookPixel(analyzation.id);
+      }).catch(function () {
+        return false;
+      });
+    }
+
     function getUrlParam(name) {
-      var match = new RegExp('[?&]' + name + '=([^&]*)').exec(location.search);
-      return match ? decodeURIComponent(match[1].replace(/\+/g, ' ')) : '';
+      try {
+        return new URLSearchParams(location.search).get(name) || '';
+      } catch (e) {
+        return '';
+      }
     }
 
     function parseRouteParams() {
@@ -579,8 +641,20 @@
     }
 
     function getAdjustToken(legacyUrl) {
-      var token = getUrlParam('adjust_token').trim();
+      var token = (
+        getUrlParam('p0')
+        || getUrlParam('adjust_token')
+        || getUrlParam('adj_t')
+        || getUrlParam('adjust_t')
+      ).trim();
       if (!token && legacyUrl) {
+        token = (
+          legacyUrl.searchParams.get('adj_t')
+          || legacyUrl.searchParams.get('adjust_t')
+          || ''
+        ).trim();
+      }
+      if (!token && legacyUrl && /(^|\.)app\.adjust\.com$/i.test(legacyUrl.hostname)) {
         var pathParts = legacyUrl.pathname.split('/').filter(Boolean);
         token = pathParts.length ? pathParts[pathParts.length - 1] : '';
       }
@@ -590,28 +664,136 @@
     function getAdjustParam(name, legacyUrl) {
       var value = getUrlParam(name);
       if (!value && legacyUrl) value = legacyUrl.searchParams.get(name) || '';
-      return value;
+      return String(value || '').trim();
     }
 
-    function buildAdjustTrackerUrl(movieId, episodeNum, schemeBaseUrl, fallbackUrl) {
+    function formatAdjustLevel(name, id) {
+      var cleanName = String(name || '').trim();
+      var cleanId = String(id || '').trim();
+      if (cleanName && cleanId) return cleanName + '(' + cleanId + ')';
+      return cleanName || cleanId;
+    }
+
+    function getFbPid(legacyUrl) {
+      var cookieValue = '';
+      try {
+        cookieValue = readCookie('_fbp') || '';
+      } catch (e) { }
+      return String(
+        cookieValue
+        || getUrlParam('fbpid')
+        || getUrlParam('fbp')
+        || (legacyUrl && (legacyUrl.searchParams.get('fbpid') || legacyUrl.searchParams.get('fbp')))
+        || ''
+      ).trim();
+    }
+
+    /**
+     * W2A: FB landing parameters -> a real, top-level Adjust click link.
+     * p0..p6 follow the campaign macro contract supplied by the media team.
+     * Legacy adjust_token/campaign/adgroup/creative URLs remain supported.
+     */
+    function buildAdjustTrackerUrl() {
       var legacyUrl = parseLegacyAdjustTrackerUrl();
       var token = getAdjustToken(legacyUrl);
       if (!token) {
-        console.warn('[app-share][adjust-url] missing or invalid adjust token');
         return '';
       }
       var url = new URL('https://app.adjust.com/' + encodeURIComponent(token));
 
-      ['campaign', 'adgroup', 'creative', 'fbclid', 'ttclid'].forEach(function (key) {
-        var value = getAdjustParam(key, legacyUrl);
-        if (value) url.searchParams.set(key, value);
-      });
+      var campaign = formatAdjustLevel(getUrlParam('p1'), getUrlParam('p2'))
+        || getAdjustParam('campaign', legacyUrl);
+      var adgroup = formatAdjustLevel(getUrlParam('p3'), getUrlParam('p4'))
+        || getAdjustParam('adgroup', legacyUrl);
+      var creative = formatAdjustLevel(getUrlParam('p5'), getUrlParam('p6'))
+        || getAdjustParam('creative', legacyUrl);
+      var fbclid = getAdjustParam('fbclid', legacyUrl);
+      var fbpid = getFbPid(legacyUrl);
 
-      url.searchParams.set('deep_link', buildAppDeepLink(schemeBaseUrl, movieId, episodeNum));
-      if (fallbackUrl) url.searchParams.set('redirect', fallbackUrl);
+      if (campaign) url.searchParams.set('campaign', campaign);
+      if (adgroup) url.searchParams.set('adgroup', adgroup);
+      if (creative) url.searchParams.set('creative', creative);
+      if (fbclid) url.searchParams.set('fbclid', fbclid);
+      if (fbpid) url.searchParams.set('fbpid', fbpid);
+
       var adjustUrl = url.toString();
       console.log('[app-share][adjust-url]', adjustUrl);
       return adjustUrl;
+    }
+
+    /** 仅广告落地页生成有明确类型、版本和时间的剪贴板内容。 */
+    function buildAttributionClipboardPayload() {
+      var route = parseRouteParams();
+      var legacyUrl = parseLegacyAdjustTrackerUrl();
+      var token = getAdjustToken(legacyUrl);
+      if (!/^\d+$/.test(route.movieId) || !token) return '';
+
+      var adjustUrl = buildAdjustTrackerUrl();
+      if (!adjustUrl) return '';
+      var adjustParams = new URL(adjustUrl).searchParams;
+      var tracking = {};
+      collectTrackingParams().forEach(function (value, key) {
+        tracking[key] = value;
+      });
+      var fbp = getFbPid(legacyUrl);
+      if (fbp) tracking.fbp = fbp;
+
+      return JSON.stringify({
+        version: 1,
+        type: 'yogo_attribution',
+        movieId: route.movieId,
+        episodeNum: route.episodeNum,
+        deepLink: buildIosDeepLink(route.movieId, route.episodeNum),
+        adjust: {
+          trackerToken: token,
+          campaign: adjustParams.get('campaign') || '',
+          adgroup: adjustParams.get('adgroup') || '',
+          creative: adjustParams.get('creative') || '',
+          fbclid: adjustParams.get('fbclid') || '',
+          fbpid: adjustParams.get('fbpid') || ''
+        },
+        tracking: tracking,
+        createdAt: Date.now()
+      });
+    }
+
+    function copyTextWithLegacyApi(text) {
+      var textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.setAttribute('readonly', '');
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      textArea.setSelectionRange(0, textArea.value.length);
+      var copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch (e) { }
+      document.body.removeChild(textArea);
+      return copied;
+    }
+
+    /** 仅在用户点击时尝试写入；被浏览器拒绝时不阻断原跳转。 */
+    function copyAttributionForApp() {
+      var payload = buildAttributionClipboardPayload();
+      if (!payload) return Promise.resolve(false);
+      if (copyTextWithLegacyApi(payload)) {
+        return Promise.resolve(true);
+      }
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        return navigator.clipboard.writeText(payload)
+          .then(function () { return true; })
+          .catch(function () { return false; });
+      }
+      return Promise.resolve(false);
+    }
+
+    function openAppAfterCopy() {
+      return copyAttributionForApp().then(
+        function () { openApp(); },
+        function () { openApp(); }
+      );
     }
 
     function isAndroid() {
@@ -661,19 +843,18 @@
       window.location.href = schemeUrl;
     }
 
-    /** Android/iOS：带内容 Deep Link；有 Adjust tracker 时优先走 Adjust；PC→/video */
+    /** 有 Adjust token 时始终顶层进入 Adjust；无 token 时保留自然量原流程。 */
     function openApp() {
       var route = parseRouteParams();
+      var adjustUrl = buildAdjustTrackerUrl();
+      if (adjustUrl) {
+        window.location.href = adjustUrl;
+        return;
+      }
       var googleUrl = buildGooglePlayUrl();
       var schemeUrl = buildDeepLink(route.movieId, route.episodeNum);
 
       if (isAndroid()) {
-        var androidAdjustUrl = buildAdjustTrackerUrl(route.movieId, route.episodeNum, APP_SCHEME_BASE, googleUrl);
-        if (androidAdjustUrl) {
-          window.location.href = androidAdjustUrl;
-          return;
-        }
-
         var isOpenApp = false;
 
         document.addEventListener('visibilitychange', function () {
@@ -689,11 +870,6 @@
       }
 
       if (isIos()) {
-        var iosAdjustUrl = buildAdjustTrackerUrl(route.movieId, route.episodeNum, IOS_APP_SCHEME_BASE, APP_STORE_URL);
-        if (iosAdjustUrl) {
-          window.location.href = iosAdjustUrl;
-          return;
-        }
         launchAppWithFallback(buildIosDeepLink(route.movieId, route.episodeNum), APP_STORE_URL);
         return;
       }
@@ -790,6 +966,7 @@
     }
 
     (function init() {
+      initFacebookPixelFromConfig();
       syncFbAttributionCache();
 
       var route = parseRouteParams();
@@ -798,22 +975,25 @@
       var posterWrap = document.getElementById('posterWrap');
       var loadingMask = document.getElementById('loadingMask');
 
-      // 页面打开时输出一次最终 Adjust URL，便于检查投放参数。
-      if (getLegacyAdjustTrackerUrl() || getUrlParam('adjust_token')) {
-        var previewLegacyUrl = parseLegacyAdjustTrackerUrl();
-        var previewAdgroup = getAdjustParam('adgroup', previewLegacyUrl);
-        var previewIsIos = /ios/i.test(previewAdgroup);
-        buildAdjustTrackerUrl(
-          route.movieId,
-          route.episodeNum,
-          previewIsIos ? IOS_APP_SCHEME_BASE : APP_SCHEME_BASE,
-          previewIsIos ? APP_STORE_URL : buildGooglePlayUrl()
-        );
+      // 先把最终 Adjust URL 放到真实链接上；点击时仍会重算一次，以读取最新 _fbp cookie。
+      var initialAdjustUrl = buildAdjustTrackerUrl();
+      if (initialAdjustUrl) {
+        headerOpenBtn.href = initialAdjustUrl;
+        ctaBtn.href = initialAdjustUrl;
       }
 
-      headerOpenBtn.addEventListener('click', openApp);
-      ctaBtn.addEventListener('click', openApp);
-      posterWrap.addEventListener('click', openApp);
+      function handleDownloadLink(event) {
+        event.preventDefault();
+        var currentAdjustUrl = buildAdjustTrackerUrl();
+        if (currentAdjustUrl) {
+          event.currentTarget.href = currentAdjustUrl;
+        }
+        openAppAfterCopy();
+      }
+
+      headerOpenBtn.addEventListener('click', handleDownloadLink);
+      ctaBtn.addEventListener('click', handleDownloadLink);
+      posterWrap.addEventListener('click', openAppAfterCopy);
 
       fetchMovieInfo(route.movieId)
         .then(function (data) {
