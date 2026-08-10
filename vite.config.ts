@@ -467,6 +467,9 @@ export default ({ mode, command }: { mode: string; command: string }) => {
         patchStaticBrandFiles(outDir, brand, appVersion),
       ] : [
         injectTikTokMinisClientKey(env.VITE_TIKTOK_MINIS_CLIENT_KEY.trim()),
+        // Public legal HTML is copied verbatim by Vite. Patch its displayed
+        // YogoShort URLs/name for the TikTok YoyoShort variant as well.
+        patchStaticBrandFiles(outDir, brand, appVersion),
         finalizeTikTokMinisEntry(outDir),
         serveTikTokMinisEntry(),
       ]),
