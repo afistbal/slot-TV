@@ -33,7 +33,14 @@
         return;
       }
 
-      if (!rect || rect.bottom <= rect.top) {
+      if (
+        !rect ||
+        !Number.isFinite(rect.top) ||
+        !Number.isFinite(rect.bottom) ||
+        !Number.isFinite(rect.right) ||
+        rect.bottom <= rect.top ||
+        rect.bottom <= 0
+      ) {
         return;
       }
 
@@ -97,7 +104,7 @@
     }
 
     :root {
-      --tiktok-minis-navbar-height: calc(env(safe-area-inset-top, 0px) + 46px);
+      --tiktok-minis-navbar-height: calc(env(safe-area-inset-top, 0px) + 51px);
       --tiktok-minis-navbar-logo-center-y: calc(env(safe-area-inset-top, 0px) + 23px);
     }
 
@@ -150,7 +157,7 @@
 
 <body>
   <div id="tiktok-minis-custom-navbar" aria-hidden="true">
-    <img src="/brands/yogoshort/web_logo.webp" alt="" />
+    <img src="/brands/yoyoshort/yoyoshortlogo.png" alt="" />
   </div>
   <div id="root"></div>
   <div id="top-layer"></div>

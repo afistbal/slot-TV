@@ -58,7 +58,9 @@ export function VideoPlayerSideActions({
     onShareClick,
     className,
 }: VideoPlayerSideActionsProps) {
-    const showVipAction = !isTikTokPlatform() && showVip && onVipClick;
+    const isTikTok = isTikTokPlatform();
+    const showVipAction = !isTikTok && showVip && onVipClick;
+    const showShareAction = !isTikTok && onShareClick;
 
     return (
         <div
@@ -100,11 +102,11 @@ export function VideoPlayerSideActions({
                     onClick={onEpisodeListClick}
                 />
             ) : null}
-            {onShareClick ? (
+            {showShareAction ? (
                 <SideActionItem
                     icon={<img src={shareEntryIcon} alt="" className="h-8 w-8" />}
                     label={<FormattedMessage id="share" />}
-                    onClick={onShareClick}
+                    onClick={showShareAction}
                 />
             ) : null}
         </div>

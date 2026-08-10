@@ -1,5 +1,6 @@
 import { api, type TData } from '@/api';
 import { getPlatform, isTikTokPlatform } from '@/platform';
+import { fromSourceForLogin } from '@/lib/adAttribution';
 
 export interface TikTokMinisLoginData extends TData {
     token: string;
@@ -23,6 +24,6 @@ export async function loginTikTokMinis() {
         method: 'post',
         loading: false,
         toastOnError: false,
-        data: { code },
+        data: { code, ...fromSourceForLogin() },
     });
 }
