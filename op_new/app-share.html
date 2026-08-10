@@ -716,6 +716,20 @@
       if (fbclid) url.searchParams.set('fbclid', fbclid);
       if (fbpid) url.searchParams.set('fbpid', fbpid);
 
+      var route = parseRouteParams();
+      var fromSource = buildFromSourceClipboardValue();
+      if (/^\d+$/.test(route.movieId) && fromSource) {
+        var deepLinkParams = new URLSearchParams();
+        deepLinkParams.set('movieId', route.movieId);
+        deepLinkParams.set('episodeNum', route.episodeNum || '1');
+        // 保持与匿名登录、剪贴板一致：from_source 是原始 query 字符串，不是对象。
+        deepLinkParams.set('from_source', fromSource);
+        url.searchParams.set(
+          'deep_link',
+          IOS_APP_SCHEME_BASE + '?' + deepLinkParams.toString()
+        );
+      }
+
       var adjustUrl = url.toString();
       console.log('[app-share][adjust-url]', adjustUrl);
       return adjustUrl;
