@@ -721,40 +721,15 @@
       return adjustUrl;
     }
 
-    /** 仅广告落地页生成有明确类型、版本和时间的剪贴板内容。 */
-    function buildAttributionClipboardPayload() {
+    /** 对齐 slot-TV from_source：复制问号后的原始 query 字符串。 */
+    function buildFromSourceClipboardValue() {
       var route = parseRouteParams();
       var legacyUrl = parseLegacyAdjustTrackerUrl();
       var token = getAdjustToken(legacyUrl);
       if (!/^\d+$/.test(route.movieId) || !token) return '';
-
-      var adjustUrl = buildAdjustTrackerUrl();
-      if (!adjustUrl) return '';
-      var adjustParams = new URL(adjustUrl).searchParams;
-      var tracking = {};
-      collectTrackingParams().forEach(function (value, key) {
-        tracking[key] = value;
-      });
-      var fbp = getFbPid(legacyUrl);
-      if (fbp) tracking.fbp = fbp;
-
-      return JSON.stringify({
-        version: 1,
-        type: 'yogo_attribution',
-        movieId: route.movieId,
-        episodeNum: route.episodeNum,
-        deepLink: buildIosDeepLink(route.movieId, route.episodeNum),
-        adjust: {
-          trackerToken: token,
-          campaign: adjustParams.get('campaign') || '',
-          adgroup: adjustParams.get('adgroup') || '',
-          creative: adjustParams.get('creative') || '',
-          fbclid: adjustParams.get('fbclid') || '',
-          fbpid: adjustParams.get('fbpid') || ''
-        },
-        tracking: tracking,
-        createdAt: Date.now()
-      });
+      return location.search && location.search.charAt(0) === '?'
+        ? location.search.slice(1)
+        : '';
     }
 
     function copyTextWithLegacyApi(text) {
@@ -776,7 +751,7 @@
 
     /** 仅在用户点击时尝试写入；被浏览器拒绝时不阻断原跳转。 */
     function copyAttributionForApp() {
-      var payload = buildAttributionClipboardPayload();
+      var payload = buildFromSourceClipboardValue();
       if (!payload) return Promise.resolve(false);
       if (copyTextWithLegacyApi(payload)) {
         return Promise.resolve(true);
