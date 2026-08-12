@@ -26,6 +26,9 @@
   <meta id="metaDescription" name="description" content="{{$introduction}}" />
   <title>{{$title}}</title>
 
+  <link rel="preconnect" href="https://i.yogoshort.com" crossorigin>
+  <link rel="preconnect" href="https://cos.yogoshort.com" crossorigin>
+
   <!--
     App 分享 FB / Twitter 落地页
 
@@ -68,6 +71,64 @@
         setContent('twitterImage', image);
       }
       setContent('ogUrl', location.href.split('#')[0]);
+    })();
+
+    // Start the first-screen data request before CSS and body parsing.
+    (function preloadMovieInfo() {
+      var query = new URLSearchParams(location.search);
+      var movieId = query.get('movieId') || query.get('id') || '';
+      var parts = (location.pathname || '').split('/').filter(Boolean);
+      var idx = parts.length - 1;
+      if (parts[idx] && /\.html$/i.test(parts[idx])) idx -= 1;
+      if (!movieId && parts[idx] && /^\d+$/.test(parts[idx])) movieId = parts[idx];
+      movieId = String(movieId || '').trim();
+
+      if (!movieId) {
+        window.__appShareInfoPromise = Promise.resolve(null);
+        window.__appShareCoverReadyPromise = Promise.resolve();
+        return;
+      }
+
+      window.__appShareInfoPromise = fetch(
+        'https://i.yogoshort.com/api/share/info?id=' + encodeURIComponent(movieId),
+        {
+          headers: {
+            Accept: 'application/json',
+            'X-Platform': 'web'
+          }
+        }
+      ).then(function (r) {
+        return r.json();
+      }).then(function (res) {
+        var info = res && res.c === 0 && res.d ? res.d : null;
+        if (!info) return null;
+
+        var cover = String(info.img || '').trim();
+        if (!cover) {
+          var isRename = info.is_rename === 1 || info.is_rename === '1' || info.is_rename === true;
+          var path = isRename
+            ? 'movie_images/' + encodeURIComponent(movieId) + '.webp'
+            : String(info.image || '').trim();
+          if (path) {
+            cover = /^https?:\/\//i.test(path)
+              ? path
+              : 'https://cos.yogoshort.com/' + path.replace(/^\//, '');
+          }
+        }
+
+        info.__coverUrl = cover;
+        window.__appShareCoverReadyPromise = cover
+          ? new Promise(function (resolve) {
+            var preload = new Image();
+            preload.onload = preload.onerror = resolve;
+            preload.src = cover;
+          })
+          : Promise.resolve();
+        return info;
+      }).catch(function () {
+        window.__appShareCoverReadyPromise = Promise.resolve();
+        return null;
+      });
     })();
   </script>
 
@@ -422,57 +483,6 @@
       return 'https://i.yogoshort.com/api';
     }
 
-    function loadFacebookPixel(pixelId) {
-      var id = String(pixelId || '').trim();
-      if (!/^\d{5,30}$/.test(id)) return false;
-
-      if (typeof window.fbq !== 'function') {
-        var fbq = function () {
-          if (fbq.callMethod) {
-            fbq.callMethod.apply(fbq, arguments);
-          } else {
-            fbq.queue.push(arguments);
-          }
-        };
-        fbq.queue = [];
-        fbq.loaded = true;
-        fbq.version = '2.0';
-        window.fbq = fbq;
-        window._fbq = fbq;
-
-        var script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://connect.facebook.net/en_US/fbevents.js';
-        document.head.appendChild(script);
-      }
-
-      window.fbq('init', id);
-      window.fbq('trackSingle', id, 'PageView', {
-        eventSourceUrl: location.href
-      });
-      return true;
-    }
-
-    /** Pixel ID 只从可信的公开配置读取；access token 不允许进入浏览器。 */
-    function initFacebookPixelFromConfig() {
-      return fetch(getApiBaseUrl() + '/config', {
-        headers: {
-          Accept: 'application/json',
-          'X-Platform': 'web'
-        }
-      }).then(function (r) {
-        return r.json();
-      }).then(function (res) {
-        var analyzation = res && res.c === 0 && res.d
-          ? res.d.analyzation
-          : null;
-        if (!analyzation || analyzation.type !== 'facebook') return false;
-        return loadFacebookPixel(analyzation.id);
-      }).catch(function () {
-        return false;
-      });
-    }
-
     function getUrlParam(name) {
       try {
         return new URLSearchParams(location.search).get(name) || '';
@@ -573,6 +583,8 @@
 
     function resolveCoverUrl(info, movieId) {
       if (!info) return '';
+      if (info.__coverUrl) return info.__coverUrl;
+      if (info.img) return joinStaticUrl(info.img);
       var isRename = info.is_rename === 1 || info.is_rename === '1' || info.is_rename === true;
       if (isRename && movieId) {
         return joinStaticUrl('movie_images/' + movieId + '.webp');
@@ -955,7 +967,6 @@
     }
 
     (function init() {
-      initFacebookPixelFromConfig();
       syncFbAttributionCache();
 
       var route = parseRouteParams();
@@ -984,11 +995,13 @@
       ctaBtn.addEventListener('click', handleDownloadLink);
       posterWrap.addEventListener('click', openAppAfterCopy);
 
-      fetchMovieInfo(route.movieId)
+      var infoPromise = window.__appShareInfoPromise || fetchMovieInfo(route.movieId);
+      infoPromise
         .then(function (data) {
           if (data) {
             renderMovieInfo(data, route.movieId);
           }
+          return window.__appShareCoverReadyPromise || Promise.resolve();
         })
         .finally(function () {
           if (loadingMask) loadingMask.style.display = 'none';
