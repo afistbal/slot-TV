@@ -1,9 +1,13 @@
 import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
 import { isStandaloneDisplay } from '@/lib/isStandaloneDisplay';
+import { isTikTokPlatform } from '@/platform';
 
-/** Flutter 壳内不展示；iOS/iPad 且非 standalone 时展示底部「添加桌面」入口 */
+/** TikTok Minis、Flutter 壳内不展示；普通 iOS/iPad H5 且非 standalone 时展示「添加桌面」入口 */
 export function shouldShowIosAddHomeFab(): boolean {
     if (typeof window === 'undefined') {
+        return false;
+    }
+    if (isTikTokPlatform()) {
         return false;
     }
     const w = window as unknown as { flutter_inappwebview?: unknown };
