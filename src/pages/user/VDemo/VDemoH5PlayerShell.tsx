@@ -18,12 +18,14 @@ import {
     type VideoPlayerVipCommerceHandle,
 } from '@/components/video-player/VideoPlayerVipCommerce';
 import { VideoPlayerH5BackBar } from '@/components/video-player/VideoPlayerH5BackBar';
-import { VideoPlayerH5ColdUnmuteOverlay } from '@/components/video-player/VideoPlayerH5ColdUnmuteOverlay';
+// Legacy cold-unmute overlay import, currently disabled:
+// import { VideoPlayerH5ColdUnmuteOverlay } from '@/components/video-player/VideoPlayerH5ColdUnmuteOverlay';
 import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
 import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
 import { TikTokRewardedFallbackOverlay } from '@/components/video-player/TikTokRewardedFallbackOverlay';
-import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
-import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
+// Legacy cold-unmute hook imports, currently disabled:
+// import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
+// import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
 import { useVideoPlayerBack } from '@/components/video-player/useVideoPlayerBack';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
@@ -264,8 +266,10 @@ export function VDemoH5PlayerShell({
         }
     }, [activeIndex, activeLocked, prepareTikTokEpisodeAtIndex]);
 
+    /* Legacy cold-unmute overlay wiring is intentionally disabled, not deleted.
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+    */
     const handleBack = useVideoPlayerBack();
     const handleForyouResume = useVDemoForyouResumeHandler(
         foryouResumeTimeSec,
@@ -316,10 +320,12 @@ export function VDemoH5PlayerShell({
                 onIncomingIndex={isTikTokPlatform() ? handleIncomingIndex : undefined}
                 preventNextFromLockedItem={isTikTokPlatform()}
             />
+            {/* Legacy cold-unmute overlay; keep commented for possible reuse.
             <VideoPlayerH5ColdUnmuteOverlay
                 visible={coldUnmuteVisible && !activeLocked}
                 onTapToUnmute={handleTapToUnmute}
             />
+            */}
             {activeLocked && !isTikTokPlatform() ? (
                 <VideoPlayerLockOverlay
                     variant="h5"

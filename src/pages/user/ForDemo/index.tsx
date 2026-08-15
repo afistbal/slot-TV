@@ -1,26 +1,33 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
-import { useLocation } from 'react-router';
+// Legacy cold-unmute route state import, currently disabled:
+// import { useLocation } from 'react-router';
 
-import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
+// Legacy cold-unmute navigation type, currently disabled:
+// import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
+import { writeMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
+import { unlockUserAudio } from '@/components/douyin-feed-player/feed/userGesturePlay';
 import Loader from '@/components/Loader';
 import { useDelayedVisible } from '@/hooks/useDelayedVisible';
 import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { useRootStore } from '@/stores/root';
 import { useConfigStore } from '@/stores/config';
-import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
+// Legacy cold-unmute store import, currently disabled:
+// import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
 import { useForyouFeedStore } from '@/stores/foryouFeed';
 
 import { ForDemoH5PlayerShell } from './ForDemoH5PlayerShell';
 import { ForDemoPcPlayerShell } from './ForDemoPcPlayerShell';
 import { useForDemoFeed } from './useForDemoFeed';
 import { scheduleForyouVideoEntryPrewarm } from './lib/prewarmVideoEntry';
+/* Legacy cold-unmute policy imports, currently disabled:
 import { applyForDemoMountMutePolicy } from './forDemoApplyMountMutePolicy';
 import {
     markForDemoColdSessionConsumed,
     resolveForDemoMountAutoplayFlags,
     type ForDemoMountAutoplayFlags,
 } from './forDemoAutoplayPolicy';
+*/
 
 import '@/components/foryou-feed/foryou-vertical.scss';
 import '@/styles/video-vertical.scss';
@@ -37,23 +44,35 @@ const BOOT_LOADER_DELAY_MS = 100000;
  */
 export default function ForDemoPage() {
     const isDesktop = useVideoPlayerDesktop();
-    const location = useLocation();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const staticBase = useConfigStore((s) => String(s.config['static'] ?? ''));
 
-    const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
-    if (mountFlagsRef.current == null) {
-        const flags = resolveForDemoMountAutoplayFlags(location.state);
-        mountFlagsRef.current = flags;
-        useForDemoColdUnmuteStore.getState().initFromMount(flags);
-        applyForDemoMountMutePolicy(flags);
+    const playbackPolicyAppliedRef = useRef(false);
+    if (!playbackPolicyAppliedRef.current) {
+        playbackPolicyAppliedRef.current = true;
+        writeMutedPreference(false);
+        unlockUserAudio();
     }
 
+    /* Legacy cold-unmute mount flow is preserved in
+       forDemoAutoplayPolicy.ts / forDemoApplyMountMutePolicy.ts and disabled here:
+       const location = useLocation();
+       const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
+       if (mountFlagsRef.current == null) {
+           const flags = resolveForDemoMountAutoplayFlags(location.state);
+           mountFlagsRef.current = flags;
+           useForDemoColdUnmuteStore.getState().initFromMount(flags);
+           applyForDemoMountMutePolicy(flags);
+       }
+    */
+
     const [activeIndex, setActiveIndex] = useState(() => {
-        const flags = mountFlagsRef.current;
-        if (flags?.feedColdAutoplay) {
-            return 0;
-        }
+        /* Legacy cold landing behavior, currently disabled:
+           const flags = mountFlagsRef.current;
+           if (flags?.feedColdAutoplay) {
+               return 0;
+           }
+        */
         const feedStore = useForyouFeedStore.getState();
         if (!feedStore.isCacheValid()) {
             return 0;
@@ -79,17 +98,21 @@ export default function ForDemoPage() {
         useRootStore.getState().setTheme('dark');
         return () => {
             useRootStore.getState().setTheme('light');
-            markForDemoColdSessionConsumed();
+            /* Legacy cold-unmute cleanup, currently disabled:
+               markForDemoColdSessionConsumed();
+            */
         };
     }, []);
 
     const handleIndexChange = useCallback(
-        (index: number, _direction?: FeedNavigateDirection) => {
+        (index: number) => {
             setActiveIndex(index);
             useForyouFeedStore.getState().setActiveIndex(index);
-            if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
-                useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
-            }
+            /* Legacy overlay dismissal on index change, currently disabled:
+               if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
+                   useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
+               }
+            */
             prefetchIfNearEnd(index);
         },
         [prefetchIfNearEnd],

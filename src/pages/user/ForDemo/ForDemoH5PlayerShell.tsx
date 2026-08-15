@@ -8,10 +8,10 @@ import {
     DouyinFeedPlayer,
 } from '@/components/douyin-feed-player';
 import {
-    VideoPlayerH5ColdUnmuteOverlay,
+    // VideoPlayerH5ColdUnmuteOverlay, // Legacy cold-unmute overlay, currently disabled.
     VideoPlayerSideActions,
-    useFeedPlayerColdUnmuteVisible,
-    useFeedPlayerTapToUnmute,
+    // useFeedPlayerColdUnmuteVisible, // Legacy cold-unmute hook, currently disabled.
+    // useFeedPlayerTapToUnmute, // Legacy cold-unmute hook, currently disabled.
 } from '@/components/video-player';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
@@ -166,8 +166,10 @@ export function ForDemoH5PlayerShell({
         prewarmForyouVideoEntry(feedItem);
     }, [feedItem]);
 
+    /* Legacy cold-unmute overlay wiring is intentionally disabled, not deleted.
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+    */
 
     useReportEpProgressAt5s({
         movieId: feedItem.id,
@@ -204,10 +206,12 @@ export function ForDemoH5PlayerShell({
                     />
                 }
             />
+            {/* Legacy cold-unmute overlay; keep commented for possible reuse.
             <VideoPlayerH5ColdUnmuteOverlay
                 visible={coldUnmuteVisible}
                 onTapToUnmute={handleTapToUnmute}
             />
+            */}
             <div
                 className={cn(
                     'for-demo-h5-chrome pointer-events-none absolute inset-0 z-10',

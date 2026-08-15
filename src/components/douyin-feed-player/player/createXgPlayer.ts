@@ -344,10 +344,13 @@ export function scheduleActivePlay(player: Player) {
     const gesture = isUserGestureActive();
     const wantUnmuted = !readMutedPreference();
     const audioUnlocked = isUserAudioUnlocked();
-    /** 连播：有声走 muted bootstrap，不 forceMute */
-    const forceMute = chainSound
-        ? false
-        : !gesture || (platform.isIOS && wantUnmuted && !audioUnlocked);
+    /* Legacy cold-unmute policy, intentionally disabled:
+       const forceMute = chainSound
+           ? false
+           : !gesture || (platform.isIOS && wantUnmuted && !audioUnlocked);
+    */
+    /** 首次进入直接尝试当前声音偏好；浏览器拒绝时保持暂停，不做静音降级。 */
+    const forceMute = false;
     const syncInGesture =
         !chainSound && platform.isIOS && wantUnmuted && audioUnlocked && gesture;
     feedDbg('schedule', {

@@ -23,10 +23,12 @@ import {
 import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
 import { VideoPlayerPcBackBar } from '@/components/video-player/VideoPlayerPcBackBar';
 import { VideoPlayerPcEpisodeNav } from '@/components/video-player/VideoPlayerPcEpisodeNav';
-import { VideoPlayerPcUnmuteOverlay } from '@/components/video-player/VideoPlayerPcUnmuteOverlay';
+// Legacy cold-unmute overlay import, currently disabled:
+// import { VideoPlayerPcUnmuteOverlay } from '@/components/video-player/VideoPlayerPcUnmuteOverlay';
 import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
-import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
-import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
+// Legacy cold-unmute hook imports, currently disabled:
+// import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
+// import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
 import { useVideoPlayerBack } from '@/components/video-player/useVideoPlayerBack';
 import { cn } from '@/lib/utils';
 import { api } from '@/api';
@@ -284,8 +286,10 @@ export function VDemoPcPlayerShell({
         [activeIndex, beginClosePcDrawer],
     );
 
+    /* Legacy cold-unmute overlay wiring is intentionally disabled, not deleted.
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+    */
     const handleBack = useVideoPlayerBack();
 
     useReportEpProgressAt5s({
@@ -404,10 +408,12 @@ export function VDemoPcPlayerShell({
                             }
                             isItemLocked={isFeedItemLocked}
                         />
+                        {/* Legacy cold-unmute overlay; keep commented for possible reuse.
                         <VideoPlayerPcUnmuteOverlay
                             visible={coldUnmuteVisible && !activeLocked}
                             onTapToUnmute={handleTapToUnmute}
                         />
+                        */}
                         {activeLocked && !isTikTokPlatform() ? (
                             <div className="video-player-ui pointer-events-auto absolute inset-0 z-10">
                                 <VideoPlayerLockOverlay

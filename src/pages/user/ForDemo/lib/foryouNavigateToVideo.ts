@@ -7,7 +7,8 @@ import {
 } from '@/constants/foryouRoute';
 import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
-import { markVideoSessionUserUnmuted } from '@/components/video-player/videoSessionMute';
+// Legacy cold-unmute session import, currently disabled:
+// import { markVideoSessionUserUnmuted } from '@/components/video-player/videoSessionMute';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 import { prewarmForyouVideoEntry } from './prewarmVideoEntry';
 
@@ -50,9 +51,9 @@ export function navigateFromForDemoWatchFull(
     const activeId = playerRegistry.getActiveId();
     const player = activeId != null ? playerRegistry.get(activeId) : undefined;
     const resume = getPlayerCurrentTime(player ?? null);
-    const video = player?.video as HTMLVideoElement | undefined;
-    if (video && !video.muted) {
-        markVideoSessionUserUnmuted();
-    }
+    /* Legacy cold-unmute session handoff, intentionally disabled:
+       const video = player?.video as HTMLVideoElement | undefined;
+       if (video && !video.muted) markVideoSessionUserUnmuted();
+    */
     navigateFromForyouToVideo(navigate, item, resume, activeIndex);
 }

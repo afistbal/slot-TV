@@ -16,10 +16,10 @@ import {
 } from '@/components/douyin-feed-player';
 import {
     VideoPlayerPcEpisodeNav,
-    VideoPlayerPcUnmuteOverlay,
+    // VideoPlayerPcUnmuteOverlay, // Legacy cold-unmute overlay, currently disabled.
     VideoPlayerSideActions,
-    useFeedPlayerColdUnmuteVisible,
-    useFeedPlayerTapToUnmute,
+    // useFeedPlayerColdUnmuteVisible, // Legacy cold-unmute hook, currently disabled.
+    // useFeedPlayerTapToUnmute, // Legacy cold-unmute hook, currently disabled.
 } from '@/components/video-player';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { cn } from '@/lib/utils';
@@ -226,8 +226,10 @@ export function ForDemoPcPlayerShell({
         prewarmForyouVideoEntry(feedItem);
     }, [feedItem]);
 
+    /* Legacy cold-unmute overlay wiring is intentionally disabled, not deleted.
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
     const handleTapToUnmute = useFeedPlayerTapToUnmute();
+    */
 
     useReportEpProgressAt5s({
         movieId: feedItem.id,
@@ -345,10 +347,12 @@ export function ForDemoPcPlayerShell({
                                 />
                             }
                         />
+                        {/* Legacy cold-unmute overlay; keep commented for possible reuse.
                         <VideoPlayerPcUnmuteOverlay
                             visible={coldUnmuteVisible}
                             onTapToUnmute={handleTapToUnmute}
                         />
+                        */}
                     </div>
                     {!isFullscreenUi ? (
                         <VideoPlayerSideActions

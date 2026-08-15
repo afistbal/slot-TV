@@ -113,10 +113,15 @@ export function DouyinPlayerSlot({
         const player = slotPlayer;
         const syncMountLoading = () => {
             const video = player.video as HTMLVideoElement | undefined;
+            if (!video) {
+                setMountLoadingVisible(slot.isActive);
+                return;
+            }
             const canPlayForward = Boolean(
-                video && video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA,
+                video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA,
             );
-            setMountLoadingVisible(slot.isActive && !canPlayForward);
+            // 暂停（含有声自动播放被浏览器拒绝）时只显示播放按钮，不继续转 loading。
+            setMountLoadingVisible(slot.isActive && !video.paused && !canPlayForward);
         };
 
         const events = [

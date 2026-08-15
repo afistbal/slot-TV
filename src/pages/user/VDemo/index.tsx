@@ -3,7 +3,11 @@ import { useLocation, useNavigate, useParams } from 'react-router';
 
 import { resolveForyouIncomingResumeSec } from '@/constants/foryouRoute';
 import { buildVDemoPath } from '@/constants/vDemoRoute';
-import { type DouyinFeedVideoItem, type FeedNavigateDirection } from '@/components/douyin-feed-player';
+import { type DouyinFeedVideoItem } from '@/components/douyin-feed-player';
+// Legacy cold-unmute navigation type, currently disabled:
+// import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
+import { writeMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
+import { unlockUserAudio } from '@/components/douyin-feed-player/feed/userGesturePlay';
 import Loader from '@/components/Loader';
 import { useDelayedVisible } from '@/hooks/useDelayedVisible';
 import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
@@ -13,12 +17,14 @@ import { useUserStore } from '@/stores/user';
 import type { IPlayerData } from '@/types/videoPlayer';
 
 import { fetchVDemoMovieInfo, type VDemoPlayerData } from './fetchVDemoMovieInfo';
+/* Legacy cold-unmute policy imports, currently disabled:
 import { applyForDemoMountMutePolicy } from '@/pages/user/ForDemo/forDemoApplyMountMutePolicy';
 import {
     resolveForDemoMountAutoplayFlags,
     type ForDemoMountAutoplayFlags,
 } from '@/pages/user/ForDemo/forDemoAutoplayPolicy';
 import { useForDemoColdUnmuteStore } from '@/stores/forDemoColdUnmute';
+*/
 
 import {
     areVDemoFeedItemsEqual,
@@ -101,13 +107,23 @@ export default function VDemoPage() {
     locationStateRef.current = location.state;
     const scrollSettleCancelRef = useRef<(() => void) | null>(null);
     const scrollSettleGenRef = useRef(0);
-    const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
-    if (mountFlagsRef.current == null) {
-        const flags = resolveForDemoMountAutoplayFlags(location.state);
-        mountFlagsRef.current = flags;
-        useForDemoColdUnmuteStore.getState().initFromMount(flags);
-        applyForDemoMountMutePolicy(flags);
+    const playbackPolicyAppliedRef = useRef(false);
+    if (!playbackPolicyAppliedRef.current) {
+        playbackPolicyAppliedRef.current = true;
+        writeMutedPreference(false);
+        unlockUserAudio();
     }
+
+    /* Legacy cold-unmute mount flow is preserved in
+       ForDemo/forDemoAutoplayPolicy.ts / forDemoApplyMountMutePolicy.ts and disabled here:
+       const mountFlagsRef = useRef<ForDemoMountAutoplayFlags | null>(null);
+       if (mountFlagsRef.current == null) {
+           const flags = resolveForDemoMountAutoplayFlags(location.state);
+           mountFlagsRef.current = flags;
+           useForDemoColdUnmuteStore.getState().initFromMount(flags);
+           applyForDemoMountMutePolicy(flags);
+       }
+    */
 
     const refreshItemsIfChanged = useCallback(() => {
         setItems((prev) => {
@@ -203,7 +219,9 @@ export default function VDemoPage() {
             setActiveIndex(startIndex);
             activeIndexRef.current = startIndex;
             episodesRef.current = sortedEpisodes;
-            useForDemoColdUnmuteStore.getState().setColdLandingIndex(startIndex);
+            /* Legacy cold landing index, currently disabled:
+               useForDemoColdUnmuteStore.getState().setColdLandingIndex(startIndex);
+            */
             setItems(buildVDemoFeedItems(sortedEpisodes));
             setLoading(false);
 
@@ -255,11 +273,14 @@ export default function VDemoPage() {
     applyIndexSideEffectsRef.current = applyIndexSideEffects;
 
     const handleIndexChange = useCallback(
-        (index: number, _direction?: FeedNavigateDirection) => {
+        (index: number) => {
             activeIndexRef.current = index;
-            if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
-                useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
-            }
+
+            /* Legacy overlay dismissal on index change, currently disabled:
+               if (index !== useForDemoColdUnmuteStore.getState().coldLandingIndex) {
+                   useForDemoColdUnmuteStore.getState().consumeColdAutoplay();
+               }
+            */
 
             if (isDesktop) {
                 applyIndexSideEffectsRef.current(index);
@@ -284,8 +305,8 @@ export default function VDemoPage() {
     const handleIndexChangeRef = useRef(handleIndexChange);
     handleIndexChangeRef.current = handleIndexChange;
 
-    const onFeedIndexChange = useCallback((index: number, direction?: FeedNavigateDirection) => {
-        handleIndexChangeRef.current(index, direction);
+    const onFeedIndexChange = useCallback((index: number) => {
+        handleIndexChangeRef.current(index);
     }, []);
 
     useEffect(() => {
