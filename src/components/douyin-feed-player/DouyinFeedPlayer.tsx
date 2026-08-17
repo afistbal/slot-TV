@@ -96,6 +96,12 @@ export function DouyinFeedPlayer({
     const [activePlayer, setActivePlayer] = useState<Player | null>(null);
     const scrollSyncLockRef = useRef(false);
     const pendingPlayIndexRef = useRef<number | null>(null);
+    const playbackSessionInitializedRef = useRef(false);
+    if (!playbackSessionInitializedRef.current) {
+        playbackSessionInitializedRef.current = true;
+        // userHoldPause 只属于当前实例，必须在子播放器触发首次 play 前清掉上一部的暂停状态。
+        setUserHoldPause(false);
+    }
     const [activeIndex, setActiveIndex] = useState(() =>
         Math.min(Math.max(0, initialIndex), Math.max(0, items.length - 1)),
     );
