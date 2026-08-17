@@ -40,7 +40,9 @@
         &p5={{ad.name}}&p6={{ad.id}}
 
     点击 Open / 封面 / CTA：
-      带 p0 → 顶层进入 Adjust 跟踪链接，再由 Adjust 跳商店
+      iOS 已安装 → App Deep Link 直接打开对应剧
+      iOS 未安装 → Deep Link 唤起失败后进入 Adjust / App Store
+      其他平台带 p0 → 顶层进入 Adjust 跟踪链接
       无 p0 → 保留自然量原流程（App Deep Link / 商店 / PC 播放页）
     测试 Web 域名：testwww.yogoshort.com；正式：yogoshort.com
   -->
@@ -729,12 +731,12 @@
       if (fbpid) url.searchParams.set('fbpid', fbpid);
 
       var route = parseRouteParams();
-      var fromSource = buildFromSourceClipboardValue();
+      var fromSource = buildFromSourceValue();
       if (/^\d+$/.test(route.movieId) && fromSource) {
         var deepLinkParams = new URLSearchParams();
         deepLinkParams.set('movieId', route.movieId);
         deepLinkParams.set('episodeNum', route.episodeNum || '1');
-        // 保持与匿名登录、剪贴板一致：from_source 是原始 query 字符串，不是对象。
+        // 保持匿名登录所需格式：from_source 是原始 query 字符串，不是对象。
         deepLinkParams.set('from_source', fromSource);
         url.searchParams.set(
           'deep_link',
@@ -747,8 +749,8 @@
       return adjustUrl;
     }
 
-    /** 对齐 slot-TV from_source：复制问号后的原始 query 字符串。 */
-    function buildFromSourceClipboardValue() {
+    /** 对齐 slot-TV from_source：保留问号后的原始 query 字符串。 */
+    function buildFromSourceValue() {
       var route = parseRouteParams();
       var legacyUrl = parseLegacyAdjustTrackerUrl();
       var token = getAdjustToken(legacyUrl);
@@ -756,45 +758,6 @@
       return location.search && location.search.charAt(0) === '?'
         ? location.search.slice(1)
         : '';
-    }
-
-    function copyTextWithLegacyApi(text) {
-      var textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.setAttribute('readonly', '');
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.select();
-      textArea.setSelectionRange(0, textArea.value.length);
-      var copied = false;
-      try {
-        copied = document.execCommand('copy');
-      } catch (e) { }
-      document.body.removeChild(textArea);
-      return copied;
-    }
-
-    /** 仅在用户点击时尝试写入；被浏览器拒绝时不阻断原跳转。 */
-    function copyAttributionForApp() {
-      var payload = buildFromSourceClipboardValue();
-      if (!payload) return Promise.resolve(false);
-      if (copyTextWithLegacyApi(payload)) {
-        return Promise.resolve(true);
-      }
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        return navigator.clipboard.writeText(payload)
-          .then(function () { return true; })
-          .catch(function () { return false; });
-      }
-      return Promise.resolve(false);
-    }
-
-    function openAppAfterCopy() {
-      return copyAttributionForApp().then(
-        function () { openApp(); },
-        function () { openApp(); }
-      );
     }
 
     function isAndroid() {
@@ -844,16 +807,28 @@
       window.location.href = schemeUrl;
     }
 
-    /** 有 Adjust token 时始终顶层进入 Adjust；无 token 时保留自然量原流程。 */
+    /**
+     * iOS 先尝试 App Scheme，确保已安装时每次都打开对应剧；
+     * 没有唤起 App 时再进入 Adjust，保留未安装后的归因和延迟深链。
+     */
     function openApp() {
       var route = parseRouteParams();
       var adjustUrl = buildAdjustTrackerUrl();
+      var googleUrl = buildGooglePlayUrl();
+      var schemeUrl = buildDeepLink(route.movieId, route.episodeNum);
+
+      if (isIos()) {
+        launchAppWithFallback(
+          buildIosDeepLink(route.movieId, route.episodeNum),
+          adjustUrl || APP_STORE_URL
+        );
+        return;
+      }
+
       if (adjustUrl) {
         window.location.href = adjustUrl;
         return;
       }
-      var googleUrl = buildGooglePlayUrl();
-      var schemeUrl = buildDeepLink(route.movieId, route.episodeNum);
 
       if (isAndroid()) {
         var isOpenApp = false;
@@ -867,11 +842,6 @@
         });
 
         window.location.href = schemeUrl;
-        return;
-      }
-
-      if (isIos()) {
-        launchAppWithFallback(buildIosDeepLink(route.movieId, route.episodeNum), APP_STORE_URL);
         return;
       }
 
@@ -975,7 +945,7 @@
       var posterWrap = document.getElementById('posterWrap');
       var loadingMask = document.getElementById('loadingMask');
 
-      // 先把最终 Adjust URL 放到真实链接上；点击时仍会重算一次，以读取最新 _fbp cookie。
+      // 保留真实 Adjust href 作为无 JS / 长按打开兜底；正常点击由 openApp 决定 iOS 唤起顺序。
       var initialAdjustUrl = buildAdjustTrackerUrl();
       if (initialAdjustUrl) {
         headerOpenBtn.href = initialAdjustUrl;
@@ -988,12 +958,12 @@
         if (currentAdjustUrl) {
           event.currentTarget.href = currentAdjustUrl;
         }
-        openAppAfterCopy();
+        openApp();
       }
 
       headerOpenBtn.addEventListener('click', handleDownloadLink);
       ctaBtn.addEventListener('click', handleDownloadLink);
-      posterWrap.addEventListener('click', openAppAfterCopy);
+      posterWrap.addEventListener('click', openApp);
 
       var infoPromise = window.__appShareInfoPromise || fetchMovieInfo(route.movieId);
       infoPromise
