@@ -1,0 +1,114 @@
+.rs-about__body {
+    background: #000;
+    color: #fff;
+}
+
+.rs-about {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 40px;
+}
+
+.rs-about__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.rs-about__logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    object-fit: contain;
+    box-shadow: 0 10px 28px rgb(255 59 92 / 18%);
+}
+
+.rs-about__domain {
+    color: rgb(255 255 255 / 88%);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.rs-about__menu {
+    width: min(100%, 560px);
+    margin-top: 30px;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 14px;
+    background: #151515;
+    box-shadow: 0 16px 42px rgb(0 0 0 / 24%);
+}
+
+.rs-about__row {
+    display: flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 0;
+    border-top: 1px solid rgb(255 255 255 / 8%);
+    background: transparent;
+    padding: 0 18px;
+    color: rgb(255 255 255 / 88%);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+.rs-about__row:first-child {
+    border-top: 0;
+}
+
+.rs-about__row:hover {
+    background: rgb(255 255 255 / 5%);
+    color: #fff;
+}
+
+.rs-about__row:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid #ff3d5d;
+    outline-offset: -2px;
+}
+
+.rs-about__chevron {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    color: rgb(255 255 255 / 34%);
+    stroke-width: 1.8;
+}
+
+.rs-about__version {
+    color: rgb(255 255 255 / 38%);
+    font-size: 13px;
+}
+
+@media (min-width: 768px) {
+    .rs-about {
+        padding-top: 44px;
+    }
+
+    .rs-about__logo {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+    }
+
+    .rs-about__menu {
+        margin-top: 36px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rs-about__row {
+        transition: none;
+    }
+}

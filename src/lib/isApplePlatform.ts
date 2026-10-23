@@ -1,6 +1,6 @@
 /**
  * 是否为 Apple 系环境（iOS / iPadOS / macOS）。
- * 用于隐藏 Chromium「添加到桌面」PWA 底栏：Safari 无 beforeinstallprompt，且产品要求苹果端不展示该条。
+ * 用于选择 Apple Pay 等平台相关支付能力。
  */
 export function isApplePlatform(): boolean {
     if (typeof navigator === 'undefined') {

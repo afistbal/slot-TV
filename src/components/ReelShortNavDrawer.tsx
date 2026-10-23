@@ -5,6 +5,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui
 import { cn } from '@/lib/utils';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
+import { useRequireAccount } from '@/hooks/useRequireAccount';
 
 function isLocaleActive(current: string | null | undefined, code: string | null | undefined): boolean {
     if (current == null || code == null) {
@@ -73,6 +74,7 @@ export function ReelShortNavDrawer({
     const location = useLocation();
     const [langOpen, setLangOpen] = useState(false);
     const sourceform = `${location.pathname}${location.search}`;
+    const requireAccount = useRequireAccount();
 
     function selectLocale(code: string) {
         if (rootStore.locale === code) {
@@ -154,6 +156,39 @@ export function ReelShortNavDrawer({
                                     })}
                                 </div>
                             </div>
+                        </div>
+
+                        <div>
+                            <Link
+                                to="/lucky"
+                                className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                <FormattedMessage id="nav_lucky" />
+                            </Link>
+                        </div>
+
+                        <div>
+                            <Link
+                                to="/creator"
+                                className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
+                                onClick={(event) => {
+                                    if (!requireAccount()) event.preventDefault();
+                                    onOpenChange(false);
+                                }}
+                            >
+                                <FormattedMessage id="nav_join_creator" />
+                            </Link>
+                        </div>
+
+                        <div>
+                            <Link
+                                to="/affiliate"
+                                className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                <FormattedMessage id="nav_affiliate" />
+                            </Link>
                         </div>
 
                         <div>

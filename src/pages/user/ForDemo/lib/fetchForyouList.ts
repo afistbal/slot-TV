@@ -62,6 +62,8 @@ function normalizeFeedRow(raw: Record<string, unknown>): IForYouFeedItem {
         is_favor: resolvedFavorite,
         is_favorite: resolvedFavorite ? 1 : 0,
         favor: Number(raw['favor'] ?? raw['favorite'] ?? 0),
+        is_like: raw['is_like'] === true || raw['is_like'] === 1 || raw['is_like'] === '1' || raw['liked'] === true || raw['is_liked'] === true,
+        like: Number(raw['like'] ?? raw['likes'] ?? raw['like_count'] ?? 0),
     };
 }
 

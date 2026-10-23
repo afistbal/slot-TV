@@ -1,8 +1,10 @@
+import { SharePosterDialog } from '@/components/SharePosterDialog';
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import './lib/documentNavigation'
 import { installChunkLoadRecovery } from './lib/pwaChunkRecovery'
+import { captureAffiliateReferralFromLocation } from './lib/affiliateReferralStorage'
 
 const PWA_UPDATE_CHECK_INTERVAL_MS = 30 * 1000
 const PWA_SERVICE_WORKER_URL = '/sw.js'
@@ -14,6 +16,7 @@ let reloadingForPwaUpdate = false
 const hadServiceWorkerController = 'serviceWorker' in navigator && Boolean(navigator.serviceWorker.controller)
 
 installChunkLoadRecovery()
+captureAffiliateReferralFromLocation()
 
 function isPwaReloadDeferredPath(pathname: string): boolean {
   const segments = pathname.split('/').filter(Boolean)
@@ -56,8 +59,7 @@ function reloadForPwaUpdate(): void {
     }
     window.sessionStorage.setItem(PWA_VERSION_RELOAD_STORAGE_KEY, '1')
   } catch {
-    // Ignore storage failures; the in-memory guard still prevents duplicate
-    // reloads within the lifetime of this document.
+    // The in-memory guard still prevents duplicate reloads for this document.
   }
 
   reloadingForPwaUpdate = true
@@ -66,9 +68,7 @@ function reloadForPwaUpdate(): void {
 }
 
 function maybeReloadDeferredPwaUpdate(): void {
-  if (!hasDeferredPwaReload()) return
-  if (isPwaReloadDeferredPath(window.location.pathname)) return
-
+  if (!hasDeferredPwaReload() || isPwaReloadDeferredPath(window.location.pathname)) return
   reloadForPwaUpdate()
 }
 
@@ -78,10 +78,7 @@ function installDeferredPwaReloadWatcher(): void {
   if (deferredPwaReloadWatcherInstalled) return
   deferredPwaReloadWatcherInstalled = true
 
-  const scheduleCheck = () => {
-    window.setTimeout(maybeReloadDeferredPwaUpdate, 0)
-  }
-
+  const scheduleCheck = () => window.setTimeout(maybeReloadDeferredPwaUpdate, 0)
   const patchHistoryMethod = (method: 'pushState' | 'replaceState') => {
     const original = window.history[method]
     window.history[method] = function (
@@ -98,7 +95,6 @@ function installDeferredPwaReloadWatcher(): void {
 
   patchHistoryMethod('pushState')
   patchHistoryMethod('replaceState')
-
   window.addEventListener('popstate', scheduleCheck)
   window.addEventListener('hashchange', scheduleCheck)
   window.addEventListener('focus', scheduleCheck)
@@ -111,7 +107,7 @@ function deferPwaReloadUntilNonVideoPage(): void {
   try {
     window.sessionStorage.setItem(PWA_DEFERRED_RELOAD_STORAGE_KEY, '1')
   } catch {
-    // Ignore storage failures; the current page still stays alive.
+    // Keep the current video page alive even when storage is unavailable.
   }
   installDeferredPwaReloadWatcher()
 }
@@ -121,7 +117,6 @@ function reloadOrDeferForPwaUpdate(): void {
     deferPwaReloadUntilNonVideoPage()
     return
   }
-
   reloadForPwaUpdate()
 }
 
@@ -133,7 +128,6 @@ if (hasDeferredPwaReload()) {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (!event.data || event.data.type !== PWA_FORCE_RELOAD_MESSAGE) return
-
     event.ports[0]?.postMessage({ type: PWA_FORCE_RELOAD_ACK_MESSAGE })
     reloadOrDeferForPwaUpdate()
   })
@@ -144,7 +138,7 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-/** 检测到新 SW 接管后强制刷新；前台运行时主动检查更新，避免长期停在旧版本。 */
+/** 前台运行时主动检查 SW 更新；视频播放中延后刷新，避免中断观看。 */
 if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   navigator.serviceWorker.register(PWA_SERVICE_WORKER_URL, { scope: '/' })
     .then((registration) => {
@@ -163,5 +157,8 @@ if ('serviceWorker' in navigator && !import.meta.env.DEV) {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <App />,
+  <>
+    <App />
+    <SharePosterDialog />
+  </>,
 )

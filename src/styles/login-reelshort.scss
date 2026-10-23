@@ -60,7 +60,7 @@
     align-items: center;
     justify-content: center;
     gap: calc(12 / 375 * var(--app-vw));
-    padding-top: calc(115 / 375 * var(--app-vw));
+    padding-top: calc(42 / 375 * var(--app-vw));
 }
 
 .rs-login__logoWrap {
@@ -130,7 +130,7 @@
 }
 
 .rs-login__protocol {
-    margin-top: calc(150 / 375 * var(--app-vw));
+    margin-top: calc(20 / 375 * var(--app-vw));
     font-size: calc(12 / 375 * var(--app-vw));
     color: rgba(255, 255, 255, 0.6);
     text-align: center;
@@ -140,6 +140,99 @@
 .rs-login__protocol a {
     color: rgba(255, 255, 255, 0.85);
     text-decoration: underline;
+}
+
+/* 移动端页面直接展示登录/注册表单，Google 固定放在表单下方。 */
+.rs-login__inlineAuth {
+    width: 100%;
+    margin-top: calc(12 / 375 * var(--app-vw));
+    display: flex;
+    flex-direction: column;
+    gap: calc(10 / 375 * var(--app-vw));
+
+    .rs-login__authTabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.1);
+
+        button {
+            height: calc(38 / 375 * var(--app-vw));
+            border: 0;
+            border-radius: 9999px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.55);
+            font-weight: 600;
+        }
+
+        button.is-active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+    }
+
+    .rs-login__drawerField {
+        height: calc(48 / 375 * var(--app-vw));
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0 calc(18 / 375 * var(--app-vw));
+    }
+
+    .rs-login__drawerInput {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #fff;
+        color-scheme: dark;
+
+        &::placeholder { color: rgba(255, 255, 255, 0.45); }
+
+        /* Chrome / Edge 保存账号后会给自动填充字段强制加浅色底，使用不透明内阴影保持深色输入槽。 */
+        &:-webkit-autofill,
+        &:-webkit-autofill:hover,
+        &:-webkit-autofill:focus,
+        &:-webkit-autofill:active {
+            -webkit-text-fill-color: #fff !important;
+            caret-color: #fff;
+            box-shadow: 0 0 0 1000px #1a1a1a inset !important;
+            -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
+            transition: background-color 99999s ease-out 0s;
+        }
+
+        &:autofill {
+            background: #1a1a1a !important;
+            color: #fff !important;
+        }
+    }
+
+    .rs-login__submit {
+        width: 100%;
+        height: calc(48 / 375 * var(--app-vw));
+        border-radius: 9999px;
+        background: linear-gradient(90deg, #ff3b5c, #ff4b6e);
+        color: #fff;
+        font-size: calc(16 / 375 * var(--app-vw));
+    }
+
+    .rs-login__divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 12px;
+
+        &::before, &::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.14);
+        }
+    }
 }
 
 /**
@@ -168,6 +261,30 @@
 
     .border-t {
         border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .rs-login__authTabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.08);
+
+        button {
+            height: 42px;
+            border: 0;
+            border-radius: 9999px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        button.is-active {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+        }
     }
 
     /* 输入行（邮箱/验证码） */

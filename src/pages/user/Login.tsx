@@ -1,16 +1,14 @@
 import { FormattedMessage, useIntl } from 'react-intl';
 import { Navigate, useNavigate } from 'react-router';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import google from '@/assets/google.svg';
 import loginPcGoogle from '@/assets/icons/login-pc-google.png';
-import mail from '@/assets/email.svg';
 import mailPc from '@/assets/icons/login-pc-email.svg';
 import bg from '@/assets/images/ec9725d0-83b2-11ee-aed2-cfe3d80f70eb.png';
 import closeIcon from '@/assets/images/icon_close.webp';
@@ -24,19 +22,24 @@ import usePixel from '@/hooks/usePixel';
 import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
-import { getAnonymousUniIdPayload } from '@/lib/anonymousUniIdForBinding';
+import { getAnonymousUidPayload, getAnonymousUniIdPayload } from '@/lib/anonymousUniIdForBinding';
+import {
+    clearStoredAffiliateReferralCode,
+    getRegistrationReferralPayload,
+} from '@/lib/affiliateReferralStorage';
 import { fromSourceForLogin } from '@/lib/adAttribution';
 import { setIsAnonymousFromInfo } from '@/lib/clientIsAnonymous';
 import '@/styles/login-reelshort.scss';
 import '@/styles/login-modal-reelshort-pc.scss';
 
 type PcLoginStep = 'providers' | 'email';
+type EmailAuthMode = 'login' | 'register';
 
 type LoginVariant = 'h5' | 'pc';
 
 function useLoginBase(
     variant: LoginVariant,
-    pcOpts?: { onRequestClose: () => void },
+    pcOpts?: { onRequestClose: () => void; onLoginSuccess?: () => void },
 ) {
     const intl = useIntl();
     const pixel = usePixel();
@@ -44,14 +47,16 @@ function useLoginBase(
     const loadingStore = useLoadingStore();
     const navigate = useNavigate();
     const [emailOpen, setEmailOpen] = useState(false);
-    const [pcStep, setPcStep] = useState<PcLoginStep>('providers');
-    const [time, setTime] = useState(0);
-    const [sendCodeLoading, setSendCodeLoading] = useState(false);
+    const [pcStep, setPcStep] = useState<PcLoginStep>(variant === 'pc' ? 'email' : 'providers');
     const [emailSubmitLoading, setEmailSubmitLoading] = useState(false);
+    const [registerSubmitLoading, setRegisterSubmitLoading] = useState(false);
     /** Google 弹窗 OAuth：勿用全局 loadingStore，否则与 PC 登录弹窗双开 Radix Dialog，取消弹窗后易拦截点击/无法关登录层 */
     const [oauthPopupLoading, setOauthPopupLoading] = useState(false);
     const [email, setEmail] = useState(localStorage.getItem('email') ?? '');
-    const [code, setCode] = useState('');
+    const [emailAuthMode, setEmailAuthMode] = useState<EmailAuthMode>('login');
+    const [registerPassword, setRegisterPassword] = useState('');
+    const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
 
     const isPcVariant = variant === 'pc';
     const profilePathAfterLogin = isPcVariant ? '/profile?tab=topup' : '/profile';
@@ -63,7 +68,17 @@ function useLoginBase(
         }
     }
 
+    function finishLogin() {
+        if (isPcVariant && pcOpts?.onLoginSuccess) {
+            pcOpts.onLoginSuccess();
+            return;
+        }
+        closePcLoginModal();
+        navigate(profilePathAfterLogin, { replace: true, state: {} });
+    }
+
     function handleToggleEmailLogin() {
+        setEmailAuthMode('login');
         if (isPcVariant) {
             setPcStep('email');
         } else {
@@ -71,8 +86,69 @@ function useLoginBase(
         }
     }
 
-    function handlePcBackToProviders() {
-        setPcStep('providers');
+    function handleOpenEmailRegister() {
+        setEmailAuthMode('register');
+        if (isPcVariant) {
+            setPcStep('email');
+        } else {
+            setEmailOpen(true);
+        }
+    }
+
+    function completeEmailAccount(result: { d: { [key: string]: unknown } }, method: 'email' | 'register') {
+        const token = String(result.d['token'] ?? '').trim();
+        const info = result.d['info'];
+        if (!token || info == null || typeof info !== 'object' || Array.isArray(info)) {
+            toast.error(intl.formatMessage({ id: 'login_failed' }, { eason: 'Invalid response' }));
+            return false;
+        }
+        localStorage.setItem('token', token);
+        localStorage.setItem('email', email.trim());
+        localStorage.setItem('login-method', 'email');
+        localStorage.removeItem('user-avatar');
+        const accountInfo = info as { [key: string]: unknown };
+        setIsAnonymousFromInfo(accountInfo);
+        userStore.signin(accountInfo);
+        pixel.track(method === 'register' ? 'CompleteRegistration' : 'emailLogin');
+        setEmailOpen(false);
+        setPcStep('email');
+        finishLogin();
+        return true;
+    }
+
+    async function handleRegister() {
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!emailVerify(normalizedEmail)) return toast.error(intl.formatMessage({ id: 'invalid_email' }));
+        if (registerPassword.length < 6) {
+            return toast.error(intl.formatMessage({ id: 'register_password_invalid', defaultMessage: '密码至少需要 6 位' }));
+        }
+        if (registerPassword !== registerPasswordConfirm) {
+            return toast.error(intl.formatMessage({ id: 'register_password_mismatch', defaultMessage: '两次输入的密码不一致' }));
+        }
+        if (registerSubmitLoading) return;
+
+        setRegisterSubmitLoading(true);
+        try {
+            const result = await api<{ [key: string]: unknown }>('login/email', {
+                method: 'post',
+                loading: false,
+                data: {
+                    email: normalizedEmail,
+                    password: registerPassword,
+                    password2: registerPassword,
+                    ...getAnonymousUidPayload(),
+                    ...getRegistrationReferralPayload(),
+                    ...fromSourceForLogin(),
+                },
+            });
+            if (result.c !== 0) return;
+            if (completeEmailAccount(result, 'register')) {
+                clearStoredAffiliateReferralCode();
+                toast.success(intl.formatMessage({ id: 'register_success', defaultMessage: '注册成功' }));
+            }
+        } finally {
+            setRegisterSubmitLoading(false);
+        }
     }
 
     function handleDialogOpenChange(next: boolean) {
@@ -85,154 +161,37 @@ function useLoginBase(
     }
 
     function handlePcDialogEscape(e: Event) {
-        if (pcStep === 'email') {
-            e.preventDefault();
-            setPcStep('providers');
-        }
+        void e;
     }
 
     function handlePcDialogOutside(e: Event) {
-        if (pcStep === 'email') {
-            e.preventDefault();
-            setPcStep('providers');
-        }
+        void e;
     }
 
     async function handleSubmit() {
-        if (!emailVerify(email)) {
-            return toast.error(
-                intl.formatMessage({
-                    id: 'invalid_email',
-                }),
-            );
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!emailVerify(normalizedEmail)) return toast.error(intl.formatMessage({ id: 'invalid_email' }));
+        if (loginPassword.length < 6) {
+            return toast.error(intl.formatMessage({ id: 'register_password_invalid', defaultMessage: '密码至少需要 6 位' }));
         }
+        if (emailSubmitLoading) return;
 
-        if (!/[0-9]{6}/.test(code.trim())) {
-            return toast.error(
-                intl.formatMessage({
-                    id: 'invalid_email_code',
-                }),
-            );
-        }
-
-        if (emailSubmitLoading) {
-            return;
-        }
-
-        loadingStore.show();
         setEmailSubmitLoading(true);
         try {
             const result = await api<{ [key: string]: unknown }>('login/email', {
                 method: 'post',
                 data: {
-                    email: email.trim(),
-                    code: code.trim(),
-                    ...getAnonymousUniIdPayload(),
+                    email: normalizedEmail,
+                    password: loginPassword,
+                    ...getAnonymousUidPayload(),
                     ...fromSourceForLogin(),
                 },
                 loading: false,
             });
-
-            if (result.c !== 0) {
-                return;
-            }
-
-            /* @ts-ignore */
-            if (window.flutter_inappwebview) {
-                /* @ts-ignore */
-                const signin = await window.flutter_inappwebview.callHandler(
-                    'emailSignIn',
-                    email.trim(),
-                    (result.d['info'] as TData)['password'],
-                    result.d['is_new'],
-                );
-                if (signin !== 'success') {
-                    toast.error(
-                        intl.formatMessage(
-                            {
-                                id: 'login_failed',
-                            },
-                            {
-                                eason: signin,
-                            },
-                        ),
-                    );
-                    localStorage.removeItem('token');
-                    return;
-                }
-            }
-
-            toast.success(
-                intl.formatMessage({
-                    id: 'login_success',
-                }),
-            );
-
-            setEmailOpen(false);
-            setPcStep('providers');
-            localStorage.setItem('token', result.d['token'] as string);
-            localStorage.setItem('email', email.trim());
-            localStorage.setItem('login-method', 'email');
-            localStorage.removeItem('user-avatar');
-            const emailInfo = result.d['info'] as { [key: string]: unknown };
-            setIsAnonymousFromInfo(emailInfo);
-            userStore.signin(emailInfo);
-            pixel.track('emailLogin');
-
-            closePcLoginModal();
-            navigate(profilePathAfterLogin, { replace: true, state: {} });
+            if (result.c !== 0) return;
+            if (completeEmailAccount(result, 'email')) toast.success(intl.formatMessage({ id: 'login_success' }));
         } finally {
             setEmailSubmitLoading(false);
-            loadingStore.hide();
-        }
-    }
-
-    async function handleSendCode() {
-        if (time > 0 || sendCodeLoading) {
-            return;
-        }
-
-        if (!emailVerify(email)) {
-            return toast.error(
-                intl.formatMessage({
-                    id: 'invalid_email',
-                }),
-            );
-        }
-
-        setSendCodeLoading(true);
-        try {
-            const result = await api('login/email/code', {
-                method: 'post',
-                data: {
-                    email: email.trim(),
-                },
-                loading: false,
-            });
-
-            if (result.c !== 0) {
-                localStorage.removeItem('token');
-                return;
-            }
-
-            toast.success(
-                intl.formatMessage({
-                    id: 'email_code_sended',
-                }),
-            );
-
-            let currentTime = 60;
-            setTime(currentTime);
-            localStorage.setItem('mail-code-expire', (new Date().getTime() + 60000).toString());
-            const timer = window.setInterval(() => {
-                if (currentTime === 0) {
-                    window.clearInterval(timer);
-                }
-                currentTime -= 1;
-                setTime(currentTime);
-            }, 1000);
-        } finally {
-            setSendCodeLoading(false);
         }
     }
 
@@ -240,8 +199,16 @@ function useLoginBase(
         setEmail(e.currentTarget.value);
     }
 
-    function handleCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
-        setCode(e.currentTarget.value);
+    function handleRegisterPasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setRegisterPassword(e.currentTarget.value);
+    }
+
+    function handleRegisterPasswordConfirmChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setRegisterPasswordConfirm(e.currentTarget.value);
+    }
+
+    function handleLoginPasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setLoginPassword(e.currentTarget.value);
     }
 
     async function handleGoogleSignin() {
@@ -303,8 +270,7 @@ function useLoginBase(
             );
             loadingStore.hide();
             pixel.track('GoogleLogin');
-            closePcLoginModal();
-            navigate(profilePathAfterLogin, { replace: true, state: {} });
+            finishLogin();
         } catch {
             loadingStore.hide();
         }
@@ -375,8 +341,7 @@ function useLoginBase(
                 }),
             );
             pixel.track('GoogleLogin');
-            closePcLoginModal();
-            navigate(profilePathAfterLogin, { replace: true, state: {} });
+            finishLogin();
         } catch (error: unknown) {
             const code =
                 typeof error === 'object' &&
@@ -409,49 +374,33 @@ function useLoginBase(
         }
     }
 
-    useEffect(() => {
-        const expire = parseInt(localStorage.getItem('mail-code-expire') || '0', 10) || 0;
-        const now = new Date().getTime();
-        let timer = 0;
-        if (expire > now) {
-            let current = Math.ceil((expire - now) / 1000);
-            setTime(current);
-            timer = window.setInterval(() => {
-                if (current === 0) {
-                    window.clearInterval(timer);
-                }
-                current -= 1;
-                setTime(current);
-            }, 1000);
-        }
-
-        return () => {
-            window.clearInterval(timer);
-        };
-    }, []);
-
     return {
         intl,
         email,
         setEmail,
-        code,
-        time,
+        emailAuthMode,
+        setEmailAuthMode,
+        registerPassword,
+        registerPasswordConfirm,
+        loginPassword,
         emailOpen,
         setEmailOpen,
         pcStep,
         setPcStep,
         handleToggleEmailLogin,
-        handlePcBackToProviders,
+        handleOpenEmailRegister,
         handleDialogOpenChange,
         handlePcDialogEscape,
         handlePcDialogOutside,
         handleSubmit,
-        handleSendCode,
-        sendCodeLoading,
         emailSubmitLoading,
+        registerSubmitLoading,
         oauthPopupLoading,
         handleEmailChange,
-        handleCodeChange,
+        handleRegisterPasswordChange,
+        handleRegisterPasswordConfirmChange,
+        handleLoginPasswordChange,
+        handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
     };
@@ -460,32 +409,39 @@ function useLoginBase(
 export function PcLoginDialog({
     open,
     onOpenChange,
+    onLoginSuccess,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onLoginSuccess?: () => void;
 }) {
     const onRequestClose = () => onOpenChange(false);
     const {
         intl,
         email,
-        code,
+        emailAuthMode,
+        setEmailAuthMode,
+        registerPassword,
+        registerPasswordConfirm,
+        loginPassword,
         pcStep,
-        time,
         handleToggleEmailLogin,
-        handlePcBackToProviders,
+        handleOpenEmailRegister,
         handleDialogOpenChange,
         handlePcDialogEscape,
         handlePcDialogOutside,
         handleSubmit,
-        handleSendCode,
-        sendCodeLoading,
         emailSubmitLoading,
+        registerSubmitLoading,
         oauthPopupLoading,
         handleEmailChange,
-        handleCodeChange,
+        handleRegisterPasswordChange,
+        handleRegisterPasswordConfirmChange,
+        handleLoginPasswordChange,
+        handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
-    } = useLoginBase('pc', { onRequestClose });
+    } = useLoginBase('pc', { onRequestClose, onLoginSuccess });
 
     const protocolBlock = (
         <div className="LoginModal_protocol__jVDhl">
@@ -537,15 +493,6 @@ export function PcLoginDialog({
                         pcStep === 'email' && 'LoginModal_login_body__DH86w--email',
                     )}
                 >
-                    {pcStep === 'email' ? (
-                        <button
-                            type="button"
-                            className="rs-login-modal__email-back"
-                            onClick={handlePcBackToProviders}
-                        >
-                            <FormattedMessage id="back" />
-                        </button>
-                    ) : null}
                     <button
                         type="button"
                         className="LoginModal_close_btn__KOxVA"
@@ -604,13 +551,31 @@ export function PcLoginDialog({
                                         <FormattedMessage id="login_email" />
                                     </div>
                                 </button>
+                                <button
+                                    type="button"
+                                    id="register"
+                                    className="LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--register"
+                                    onClick={handleOpenEmailRegister}
+                                >
+                                    <div className="LoginModal_login_icon__Huj9u">
+                                        <img src={mailPc} alt="" />
+                                    </div>
+                                    <div className="LoginModal_login_text__3ZrIq">
+                                        <FormattedMessage id="register" defaultMessage="注册账号" />
+                                    </div>
+                                </button>
                             </div>
                             {protocolBlock}
                         </>
                     ) : (
                         <>
-                            <div className="LoginModal_title__ObusB" style={{ marginBottom: 8 }}>
-                                <FormattedMessage id="login_email" />
+                            <div className="rs-login-modal__auth-tabs" role="tablist">
+                                <button type="button" className={emailAuthMode === 'login' ? 'is-active' : ''} onClick={() => setEmailAuthMode('login')}>
+                                    <FormattedMessage id="login" />
+                                </button>
+                                <button type="button" className={emailAuthMode === 'register' ? 'is-active' : ''} onClick={() => setEmailAuthMode('register')}>
+                                    <FormattedMessage id="register" defaultMessage="注册" />
+                                </button>
                             </div>
                             <div className="rs-login-modal__email-fields">
                                 <div className="rs-login-modal__email-field">
@@ -624,56 +589,73 @@ export function PcLoginDialog({
                                         maxLength={30}
                                     />
                                 </div>
-                                <div className="rs-login-modal__email-field">
+                                {emailAuthMode === 'login' ? <div className="rs-login-modal__email-field">
                                     <input
                                         className="rs-login-modal__email-input"
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={code}
-                                        onChange={handleCodeChange}
-                                        placeholder={intl.formatMessage({ id: 'code_placeholder' })}
-                                        maxLength={6}
+                                        type="password"
+                                        value={loginPassword}
+                                        onChange={handleLoginPasswordChange}
+                                        autoComplete="current-password"
+                                        placeholder={intl.formatMessage({ id: 'password_placeholder', defaultMessage: '请输入密码' })}
+                                        maxLength={72}
                                     />
-                                    <span
-                                        role="button"
-                                        tabIndex={sendCodeLoading ? -1 : 0}
-                                        className={cn(
-                                            'rs-login-modal__email-send',
-                                            sendCodeLoading && 'rs-login-modal__email-send--loading',
-                                        )}
-                                        aria-busy={sendCodeLoading}
-                                        onClick={() => void handleSendCode()}
-                                        onKeyDown={(e) => {
-                                            if (sendCodeLoading) {
-                                                return;
-                                            }
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                e.preventDefault();
-                                                void handleSendCode();
-                                            }
-                                        }}
-                                    >
-                                        {sendCodeLoading ? (
-                                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                                        ) : time > 0 ? (
-                                            `${time.toString().padStart(2, '0')}s`
-                                        ) : (
-                                            intl.formatMessage({ id: 'send_code' })
-                                        )}
-                                    </span>
-                                </div>
+                                </div> : (
+                                    <div className="rs-login-modal__email-field">
+                                        <input
+                                            className="rs-login-modal__email-input"
+                                            type="password"
+                                            value={registerPassword}
+                                            onChange={handleRegisterPasswordChange}
+                                            autoComplete="new-password"
+                                            placeholder={intl.formatMessage({ id: 'register_password_placeholder', defaultMessage: '请输入密码（至少 6 位）' })}
+                                            maxLength={72}
+                                        />
+                                    </div>
+                                )}
+                                {emailAuthMode === 'register' ? (
+                                    <div className="rs-login-modal__email-field">
+                                        <input
+                                            className="rs-login-modal__email-input"
+                                            type="password"
+                                            value={registerPasswordConfirm}
+                                            onChange={handleRegisterPasswordConfirmChange}
+                                            autoComplete="new-password"
+                                            placeholder={intl.formatMessage({ id: 'register_password_confirm_placeholder', defaultMessage: '请再次输入密码' })}
+                                            maxLength={72}
+                                        />
+                                    </div>
+                                ) : null}
                             </div>
                             <button
                                 type="button"
                                 className="rs-login-modal__email-submit inline-flex items-center justify-center gap-2"
-                                disabled={emailSubmitLoading}
-                                aria-busy={emailSubmitLoading}
-                                onClick={() => void handleSubmit()}
+                                disabled={emailSubmitLoading || registerSubmitLoading}
+                                aria-busy={emailSubmitLoading || registerSubmitLoading}
+                                onClick={() => void (emailAuthMode === 'login' ? handleSubmit() : handleRegister())}
                             >
-                                {emailSubmitLoading ? (
+                                {emailSubmitLoading || registerSubmitLoading ? (
                                     <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
                                 ) : null}
-                                <FormattedMessage id="login" />
+                                {emailAuthMode === 'login' ? <FormattedMessage id="login" /> : <FormattedMessage id="register" defaultMessage="注册" />}
+                            </button>
+                            <div className="rs-login-modal__or"><span>{intl.formatMessage({ id: 'or', defaultMessage: '或' })}</span></div>
+                            <button
+                                type="button"
+                                className={cn(
+                                    'LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google rs-login-modal__google-below',
+                                    oauthPopupLoading && 'pointer-events-none opacity-60',
+                                )}
+                                disabled={oauthPopupLoading}
+                                aria-busy={oauthPopupLoading}
+                                onClick={
+                                    (window as unknown as { flutter_inappwebview?: unknown })
+                                        .flutter_inappwebview !== undefined
+                                        ? handleGoogleSignin
+                                        : () => void handleGoogleSigninPopup()
+                                }
+                            >
+                                <div className="LoginModal_login_icon__Huj9u"><img src={loginPcGoogle} alt="" /></div>
+                                <div className="LoginModal_login_text__3ZrIq"><FormattedMessage id="login_google" /></div>
                             </button>
                             {protocolBlock}
                         </>
@@ -690,18 +672,20 @@ export default function Component() {
     const {
         intl,
         email,
-        code,
-        time,
-        emailOpen,
-        setEmailOpen,
-        handleToggleEmailLogin,
+        emailAuthMode,
+        setEmailAuthMode,
+        registerPassword,
+        registerPasswordConfirm,
+        loginPassword,
         handleSubmit,
-        handleSendCode,
-        sendCodeLoading,
         emailSubmitLoading,
+        registerSubmitLoading,
         oauthPopupLoading,
         handleEmailChange,
-        handleCodeChange,
+        handleRegisterPasswordChange,
+        handleRegisterPasswordConfirmChange,
+        handleLoginPasswordChange,
+        handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
     } = useLoginBase('h5');
@@ -733,7 +717,39 @@ export default function Component() {
                         <FormattedMessage id="welcome_to_site" values={{ site: BRAND_DISPLAY_NAME }} />
                     </p>
 
-                    <div className="LoginPage_login_btn_box__mdGH7 rs-login__btns">
+                    <div className="rs-login__inlineAuth">
+                        <div className="rs-login__authTabs" role="tablist">
+                            <button type="button" className={emailAuthMode === 'login' ? 'is-active' : ''} onClick={() => setEmailAuthMode('login')}>
+                                <FormattedMessage id="login" />
+                            </button>
+                            <button type="button" className={emailAuthMode === 'register' ? 'is-active' : ''} onClick={() => setEmailAuthMode('register')}>
+                                <FormattedMessage id="register" defaultMessage="注册" />
+                            </button>
+                        </div>
+                        <div className="rs-login__drawerField">
+                            <input onChange={handleEmailChange} value={email} type="email" autoFocus maxLength={30} className="rs-login__drawerInput" placeholder={intl.formatMessage({ id: 'email_placeholder' })} />
+                        </div>
+                        <div className="rs-login__drawerField">
+                            <input
+                                onChange={emailAuthMode === 'login' ? handleLoginPasswordChange : handleRegisterPasswordChange}
+                                value={emailAuthMode === 'login' ? loginPassword : registerPassword}
+                                type="password"
+                                autoComplete={emailAuthMode === 'login' ? 'current-password' : 'new-password'}
+                                maxLength={72}
+                                className="rs-login__drawerInput"
+                                placeholder={intl.formatMessage({ id: emailAuthMode === 'login' ? 'password_placeholder' : 'register_password_placeholder', defaultMessage: emailAuthMode === 'login' ? '请输入密码' : '请输入密码（至少 6 位）' })}
+                            />
+                        </div>
+                        {emailAuthMode === 'register' ? (
+                            <div className="rs-login__drawerField">
+                                <input onChange={handleRegisterPasswordConfirmChange} value={registerPasswordConfirm} type="password" autoComplete="new-password" maxLength={72} className="rs-login__drawerInput" placeholder="请再次输入密码" />
+                            </div>
+                        ) : null}
+                        <Button className="rs-login__submit" onClick={() => void (emailAuthMode === 'login' ? handleSubmit() : handleRegister())} disabled={emailSubmitLoading || registerSubmitLoading}>
+                            {emailSubmitLoading || registerSubmitLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden /> : null}
+                            {emailAuthMode === 'login' ? <FormattedMessage id="login" /> : <FormattedMessage id="register" defaultMessage="注册" />}
+                        </Button>
+                        <div className="rs-login__divider"><span>或</span></div>
                         <div
                             id="google"
                             className={cn(
@@ -779,18 +795,6 @@ export default function Component() {
                                 <FormattedMessage id="login_google" />
                             </div>
                         </div>
-                        <div
-                            id="email"
-                            className="LoginPage_login_btn_item__OkeV1 rs-login__btn"
-                            onClick={handleToggleEmailLogin}
-                        >
-                            <div className="LoginPage_login_icon__XK3jz">
-                                <img src={mail} alt="" />
-                            </div>
-                            <div className="LoginPage_login_text__NWSSM">
-                                <FormattedMessage id="login_email" />
-                            </div>
-                        </div>
                     </div>
 
                     <div className="LoginPage_protocol__aQxLZ rs-login__protocol">
@@ -811,72 +815,6 @@ export default function Component() {
                         />
                     </div>
                 </div>
-                <Drawer open={emailOpen} onOpenChange={setEmailOpen}>
-                    <DrawerContent className="bg-linear-to-b from-[#ffe9d1] to-white" aria-describedby="login">
-                        <DrawerTitle className="flex items-center gap-4 px-4 pt-4 mb-4">
-                            <div className="flex-1 text-lg text-ellipsis overflow-hidden text-nowrap font-bold">
-                                <FormattedMessage id="login_email" />
-                            </div>
-                            <div onClick={() => setEmailOpen(false)}>
-                                <X />
-                            </div>
-                        </DrawerTitle>
-                        <div className="border-t p-8 flex flex-col gap-4">
-                            <div className="rs-login__drawerField">
-                                <input
-                                    onChange={handleEmailChange}
-                                    value={email}
-                                    type="email"
-                                    autoFocus
-                                    maxLength={30}
-                                    className="rs-login__drawerInput"
-                                    placeholder={intl.formatMessage({ id: 'email_placeholder' })}
-                                />
-                            </div>
-                            <div className="rs-login__drawerField">
-                                <input
-                                    onChange={handleCodeChange}
-                                    value={code}
-                                    type="number"
-                                    maxLength={6}
-                                    className="rs-login__drawerInput"
-                                    placeholder={intl.formatMessage({ id: 'code_placeholder' })}
-                                />
-                                <div
-                                    className={cn(
-                                        'rs-login__drawerSend',
-                                        sendCodeLoading && 'rs-login__drawerSend--loading',
-                                    )}
-                                    role="button"
-                                    tabIndex={sendCodeLoading ? -1 : 0}
-                                    aria-busy={sendCodeLoading}
-                                    onClick={() => void handleSendCode()}
-                                    onMouseDown={(e) => !sendCodeLoading && e.preventDefault()}
-                                >
-                                    {sendCodeLoading ? (
-                                        <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                                    ) : time > 0 ? (
-                                        `${time.toString().padStart(2, '0')}s`
-                                    ) : (
-                                        <FormattedMessage id="send_code" />
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-8 pt-0">
-                            <Button
-                                onClick={() => void handleSubmit()}
-                                disabled={emailSubmitLoading}
-                                aria-busy={emailSubmitLoading}
-                            >
-                                {emailSubmitLoading ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                                ) : null}
-                                <FormattedMessage id="login" />
-                            </Button>
-                        </div>
-                    </DrawerContent>
-                </Drawer>
             </div>
         </div>
     );

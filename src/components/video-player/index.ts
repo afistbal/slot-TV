@@ -1,5 +1,9 @@
 export { VideoPlayerSideActions } from './VideoPlayerSideActions';
 export type { VideoPlayerSideActionsProps } from './VideoPlayerSideActions';
+export { VideoPlayerRatingDialog } from './VideoPlayerRatingDialog';
+export { VideoPlayerAmbientLayer } from './VideoPlayerAmbient';
+export type { VideoPlayerAmbientLayerProps } from './VideoPlayerAmbient';
+export { useVideoPlayerAmbient } from './useVideoPlayerAmbient';
 export { VideoPlayerPcEpisodeNav } from './VideoPlayerPcEpisodeNav';
 export type { VideoPlayerPcEpisodeNavProps } from './VideoPlayerPcEpisodeNav';
 export { VideoPlayerPcBackBar } from './VideoPlayerPcBackBar';

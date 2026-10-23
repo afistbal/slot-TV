@@ -1,3 +1,4 @@
+import { releaseVideoFullscreenOrientation } from '@/lib/videoFullscreenOrientation';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import type Player from 'xgplayer';
 
@@ -50,6 +51,7 @@ export function useFeedPlayerFullscreen({
     enabled = true,
 }: UseFeedPlayerFullscreenOptions) {
     const [keepFullscreen, setKeepFullscreen] = useState(false);
+    useEffect(() => () => releaseVideoFullscreenOrientation(), []);
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const suppressUntilRef = useRef(0);
     const switchingRef = useRef(false);
@@ -96,6 +98,7 @@ export function useFeedPlayerFullscreen({
     }, []);
 
     const forceExitFullscreen = useCallback(async () => {
+        releaseVideoFullscreenOrientation();
         const video = getVideoEl(getActivePlayerRef.current()) as
             | (HTMLVideoElement & { webkitExitFullscreen?: () => void })
             | null;
@@ -157,13 +160,11 @@ export function useFeedPlayerFullscreen({
                 suppressUntilRef.current = 0;
                 return;
             }
-            if (!inFullscreen && !isDesktop && keepFullscreen) {
-                return;
-            }
             if (!inFullscreen && shouldIgnoreFullscreenExit()) {
                 return;
             }
             setKeepFullscreen(inFullscreen);
+            if (!inFullscreen) setImmersiveDom(fullscreenTargetRef.current, false);
         };
 
         const attachVideoGuards = (video: HTMLVideoElement | null) => {

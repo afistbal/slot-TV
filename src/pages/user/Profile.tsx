@@ -1,4 +1,17 @@
-import { CircleUser, FileText } from 'lucide-react';
+import {
+    CircleHelp,
+    CircleUser,
+    Globe2,
+    Heart,
+    History,
+    Info,
+    LogIn,
+    LogOut,
+    Share2,
+    Sparkles,
+    UserRound,
+    WalletCards,
+} from 'lucide-react';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
 import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
@@ -22,12 +35,12 @@ import {
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
-import { isTikTokPlatform } from '@/platform';
 import RadixRc from '@/pages/user/RadixRc';
 import FeedbackPanel from '@/pages/user/Feedback';
 import UserDetailPanel from '@/pages/user/UserDetail';
 import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
 import { PcLoginDialog } from '@/pages/user/Login';
+import { useRequireAccount } from '@/hooks/useRequireAccount';
 import '@/styles/profile-reelshort.scss';
 import '@/styles/reelshort-dashboard-pc-mirror.scss';
 import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
@@ -48,6 +61,7 @@ function PcMenuIcon({ src }: { src: string }) {
 export default function Component() {
     const intl = useIntl();
     const userStore = useUserStore();
+    const requireAccount = useRequireAccount();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -56,7 +70,6 @@ export default function Component() {
     const [vip, setVip] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPc = useMinWidth768();
-    const isTikTokProfile = isTikTokPlatform() && !isPc;
     const [pcLoginOpen, setPcLoginOpen] = useState(false);
     const [pcTab, setPcTab] = useState<ProfilePcTab>('topup');
     const [profileMyListSubTab, setProfileMyListSubTab] = useState<ProfileMyListSubTab>('favorite');
@@ -273,61 +286,64 @@ export default function Component() {
         </Link>
     );
 
-    const h5HeaderLogoutBtn = (
-        <button type="button" className="rs-profile__h5HeaderAuth" onClick={() => void handleLogout()}>
-            <FormattedMessage id="logout" />
-        </button>
-    );
-
     const loginCardSigned = userStore.signed && !userStore.isAnonymous() && (
-        <div className={cn('rs-profile__loginCard', isTikTokProfile && 'rs-profile__loginCard--tiktok')}>
-            <Link to="/user/detail" className="rs-profile__loginCardUserLink">
-            <div className="rs-profile__avatarWrap">
-                {avatarUrl ? (
-                    <img
-                        className="rs-profile__avatarImg"
-                        src={avatarUrl}
-                        referrerPolicy="no-referrer"
-                        onError={() => {
-                            localStorage.removeItem('user-avatar');
-                            userStore.update({ avatar: '' });
-                        }}
-                        alt=""
-                    />
-                ) : (
-                    <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
-                )}
-            </div>
-            <div className="rs-profile__loginCardMain rs-profile__loginCardMain--link">
-                <div>
-                    {!isTikTokProfile ? (
-                        <div className="rs-profile__name">
-                            <div>{userStore.info!['name'] as string}</div>
+        <section className="rs-profile__loginCard">
+            <div className="rs-profile__loginCardTop">
+                <Link to="/user/detail" className="rs-profile__loginCardUserLink">
+                    <div className="rs-profile__avatarWrap">
+                        {avatarUrl ? (
+                            <img
+                                className="rs-profile__avatarImg"
+                                src={avatarUrl}
+                                referrerPolicy="no-referrer"
+                                onError={() => {
+                                    localStorage.removeItem('user-avatar');
+                                    userStore.update({ avatar: '' });
+                                }}
+                                alt=""
+                            />
+                        ) : (
+                            <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
+                        )}
+                    </div>
+                    <div className="rs-profile__loginCardMain rs-profile__loginCardMain--link">
+                        <div>
+                            <div className="rs-profile__name">
+                                <div>{userStore.info!['name'] as string}</div>
+                            </div>
+                            {profileUidRow}
                         </div>
-                    ) : null}
-                    {profileUidRow}
-                </div>
+                    </div>
+                </Link>
             </div>
-            </Link>
-            {!isTikTokProfile ? h5HeaderLogoutBtn : null}
-        </div>
+            <div className="rs-profile__h5ProfileActions">
+                <Link to="/user/detail"><UserRound aria-hidden /><span><FormattedMessage id="user_detail" /></span></Link>
+                <Link to="/page/language"><Globe2 aria-hidden /><span><FormattedMessage id="language" /></span></Link>
+                <button type="button" onClick={() => void handleLogout()}><LogOut aria-hidden /><span><FormattedMessage id="logout" /></span></button>
+            </div>
+        </section>
     );
 
     const loginCardGuest = (
-        <div className={cn('rs-profile__loginCard', isTikTokProfile && 'rs-profile__loginCard--tiktok')}>
-            <div className="rs-profile__avatarWrap">
-                <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
-            </div>
-            <div className="rs-profile__loginCardMain">
-                <div>
-                    <div className="rs-profile__name">
-                        <FormattedMessage id="guest" />
-                    </div>
-                    {profileUidRow}
+        <section className="rs-profile__loginCard">
+            <div className="rs-profile__loginCardTop">
+                <div className="rs-profile__avatarWrap">
+                    <img src={iconHead} alt="" className="rs-profile__avatarGuestImg" />
                 </div>
-                {h5HeaderLoginBtn}
+                <div className="rs-profile__loginCardMain">
+                    <div>
+                        <div className="rs-profile__name"><FormattedMessage id="guest" /></div>
+                        {profileUidRow}
+                    </div>
+                    {h5HeaderLoginBtn}
+                </div>
             </div>
-        </div>
+            <div className="rs-profile__h5ProfileActions">
+                <Link to="/page/login"><LogIn aria-hidden /><span><FormattedMessage id="login" /></span></Link>
+                <Link to="/page/language"><Globe2 aria-hidden /><span><FormattedMessage id="language" /></span></Link>
+                <Link to="/page/feedback"><CircleHelp aria-hidden /><span><FormattedMessage id="feedback_help" /></span></Link>
+            </div>
+        </section>
     );
 
     const h5VipRenewalDateLabel = useMemo(() => {
@@ -386,71 +402,55 @@ export default function Component() {
     );
 
 
-    const h5Menu = (
-        <div className="rs-profile__menu rs-profile__menu--h5">
+    const h5QuickGrid = (
+        <nav className="rs-profile__h5QuickGrid" aria-label={intl.formatMessage({ id: 'profile_h5_quick_entries' })}>
+            <Link to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`} state={{ sourceform }}>
+                <span className="rs-profile__h5QuickIcon"><History aria-hidden /></span>
+                <span><FormattedMessage id="history" /></span>
+            </Link>
+            <Link to={`/my-list?sourceform=${encodeURIComponent(sourceform)}`} state={{ sourceform }}>
+                <span className="rs-profile__h5QuickIcon"><Heart aria-hidden /></span>
+                <span><FormattedMessage id="profile_h5_favorites" /></span>
+            </Link>
+            <Link to="/wallet">
+                <span className="rs-profile__h5QuickIcon"><WalletCards aria-hidden /></span>
+                <span><FormattedMessage id="shopping_bar_history" /></span>
+            </Link>
+            <Link to="/shopping">
+                <span className="rs-profile__h5QuickIcon rs-profile__h5QuickIcon--accent"><WalletCards aria-hidden /></span>
+                <span><FormattedMessage id="top_up" /></span>
+            </Link>
+            <Link to="/affiliate">
+                <span className="rs-profile__h5QuickIcon rs-profile__h5QuickIcon--accent"><Share2 aria-hidden /></span>
+                <span><FormattedMessage id="nav_affiliate" /></span>
+            </Link>
+            <Link to="/creator" onClick={(event) => {
+                if (!requireAccount()) event.preventDefault();
+            }}>
+                <span className="rs-profile__h5QuickIcon"><Sparkles aria-hidden /></span>
+                <span><FormattedMessage id="nav_join_creator" /></span>
+            </Link>
+            <Link to="/page/feedback">
+                <span className="rs-profile__h5QuickIcon"><CircleHelp aria-hidden /></span>
+                <span><FormattedMessage id="feedback_help" /></span>
+            </Link>
+            <Link to="/page/about">
+                <span className="rs-profile__h5QuickIcon"><Info aria-hidden /></span>
+                <span><FormattedMessage id="about_us" /></span>
+            </Link>
             {userStore.isAdmin() && (
                 <>
-                    <Link to="/z" className="rs-profile__menuItem">
-                        <div className="rs-profile__menuLeft">
-                            <CircleUser className="w-5 h-5" />
-                            <div className="rs-profile__menuText">
-                                <FormattedMessage id="admin" />
-                            </div>
-                        </div>
-                        <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
+                    <Link to="/z">
+                        <span className="rs-profile__h5QuickIcon"><CircleUser aria-hidden /></span>
+                        <span><FormattedMessage id="admin" /></span>
                     </Link>
-                    <Link to="/shopping?show_plans=1" className="rs-profile__menuItem">
-                        <div className="rs-profile__menuLeft">
-                            <CircleUser className="w-5 h-5" />
-                            <div className="rs-profile__menuText">
-                                <FormattedMessage id="profile_admin_product_list" />
-                            </div>
-                        </div>
-                        <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
+                    <Link to="/shopping?show_plans=1">
+                        <span className="rs-profile__h5QuickIcon"><WalletCards aria-hidden /></span>
+                        <span><FormattedMessage id="profile_admin_product_list" /></span>
                     </Link>
                 </>
             )}
-            <Link
-                to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
-                state={{ sourceform }}
-                className="rs-profile__menuItem"
-            >
-                <div className="rs-profile__menuLeft">
-                    <img src={profileH5Assets.menuHistory} alt="" className="rs-profile__menuIcon" />
-                    <div className="rs-profile__menuText">
-                        <FormattedMessage id="history" />
-                    </div>
-                </div>
-                <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
-            </Link>
-            <Link to="/page/language" className="rs-profile__menuItem">
-                <div className="rs-profile__menuLeft">
-                    <img src={profileH5Assets.menuLanguage} alt="" className="rs-profile__menuIcon" />
-                    <div className="rs-profile__menuText">
-                        <FormattedMessage id="language" />
-                    </div>
-                </div>
-                <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
-            </Link>
-            <Link to="/page/feedback" className="rs-profile__menuItem">
-                <div className="rs-profile__menuLeft">
-                    <img src={profileH5Assets.menuHelp} alt="" className="rs-profile__menuIcon" />
-                    <div className="rs-profile__menuText">
-                        <FormattedMessage id="feedback_help" />
-                    </div>
-                </div>
-                <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
-            </Link>
-            {isTikTokProfile ? (
-                <Link to="/page/terms-policy" className="rs-profile__menuItem">
-                    <div className="rs-profile__menuLeft">
-                        <FileText className="rs-profile__menuIcon" aria-hidden />
-                        <div className="rs-profile__menuText">Terms &amp; Policy</div>
-                    </div>
-                    <img src={profileH5Assets.chevron} alt="" className="rs-profile__menuChevronIcon" />
-                </Link>
-            ) : null}
-        </div>
+        </nav>
     );
 
     const pcDashboardMenuLiClass = (tab: ProfilePcTab) =>
@@ -575,6 +575,18 @@ export default function Component() {
                     <FormattedMessage id="top_up" />
                 </button>
             </div>
+            <div className="rs-profile__h5AccountLinks">
+                <Link to="/my-list">
+                    <span><FormattedMessage id="profile_h5_assets" /></span>
+                    <strong><FormattedMessage id="profile_h5_assets_desc" /></strong>
+                    <img src={profileH5Assets.chevron} alt="" aria-hidden />
+                </Link>
+                <Link to="/wallet">
+                    <span><FormattedMessage id="shopping_bar_history" /></span>
+                    <strong><FormattedMessage id="profile_h5_transactions_desc" /></strong>
+                    <img src={profileH5Assets.chevron} alt="" aria-hidden />
+                </Link>
+            </div>
         </div>
     );
 
@@ -680,22 +692,20 @@ export default function Component() {
     );
 
     return (
-        <div className={cn('rs-profile', isPc && 'rs-profile--pc', isTikTokProfile && 'rs-profile--tiktok')}>
+        <div className={cn('rs-profile', isPc && 'rs-profile--pc')}>
             <div
                 ref={scrollRef}
                 className={cn('rs-profile__scroll', isPc && 'rs-profile__scroll--pc')}
             >
-                {!isTikTokProfile ? (
-                    <ReelShortTopNav
-                        scrollParentRef={scrollRef}
-                        /* PC?????????? brand-cluster ?? ? ????????H5 ?????/?? subnav */
-                        showPrimaryNav={isPc}
-                        showSearch={isPc}
-                        showProfile={false}
-                        leftAction={isPc ? 'menu' : 'none'}
-                        rightActionsMode={isPc ? 'profilePc' : 'default'}
-                    />
-                ) : null}
+                <ReelShortTopNav
+                    scrollParentRef={scrollRef}
+                    /* PC?????????? brand-cluster ?? ? ????????H5 ?????/?? subnav */
+                    showPrimaryNav={isPc}
+                    showSearch={isPc}
+                    showProfile={false}
+                    leftAction={isPc ? 'menu' : 'none'}
+                    rightActionsMode={isPc ? 'profilePc' : 'default'}
+                />
                 {isPc ? (
                     <>
                         <div className="rs-profile__pc-dashboard">
@@ -855,21 +865,16 @@ export default function Component() {
                         {userStore.signed && !userStore.isAnonymous()
                             ? loginCardSigned
                             : loginCardGuest}
-                        {!isTikTokProfile
-                            ? (isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard)
-                            : null}
-                        {!isTikTokProfile ? h5MyAccountCard : null}
-                        {h5Menu}
+                        {isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard}
+                        {h5MyAccountCard}
+                        {h5QuickGrid}
                         <ReelShortFooter
                             dockAboveBottomTab
                             hideSupportCenter
-                            hideLegalLinks={isTikTokProfile}
                         />
                     </div>
                 )}
-                {!isTikTokProfile ? (
-                    <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
-                ) : null}
+                <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
                 {isPc ? <PcLoginDialog open={pcLoginOpen} onOpenChange={setPcLoginOpen} /> : null}
             </div>
         </div>

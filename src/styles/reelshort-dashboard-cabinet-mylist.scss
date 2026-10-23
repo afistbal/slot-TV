@@ -324,6 +324,13 @@
     word-wrap: break-word;
 }
 
+@media (min-width: 768px) {
+    .rs-profile__pc-cabinet .rs-bi-title {
+        /* Reserve two title lines so episode counts and ratings align across cards. */
+        min-height: 3em;
+    }
+}
+
 .rs-search-page .rs-bi-title {
     font-size: clamp(11px, 1.55vw, 14px);
     width: 100%;

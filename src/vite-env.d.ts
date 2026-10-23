@@ -22,24 +22,19 @@ declare module 'xgplayer-mp4' {
 declare module 'xgplayer/dist/index.min.css';
 
 interface ImportMetaEnv {
-  readonly VITE_PLATFORM?: string;
-  readonly VITE_TIKTOK_WEB_TEST?: string;
-  readonly VITE_TIKTOK_MONETIZATION_MODE?: 'iaa' | 'iap';
-  readonly VITE_TIKTOK_REWARDED_AD_UNIT_ID?: string;
   readonly VITE_SKIP_API?: string;
-  readonly VITE_PWA_INSTALL_PROMPT?: string;
   /** 设为 `false` 关闭 H5 底部四栏 Tab */
   readonly VITE_BOTTOM_TAB_BAR?: string;
   /** 与 lot-h5 一致：设为 `prod` 时走生产 baseURL */
   readonly VITE_APP_FLAG?: string;
   readonly VITE_API_BASE_URL?: string;
+  /** false：请求体发送明文 JSON，便于查看传参；true：启用请求体加密。 */
+  readonly VITE_API_REQUEST_ENCRYPTION?: string;
   readonly VITE_SHARE_ORIGIN?: string;
   readonly VITE_BRAND_DISPLAY_NAME?: string;
   readonly VITE_BRAND_DOMAIN_DISPLAY?: string;
   readonly VITE_BRAND_DESCRIPTION?: string;
   readonly VITE_BRAND_CONTACT_EMAIL?: string;
-  readonly VITE_BRAND_COPYRIGHT_COMPANY?: string;
-  readonly VITE_BRAND_COPYRIGHT_COMPANY_BEFORE_YEAR?: string;
   readonly VITE_BRAND_ASSET_BASE?: string;
   readonly VITE_BRAND_COIN_ICON_SRC?: string;
   readonly VITE_BRAND_LEGAL_SITE_URL?: string;

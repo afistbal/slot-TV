@@ -1,34 +1,13 @@
 import { Link } from 'react-router';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
 import { useHomeType1H5Scroll } from './useHomeType1H5Scroll';
 
-function normalizeEpisodeSlug(raw?: string) {
-    if (!raw) return undefined;
-    let v = String(raw).trim();
-    if (!v) return undefined;
-    if (v.startsWith('http://') || v.startsWith('https://')) {
-        try {
-            const u = new URL(v);
-            v = u.pathname;
-        } catch {
-            // ignore
-        }
-    }
-    v = v.replace(/^[#/]/, '');
-    const m = v.match(/(?:^|\/)episodes\/([^/?#]+)$/i);
-    if (m) return decodeURIComponent(m[1]);
-    if (v.startsWith('episodes/')) return decodeURIComponent(v.slice('episodes/'.length));
-    return decodeURIComponent(v);
-}
-
-function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
-    const slug = normalizeEpisodeSlug(item.episodeSlug);
-    return slug ? `/episodes/${slug}` : `/video/${item.id}`;
+function toDramaHref(item: { id: number }) {
+    return `/drama/${item.id}`;
 }
 
 /** 对齐镜像 `fb8bb5c8…css` 中 `.Slider_item` 列数断点 */
@@ -166,10 +145,9 @@ export function HomeRowPagerShelf({
                     {items.map((item) => (
                         <HomeBookItem
                             key={item.id}
-                            to={toEpisodeOrVideoHref(item)}
+                            to={toDramaHref(item)}
                             staticBase={staticBase}
                             item={item}
-                            linkState={VIDEO_FROM_HOME_STATE}
                         />
                     ))}
                 </div>
@@ -206,10 +184,9 @@ export function HomeRowPagerShelf({
                                         {slice.map((item) => (
                                             <div key={item.id} className="Slider_item__28DWA">
                                                 <HomeBookItem
-                                                    to={toEpisodeOrVideoHref(item)}
+                                                    to={toDramaHref(item)}
                                                     staticBase={staticBase}
                                                     item={item}
-                                                    linkState={VIDEO_FROM_HOME_STATE}
                                                 />
                                             </div>
                                         ))}

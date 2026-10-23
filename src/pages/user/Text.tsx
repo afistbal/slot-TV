@@ -2,7 +2,7 @@ import { Page } from "@/layouts/user";
 import { useIntl } from "react-intl";
 import { useEffect, useMemo, type ReactNode } from "react";
 import { useLocation } from "react-router";
-import userAgreementEn from "@/content/user-agreement.en.txt?raw";
+import userAgreementZhCn from "@/content/user-agreement.zh-CN.txt?raw";
 import MemberTerms from "@/widgets/MemberTerms";
 import { ShoppingPaidServiceAgreementContent } from "@/pages/user/ShoppingPaidServiceAgreementContent";
 import { RefundPolicyContent } from "@/pages/user/RefundPolicyContent";
@@ -32,14 +32,11 @@ function linkifyLine(text: string): ReactNode {
 
 function isMajorSectionHeading(s: string): boolean {
     const t = s.trim();
-    if (t === "Acceptable Use Policy") {
-        return true;
-    }
-    return /^[A-Z]\.\s+[A-Z]/.test(t);
+    return /^[一二三四五六七八九十百]+、/.test(t);
 }
 
 function isSubsectionHeading(s: string): boolean {
-    return /^\d+\.\d+\s/.test(s.trim());
+    return /^\d+\.\d+\s*/.test(s.trim());
 }
 
 function isAllCapsNotice(s: string): boolean {
@@ -55,7 +52,7 @@ function applyBrandLegalCopy(text: string): string {
 
 function useUserAgreementBlocks() {
     return useMemo(() => {
-        return userAgreementEn
+        return userAgreementZhCn
             .replace(/\r\n/g, "\n")
             .split(/\n\n+/)
             .map((s) => applyBrandLegalCopy(s.trim()))
@@ -111,124 +108,81 @@ function PrivacyPolicyBody() {
     return (
         <>
             <p>
-                This Privacy Policy describes how WESHOW TECHNOLOGY SDN. BHD. (&quot;we,&quot; &quot;us,&quot; or
-                &quot;our&quot;) collects, uses, stores, and discloses information when you use our software
-                application (&quot;the Software&quot;). By using the Software, you consent to the practices described in
-                this Privacy Policy.
+                本隐私政策说明本平台运营方（以下简称“我们”）在您使用 {BRAND_DISPLAY_NAME}
+                网站、应用程序及相关服务（以下统称“服务”）时，如何收集、使用、存储、共享和保护您的信息。
+                请在使用服务前仔细阅读本政策。
             </p>
-            <h2 className="rs-legal-doc__h2">1. Information We Collect</h2>
-            <h3 className="rs-legal-doc__h3">1.1 Personal Information</h3>
+            <h2 className="rs-legal-doc__h2">1. 我们收集的信息</h2>
+            <h3 className="rs-legal-doc__h3">1.1 您主动提供的信息</h3>
             <p>
-                <span className="rs-legal-doc__emph">Account Information: </span>
-                When you create an account with the Software, we may collect your name, email address, and password to
-                identify you and provide personalized services.
+                <span className="rs-legal-doc__emph">账户信息：</span>
+                当您注册或登录时，我们可能收集昵称、电子邮箱、登录凭证及账号标识，用于识别身份和提供账户服务。
             </p>
             <p>
-                <span className="rs-legal-doc__emph">Contact Information: </span>
-                If you choose to use certain features like customer support, we may collect additional contact details
-                such as phone number to communicate with you effectively.
+                <span className="rs-legal-doc__emph">交易与客服信息：</span>
+                当您购买金币、会员或其他数字内容，或联系客户服务时，我们可能收集订单号、支付渠道、购买记录、
+                联系方式以及您提交的反馈。完整支付卡资料通常由支付服务商处理，我们不会直接保存。
             </p>
-            <h3 className="rs-legal-doc__h3">1.2 Non-Personal Information</h3>
+            <h3 className="rs-legal-doc__h3">1.2 自动收集的信息</h3>
             <p>
-                <span className="rs-legal-doc__emph">Device Information: </span>
-                We automatically collect information about the device you use to access the Software, including the
-                device type, operating system version, unique device identifiers, and mobile network information. This
-                helps us optimize the Software&apos;s performance for different devices.
-            </p>
-            <p>
-                <span className="rs-legal-doc__emph">Usage Information: </span>
-                We track how you interact with the Software, such as the pages you visit, features you use, and actions
-                you take. This data is used to improve the user experience, diagnose technical issues, and analyze usage
-                trends.
-            </p>
-            <h2 className="rs-legal-doc__h2">2. How We Use Your Information</h2>
-            <p>
-                <span className="rs-legal-doc__emph">Provide and Maintain the Software: </span>
-                We use your information to operate, maintain, and improve the Software, ensuring it functions properly
-                and meets your needs.
+                <span className="rs-legal-doc__emph">设备与网络信息：</span>
+                包括设备类型、操作系统、浏览器、语言、IP 地址、网络类型、设备标识符及应用版本，用于保障服务兼容性、
+                安全性和稳定性。
             </p>
             <p>
-                <span className="rs-legal-doc__emph">Personalize Your Experience: </span>
-                Based on the information we collect, we may customize the Software&apos;s content, features, and
-                advertisements to make them more relevant to you.
+                <span className="rs-legal-doc__emph">使用信息：</span>
+                包括访问页面、点击、搜索、播放进度、观看历史、收藏、点赞、评论、错误日志和功能使用情况。
+            </p>
+            <h2 className="rs-legal-doc__h2">2. 我们如何使用信息</h2>
+            <p>
+                我们使用信息以提供和维护服务、管理账户和订单、记录播放进度、处理付款和退款、提供客户支持、
+                发送必要通知、防范欺诈和滥用、排查故障、改进产品，以及履行法律义务。
             </p>
             <p>
-                <span className="rs-legal-doc__emph">Send You Communications: </span>
-                We may send you important notices regarding the Software, including updates to our terms, policies, and
-                security alerts. Additionally, with your consent, we may send you promotional emails about our products
-                and services.
+                在取得同意或具有其他合法依据时，我们也可能根据您的使用情况提供个性化内容、推荐或营销信息。
+                您可以通过账户设置、设备权限或信息中的退订方式关闭相应功能。
+            </p>
+            <h2 className="rs-legal-doc__h2">3. 信息共享与披露</h2>
+            <p>
+                我们不会出售您的个人信息。为提供服务，我们可能向云存储、内容分发、数据分析、支付、客户支持、
+                安全风控和广告服务商提供实现相关功能所必需的信息，并要求其按照合同和适用法律保护信息。
             </p>
             <p>
-                <span className="rs-legal-doc__emph">Analyze and Improve: </span>
-                We analyze the collected data to understand user behavior, preferences, and pain points, which helps us
-                develop new features and improve existing ones.
+                在法律法规、司法或行政机关依法要求，或者为保护用户、公众及我们的合法权益所必需时，我们可能披露相关信息。
+                如发生合并、收购、资产转让或重组，信息可能随业务一并转移，我们将要求接收方继续遵守本政策。
             </p>
-            <h2 className="rs-legal-doc__h2">3. Information Sharing and Disclosure</h2>
-            <h3 className="rs-legal-doc__h3">3.1 Service Providers</h3>
+            <h2 className="rs-legal-doc__h2">4. 信息存储与安全</h2>
             <p>
-                We may share your information with third-party service providers who assist us in operating the Software,
-                such as cloud hosting providers, analytics companies, and customer support services. These service
-                providers are obligated to use your information only for the purposes for which we engage them and to
-                maintain its confidentiality.
+                我们采取访问控制、加密、日志审计和安全监测等合理措施保护信息。我们仅在实现本政策目的、履行法律义务、
+                解决争议和执行协议所需期间保存信息。互联网传输和电子存储无法保证绝对安全，如发生安全事件，
+                我们将依法采取补救措施并在必要时通知您。
             </p>
-            <h3 className="rs-legal-doc__h3">3.2 Legal Requirements</h3>
+            <h2 className="rs-legal-doc__h2">5. 您的权利</h2>
             <p>
-                We may disclose your information if required to do so by law, regulation, or legal process, such as in
-                response to a court order, subpoena, or government investigation. We may also disclose your information
-                to protect our rights, property, or safety, and the rights, property, or safety of others.
-            </p>
-            <h3 className="rs-legal-doc__h3">3.3 Business Transfers</h3>
-            <p>
-                In the event of a merger, acquisition, sale of all or substantially all of our assets, or similar
-                corporate transaction, your information may be transferred as part of that transaction. We will notify you
-                via email or prominent notice on the Software of any such change in ownership or uses of your
-                information, along with any choices you may have regarding your information.
-            </p>
-            <h2 className="rs-legal-doc__h2">4. Data Security</h2>
-            <p>
-                We implement reasonable technical and organizational measures to protect your information from
-                unauthorized access, disclosure, alteration, and destruction. However, no method of transmission over the
-                internet or electronic storage is 100% secure, and we cannot guarantee the absolute security of your
-                information.
-            </p>
-            <h2 className="rs-legal-doc__h2">5. Your Rights</h2>
-            <p>
-                <span className="rs-legal-doc__emph">Access and Update: </span>
-                You have the right to access and update the personal information we hold about you. You can usually do
-                this through your account settings within the Software.
+                在适用法律规定的范围内，您可以访问、更正、复制或删除个人信息，撤回同意，反对或限制特定处理，
+                以及注销账户。部分请求可能需要核验身份；法律要求保留的信息可能无法立即删除。
             </p>
             <p>
-                <span className="rs-legal-doc__emph">Delete: </span>
-                In some cases, you may be able to delete your personal information from our systems. Please contact our
-                support team for assistance.
+                您可以在账户设置中管理相关信息和通知权限，也可以通过下方联系方式提交请求。
             </p>
+            <h2 className="rs-legal-doc__h2">6. 未成年人保护</h2>
             <p>
-                <span className="rs-legal-doc__emph">Opt-Out: </span>
-                You can unsubscribe from promotional emails at any time by clicking on the &quot;unsubscribe&quot; link in
-                the email or by adjusting your notification settings within the Software.
+                服务不面向未达到所在地区法定最低年龄的儿童。我们不会在明知的情况下未经监护人有效同意收集儿童个人信息。
+                如您认为我们错误收集了儿童信息，请联系我们，我们将核实并依法处理。
             </p>
-            <h2 className="rs-legal-doc__h2">6. Children&apos;s Privacy</h2>
+            <h2 className="rs-legal-doc__h2">7. 跨境传输</h2>
             <p>
-                The Software is not intended for use by children under the age of [X]. We do not knowingly collect
-                personal information from children. If we become aware that we have collected personal information from a
-                child without verification of parental consent, we will delete that information as soon as possible.
+                由于我们在多个国家或地区提供服务，信息可能被传输至您所在国家或地区以外并在那里处理。
+                我们会依据适用法律采取合同、技术或其他保障措施，确保跨境传输获得适当保护。
             </p>
-            <h2 className="rs-legal-doc__h2">7. International Transfers</h2>
+            <h2 className="rs-legal-doc__h2">8. 政策更新</h2>
             <p>
-                Your information may be transferred to and stored on servers located outside of your country. These
-                countries may have data protection laws that are different from those in your country. By using the
-                Software, you consent to the international transfer of your information.
+                我们可能不时更新本政策。发生重大变更时，我们会通过页面公告、应用内通知或其他合理方式提示您。
+                更新后的政策自公布或载明的生效日期起生效。
             </p>
-            <h2 className="rs-legal-doc__h2">8. Changes to this Privacy Policy</h2>
+            <h2 className="rs-legal-doc__h2">9. 联系我们</h2>
             <p>
-                We may update this Privacy Policy from time to time. When we do, we will post the updated version on
-                this page and indicate at the top of the page the date it was last updated. We encourage you to review
-                this Privacy Policy periodically to stay informed about how we are protecting your information.
-            </p>
-            <h2 className="rs-legal-doc__h2">9. Contact Us</h2>
-            <p>
-                If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices,
-                please contact us at [Contact Email Address].
+                如对本政策或个人信息处理有任何问题、意见或请求，请通过客户服务渠道联系我们。
             </p>
             <p>{BRAND_LEGAL_SITE_URL}</p>
         </>

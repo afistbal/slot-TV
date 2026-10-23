@@ -1,6 +1,4 @@
-/**
- * H5 底部：黑色 Tab 栏（fixed 贴底）+ 独立「添加桌面」胶囊（透明底，浮在 Tab 上方）
- */
+/** H5 底部：黑色 Tab 栏（fixed 贴底）+ 独立「添加桌面」胶囊。 */
 
 :root {
     --rs-bottom-tab-inner-height: calc(var(--rs-vw, min(100vw, 480px)) * 50 / 375);
@@ -8,7 +6,6 @@
     --rs-bottom-tab-bar-height: calc(var(--rs-bottom-tab-inner-height) + var(--rs-bottom-tab-safe));
     --rs-bottom-add-gap: calc(var(--rs-vw, min(100vw, 480px)) * 10 / 375);
     --rs-bottom-add-btn-height: calc(var(--rs-vw, min(100vw, 480px)) * 40 / 375);
-    /* 仅 Tab 栏占位；「添加桌面」胶囊 fixed 浮层，不计入页面 padding */
     --rs-bottom-nav-stack: var(--rs-bottom-tab-bar-height);
 }
 
@@ -75,7 +72,6 @@ html.has-rs-bottom-nav .root {
     line-height: 1.2;
 }
 
-/* 「添加桌面」：与 Tab 栏分离的独立层，无黑底 */
 .reelshort-bottom-nav-add {
     position: fixed;
     left: 0;

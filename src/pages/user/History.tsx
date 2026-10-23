@@ -1,8 +1,10 @@
 import { Link } from "react-router";
-import { Star as IconStar } from 'lucide-react';
+import { Bookmark as IconBookmark, Star as IconStar } from 'lucide-react';
 import { FormattedMessage } from "react-intl";
 import { useEffect, useRef, useState } from "react";
+import { toast } from 'sonner';
 import { api, type IPagination, type TData } from "@/api";
+import { submitLuckyRating } from '@/api/lucky';
 import NoContent from "@/components/NoContent";
 import { InView } from "react-intersection-observer";
 import { LoaderCircle } from "lucide-react";
@@ -15,7 +17,6 @@ import { MyListCabinetConfirmPopover } from '@/components/MyListCabinetConfirmPo
 import { useConfigStore } from "@/stores/config";
 import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import '@/styles/my-list-reelshort.scss';
 import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
@@ -50,6 +51,8 @@ export default function Component({ variant = 'row' }: HistoryProps) {
     const [page, setPage] = useState(0);
     const [more, setMore] = useState(true);
     const [sheetAction, setSheetAction] = useState(0);
+    const [ratedScores, setRatedScores] = useState<Record<string, number>>({});
+    const [ratingBusy, setRatingBusy] = useState('');
     const [cabinetRemoveTarget, setCabinetRemoveTarget] = useState<{
         id: number;
         anchor: HTMLElement;
@@ -82,6 +85,54 @@ export default function Component({ variant = 'row' }: HistoryProps) {
 
             return v;
         })]);
+    }
+
+    async function handleRate(row: TData, score: number) {
+        const dramaId = String(row['movie_id'] ?? '').trim();
+        if (!dramaId || ratingBusy) return;
+        setRatingBusy(dramaId);
+        try {
+            const coins = await submitLuckyRating(dramaId, score);
+            setRatedScores((current) => ({ ...current, [dramaId]: score }));
+            toast.success(coins !== undefined && coins > 0
+                ? `评分成功，获得 ${coins} 金币`
+                : '评分成功');
+        } catch (reason) {
+            toast.error(reason instanceof Error ? reason.message : String(reason));
+        } finally {
+            setRatingBusy('');
+        }
+    }
+
+    function ratingControl(row: TData, compact = false) {
+        const dramaId = String(row['movie_id'] ?? '').trim();
+        if (!dramaId) return null;
+        const stored = ratedScores[dramaId];
+        const fromApi = Number(row['my_rating'] ?? row['rating'] ?? 0);
+        const current = stored ?? (Number.isInteger(fromApi) && fromApi >= 1 && fromApi <= 5 ? fromApi : 0);
+        const locked = current > 0;
+        return (
+            <div className={cn('flex items-center gap-0.5', compact ? 'mt-1' : 'mt-2')} aria-label={locked ? `已评分 ${current} 星` : '给这部剧评分'}>
+                <span className="mr-1 text-[11px] text-white/55">评分</span>
+                {[1, 2, 3, 4, 5].map((score) => (
+                    <button
+                        type="button"
+                        key={score}
+                        className="rounded-sm p-0.5 disabled:cursor-default"
+                        disabled={Boolean(ratingBusy) || locked}
+                        aria-label={`${score} 星`}
+                        onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            void handleRate(row, score);
+                        }}
+                    >
+                        <IconStar className={cn(compact ? 'h-3.5 w-3.5' : 'h-4 w-4', current >= score ? 'fill-amber-400 text-amber-400' : 'text-white/45')} aria-hidden />
+                    </button>
+                ))}
+                {ratingBusy === dramaId ? <span className="ml-1 text-[10px] text-white/50">提交中…</span> : null}
+            </div>
+        );
     }
 
     function handleSheetActionClose() {
@@ -194,7 +245,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                             >
                                 <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
                                 <div className="rs-bi-poster">
-                                    <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
+                                    <Link to={`/drama/${v['movie_id']}`} className="rs-bi-cover">
                                         <VideoPosterLazyCover
                                             src={
                                                 movieCoverUrl(v, configStore.config['static'] as string, {
@@ -232,7 +283,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                                     ) : null}
                                 </div>
                                 <h3 className="rs-bi-title">
-                                    <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE}>{v['title'] as string}</Link>
+                                    <Link to={`/drama/${v['movie_id']}`}>{v['title'] as string}</Link>
                                 </h3>
                                 <div className="rs-bi-chapter flex flex-wrap items-center gap-x-1">
                                     {curEp > 0 && totalEp > 0 ? (
@@ -254,7 +305,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                                         }}
                                         aria-label="Favorite"
                                     >
-                                        <IconStar
+                                        <IconBookmark
                                             className={cn(
                                                 'h-4 w-4',
                                                 v['is_favorite'] === 0
@@ -265,6 +316,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                                         />
                                     </button>
                                 </div>
+                                {ratingControl(v, true)}
                             </div>
                         );
                     })}
@@ -296,7 +348,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
         <div className="rs-my-list__grid">
             {list.map((v) => (
                 <div key={v['id'] as number} className="rs-my-list__row" data-id={v['id']} {...gesture()}>
-                    <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-my-list__cover block">
+                    <Link to={`/drama/${v['movie_id']}`} className="rs-my-list__cover block">
                         <VideoPosterLazyCover
                             src={
                                 movieCoverUrl(v, configStore.config['static'] as string, {
@@ -311,8 +363,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                         <div className="min-w-0 flex-1 p-1">
                             <div className="flex items-start gap-2">
                                 <Link
-                                    to={`/video/${v['movie_id']}`}
-                                    state={VIDEO_FROM_HOME_STATE}
+                                    to={`/drama/${v['movie_id']}`}
                                     className="line-clamp-2 min-w-0 flex-1 overflow-hidden text-ellipsis leading-[18px] text-white"
                                 >
                                     {v['title'] as string}
@@ -326,7 +377,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                                         handleToggleFavorite(v['movie_id'] as number);
                                     }}
                                 >
-                                    <IconStar
+                                    <IconBookmark
                                         className={cn(
                                             'h-6 w-6',
                                             v['is_favorite'] === 0 ? 'text-slate-400' : 'fill-amber-500 text-amber-500',
@@ -336,6 +387,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
                                 </button>
                             </div>
                             <div className="rs-my-list__meta">Episodes {v['episodes'] as number}</div>
+                            {ratingControl(v)}
                         </div>
                     </div>
                 </div>

@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
+import { useLuckyStore } from '@/stores/lucky';
+import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 import {
   BRAND_DISPLAY_NAME,
@@ -31,13 +33,12 @@ import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { FORYOU_PATH } from '@/constants/foryouRoute';
 import { useConfigStore } from '@/stores/config';
+import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
+import { prefetchLuckyRouteChunk, prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
-import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
-import { prefetchSearchRouteChunk } from '@/lib/prefetchSecondaryUserRoutes';
-import { isTikTokPlatform } from '@/platform';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, Coins, Crown, Gift, Search } from 'lucide-react';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -368,8 +369,7 @@ function TopNavSearchEntry() {
                     return (
                       <Link
                         key={id}
-                        to={`/video/${id}`}
-                        state={VIDEO_FROM_HOME_STATE}
+                        to={`/drama/${id}`}
                         className="reelshort-topnav__pc-search-row"
                         onClick={() => {
                           setOpen(false);
@@ -456,12 +456,11 @@ function TopNavLanguageSwitcher() {
 function TopNavInstallEntry() {
   const navigate = useNavigate();
   const pixel = usePixel();
-  const rootStore = useRootStore();
+  const showIosInstall = shouldShowIosAddHomeFab();
+  const showAndroidInstall = useRootStore((state) => state.showInstallPrompt);
   const [isDesktop, setIsDesktop] = useState(false);
   const [open, setOpen] = useState(false);
   const closeTimerRef = useRef<number | undefined>(undefined);
-  const showIosAddHomeInstall = shouldShowIosAddHomeFab();
-  const showAndroidInstallPrompt = rootStore.showInstallPrompt;
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -472,45 +471,25 @@ function TopNavInstallEntry() {
   }, []);
 
   const clearCloseTimer = () => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = undefined;
-    }
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = undefined;
   };
-
   const openPanel = () => {
     clearCloseTimer();
     setOpen(true);
   };
-
   const closePanelSoon = () => {
     clearCloseTimer();
-    closeTimerRef.current = window.setTimeout(() => {
-      setOpen(false);
-    }, 100);
+    closeTimerRef.current = window.setTimeout(() => setOpen(false), 100);
   };
 
   useEffect(() => clearCloseTimer, []);
 
-  if ((!showAndroidInstallPrompt && !showIosAddHomeInstall) || !isDesktop) {
-    return null;
-  }
+  if (!isDesktop || (!showAndroidInstall && !showIosInstall)) return null;
 
   return (
-    <DropdownMenu
-      open={open}
-      modal={false}
-      onOpenChange={(next) => {
-        if (!next) {
-          setOpen(false);
-        }
-      }}
-    >
-      <div
-        className="reelshort-topnav__download"
-        onMouseEnter={openPanel}
-        onMouseLeave={closePanelSoon}
-      >
+    <DropdownMenu open={open} modal={false} onOpenChange={(next) => !next && setOpen(false)}>
+      <div className="reelshort-topnav__download" onMouseEnter={openPanel} onMouseLeave={closePanelSoon}>
         <DropdownMenuTrigger asChild>
           <button type="button" className="reelshort-topnav__download-trigger" aria-label="Download">
             <span
@@ -523,7 +502,6 @@ function TopNavInstallEntry() {
             </span>
           </button>
         </DropdownMenuTrigger>
-
         <DropdownMenuContent
           align="end"
           side="bottom"
@@ -533,20 +511,16 @@ function TopNavInstallEntry() {
           onMouseLeave={closePanelSoon}
         >
           <div className="reelshort-topnav__download-copy">
-            <p className="reelshort-topnav__download-title">
-              <FormattedMessage id="add_desktop" />
-            </p>
+            <p className="reelshort-topnav__download-title"><FormattedMessage id="add_desktop" /></p>
             <button
               type="button"
               className="reelshort-topnav__download-open-btn"
               onClick={() => {
                 pixel.track('Download');
-                const installBtn = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
-                if (installBtn) {
-                  installBtn.click();
-                  return;
-                }
-                if (showIosAddHomeInstall) {
+                const installButton = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
+                if (installButton) {
+                  installButton.click();
+                } else if (showIosInstall) {
                   setOpen(false);
                   void navigate('/page/ios-add-home');
                 }
@@ -803,6 +777,10 @@ function NavProfileAvatar() {
 
 const HEADER_SCROLL_SOLID_THRESHOLD = 4;
 
+// 旧版下拉搜索/历史入口仍保留在本文件，便于独立页面按需复用；新对标顶栏使用紧凑导航入口。
+void TopNavSearchEntry;
+void TopNavHistoryEntry;
+
 export type ReelShortTopNavLeftAction = 'menu' | 'back' | 'none';
 
 export type ReelShortTopNavProps = {
@@ -849,16 +827,27 @@ export function ReelShortTopNav({
   rightActionsMode = 'default',
 }: ReelShortTopNavProps = {}) {
   const isMd = useMinWidth768();
+  const luckyBadge = useLuckyStore(store => store.badge);
   const navigate = useNavigate();
+  const location = useLocation();
+  const userStore = useUserStore();
+  const requireAccount = useRequireAccount();
   const profilePcActions = rightActionsMode === 'profilePc' && isMd;
   const intl = useIntl();
-  const isTikTok = isTikTokPlatform();
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerSolid, setHeaderSolid] = useState(false);
   const allowTransparent = showPrimaryNav;
   const leftAction: ReelShortTopNavLeftAction =
     leftActionProp ?? (showLeftAction === false ? 'none' : 'menu');
   const isLtr = typeof document !== 'undefined' && document.body.style.direction === 'ltr';
+  const isTraditionalChinese = intl.locale.toLowerCase().startsWith('zh-tw') || intl.locale.toLowerCase().startsWith('zh-h');
+  const isChinese = intl.locale.toLowerCase().startsWith('zh');
+  const feedLabel = isChinese ? (isTraditionalChinese ? '刷劇' : '刷剧') : intl.formatMessage({ id: 'for_you', defaultMessage: 'For You' });
+  const browseLabel = isChinese ? (isTraditionalChinese ? '劇庫' : '剧库') : intl.formatMessage({ id: 'nav_categories', defaultMessage: 'Browse' });
+  const searchLabel = isChinese ? (isTraditionalChinese ? '尋劇' : '寻剧') : intl.formatMessage({ id: 'nav_search_label', defaultMessage: 'Search' });
+  const coinBalance = Math.max(0, Number(userStore.info?.['balance'] ?? userStore.info?.['coin'] ?? 0) || 0);
+  const feedActive = location.pathname.startsWith(FORYOU_PATH) || location.pathname.startsWith('/video/');
+  const browseActive = location.pathname === '/' || location.pathname.startsWith('/categories') || location.pathname.startsWith('/drama/');
 
   function handleBack() {
     if (onBackClick) {
@@ -939,171 +928,112 @@ export function ReelShortTopNav({
       <header
         className={cn(
           'reelshort-topnav',
-          isTikTok && 'reelshort-topnav--tiktok',
           headerSolid ? 'reelshort-topnav--solid' : 'reelshort-topnav--transparent',
         )}
       >
-        <div className="reelshort-topnav__inner">
-          <div className="reelshort-topnav__row">
-            <div className="reelshort-topnav__left">
-              {leftAction === 'menu' ? (
+        <div className="reelshort-topnav__inner reelshort-topnav__inner--benchmark">
+          <div className="reelshort-topnav__benchmark-row">
+            {leftAction === 'back' ? (
+              <button
+                type="button"
+                className="reelshort-topnav__benchmark-back"
+                onClick={handleBack}
+                aria-label={intl.formatMessage({ id: 'back', defaultMessage: 'Back' })}
+              >
+                {isLtr ? <ChevronLeft aria-hidden /> : <ChevronRight aria-hidden />}
+              </button>
+            ) : null}
+            {leftAction === 'menu' ? (
+              <>
                 <button
                   type="button"
-                  className="reelshort-topnav__menu-btn"
+                  className="reelshort-topnav__benchmark-logo reelshort-topnav__benchmark-logo--menu"
                   onClick={() => setMenuOpen(true)}
                   aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
                 >
-                  <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
+                  <img src={BRAND_TOPNAV_WORDMARK_SRC} alt={BRAND_DISPLAY_NAME} width={BRAND_TOPNAV_WORDMARK_WIDTH} height={BRAND_TOPNAV_WORDMARK_HEIGHT} />
                 </button>
-              ) : null}
-              {leftAction === 'back' ? (
-                <button
-                  type="button"
-                  className="reelshort-topnav__menu-btn"
-                  onClick={handleBack}
-                  aria-label={intl.formatMessage({ id: 'back', defaultMessage: 'Back' })}
-                >
-                  {isLtr ? (
-                    <ChevronLeft className="reelshort-topnav__back-icon h-6 w-6" aria-hidden />
-                  ) : (
-                    <ChevronRight className="reelshort-topnav__back-icon h-6 w-6" aria-hidden />
-                  )}
-                </button>
-              ) : null}
-            </div>
-
-            <div className="reelshort-topnav__brand-cluster reelshort-topnav__brand-cluster--with-primary">
-              {!isTikTok ? (
-                <Link to="/" className="reelshort-topnav__brand-link">
-                  <img
-                    src={BRAND_TOPNAV_WORDMARK_SRC}
-                    alt={BRAND_DISPLAY_NAME}
-                    className="reelshort-topnav__brand-wordmark"
-                    width={BRAND_TOPNAV_WORDMARK_WIDTH}
-                    height={BRAND_TOPNAV_WORDMARK_HEIGHT}
-                    decoding="async"
-                    loading="eager"
-                    fetchPriority="high"
-                  />
+                <Link to={FORYOU_PATH} className="reelshort-topnav__benchmark-logo reelshort-topnav__benchmark-logo--desktop">
+                  <img src={BRAND_TOPNAV_WORDMARK_SRC} alt={BRAND_DISPLAY_NAME} width={BRAND_TOPNAV_WORDMARK_WIDTH} height={BRAND_TOPNAV_WORDMARK_HEIGHT} />
                 </Link>
-              ) : null}
-              {isTikTok && showPrimaryNav ? (
-                <nav
-                  className="reelshort-topnav__h5-subnav reelshort-topnav__h5-subnav--tiktok-inline"
-                  aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
-                >
-                  <NavLink
-                    to="/"
-                    end
-                    className={({ isActive }) =>
-                      cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
-                    }
-                  >
-                    <FormattedMessage id="home" />
-                  </NavLink>
-                  <NavLink
-                    to="/categories"
-                    onPointerEnter={prefetchSearchRouteChunk}
-                    onPointerDown={prefetchSearchRouteChunk}
-                    className={({ isActive }) =>
-                      cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
-                    }
-                  >
-                    <FormattedMessage id="nav_categories" />
-                  </NavLink>
-                </nav>
-              ) : null}
-              <nav
-                className="reelshort-topnav__pc-primary-nav"
-                aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
+              </>
+            ) : (
+              <Link to={FORYOU_PATH} className="reelshort-topnav__benchmark-logo">
+                <img src={BRAND_TOPNAV_WORDMARK_SRC} alt={BRAND_DISPLAY_NAME} width={BRAND_TOPNAV_WORDMARK_WIDTH} height={BRAND_TOPNAV_WORDMARK_HEIGHT} />
+              </Link>
+            )}
+
+            <nav className="reelshort-topnav__benchmark-nav" aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}>
+              <NavLink
+                to={FORYOU_PATH}
+                state={VIDEO_FROM_HOME_STATE}
+                className={cn('reelshort-topnav__benchmark-nav-item', feedActive && 'is-active')}
               >
-                <NavLink
-                  to="/"
-                  end
-                  className={({ isActive }) =>
-                    cn(
-                      'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
-                      isActive && 'reelshort-topnav__segment-link--active',
-                    )
-                  }
-                >
-                  <FormattedMessage id="home" />
-                </NavLink>
-                <NavLink
-                  to="/categories"
-                  onPointerEnter={prefetchSearchRouteChunk}
-                  onPointerDown={prefetchSearchRouteChunk}
-                  className={({ isActive }) =>
-                    cn(
-                      'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
-                      isActive && 'reelshort-topnav__segment-link--active',
-                    )
-                  }
-                >
-                  <FormattedMessage id="nav_categories" />
-                </NavLink>
-                <NavLink
-                  to={FORYOU_PATH}
-                  state={VIDEO_FROM_HOME_STATE}
-                  className={({ isActive }) =>
-                    cn(
-                      'reelshort-topnav__segment-link reelshort-topnav__pc-nav-item',
-                      isActive && 'reelshort-topnav__segment-link--active',
-                    )
-                  }
-                >
-                  <FormattedMessage id="for_you" />
-                </NavLink>
-              </nav>
-            </div>
-
-            <div className="reelshort-topnav__right">
-              <div className="reelshort-topnav__actions">
-                {profilePcActions ? (
-                  <TopNavInstallEntry />
-                ) : showRightActions ? (
-                  <>
-                    {showSearch ? (
-                      <div className="reelshort-topnav__search">
-                        <TopNavSearchEntry />
-                      </div>
-                    ) : null}
-                    <TopNavInstallEntry />
-                    {showHistory ? <TopNavHistoryEntry /> : null}
-                    {showLanguage ? <TopNavLanguageSwitcher /> : null}
-                    {showProfile ? <NavProfileAvatar /> : null}
-                  </>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          {showPrimaryNav && !isTikTok ? (
-            <nav
-              className="reelshort-topnav__h5-subnav"
-              aria-label={intl.formatMessage({ id: 'primary_navigation', defaultMessage: 'Primary' })}
-            >
+                {feedLabel}
+              </NavLink>
               <NavLink
                 to="/"
-                end
-                className={({ isActive }) =>
-                  cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
-                }
+                className={cn('reelshort-topnav__benchmark-nav-item', browseActive && 'is-active')}
               >
-                <FormattedMessage id="home" />
+                {browseLabel}
+              </NavLink>
+              {showSearch ? (
+                <NavLink
+                  to="/search"
+                  onPointerEnter={prefetchSearchRouteChunk}
+                  onPointerDown={prefetchSearchRouteChunk}
+                  className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--search', isActive && 'is-active')}
+                  aria-label={searchLabel}
+                  title={searchLabel}
+                >
+                  <Search aria-hidden />
+                  <span>{searchLabel}</span>
+                </NavLink>
+              ) : null}
+              <NavLink
+                to="/lucky"
+                onPointerEnter={prefetchLuckyRouteChunk}
+                onPointerDown={prefetchLuckyRouteChunk}
+                className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--lucky', isActive && 'is-active')}
+                aria-label={intl.formatMessage({ id: 'nav_lucky', defaultMessage: 'Rewards' })}
+                title={intl.formatMessage({ id: 'nav_lucky', defaultMessage: 'Rewards' })}
+              >
+                <Gift aria-hidden />
+                <span><FormattedMessage id="nav_lucky" /></span>
+                {luckyBadge != null && luckyBadge > 0 ? <b className="reelshort-topnav__benchmark-badge">{luckyBadge > 9 ? '9+' : luckyBadge}</b> : null}
               </NavLink>
               <NavLink
-                to="/categories"
-                onPointerEnter={prefetchSearchRouteChunk}
-                onPointerDown={prefetchSearchRouteChunk}
-                className={({ isActive }) =>
-                  cn('reelshort-topnav__segment-link', isActive && 'reelshort-topnav__segment-link--active')
-                }
+                to="/creator"
+                onClick={(event) => {
+                  if (!requireAccount()) event.preventDefault();
+                }}
+                className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--wide', isActive && 'is-active')}
               >
-                <FormattedMessage id="nav_categories" />
+                <Crown aria-hidden /><span><FormattedMessage id="nav_join_creator" /></span>
+              </NavLink>
+              <NavLink to="/affiliate" className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--wide', isActive && 'is-active')}>
+                <Coins aria-hidden /><span><FormattedMessage id="nav_affiliate" /></span>
               </NavLink>
             </nav>
-          ) : null}
+
+            <div className="reelshort-topnav__benchmark-spacer" />
+            {showRightActions ? (
+              <div className="reelshort-topnav__benchmark-actions">
+                <TopNavInstallEntry />
+                {showLanguage ? <div className="reelshort-topnav__benchmark-language"><TopNavLanguageSwitcher /></div> : null}
+                {showHistory ? (
+                  <Link to="/my-list/history" className="reelshort-topnav__benchmark-action reelshort-topnav__benchmark-action--desktop" aria-label={intl.formatMessage({ id: 'nav_watch_history' })}>
+                    <Bell aria-hidden />
+                  </Link>
+                ) : null}
+                <Link to="/profile?tab=topup" className="reelshort-topnav__benchmark-wallet" aria-label={intl.formatMessage({ id: 'top_up' })}>
+                  <Coins aria-hidden />
+                  <span>{coinBalance.toLocaleString()}</span>
+                </Link>
+                {showProfile ? <NavProfileAvatar /> : null}
+              </div>
+            ) : profilePcActions ? <TopNavInstallEntry /> : null}
+          </div>
         </div>
       </header>
 

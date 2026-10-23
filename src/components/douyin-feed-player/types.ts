@@ -57,8 +57,8 @@ export type DouyinFeedPlayerProps = {
     getLockedPosterUrl?: (item: DouyinFeedVideoItem, index: number) => string;
     /** Optional content rendered inside each locked slide so it moves with that slide. */
     renderLockedOverlay?: (item: DouyinFeedVideoItem, index: number) => ReactNode;
-    /** Notifies the business layer when a swipe is approaching another item. */
-    onIncomingIndex?: (index: number, direction: FeedNavigateDirection) => void;
+    /** Notifies the business layer before entering another item; return false to snap back. */
+    onIncomingIndex?: (index: number, direction: FeedNavigateDirection) => boolean | void;
     /** Prevents advancing past the current item while it is locked. */
     preventNextFromLockedItem?: boolean;
 };

@@ -11,7 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-/index.tiktok.local.html
 
 # Editor directories and files
 .vscode/*
@@ -28,3 +27,4 @@ dist-ssr
 /deploy.sh
 /translate.json
 /dev-dist
+/.tmp/

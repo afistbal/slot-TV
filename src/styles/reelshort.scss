@@ -50,6 +50,450 @@
     }
 }
 
+/* Chunlou 对标顶栏：保留本项目 Logo，导航骨架、图标与响应式规则跟随对标站。 */
+.reelshort-topnav {
+    min-height: 56px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(12, 13, 15, 0.82) !important;
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+}
+
+.reelshort-topnav__inner--benchmark {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+}
+
+.reelshort-topnav__benchmark-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 56px;
+    min-width: 0;
+    gap: 4px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+}
+
+.reelshort-topnav__benchmark-logo,
+button.reelshort-topnav__benchmark-logo {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.reelshort-topnav__benchmark-logo:hover,
+button.reelshort-topnav__benchmark-logo:hover {
+    opacity: 0.9;
+}
+
+.reelshort-topnav__benchmark-logo img {
+    display: block;
+    width: auto;
+    height: 28px;
+    max-width: 88px;
+    object-fit: contain;
+}
+
+.reelshort-topnav__benchmark-logo--desktop {
+    display: none;
+}
+
+.reelshort-topnav__benchmark-back {
+    display: grid;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #f5f5f5;
+}
+
+.reelshort-topnav__benchmark-back svg {
+    width: 19px;
+    height: 19px;
+}
+
+.reelshort-topnav__benchmark-nav {
+    display: flex;
+    min-width: 0;
+    flex: 0 1 auto;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    padding: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.045);
+    scrollbar-width: none;
+}
+
+.reelshort-topnav__benchmark-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.reelshort-topnav__benchmark-nav-item {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-width: 36px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 8px;
+    border-radius: 9px;
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.reelshort-topnav__benchmark-nav-item:hover {
+    color: #f5f5f5;
+}
+
+.reelshort-topnav__benchmark-nav-item.is-active {
+    background: rgba(255, 255, 255, 0.065);
+    color: #f5f5f5;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.reelshort-topnav__benchmark-nav-item svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    stroke-width: 2;
+}
+
+.reelshort-topnav__benchmark-nav-item--search svg {
+    color: var(--rs-brand, #d4a853);
+}
+
+.reelshort-topnav__benchmark-nav-item--lucky svg {
+    color: #e8c268;
+    stroke-width: 1.9;
+}
+
+.reelshort-topnav__benchmark-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    box-sizing: border-box;
+    pointer-events: none;
+    display: flex;
+    min-width: 15px;
+    height: 15px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font: 700 9px/1 system-ui, sans-serif;
+    white-space: nowrap;
+}
+
+.reelshort-topnav__benchmark-nav-item--wide {
+    display: none;
+}
+
+.reelshort-topnav__benchmark-spacer {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.reelshort-topnav__benchmark-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+}
+
+.reelshort-topnav__benchmark-language,
+.reelshort-topnav__benchmark-action--desktop {
+    display: none;
+}
+
+.reelshort-topnav__benchmark-action,
+.reelshort-topnav__benchmark-wallet {
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.045);
+    color: #e8c268;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.reelshort-topnav__benchmark-action:hover,
+.reelshort-topnav__benchmark-wallet:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.reelshort-topnav__benchmark-action svg,
+.reelshort-topnav__benchmark-wallet svg {
+    width: 16px;
+    height: 16px;
+}
+
+.reelshort-topnav__benchmark-wallet span {
+    display: none;
+}
+
+.reelshort-topnav__benchmark-actions a.reelshort-topnav__profile-link {
+    margin: 0;
+}
+
+.reelshort-topnav__benchmark-actions .reelshort-topnav__profile-avatar,
+.reelshort-topnav__benchmark-actions .reelshort-topnav__profile-avatar--placeholder {
+    width: 34px;
+    height: 34px;
+    border-color: rgba(212, 168, 83, 0.45);
+}
+
+@media (max-width: 399px) {
+    .reelshort-topnav__benchmark-row {
+        gap: 3px;
+    }
+
+    .reelshort-topnav__benchmark-logo img {
+        height: 24px;
+        max-width: 68px;
+    }
+
+    .reelshort-topnav__benchmark-nav-item {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .reelshort-topnav__benchmark-nav-item--search svg {
+        display: none;
+    }
+}
+
+@media (max-width: 639px) {
+    .reelshort-topnav__benchmark-nav-item--lucky span {
+        display: none;
+    }
+}
+
+@media (min-width: 400px) {
+    .reelshort-topnav__benchmark-row {
+        gap: 6px;
+    }
+
+    .reelshort-topnav__benchmark-nav {
+        padding: 3px;
+    }
+
+    .reelshort-topnav__benchmark-nav-item {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+@media (min-width: 640px) {
+    .reelshort-topnav__benchmark-row {
+        gap: 14px;
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
+    }
+}
+
+@media (min-width: 768px) {
+    .reelshort-topnav__benchmark-logo img {
+        height: 34px;
+        max-width: 150px;
+    }
+
+    .reelshort-topnav__benchmark-nav {
+        flex-shrink: 0;
+    }
+
+    .reelshort-topnav__benchmark-wallet span {
+        display: inline;
+    }
+}
+
+@media (min-width: 1024px) {
+    button.reelshort-topnav__benchmark-logo--menu {
+        display: none;
+    }
+
+    .reelshort-topnav__benchmark-logo--desktop {
+        display: inline-flex;
+    }
+
+    .reelshort-topnav__benchmark-nav-item--wide {
+        display: inline-flex;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .reelshort-topnav__benchmark-language {
+        display: flex;
+        align-items: center;
+    }
+
+    .reelshort-topnav__benchmark-action--desktop {
+        display: inline-flex;
+    }
+
+    .reelshort-topnav__benchmark-language .reelshort-topnav__lang {
+        display: block;
+    }
+}
+
+@media (min-width: 1280px) {
+    .reelshort-topnav__benchmark-logo img {
+        height: 36px;
+        max-width: 180px;
+    }
+
+    .reelshort-topnav__benchmark-nav-item {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+}
+
+/* PWA 安装入口：桌面端顶栏按钮与安装说明卡片。 */
+.reelshort-topnav__download,
+.reelshort-topnav__download-label {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .reelshort-topnav__download {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: var(--rs-nav-hit-size, 40px);
+    }
+
+    .reelshort-topnav__download-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        height: var(--rs-nav-hit-size, 40px);
+        padding: 0 2px;
+        border: 0;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.92);
+        cursor: pointer;
+    }
+
+    .reelshort-topnav__download-trigger:hover {
+        color: var(--rs-nav-hover-color, #ff3d5d);
+    }
+
+    .reelshort-topnav__download-icon {
+        width: var(--rs-nav-action-icon-size, 23px);
+        height: var(--rs-nav-action-icon-size, 23px);
+        background-color: currentColor;
+        -webkit-mask: var(--download-icon-url) center / contain no-repeat;
+        mask: var(--download-icon-url) center / contain no-repeat;
+    }
+
+    .reelshort-topnav__download-popover {
+        display: flex;
+        align-items: stretch;
+        gap: 20px;
+        width: 420px;
+        padding: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 10px;
+        background: #141414;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+        z-index: 1600;
+    }
+
+    .reelshort-topnav__download-copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 94px;
+    }
+
+    .reelshort-topnav__download-title {
+        margin: 0;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .reelshort-topnav__download-open-btn {
+        margin-top: 10px;
+        width: 120px;
+        height: 38px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .reelshort-topnav__download-logo {
+        width: 94px;
+        height: 94px;
+        object-fit: contain;
+    }
+}
+
+@media (min-width: 1440px) {
+    .reelshort-topnav__download-trigger {
+        display: grid;
+        grid-template-rows: var(--rs-nav-icon-row-size, 24px) var(--rs-nav-label-row-size, 18px);
+        justify-items: center;
+        row-gap: 2px;
+    }
+
+    .reelshort-topnav__download-label {
+        display: block;
+        color: inherit;
+        font-size: 15px;
+        line-height: var(--rs-nav-label-row-size, 18px);
+        white-space: nowrap;
+    }
+}
+
 /* 404 recommendation shelf on H5. Keep this scoped so the home page shelf is untouched. */
 @media (max-width: 767px) {
     .rs-notfound-like .HomePage_main__BzEnK {
@@ -522,25 +966,6 @@ a.reelshort-topnav__brand-link {
     }
 }
 
-/* TikTok custom navbar already owns the logo row; keep tabs and search on one shared line. */
-.reelshort-topnav__h5-subnav--tiktok-inline {
-    position: relative;
-    top: -4px;
-    width: auto;
-    height: auto;
-    align-items: center;
-    padding: 0;
-}
-
-/* TikTok Minis already has its own navbar row above this one. Keep the home tabs compact. */
-@media (max-width: 767px) {
-    .reelshort-topnav--tiktok .reelshort-topnav__row {
-        min-height: 36px;
-        padding-top: 0;
-        padding-bottom: 0;
-    }
-}
-
 .reelshort-topnav--transparent .reelshort-topnav__h5-subnav {
     background: transparent;
 }
@@ -637,10 +1062,6 @@ a.reelshort-topnav__brand-link {
     display: none;
 }
 
-.reelshort-topnav__download-label {
-    display: none;
-}
-
 a.reelshort-topnav__profile-link {
     margin-left: 2px;
     flex-shrink: 0;
@@ -719,7 +1140,7 @@ a.reelshort-topnav__profile-link {
         --rs-nav-hit-size: min(9.8vw, 40px);
         --rs-nav-search-icon-size: min(5.2vw, 24px);
         /* 历史/下载 SVG 画幅更满，略缩 1px 与搜索图标视觉对齐 */
-        --rs-nav-download-icon-size: min(5.2vw, 23px);
+        --rs-nav-action-icon-size: min(5.2vw, 23px);
         --rs-nav-lang-icon-size: min(5.2vw, 24px);
         --rs-nav-gap-size: 10px;
         --rs-nav-label-size: 16px;
@@ -746,7 +1167,7 @@ a.reelshort-topnav__profile-link {
             --rs-nav-hit-size: 48px;
             --rs-nav-gap-size: 40px;
             --rs-nav-search-icon-size: 24px;
-            --rs-nav-download-icon-size: 23px;
+            --rs-nav-action-icon-size: 23px;
             --rs-nav-lang-icon-size: 20px;
         }
     }
@@ -831,6 +1252,16 @@ a.reelshort-topnav__profile-link {
         margin-right: 0;
     }
 
+    .reelshort-topnav__pc-nav-item--program {
+        display: none !important;
+    }
+
+    @media (min-width: 1024px) {
+        .reelshort-topnav__pc-nav-item--program {
+            display: inline-flex !important;
+        }
+    }
+
     .reelshort-topnav__pc-primary-nav .reelshort-topnav__segment-link:hover {
         color: #ff3d5d;
     }
@@ -854,7 +1285,6 @@ a.reelshort-topnav__profile-link {
     }
 
     .reelshort-topnav__search,
-    .reelshort-topnav__download,
     .reelshort-topnav__history,
     .reelshort-topnav__lang {
         display: inline-flex;
@@ -872,20 +1302,8 @@ a.reelshort-topnav__profile-link {
         align-self: center;
     }
 
-    .reelshort-topnav__download {
-        position: relative;
-        display: none;
-    }
-
-    @media (min-width: 768px) {
-        .reelshort-topnav__download {
-            display: inline-flex;
-        }
-    }
-
-    /* 搜索 / 下载 / 历史：<1440px 仅图标，与语言/头像垂直居中；≥1440px 双行栅格对齐文案 */
+    /* 搜索 / 历史：<1440px 仅图标，与语言/头像垂直居中；≥1440px 双行栅格对齐文案 */
     .reelshort-topnav__search-entry,
-    .reelshort-topnav__download-trigger,
     .reelshort-topnav__history {
         display: inline-flex;
         align-items: center;
@@ -904,7 +1322,6 @@ a.reelshort-topnav__profile-link {
 
     @media (min-width: 1440px) {
         .reelshort-topnav__search-entry,
-        .reelshort-topnav__download-trigger,
         .reelshort-topnav__history {
             display: grid;
             grid-template-rows: var(--rs-nav-icon-row-size) var(--rs-nav-label-row-size);
@@ -917,7 +1334,6 @@ a.reelshort-topnav__profile-link {
         }
 
         .reelshort-topnav__search,
-        .reelshort-topnav__download,
         .reelshort-topnav__history {
             height: calc(var(--rs-nav-icon-row-size) + 2px + var(--rs-nav-label-row-size));
             align-items: flex-start;
@@ -943,43 +1359,20 @@ a.reelshort-topnav__profile-link {
         }
     }
 
-    .reelshort-topnav__history:hover,
-    .reelshort-topnav__download-trigger:hover {
+    .reelshort-topnav__history:hover {
         color: var(--rs-nav-hover-color);
     }
 
     .reelshort-topnav__history-icon {
-        width: var(--rs-nav-download-icon-size);
-        height: var(--rs-nav-download-icon-size);
+        width: var(--rs-nav-action-icon-size);
+        height: var(--rs-nav-action-icon-size);
         display: block;
         flex-shrink: 0;
         align-self: center;
         grid-row: 1;
     }
 
-    .reelshort-topnav__download-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: var(--rs-nav-download-icon-size);
-        height: var(--rs-nav-download-icon-size);
-        line-height: 0;
-        color: currentColor;
-        background-color: currentColor;
-        -webkit-mask-image: var(--download-icon-url);
-        mask-image: var(--download-icon-url);
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        align-self: center;
-        grid-row: 1;
-    }
-
     .reelshort-topnav__search-label,
-    .reelshort-topnav__download-label,
     .reelshort-topnav__history-label {
         display: none;
         grid-row: 2;
@@ -995,86 +1388,9 @@ a.reelshort-topnav__profile-link {
 
     @media (min-width: 1440px) {
         .reelshort-topnav__search-label,
-        .reelshort-topnav__download-label,
         .reelshort-topnav__history-label {
             display: block;
         }
-    }
-
-    .reelshort-topnav__download-popover {
-        display: flex;
-        align-items: stretch;
-        gap: 20px;
-        width: 420px;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        border-radius: 10px;
-        background: #141414;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-        padding: 16px;
-        z-index: 1600;
-        overflow: visible;
-    }
-
-    .reelshort-topnav__download-popover::before {
-        content: '';
-        position: absolute;
-        top: -7px;
-        right: 44px;
-        width: 12px;
-        height: 12px;
-        background: #141414;
-        border-left: 1px solid rgba(255, 255, 255, 0.16);
-        border-top: 1px solid rgba(255, 255, 255, 0.16);
-        transform: rotate(45deg);
-        pointer-events: none;
-    }
-
-    .reelshort-topnav__download-copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 94px;
-    }
-
-    .reelshort-topnav__download-title {
-        margin: 0;
-        color: #fff;
-        font-size: 16px;
-        font-weight: 700;
-        line-height: 1.2;
-        max-width: 220px;
-    }
-
-    .reelshort-topnav__download-open-btn {
-        margin-top: 10px;
-        width: 120px;
-        height: 38px;
-        border: 1px solid rgba(255, 255, 255, 0.28);
-        border-radius: 9999px;
-        padding: 0 18px;
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
-        font-size: 16px;
-        font-weight: 600;
-        line-height: 1;
-        cursor: pointer;
-    }
-
-    .reelshort-topnav__download-open-btn:hover {
-        border-color: rgba(255, 255, 255, 0.45);
-        background: rgba(255, 255, 255, 0.14);
-    }
-
-    .reelshort-topnav__download-logo {
-        width: 94px;
-        height: 94px;
-        border-radius: 0;
-        object-fit: contain;
-        background: transparent;
-        padding: 0;
-        align-self: stretch;
     }
 
     .reelshort-topnav__search-entry {
@@ -1759,3 +2075,5 @@ a.reelshort-topnav__primary-link.is-active {
         }
     }
 }
+.reelshort-topnav a:has(> .reelshort-lucky-badge) { position: relative; }
+.reelshort-lucky-badge { position:absolute; top:0; right:-10px; display:grid; min-width:16px; height:16px; padding:0 3px; place-items:center; border-radius:999px; background:#ff3d5d; color:#fff; font:700 10px/1 system-ui,sans-serif; }

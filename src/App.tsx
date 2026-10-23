@@ -4,10 +4,11 @@ import {
     Navigate,
     Outlet,
     RouterProvider,
+    useNavigate,
     useRouteError,
 } from "react-router";
 import { FormattedMessage, IntlProvider } from 'react-intl';
-import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { Toaster } from "./components/ui/sonner";
 import { useLoadingStore } from "./stores/loading";
 import { LoaderCircle } from "lucide-react";
@@ -25,57 +26,30 @@ import { Button } from "./components/ui/button";
 import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
 import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/usePixel';
+import usePixel from './hooks/usePixel';
 import { syncAdAttributionCache } from './lib/adAttribution';
 import { syncFbAttributionCache } from './lib/fbAttribution';
-import usePixel from './hooks/usePixel';
-import { describeChunkLoadError, reloadAfterChunkLoadError } from './lib/pwaChunkRecovery';
 import { useWindowPathname } from './hooks/useWindowPathname';
+import {
+    describeChunkLoadError,
+    isChunkLoadError,
+    reloadAfterChunkLoadError,
+} from './lib/pwaChunkRecovery';
 import { loadMessagesForLocale, messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
 import { ReelShortBasicsSpin } from "./components/ReelShortBasicsSpin";
+import { PcLoginDialog } from './pages/user/Login';
 
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
-import { setIsAnonymousFromInfo } from "./lib/clientIsAnonymous";
-import { loginTikTokMinis } from "./lib/tiktokMinisLogin";
-import { initializeTikTokAds } from "./lib/tiktokAds";
-import { isTikTokWebTestMode } from "./platform/tiktok/webTest";
 import { BRAND_DISPLAY_NAME } from "./constants/brand";
 
-const TIKTOK_LOGIN_RETRY_DELAYS_MS = [1200, 2000, 3500];
 const YOGO_GROUP_IFRAME_SRC = 'https://mnby97.cc/assets/js/group.html?p=vE8hIfgY';
 
-function waitForTikTokBridge(ms: number) {
-    return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+/** Chromium `beforeinstallprompt`（部分 TS lib 未声明）。 */
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
-
-/**
- * TikTok DevTool 在 iframe 加载完成后还需要一点时间初始化 JSB bridge。
- * 首次 login 过早调用会报 `DevMode bridge timeout`，导致首页一直等不到 session。
- */
-async function loginTikTokMinisWithOneRetry() {
-    let lastFailure: unknown;
-
-    for (let attempt = 0; attempt < TIKTOK_LOGIN_RETRY_DELAYS_MS.length; attempt += 1) {
-        await waitForTikTokBridge(TIKTOK_LOGIN_RETRY_DELAYS_MS[attempt]);
-        try {
-            const result = await loginTikTokMinis();
-            if (result.c === 0) {
-                return result;
-            }
-            lastFailure = new Error(result.m || 'TikTok login failed.');
-        } catch (error) {
-            lastFailure = error;
-        }
-
-        console.warn(
-            `[TikTok login] Attempt ${attempt + 1}/${TIKTOK_LOGIN_RETRY_DELAYS_MS.length} failed; retrying after bridge settles.`,
-            lastFailure,
-        );
-    }
-
-    throw lastFailure instanceof Error ? lastFailure : new Error('TikTok silent login failed.');
-}
-import { isTikTokPlatform } from "./platform";
 
 /** 旧书签 `/page/checkout/:id`、已废弃的整页收银 → 购物页 */
 function LegacyCheckoutToShoppingRedirect() {
@@ -130,6 +104,7 @@ const UserFavorite = lazy(() => import('./pages/user/Favorite'));
 const UserHistory = lazy(() => import('./pages/user/History'));
 const UserProfile = lazy(() => import('./pages/user/Profile'));
 const UserShelf = lazy(() => import('./pages/user/Shelf'));
+const DramaDetail = lazy(() => import('./pages/user/DramaDetail'));
 const UserEpisodes = lazy(() => import('./pages/user/Episodes'));
 const UserFeedback = lazy(() => import('./pages/user/Feedback'));
 const UserLanguage = lazy(() => import('./pages/user/Language'));
@@ -143,25 +118,42 @@ const UserWallet = lazy(() => import('./pages/user/Wallet'));
 const UserDetail = lazy(() => import('./pages/user/UserDetail'));
 const UserRadixRc = lazy(() => import('./pages/user/RadixRc'));
 const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
-const UserTikTokTermsPolicy = lazy(() => import('./pages/user/TikTokTermsPolicy'));
-const VePlayerTestPage = lazy(() => import('./pages/user/VePlayerTest'));
+const CreatorProgram = lazy(() => import('./pages/user/CreatorProgram'));
+const AffiliateProgram = lazy(() => import('./pages/user/AffiliateProgram'));
+const Lucky = lazy(() => import('./pages/user/Lucky'));
 const ForDemoPage = lazy(() => import('./pages/user/ForDemo'));
 const VDemoPage = lazy(() => import('./pages/user/VDemo'));
 const AdminWeeklyUpdateTable = lazy(() => import('./pages/admin/WeeklyUpdateTable'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-function lazyRoute(Component: ComponentType) {
+function lazyRoute(Component: ComponentType, fallback: ReactNode = <RouteLazyFallback />) {
     return (
-        <Suspense fallback={<RouteLazyFallback />}>
+        <Suspense fallback={fallback}>
             <Component />
         </Suspense>
     );
 }
 
-/** Chromium `beforeinstallprompt`（部分 TS lib 未声明） */
-interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>;
-    readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+function RequireAccountRoute({ children }: { children: ReactNode }) {
+    const navigate = useNavigate();
+    const sessionReady = useRootStore((state) => state.sessionBootstrapReady);
+    const signed = useUserStore((state) => state.signed);
+    const anonymous = useUserStore((state) => state.isAnonymous());
+
+    if (!sessionReady) return <InitialBootPlaceholder />;
+    if (signed && !anonymous) return children;
+
+    return (
+        <div className="fixed inset-0 bg-app-canvas">
+            <PcLoginDialog
+                open
+                onLoginSuccess={() => undefined}
+                onOpenChange={(next) => {
+                    if (!next) navigate('/', { replace: true });
+                }}
+            />
+        </div>
+    );
 }
 
 function ErrorBoundary() {
@@ -169,8 +161,11 @@ function ErrorBoundary() {
     const errorText = describeChunkLoadError(error);
 
     useEffect(() => {
+        if (isChunkLoadError(error)) {
+            reloadAfterChunkLoadError(error);
+            return;
+        }
         report(errorText);
-        reloadAfterChunkLoadError(error);
     }, [error, errorText]);
 
     return <div className="p-4 w-full">
@@ -185,11 +180,6 @@ function ErrorBoundary() {
 }
 
 const router = createBrowserRouter([
-    {
-        path: '/veplayer-test',
-        element: lazyRoute(VePlayerTestPage),
-        errorElement: <ErrorBoundary />,
-    },
     {
         path: '/',
         element: lazyRoute(LayoutUser),
@@ -240,6 +230,10 @@ const router = createBrowserRouter([
                 element: lazyRoute(UserShelf),
             },
             {
+                path: 'drama/:id',
+                element: lazyRoute(DramaDetail),
+            },
+            {
                 path: 'episodes/:slug',
                 element: lazyRoute(UserEpisodes),
             },
@@ -249,15 +243,15 @@ const router = createBrowserRouter([
             },
             {
                 path: 'shopping',
-                element: lazyRoute(UserRadixRc),
+                element: <RequireAccountRoute>{lazyRoute(UserRadixRc)}</RequireAccountRoute>,
             },
             {
                 path: ':locale/shopping',
-                element: lazyRoute(UserRadixRc),
+                element: <RequireAccountRoute>{lazyRoute(UserRadixRc)}</RequireAccountRoute>,
             },
             {
                 path: 'my-list',
-                element: lazyRoute(UserMyList),
+                element: <RequireAccountRoute>{lazyRoute(UserMyList)}</RequireAccountRoute>,
                 children: [
                     {
                         index: true,
@@ -274,12 +268,29 @@ const router = createBrowserRouter([
                 element: lazyRoute(UserProfile),
             },
             {
+                path: 'creator',
+                /** 创作者入口保留当前页面壳，分包下载期间不再显示居中的“载入中”占位框。 */
+                element: <RequireAccountRoute>{lazyRoute(CreatorProgram, null)}</RequireAccountRoute>,
+            },
+            {
+                path: 'affiliate',
+                element: <RequireAccountRoute>{lazyRoute(AffiliateProgram)}</RequireAccountRoute>,
+            },
+            {
+                path: 'lucky',
+                element: <RequireAccountRoute>{lazyRoute(Lucky)}</RequireAccountRoute>,
+            },
+            {
+                path: ':locale/lucky',
+                element: <RequireAccountRoute>{lazyRoute(Lucky)}</RequireAccountRoute>,
+            },
+            {
                 path: 'wallet',
-                element: lazyRoute(UserWallet),
+                element: <RequireAccountRoute>{lazyRoute(UserWallet)}</RequireAccountRoute>,
             },
             {
                 path: ':locale/wallet',
-                element: lazyRoute(UserWallet),
+                element: <RequireAccountRoute>{lazyRoute(UserWallet)}</RequireAccountRoute>,
             },
             {
                 path: 'user/detail',
@@ -351,10 +362,6 @@ const router = createBrowserRouter([
                 element: lazyRoute(UserIosAddHomeGuide),
             },
             {
-                path: 'terms-policy',
-                element: lazyRoute(UserTikTokTermsPolicy),
-            },
-            {
                 path: 'pay/:id',
                 element: <Navigate to="/shopping" replace />,
             },
@@ -368,7 +375,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'search',
-                element: lazyRoute(UserSearch),
+                element: <RequireAccountRoute>{lazyRoute(UserSearch)}</RequireAccountRoute>,
             },
             {
                 path: 'my-balance',
@@ -410,22 +417,20 @@ function App() {
     const loadDataGenerationRef = useRef(0);
     const secondaryPrefetchScheduledRef = useRef(false);
 
-    function trackDownloadOnce() {
-        if (downloadTrackedRef.current) {
-            return;
-        }
+    const trackDownloadOnce = useCallback(() => {
+        if (downloadTrackedRef.current) return;
         downloadTrackedRef.current = true;
         pixel.track('Download');
-    }
+    }, [pixel]);
 
     async function handleExecuteInstall() {
-        if (!installPrompt.current) {
-            return;
-        }
-        installPrompt.current.prompt();
-        const { outcome } = await installPrompt.current.userChoice;
+        const promptEvent = installPrompt.current;
+        if (!promptEvent) return;
+        await promptEvent.prompt();
+        const { outcome } = await promptEvent.userChoice;
+        installPrompt.current = null;
+        setInstall(0);
         if (outcome === 'accepted') {
-            setInstall(2);
             trackDownloadOnce();
         }
     }
@@ -448,78 +453,6 @@ function App() {
         /** 与会话接口不依赖 `config` 响应体，与 `config` 并行可显著缩短首屏可交互前总等待 */
         void (async () => {
             try {
-                if (isTikTokPlatform()) {
-                    if (isTikTokWebTestMode()) {
-                        /**
-                         * Keep TikTok UI/business branches active in a normal browser,
-                         * while bootstrapping them with a regular backend session.
-                         */
-                        console.info('[TikTok web test] Native login is bypassed; using a browser session.');
-                        if (token) {
-                            const ok = await refreshSessionFromStoredToken();
-                            if (loadGen !== loadDataGenerationRef.current) return;
-                            if (ok) {
-                                localStorage.setItem('login-method', 'tiktok');
-                                useRootStore.getState().setSessionBootstrapReady(true);
-                                void initializeTikTokAds();
-                                return;
-                            }
-                            localStorage.removeItem('token');
-                        }
-
-                        const anon = await loginAnonymous({ toastOnError: false });
-                        if (loadGen !== loadDataGenerationRef.current || anon.c !== 0) return;
-                        localStorage.setItem('token', anon.d['token'] as string);
-                        localStorage.setItem('login-method', 'tiktok');
-                        useUserStore.getState().signin(anon.d['info'] as TData);
-                        useRootStore.getState().setSessionBootstrapReady(true);
-                        void initializeTikTokAds();
-                        trackAnonymousCompleteRegistration();
-                        return;
-                    }
-
-                    /** 测试阶段每次进入 TikTok Minis 都重新换取本站会话 token。 */
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('login-method');
-
-                    /**
-                     * 本地扫码调试时，页面经常先于手机完成连接。
-                     * 首次 login 失败后持续重试，扫码成功后立即重新请求 login/tiktok。
-                     */
-                    let tiktok: Awaited<ReturnType<typeof loginTikTokMinis>> | null = null;
-                    while (loadGen === loadDataGenerationRef.current && !tiktok) {
-                        try {
-                            const result = await loginTikTokMinisWithOneRetry();
-                            if (result.c === 0) {
-                                tiktok = result;
-                                break;
-                            }
-                            console.warn('[TikTok login] Backend exchange failed; waiting for scan and retrying:', result.m);
-                        } catch (error) {
-                            console.warn('[TikTok login] Waiting for TikTok scan/bridge before retrying:', error);
-                        }
-                        await waitForTikTokBridge(2000);
-                    }
-                    if (loadGen !== loadDataGenerationRef.current || !tiktok) {
-                        return;
-                    }
-
-                    const tiktokToken = tiktok.d.token?.trim();
-                    const tiktokInfo = tiktok.d.info;
-                    if (!tiktokToken || !tiktokInfo) {
-                        console.error('[TikTok login] Backend response is missing token or info.');
-                        return;
-                    }
-
-                    localStorage.setItem('token', tiktokToken);
-                    localStorage.setItem('login-method', 'tiktok');
-                    setIsAnonymousFromInfo(tiktokInfo);
-                    useUserStore.getState().signin(tiktokInfo);
-                    void initializeTikTokAds();
-                    useRootStore.getState().setSessionBootstrapReady(true);
-                    return;
-                }
-
                 if (token) {
                     const ok = await refreshSessionFromStoredToken();
                     if (loadGen !== loadDataGenerationRef.current) {
@@ -555,10 +488,7 @@ function App() {
                 useUserStore.getState().signin(anon.d['info'] as TData);
                 useRootStore.getState().setSessionBootstrapReady(true);
                 trackAnonymousCompleteRegistration();
-            } catch (error) {
-                if (isTikTokPlatform()) {
-                    console.error('[TikTok login] Silent login failed:', error);
-                }
+            } catch {
                 /* 会话失败时保持 sessionBootstrapReady=false */
             }
         })();
@@ -620,42 +550,42 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (rootStore.locale === 'ar') {
-            document.body.style.direction = 'rtl';
-        } else {
-            document.body.style.direction = 'ltr';
-        }
+        if (!checked) return;
+        const code = new URLSearchParams(window.location.search).get('ref')?.trim();
+        if (!code || code === 'PREVIEW') return;
+        localStorage.setItem('affiliate-referral-code', code);
+    }, [checked, pathname]);
+
+    useEffect(() => {
+        document.body.style.direction = 'ltr';
     }, []);
+
+    useEffect(() => {
+        const listener = (event: Event) => {
+            const promptEvent = event as BeforeInstallPromptEvent;
+            promptEvent.preventDefault();
+            installPrompt.current = promptEvent;
+            setInstall(1);
+        };
+        const installedListener = () => {
+            installPrompt.current = null;
+            setInstall(0);
+            trackDownloadOnce();
+        };
+
+        window.addEventListener('beforeinstallprompt', listener);
+        window.addEventListener('appinstalled', installedListener);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', listener);
+            window.removeEventListener('appinstalled', installedListener);
+        };
+    }, [trackDownloadOnce]);
 
     useEffect(() => {
         const legacyDesktopCss = document.head.querySelector('#desktop-css');
         if (legacyDesktopCss?.parentNode) {
             legacyDesktopCss.parentNode.removeChild(legacyDesktopCss);
         }
-    }, []);
-
-    useEffect(() => {
-
-        const listener = (event: Event) => {
-            const e = event as BeforeInstallPromptEvent;
-            e.preventDefault();
-            installPrompt.current = e;
-            setInstall(1);
-        };
-
-        window.addEventListener('beforeinstallprompt', listener);
-
-        const installedListener = () => {
-            setInstall(0);
-            trackDownloadOnce();
-        };
-
-        window.addEventListener('appinstalled', installedListener);
-
-        return () => {
-            window.removeEventListener('beforeinstallprompt', listener);
-            window.removeEventListener('appinstalled', installedListener);
-        };
     }, []);
 
     useEffect(() => {
@@ -696,6 +626,7 @@ function App() {
             api('alive', {
                 method: 'post',
                 loading: false,
+                toastOnError: false,
             });
         };
 
@@ -770,25 +701,27 @@ function App() {
 
     const appPathSegments = pathname.toLowerCase().split('/').filter(Boolean);
     const isShoppingRoute = appPathSegments[appPathSegments.length - 1] === 'shopping';
-    /** 全屏竖滑播放：勿挡底部控制条（与 `layouts/user` 中隐藏 iOS 胶囊条一致） */
     const isImmersivePlayerPath =
         matchPath({ path: '/video/:id/:episode?', end: true }, pathname) != null ||
         matchPath({ path: '/foryou', end: true }, pathname) != null ||
         matchPath({ path: '/for-you', end: true }, pathname) != null;
-    // 仅在 iOS/iPad 隐藏 Chromium 安装入口；Mac 桌面允许展示并触发 PWA 安装
     const showInstallPrompt =
-        install > 0 && !isTikTokPlatform() && !isIosLikeDevice() && !isShoppingRoute && !isImmersivePlayerPath;
+        install > 0 &&
+        import.meta.env.VITE_PLATFORM !== 'tiktok' &&
+        !isIosLikeDevice() &&
+        !isShoppingRoute &&
+        !isImmersivePlayerPath;
     const showYogoGroupIframe =
         BRAND_DISPLAY_NAME === 'YogoShort' &&
-        !isTikTokPlatform() &&
         configStore.config['ios_iframe'] === true;
+
     useEffect(() => {
         if (rootShowInstallPrompt !== showInstallPrompt) {
             setRootShowInstallPrompt(showInstallPrompt);
         }
     }, [rootShowInstallPrompt, setRootShowInstallPrompt, showInstallPrompt]);
 
-    return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="en">
+    return <IntlProvider locale={rootStore.locale} messages={messages} defaultLocale="zh-CN">
         <div
             className={cn('root', `root-${rootStore.theme}`)}
         >

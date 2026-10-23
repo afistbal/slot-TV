@@ -21,11 +21,14 @@ import {
     type VideoPlayerVipCommerceHandle,
 } from '@/components/video-player/VideoPlayerVipCommerce';
 import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
+import { VideoPlayerRatingDialog } from '@/components/video-player/VideoPlayerRatingDialog';
 import { VideoPlayerPcBackBar } from '@/components/video-player/VideoPlayerPcBackBar';
 import { VideoPlayerPcEpisodeNav } from '@/components/video-player/VideoPlayerPcEpisodeNav';
 // Legacy cold-unmute overlay import, currently disabled:
 // import { VideoPlayerPcUnmuteOverlay } from '@/components/video-player/VideoPlayerPcUnmuteOverlay';
 import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
+import { VideoPlayerAmbientLayer } from '@/components/video-player/VideoPlayerAmbient';
+import { useVideoPlayerAmbient } from '@/components/video-player/useVideoPlayerAmbient';
 // Legacy cold-unmute hook imports, currently disabled:
 // import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
 // import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
@@ -53,11 +56,13 @@ import {
 } from '@/components/video-player/videoPlayerPcDrawerMotion';
 import { usePcPlayerRightRailAlign } from '@/components/video-player/usePcPlayerRightRailAlign';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
+import { useRequireAccount } from '@/hooks/useRequireAccount';
+import { useDramaEngagement } from '@/hooks/useDramaEngagement';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
-import { isTikTokPlatform } from '@/platform';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
-import { useVDemoActiveEpisode } from './vDemoShellEpisode';
+import { fetchVDemoActiveEpisode } from './fetchVDemoEpisode';
+import { resolveVDemoShellEpisode, useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
@@ -93,12 +98,14 @@ export function VDemoPcPlayerShell({
     onEpisodeDetailReady,
 }: VDemoPcPlayerShellProps) {
     const userStore = useUserStore();
+    const requireAccount = useRequireAccount();
     const data = playerData;
     const activeRow = data.episodes[activeIndex];
     const episodeNo = activeRow?.episode ?? 1;
     const episode = useVDemoActiveEpisode(activeRow, userStore.isVIP(), onEpisodeDetailReady);
     const activeLocked = isVDemoEpisodeLocked(activeRow, true);
     const viewerIsVip = Boolean(userStore.signed && userStore.isVIP());
+    const { ambientEnabled, toggleAmbient } = useVideoPlayerAmbient();
     const resolveEpisodeCellLocked = useCallback(
         (row: VDemoPlayerData['episodes'][number]) =>
             resolveVDemoDrawerEpisodeLocked(row, viewerIsVip),
@@ -125,6 +132,12 @@ export function VDemoPcPlayerShell({
     const [favorite, setFavorite] = useState(() =>
         resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
     );
+    const engagement = useDramaEngagement({
+        dramaId: data.info.id,
+        initialLiked: data.info.is_like === true,
+        initialLikeCount: data.info.like,
+        initialRatingScore: data.info.my_rating,
+    });
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
@@ -133,6 +146,16 @@ export function VDemoPcPlayerShell({
     );
     const pcDrawerClosingRef = useRef(false);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
+    const navigationAttemptRef = useRef(0);
+    const [blockedEpisode, setBlockedEpisode] = useState<{
+        index: number;
+        detail: IPlayerEpisode | null;
+    } | null>(null);
+    const commerceRow = blockedEpisode ? data.episodes[blockedEpisode.index] : activeRow;
+    const commerceEpisode = blockedEpisode
+        ? blockedEpisode.detail ?? resolveVDemoShellEpisode(commerceRow)
+        : episode;
+    const commerceLocked = blockedEpisode != null || activeLocked;
     const [isFullscreenUi, setIsFullscreenUi] = useState(false);
 
     const handleFullscreenUiChange = useCallback(
@@ -157,7 +180,7 @@ export function VDemoPcPlayerShell({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useVideoPlayerShare(data, staticBase, episodeNo);
+    } = useVideoPlayerShare(data);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
     const handleForyouResume = useVDemoForyouResumeHandler(
@@ -177,6 +200,11 @@ export function VDemoPcPlayerShell({
     useEffect(() => {
         setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
     }, [data.info.id, data.info.is_favorite]);
+
+    useEffect(() => {
+        navigationAttemptRef.current += 1;
+        setBlockedEpisode(null);
+    }, [activeIndex]);
 
     useEffect(() => {
         setDesktopEpisodeTab(pcEpisodeTabIndexForEpisodeNo(episodeNo, tabRanges));
@@ -238,6 +266,7 @@ export function VDemoPcPlayerShell({
     );
 
     const handleToggleFavorite = useCallback(() => {
+        if (!requireAccount()) return;
         setFavorite((prev) => {
             const next = !prev;
             setVideoFavoriteOverride(data.info.id, next);
@@ -251,14 +280,56 @@ export function VDemoPcPlayerShell({
                 loading: false,
             });
         }
-    }, [data.info.id]);
+    }, [data.info.id, requireAccount]);
 
     const handlePaySuccessEpisodeDetail = useCallback(
         (detail: IPlayerEpisode) => {
+            const targetIndex = blockedEpisode?.index;
             applyVDemoEpisodeUnlock(detail);
+            setBlockedEpisode(null);
             onEpisodeUnlocked();
+            if (targetIndex != null) {
+                requestAnimationFrame(() => feedNavigateRef.current?.goToIndex(targetIndex));
+            }
         },
-        [onEpisodeUnlocked],
+        [blockedEpisode?.index, onEpisodeUnlocked],
+    );
+
+    const handleIncomingIndex = useCallback(
+        (index: number) => {
+            const row = data.episodes[index];
+            if (viewerIsVip || !row || !resolveVDemoDrawerEpisodeLocked(row, false)) {
+                return true;
+            }
+
+            const attempt = ++navigationAttemptRef.current;
+            void fetchVDemoActiveEpisode(row.id, false)
+                .then((detail) => {
+                    if (attempt !== navigationAttemptRef.current) {
+                        return;
+                    }
+                    if (detail) {
+                        applyVDemoEpisodeUnlock(detail);
+                        onEpisodeUnlocked();
+                    }
+                    if (detail && !detail.lock) {
+                        setBlockedEpisode(null);
+                        requestAnimationFrame(() => feedNavigateRef.current?.goToIndex(index));
+                        return;
+                    }
+                    setBlockedEpisode({ index, detail });
+                    requestAnimationFrame(() => vipCommerceRef.current?.openVip());
+                })
+                .catch(() => {
+                    if (attempt !== navigationAttemptRef.current) {
+                        return;
+                    }
+                    setBlockedEpisode({ index, detail: null });
+                    requestAnimationFrame(() => vipCommerceRef.current?.openVip());
+                });
+            return false;
+        },
+        [data.episodes, onEpisodeUnlocked, viewerIsVip],
     );
 
     const handleFeedPrev = useCallback(() => {
@@ -407,6 +478,11 @@ export function VDemoPcPlayerShell({
                                 />
                             }
                             isItemLocked={isFeedItemLocked}
+                            onIncomingIndex={handleIncomingIndex}
+                        />
+                        <VideoPlayerAmbientLayer
+                            active={ambientEnabled && !activeLocked}
+                            playerItemId={activePlayerItem?.id ?? activeRow?.id ?? 0}
                         />
                         {/* Legacy cold-unmute overlay; keep commented for possible reuse.
                         <VideoPlayerPcUnmuteOverlay
@@ -414,7 +490,7 @@ export function VDemoPcPlayerShell({
                             onTapToUnmute={handleTapToUnmute}
                         />
                         */}
-                        {activeLocked && !isTikTokPlatform() ? (
+                        {activeLocked ? (
                             <div className="video-player-ui pointer-events-auto absolute inset-0 z-10">
                                 <VideoPlayerLockOverlay
                                     onUnlock={() => vipCommerceRef.current?.openVip()}
@@ -428,11 +504,18 @@ export function VDemoPcPlayerShell({
                             showVip={!userStore.isVIP()}
                             favorite={favorite}
                             favoriteCount={data.info.favorite}
+                            liked={engagement.liked}
+                            likeCount={engagement.count}
+                            ratingScore={engagement.ratingScore}
+                            ambient={ambientEnabled}
                             showEpisodeList
                             onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
                             onFavoriteClick={handleToggleFavorite}
+                            onLikeClick={engagement.handleToggleLike}
+                            onRatingClick={() => engagement.setRatingOpen(true)}
+                            onAmbientClick={toggleAmbient}
                             onEpisodeListClick={openPcEpisodeDrawer}
-                            onShareClick={() => setShareOpen(true)}
+                            onShareClick={() => void handleShareAction('link')}
                         />
                     ) : null}
                 </div>
@@ -485,9 +568,9 @@ export function VDemoPcPlayerShell({
             <VideoPlayerVipCommerce
                 ref={vipCommerceRef}
                 variant="pc"
-                episodeRowId={activeRow?.id ?? 0}
-                locked={activeLocked}
-                episode={episode}
+                episodeRowId={commerceRow?.id ?? 0}
+                locked={commerceLocked}
+                episode={commerceEpisode}
                 viewerIsVip={viewerIsVip}
                 onPaySuccessEpisodeDetail={handlePaySuccessEpisodeDetail}
                 shareOpen={shareOpen}
@@ -500,6 +583,15 @@ export function VDemoPcPlayerShell({
                 introduction={data.info.introduction ?? ''}
                 onShareAction={handleShareAction}
                 onCopyEmbedCode={handleCopyEmbedCode}
+            />
+            <VideoPlayerRatingDialog
+                open={engagement.ratingOpen}
+                title={data.info.title}
+                score={engagement.ratingScore}
+                variant="pc"
+                submitting={engagement.ratingSubmitting}
+                onOpenChange={engagement.setRatingOpen}
+                onSubmit={(score) => void engagement.handleSubmitRating(score)}
             />
         </div>
     );

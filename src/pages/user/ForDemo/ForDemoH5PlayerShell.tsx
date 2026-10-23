@@ -10,6 +10,9 @@ import {
 import {
     // VideoPlayerH5ColdUnmuteOverlay, // Legacy cold-unmute overlay, currently disabled.
     VideoPlayerSideActions,
+    VideoPlayerRatingDialog,
+    VideoPlayerAmbientLayer,
+    useVideoPlayerAmbient,
     // useFeedPlayerColdUnmuteVisible, // Legacy cold-unmute hook, currently disabled.
     // useFeedPlayerTapToUnmute, // Legacy cold-unmute hook, currently disabled.
 } from '@/components/video-player';
@@ -29,6 +32,7 @@ import { useVideoRetentionCommerce } from '@/components/video-retention-promo/Vi
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
+import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { cn } from '@/lib/utils';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
@@ -36,6 +40,7 @@ import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
 import { foryouFeedItemKey } from './lib/foryouFeedMerge';
 import { prewarmForyouVideoEntry } from './lib/prewarmVideoEntry';
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
+import { useForDemoEngagement } from './useForDemoEngagement';
 
 type ForDemoH5PlayerShellProps = {
     staticBase: string;
@@ -65,6 +70,7 @@ export function ForDemoH5PlayerShell({
     onLoadMore,
 }: ForDemoH5PlayerShellProps) {
     const navigate = useNavigate();
+    const requireAccount = useRequireAccount();
     const userStore = useUserStore();
     const data = buildPlayerDataFromFeedItem(feedItem);
     const episode = buildEpisodeFromFeedItem(feedItem);
@@ -72,6 +78,9 @@ export function ForDemoH5PlayerShell({
     const feedEpisodeTotal = feedItem.episodes ?? 0;
     const prevListLengthRef = useRef(listLength);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
+    const { ambientEnabled, toggleAmbient } = useVideoPlayerAmbient();
+    const engagement = useForDemoEngagement(feedItem);
+    const activePlayerItemId = playerItems[activeIndex]?.id ?? foryouFeedItemKey(feedItem);
 
     const [favorite, setFavorite] = useState(() =>
         resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
@@ -104,7 +113,7 @@ export function ForDemoH5PlayerShell({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useForYouPlayerShare(data, staticBase, episodeNo);
+    } = useForYouPlayerShare(data);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
 
@@ -126,6 +135,7 @@ export function ForDemoH5PlayerShell({
     }, [activeIndex, listLength]);
 
     const handleToggleFavorite = useCallback(() => {
+        if (!requireAccount()) return;
         setFavorite((prev) => {
             const next = !prev;
             setVideoFavoriteOverride(data.info.id, next);
@@ -139,7 +149,7 @@ export function ForDemoH5PlayerShell({
                 loading: false,
             });
         }
-    }, [data.info.id]);
+    }, [data.info.id, requireAccount]);
 
     const handleToggleVip = useCallback(() => {
         if (userStore.signed && userStore.isVIP()) {
@@ -175,7 +185,7 @@ export function ForDemoH5PlayerShell({
         movieId: feedItem.id,
         epId: feedItem.ep_id,
         epNo: episodeNo,
-        playerItemId: foryouFeedItemKey(feedItem),
+        playerItemId: activePlayerItemId,
     });
 
     return (
@@ -206,6 +216,10 @@ export function ForDemoH5PlayerShell({
                     />
                 }
             />
+            <VideoPlayerAmbientLayer
+                active={ambientEnabled}
+                playerItemId={activePlayerItemId}
+            />
             {/* Legacy cold-unmute overlay; keep commented for possible reuse.
             <VideoPlayerH5ColdUnmuteOverlay
                 visible={coldUnmuteVisible}
@@ -224,9 +238,16 @@ export function ForDemoH5PlayerShell({
                     showVip={!userStore.isVIP()}
                     favorite={favorite}
                     favoriteCount={data.info.favorite}
+                    liked={engagement.liked}
+                    likeCount={engagement.count}
+                    ratingScore={engagement.ratingScore}
+                    ambient={ambientEnabled}
                     onVipClick={handleToggleVip}
                     onFavoriteClick={handleToggleFavorite}
-                    onShareClick={() => setShareOpen(true)}
+                    onLikeClick={engagement.handleToggleLike}
+                    onRatingClick={() => setTimeout(() => engagement.setRatingOpen(true), 0)}
+                    onAmbientClick={toggleAmbient}
+                    onShareClick={() => void handleShareAction('link')}
                 />
             </div>
             <ForYouPlayerH5CommerceDrawers
@@ -262,6 +283,15 @@ export function ForDemoH5PlayerShell({
                 hideEpisodeDrawer
                 tagsFromBackendOnly
                 maxTags={FORYOU_MAX_VISIBLE_TAGS}
+            />
+            <VideoPlayerRatingDialog
+                open={engagement.ratingOpen}
+                title={data.info.title}
+                score={engagement.ratingScore}
+                variant="h5"
+                submitting={engagement.ratingSubmitting}
+                onOpenChange={engagement.setRatingOpen}
+                onSubmit={engagement.handleSubmitRating}
             />
         </div>
     );

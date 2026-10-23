@@ -3,7 +3,15 @@ import path from 'path';
 
 const cliOutDir = process.argv[2];
 const outDir = path.resolve(cliOutDir || 'D:/JJ-TV/movie-www');
-const keepNames = new Set(['.git', '.well-known', 'googlefdb534d9533860b7.html', 'assets']);
+const keepNames = new Set(['.git', '.well-known', 'googlefdb534d9533860b7.html']);
+
+// Only known build destinations may be cleaned. Never allow a workspace/drive root.
+if (!/^D:\/JJ-TV\/movie-www(?:-prod\d*)?$/i.test(outDir.replaceAll('\\', '/'))) {
+    throw new Error(`[build-clean] Refusing to clean unknown output directory: ${outDir}`);
+}
+if (fs.existsSync(outDir) && fs.lstatSync(outDir).isSymbolicLink()) {
+    throw new Error(`[build-clean] Refusing to clean a linked output directory: ${outDir}`);
+}
 
 function exists(p) {
     try {
@@ -27,7 +35,11 @@ function cleanDirExcept(dir) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
         if (keepNames.has(ent.name)) continue;
-        rmRecursive(path.join(dir, ent.name));
+        const target = path.resolve(dir, ent.name);
+        if (path.dirname(target) !== outDir) {
+            throw new Error(`[build-clean] Target is outside the output directory: ${target}`);
+        }
+        rmRecursive(target);
     }
 }
 

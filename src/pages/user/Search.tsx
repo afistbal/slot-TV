@@ -26,7 +26,6 @@ import { scrollElementToTop } from '@/lib/scrollToTop';
 import { ChevronLeft, ChevronRight, LoaderCircle, MoreHorizontal, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 import {
     buildTagSearchQuery,
@@ -44,7 +43,6 @@ import {
 } from '@/lib/movieTagLabels';
 import iconTag from '@/assets/images/icon_tag@2x.png';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
-import { isTikTokPlatform } from '@/platform';
 import '@/styles/search-reelshort.scss';
 import '@/styles/shelf-reelshort.scss';
 
@@ -444,7 +442,7 @@ function SearchPcBookItem({ item }: { item: SearchRowItem }) {
         <div className="rs-bi-bookItem rs-dc-bookItem" data-id={item.id}>
             <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
             <div className="rs-bi-poster">
-                <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
+                <Link to={`/drama/${item.id}`} className="rs-bi-cover">
                     <VideoPosterLazyCover src={imgSrc} imageClassName="rs-search-page__posterImage" />
                 </Link>
                 <div className="rs-bi-playMask">
@@ -453,7 +451,7 @@ function SearchPcBookItem({ item }: { item: SearchRowItem }) {
                 </div>
             </div>
             <h3 className="rs-bi-title">
-                <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE}>{item.title}</Link>
+                <Link to={`/drama/${item.id}`}>{item.title}</Link>
             </h3>
             {item.episodes > 0 ? (
                 <div className="rs-bi-chapter flex flex-wrap items-center gap-x-1">
@@ -529,7 +527,6 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     const isH5TagSearchPage = isTagSearchPage && !isPc;
     const isPcTagSearchPage = isTagSearchPage && isPc;
     const isH5InnerNavPage = isH5SearchPage || isH5TagSearchPage;
-    const isTikTokInnerSearchPage = isTikTokPlatform() && isH5InnerNavPage;
     const tagLabelFromUrl = isTagSearchPage ? readTagLabelFromSearch(location.search) : '';
     const tagKeyFromUrl = isTagSearchPage ? readMovieTagFromSearch(location.search) : '';
     const activeTagKey = searchStore.tag || tagKeyFromUrl;
@@ -656,14 +653,8 @@ export function SearchPage({ type }: { type: SearchPageType }) {
             searchStore.setMore(hasMore);
 
             if (isPc && scrollRef.current && !isCategoriesPage) {
-                if (false) {
-                    /** 全部劇情（无 tag）不滚到列表区；仅选中具体标签时定位到 rs-shelf__title */
-                    scrollRef.current!.scrollTop = 0;
-                    searchStore.setScrollTop(0);
-                } else {
-                    scrollRef.current.scrollTop = 0;
-                    searchStore.setScrollTop(0);
-                }
+                scrollRef.current.scrollTop = 0;
+                searchStore.setScrollTop(0);
             }
         } catch {
             if (loadId === searchMovieLoadId) {
@@ -1267,32 +1258,20 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 ref={scrollRef}
                 onScroll={handleScrollEnd}
             >
-                {!isTikTokInnerSearchPage ? (
-                    <ReelShortTopNav
-                        scrollParentRef={scrollRef}
-                        showPrimaryNav={isCategoriesPage}
-                        leftAction={isCategoriesPage ? 'none' : isH5InnerNavPage ? 'back' : 'menu'}
-                        showRightActions={!isH5InnerNavPage}
-                        showSearch={isCategoriesPage}
-                        showProfile={!isCategoriesPage && !isH5InnerNavPage}
-                        showLanguage={!isH5InnerNavPage}
-                        showHistory={!isH5InnerNavPage}
-                    />
-                ) : null}
+                <ReelShortTopNav
+                    scrollParentRef={scrollRef}
+                    showPrimaryNav={isCategoriesPage}
+                    leftAction={isCategoriesPage ? 'none' : isH5InnerNavPage ? 'back' : 'menu'}
+                    showRightActions={!isH5InnerNavPage}
+                    showSearch={isCategoriesPage}
+                    showProfile={!isCategoriesPage && !isH5InnerNavPage}
+                    showLanguage={!isH5InnerNavPage}
+                    showHistory={!isH5InnerNavPage}
+                />
 
                 {showH5SearchBar ? (
                 <div className="rs-search-page__barPad md:hidden">
                     <div role="search-bar" className="rs-search-page__bar">
-                        {isTikTokInnerSearchPage ? (
-                            <button
-                                type="button"
-                                className="rs-search-page__barBack"
-                                onClick={() => navigate(-1)}
-                                aria-label={intl.formatMessage({ id: 'back', defaultMessage: 'Back' })}
-                            >
-                                <ChevronLeft aria-hidden />
-                            </button>
-                        ) : null}
                         <div className="rs-search-page__barInner">
                             <SearchIcon16 className="rs-search-page__barIcon" />
                             <input
@@ -1828,8 +1807,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 }
                                                 return (
                                                     <Link
-                                                        to={`/video/${item.id}`}
-                                                        state={VIDEO_FROM_HOME_STATE}
+                                                        to={`/drama/${item.id}`}
                                                         key={item.id}
                                                         className="rs-search-page__card"
                                                     >

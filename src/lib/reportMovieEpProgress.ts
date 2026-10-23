@@ -1,4 +1,4 @@
-import { api } from '@/api';
+import { api, formatApiFailure } from '@/api';
 import { skipRemoteApi } from '@/env';
 
 export type MovieEpProgressPayload = {
@@ -10,10 +10,15 @@ export type MovieEpProgressPayload = {
 };
 
 export function reportMovieEpProgress(payload: MovieEpProgressPayload): void {
+    void saveMovieEpProgress(payload).catch(() => undefined);
+}
+
+export async function saveMovieEpProgress(payload: MovieEpProgressPayload): Promise<void> {
     if (skipRemoteApi) {
         return;
     }
-    void api('movie/history/report', {
+    const result = await api('movie/history/report', {
+        method: 'post',
         loading: false,
         toastOnError: false,
         data: {
@@ -21,4 +26,5 @@ export function reportMovieEpProgress(payload: MovieEpProgressPayload): void {
             ...payload,
         },
     });
+    if (result.c !== 0) throw new Error(formatApiFailure('POST', 'movie/history/report', result));
 }

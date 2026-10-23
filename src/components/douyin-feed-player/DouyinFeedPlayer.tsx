@@ -11,7 +11,6 @@ import type Player from 'xgplayer';
 
 import { cn } from '@/lib/utils';
 import mountLoadingGif from '@/assets/icons/loading.gif';
-import { isTikTokPlatform } from '@/platform';
 
 import { DouyinPlayerControls } from './controls/DouyinPlayerControls';
 import { isIosNativeVideoFullscreen } from './controls/feedPlayerFullscreen';
@@ -89,7 +88,6 @@ export function DouyinFeedPlayer({
     preventNextFromLockedItem = false,
 }: DouyinFeedPlayerProps) {
     const isVideoH5Feed = Boolean(className?.includes('v-demo-h5-player'));
-    const showLoadingAnimation = !isTikTokPlatform();
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const playerByIndexRef = useRef<Map<number, Player>>(new Map());
@@ -677,6 +675,10 @@ export function DouyinFeedPlayer({
             markUserGesture(3500);
             const navDirection: FeedNavigateDirection =
                 direction === 'auto' ? 'next' : direction;
+            if (onIncomingIndexRef.current?.(next, navDirection) === false) {
+                snapScrollerToActive();
+                return;
+            }
             syncActiveIndex(next, navDirection);
             scrollToIndex(next);
             feedDbg('navigate', { direction, from: current, to: next, gesture: isUserGestureActive() });
@@ -684,7 +686,7 @@ export function DouyinFeedPlayer({
                 dispatchActivePlayRef.current('navigate');
             });
         },
-        [scrollToIndex, syncActiveIndex],
+        [scrollToIndex, snapScrollerToActive, syncActiveIndex],
     );
     navigateRef.current = navigate;
 
@@ -697,6 +699,10 @@ export function DouyinFeedPlayer({
 
             markUserGesture(3500);
             const direction: FeedNavigateDirection = next > current ? 'next' : 'prev';
+            if (onIncomingIndexRef.current?.(next, direction) === false) {
+                snapScrollerToActive();
+                return;
+            }
             syncActiveIndex(next, direction);
             scrollToIndex(next, 'auto');
             feedDbg('goToIndex', { from: current, to: next, direction });
@@ -704,7 +710,7 @@ export function DouyinFeedPlayer({
                 dispatchActivePlayRef.current('navigate');
             });
         },
-        [scrollToIndex, syncActiveIndex],
+        [scrollToIndex, snapScrollerToActive, syncActiveIndex],
     );
     const goToIndexRef = useRef(goToIndex);
     goToIndexRef.current = goToIndex;
@@ -811,7 +817,10 @@ export function DouyinFeedPlayer({
                 const target = Math.min(active + 1, maxIdx);
                 if (progress >= 0.3) {
                     prepareIncomingIndex(target);
-                    onIncomingIndexRef.current?.(target, 'next');
+                    if (onIncomingIndexRef.current?.(target, 'next') === false) {
+                        snapScrollerToActive();
+                        return;
+                    }
                 }
                 if (progress >= 0.55 && target !== active) {
                     markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
@@ -827,7 +836,10 @@ export function DouyinFeedPlayer({
                 const target = Math.max(active - 1, 0);
                 if (progress >= 0.3) {
                     prepareIncomingIndex(target);
-                    onIncomingIndexRef.current?.(target, 'prev');
+                    if (onIncomingIndexRef.current?.(target, 'prev') === false) {
+                        snapScrollerToActive();
+                        return;
+                    }
                 }
                 if (progress >= 0.55 && target !== active) {
                     markUserGesture(isUserAudioUnlocked() ? 5000 : 3500);
@@ -920,7 +932,7 @@ export function DouyinFeedPlayer({
             root.removeEventListener('scrollend', onScrollEnd);
             window.removeEventListener('keydown', onKey);
         };
-    }, []);
+    }, [snapScrollerToActive]);
 
     const advanceAfterEnded = useCallback(
         (current: number) => {
@@ -933,6 +945,10 @@ export function DouyinFeedPlayer({
             }
 
             const next = current + 1;
+            if (onIncomingIndexRef.current?.(next, 'auto') === false) {
+                snapScrollerToActive();
+                return;
+            }
             const nextPlayer = playerByIndexRef.current.get(next);
             const nextUrl = playbackItemsRef.current[next]?.url ?? '';
 
@@ -959,7 +975,7 @@ export function DouyinFeedPlayer({
                 dispatchActivePlayRef.current('ended-auto');
             }
         },
-        [scrollToIndex, suppressNextPreloadUntilStable, syncActiveIndex],
+        [scrollToIndex, snapScrollerToActive, suppressNextPreloadUntilStable, syncActiveIndex],
     );
     advanceAfterEndedRef.current = advanceAfterEnded;
 
@@ -1231,7 +1247,7 @@ export function DouyinFeedPlayer({
                                 </div>
                                 {renderLockedOverlay?.(item, index)}
                             </>
-                        ) : showLoadingAnimation ? (
+                        ) : (
                             <div className="douyin-feed-player__cover" aria-hidden>
                                 <img
                                     className="douyin-feed-player__cover-loading-img"
@@ -1240,8 +1256,6 @@ export function DouyinFeedPlayer({
                                     draggable={false}
                                 />
                             </div>
-                        ) : (
-                            <div className="douyin-feed-player__cover" aria-hidden />
                         )}
                     </div>
                 );

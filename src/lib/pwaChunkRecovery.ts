@@ -1,5 +1,6 @@
 const CHUNK_RELOAD_STORAGE_KEY = 'slot:pwa-chunk-reload-at';
 const CHUNK_RELOAD_COOLDOWN_MS = 15 * 1000;
+const CHUNK_RELOAD_QUERY_KEY = '_chunk_reload';
 
 export function describeChunkLoadError(error: unknown): string {
     if (error instanceof Error) {
@@ -40,11 +41,23 @@ export function reloadAfterChunkLoadError(error: unknown): boolean {
         // Ignore storage failures; the reload is still the safest recovery.
     }
 
-    window.location.reload();
+    /**
+     * 普通 reload 可能继续命中旧 HTML；追加一次性查询参数，强制浏览器/CDN 获取最新应用壳。
+     * 新页面启动后会立即从地址栏移除该参数。
+     */
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set(CHUNK_RELOAD_QUERY_KEY, String(now));
+    window.location.replace(nextUrl.toString());
     return true;
 }
 
 export function installChunkLoadRecovery(): void {
+    const currentUrl = new URL(window.location.href);
+    if (currentUrl.searchParams.has(CHUNK_RELOAD_QUERY_KEY)) {
+        currentUrl.searchParams.delete(CHUNK_RELOAD_QUERY_KEY);
+        window.history.replaceState(window.history.state, '', currentUrl.toString());
+    }
+
     window.addEventListener('unhandledrejection', (event) => {
         if (reloadAfterChunkLoadError(event.reason)) {
             event.preventDefault();

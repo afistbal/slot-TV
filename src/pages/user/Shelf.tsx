@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
+import { Bookmark } from 'lucide-react';
 import { api, type IPagination, type TData } from '@/api';
 import { skipRemoteApi } from '@/env';
 import { useConfigStore } from '@/stores/config';
@@ -57,18 +58,6 @@ function IconPlaySolid({ className }: { className?: string }) {
                 fill="currentColor"
                 fillOpacity="0.9"
                 d="M4.488 7.04c.817-4.063 2.618-4.91 6.539-3.218a31.933 31.933 0 0 1 7.617 4.624c3.141 2.58 3.141 4.423 0 7.003a31.936 31.936 0 0 1-7.617 4.624c-3.92 1.692-5.722.845-6.54-3.218a24.93 24.93 0 0 1 0-9.815"
-            />
-        </svg>
-    );
-}
-
-function IconStarSolid({ className }: { className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="1em" height="1em" className={className} aria-hidden>
-            <path
-                fill="currentColor"
-                fillOpacity="0.9"
-                d="M8.98 6.029c1.183-1.866 1.774-2.8 2.585-2.98.287-.065.583-.065.87 0 .81.18 1.402 1.114 2.585 2.98.327.516.491.774.715.969.082.072.17.136.263.194.252.155.544.233 1.13.389 2.117.563 3.176.845 3.597 1.57.149.256.24.542.269.838.08.837-.613 1.695-2 3.412-.383.475-.575.713-.688.988a2.053 2.053 0 0 0-.1.314c-.069.29-.051.597-.017 1.21.126 2.214.189 3.32-.362 3.95a2.017 2.017 0 0 1-.703.518c-.761.336-1.781-.067-3.82-.872-.565-.223-.848-.334-1.141-.358a2.006 2.006 0 0 0-.326 0c-.293.024-.576.136-1.14.358-2.04.805-3.06 1.208-3.82.872a2.016 2.016 0 0 1-.704-.518c-.55-.63-.488-1.736-.362-3.95.034-.614.052-.92-.016-1.21a2.057 2.057 0 0 0-.101-.314c-.113-.275-.305-.513-.689-.988-1.386-1.717-2.079-2.575-1.999-3.412.029-.296.12-.582.269-.838.42-.725 1.48-1.007 3.597-1.57.586-.156.879-.234 1.13-.39.093-.057.18-.121.263-.193.224-.195.388-.453.715-.97"
             />
         </svg>
     );
@@ -233,7 +222,7 @@ export default function Component() {
                                         <div key={item.id} className="rs-shelf__card">
                                             <div className="rs-shelf__cover">
                                                 <div data-report="expo" className="absolute bottom-0 left-0 right-0" />
-                                                <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE} className="cursor-pointer">
+                                                <Link to={`/drama/${item.id}`} className="cursor-pointer">
                                                     <img
                                                         alt={item.title}
                                                         src={imgSrc}
@@ -245,7 +234,7 @@ export default function Component() {
                                             <div className="rs-shelf__cardBody">
                                                 <div>
                                                     <h2 className="rs-shelf__cardTitle">
-                                                        <Link to={`/video/${item.id}`} state={VIDEO_FROM_HOME_STATE}>{item.title}</Link>
+                                                        <Link to={`/drama/${item.id}`}>{item.title}</Link>
                                                     </h2>
 
                                                     <div className="rs-shelf__meta rs-shelf__meta--mobile">
@@ -257,7 +246,7 @@ export default function Component() {
                                                         </div>
                                                         <div className="rs-shelf__metaItem">
                                                             <span className="rs-shelf__metaIcon">
-                                                                <IconStarSolid className="rs-shelf__metaSvg" />
+                                                                <Bookmark className="rs-shelf__metaSvg" fill="currentColor" />
                                                             </span>
                                                             {item.favorite ?? '-'}
                                                         </div>
@@ -282,7 +271,7 @@ export default function Component() {
                                                         </div>
                                                         <div className="rs-shelf__metaItem">
                                                             <span className="rs-shelf__metaIcon">
-                                                                <IconStarSolid className="rs-shelf__metaSvg" />
+                                                                <Bookmark className="rs-shelf__metaSvg" fill="currentColor" />
                                                             </span>
                                                             {item.favorite ?? '-'}
                                                         </div>

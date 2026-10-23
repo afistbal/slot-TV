@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useConfigStore } from '@/stores/config';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import { useHomeStore, type IItem, filterRenderableTopBannerItems } from '@/stores/home';
@@ -30,30 +29,6 @@ const COVER_CARD_H = Math.round(410 * NS_HERO_BANNER_SCALE);
 const ARROW_CIRCLE_PX = Math.round(68 * NS_HERO_BANNER_SCALE);
 const HERO_CIRCLE_OFFSET_PX = Math.round(60 * NS_HERO_BANNER_SCALE);
 const HERO_CIRCLE_PX: [number, number] = [Math.round(1390 * NS_HERO_BANNER_SCALE), Math.round(116 * NS_HERO_BANNER_SCALE)];
-
-function normalizeEpisodeSlug(raw?: string) {
-    if (!raw) return undefined;
-    let v = String(raw).trim();
-    if (!v) return undefined;
-    if (v.startsWith('http://') || v.startsWith('https://')) {
-        try {
-            const u = new URL(v);
-            v = u.pathname;
-        } catch {
-            // ignore
-        }
-    }
-    v = v.replace(/^[#/]/, '');
-    const m = v.match(/(?:^|\/)episodes\/([^/?#]+)$/i);
-    if (m) return decodeURIComponent(m[1]);
-    if (v.startsWith('episodes/')) return decodeURIComponent(v.slice('episodes/'.length));
-    return decodeURIComponent(v);
-}
-
-function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
-    const slug = normalizeEpisodeSlug(item.episodeSlug);
-    return slug ? `/episodes/${slug}` : `/video/${item.id}`;
-}
 
 /**
  * 对方源码：`((e - t + n) % r + r) % r - n`（e=slide 下标, t=currentIndex, r=条数, n=floor(r/2)）
@@ -286,7 +261,6 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                             const isCenter = rel === 0;
                             const isSide = Math.abs(rel) === 1;
                             const coverOp = coverOpacityForRel(rel);
-                            const href = toEpisodeOrVideoHref(item);
                             const src = movieCoverUrl(item, staticBase) ?? '';
                             const imgTrans = noTransition
                                 ? 'none'
@@ -301,7 +275,7 @@ export function NetShortPcCoverflowHero({ className, goHeroIndex }: Props) {
                                 }
                                 e.stopPropagation();
                                 if (isCenter) {
-                                    void navigate(href, { state: VIDEO_FROM_HOME_STATE });
+                                    void navigate(`/drama/${item.id}`);
                                 } else {
                                     goHeroIndex(t);
                                 }

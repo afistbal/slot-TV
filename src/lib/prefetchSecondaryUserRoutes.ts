@@ -6,6 +6,7 @@
 let profileDone = false;
 let searchDone = false;
 let myListDone = false;
+let luckyDone = false;
 
 export function prefetchProfileRouteChunk(): void {
     if (profileDone) return;
@@ -34,6 +35,16 @@ export function prefetchMyListRouteChunk(): void {
         .then(() => undefined)
         .catch(() => {
             myListDone = false;
+        });
+}
+
+export function prefetchLuckyRouteChunk(): void {
+    if (luckyDone) return;
+    luckyDone = true;
+    void import('../pages/user/Lucky')
+        .then(() => undefined)
+        .catch(() => {
+            luckyDone = false;
         });
 }
 

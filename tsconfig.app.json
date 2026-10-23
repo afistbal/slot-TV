@@ -28,10 +28,7 @@
       "@/*": [
         "./src/*"
       ]
-    },
-    "types": [
-      "vite-plugin-pwa/client"
-    ]
+    }
   },
   "include": ["src"]
 }

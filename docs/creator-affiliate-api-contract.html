@@ -1,0 +1,1354 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>YogoShort 福利 / 推广奖金 API</title>
+  <style>
+    :root{color-scheme:dark;--bg:#090b0d;--panel:#12161a;--panel2:#171c21;--line:#2a3139;--text:#f5f7fa;--muted:#95a1ae;--brand:#ff3d5d;--green:#39dca3;--blue:#64a8ff}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 Inter,"PingFang SC","Microsoft YaHei",sans-serif}button{font:inherit}main{width:min(1220px,calc(100% - 32px));margin:30px auto 80px}h1{margin:0;font-size:30px}h2{margin:0;font-size:21px}.sub{margin:4px 0 22px;color:var(--muted)}.tabs{position:sticky;z-index:5;top:0;display:flex;gap:8px;padding:12px 0;background:linear-gradient(var(--bg) 80%,transparent)}.tab{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:9px 16px;color:var(--text);cursor:pointer;font-weight:700}.tab.active{border-color:var(--brand);background:rgba(255,61,93,.11);color:#ff7890}.panel{display:none}.panel.active{display:block}.module-head{display:flex;align-items:baseline;justify-content:space-between;margin:16px 0}.module-head span{color:var(--muted)}.api{margin:12px 0;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}.api-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--panel2)}.method{min-width:52px;border-radius:6px;background:#174636;padding:2px 8px;color:var(--green);text-align:center;font-weight:800}.method.get{background:#173650;color:#86c2ff}.method.patch{background:#4a3517;color:#f4c56b}.path{font:700 14px Consolas,monospace}.rpc{margin-left:auto;color:var(--muted);font-size:12px}.api-body{padding:16px}.purpose{margin:0 0 8px}.purpose b{color:#ff8ba0}.consumer{margin:0 0 14px;color:#8dddbd;font-size:12px}.consumer b{color:var(--green)}.json-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.code{min-width:0;border:1px solid var(--line);border-radius:10px;background:#090c10;overflow:hidden}.code-head{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;border-bottom:1px solid var(--line);color:#bdc9d5;font-size:12px;font-weight:700}.copy{border:1px solid #3a4652;border-radius:6px;background:#1a2128;padding:3px 9px;color:#dbe6ef;cursor:pointer;font-size:12px}.copy:hover{background:#222c35}.copy.done{border-color:#347f66;color:#63e6b4}pre{min-height:80px;margin:0;padding:13px;overflow:auto;color:#cfe3f5;font:12px/1.55 Consolas,monospace;white-space:pre}.rules{margin:12px 0 0;padding-left:19px;color:var(--muted);font-size:12px}.rules li+li{margin-top:3px}.rules b{color:#dbe5ee}.empty{color:#71808e}.mapping{margin-top:28px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px 16px}.mapping summary{cursor:pointer;font-weight:700}.mapping .code{margin-top:12px}.top-error{margin:0 0 18px}.top-error .code{max-width:760px}@media(max-width:760px){main{width:min(100% - 20px,1220px);margin-top:18px}h1{font-size:23px}.json-grid{grid-template-columns:1fr}.rpc{width:100%;margin-left:0}.tabs{overflow:auto}.tab{flex:0 0 auto}.api-body{padding:12px}.path{overflow-wrap:anywhere}.module-head span{display:none}}
+    .upload-flow{margin:0 0 22px;border:1px solid rgba(255,61,93,.28);border-radius:16px;background:linear-gradient(145deg,rgba(255,61,93,.07),rgba(18,22,26,.96) 32%);padding:20px}.upload-flow h3{margin:0;font-size:18px}.upload-flow-lead{margin:4px 0 18px;color:var(--muted)}.flow-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.flow-step{position:relative;min-width:0;border:1px solid var(--line);border-radius:12px;background:#0d1115;padding:14px}.flow-step:not(:last-child)::after{position:absolute;z-index:2;top:21px;right:-9px;width:16px;height:16px;border:1px solid var(--line);border-width:1px 1px 0 0;background:#0d1115;content:"";transform:rotate(45deg)}.flow-number{display:inline-grid;width:25px;height:25px;place-items:center;border-radius:50%;background:rgba(255,61,93,.16);color:#ff7890;font-size:12px;font-weight:800}.flow-step h4{margin:10px 0 5px;font-size:14px}.flow-step p{margin:0;color:var(--muted);font-size:12px}.flow-step code,.flow-result code,.flow-warning code{color:#9fcbff;font:12px Consolas,monospace;overflow-wrap:anywhere}.flow-result{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;color:#cbd7e1;font-size:12px}.flow-result b{color:var(--green)}.flow-example{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.flow-example .code{height:100%}.flow-warning{margin:14px 0 0;border-left:3px solid #ffb04f;border-radius:7px;background:rgba(255,176,79,.08);padding:10px 12px;color:#efc995;font-size:12px}@media(max-width:980px){.flow-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.flow-step::after{display:none}}@media(max-width:760px){.flow-steps,.flow-example{grid-template-columns:1fr}.upload-flow{padding:14px}}
+    .api-called{display:inline-flex;gap:5px;align-items:center;flex:0 0 auto;color:#55dda7;border:1px solid #2b674f;background:#102b20;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700;margin-left:auto}.api-head .rpc{margin-left:0}.api-called[hidden]{display:none}
+    [hidden]{display:none!important}.field-wrap{overflow:auto;margin-top:14px}.fields{width:100%;border-collapse:collapse;font-size:12px}.fields th,.fields td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}.fields th{background:var(--panel2);color:var(--text)}.fields td{color:var(--muted)}.fields td:first-child{color:#cfe3f5;white-space:nowrap}
+    details.api > summary.api-head{cursor:pointer;list-style:none;user-select:none}details.api > summary.api-head::-webkit-details-marker{display:none}details.api > summary.api-head::before{content:'▸';color:var(--muted);width:12px;flex:0 0 12px}details.api[open] > summary.api-head::before{content:'▾'}details.api:not([open]) > summary.api-head{border-bottom:0}details.api > summary.api-head:focus-visible{outline:2px solid var(--brand);outline-offset:-3px}
+    .api-usage{flex:1 1 220px;min-width:0;color:var(--muted);font-size:12px}.api-reference{margin:0 0 10px;color:var(--muted);font-size:12px}.api-called.is-pending{color:#f4bc76;border-color:#755531;background:#302419}.api-called.is-unverified{color:#a6b4c5;border-color:#414d5b;background:#20262e}@media(max-width:760px){.api-usage{flex-basis:100%;padding-left:22px}.api-called{margin-left:22px}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>YogoShort 福利 / 推广奖金 API</h1>
+  <p class="sub">全部使用 POST；调用状态与后端接通状态分开标注；请求和响应字段统一使用 CamelCase（复用旧接口保留兼容字段）</p>
+  <div class="tabs"><button class="tab active" data-tab="welfare">福利 · 19</button><button class="tab" data-tab="affiliate">推广奖金 · 3</button><button class="tab" data-tab="creator" hidden>加入创作者 · 28</button></div>
+  <section id="welfare" class="panel active">
+    <div class="module-head"><h2>福利</h2><span>19 个接口 · 3 个已通 · 17 个待新增 · 1 个待联调 · 2 个复用</span></div>
+    <p class="sub">已通：接口返回成功。调用已接 · 404 待接通：前端已有调用入口，后端尚待实现，不代表已完成联调。tasks 使用真实返回，rewards 当前为 null。</p>
+    <div class="code" hidden><div class="code-head"><span>福利错误响应 · 保留后端 message</span><button class="copy">复制 JSON</button></div><pre>{
+  "c": 1,
+  "m": "任务尚未完成",
+  "d": null
+}</pre></div>
+    <p class="sub" hidden>所有福利成功响应：c=0，m 为提示文字（可为空），d 为下方业务数据；失败 c 非 0，m 必须说明原因。身份从登录会话取得，不接受前端传奖励金额。下方字段均属于 d，除非明确标注 request。</p>
+    <div id="welfare-list"></div>
+  </section>
+  <section id="creator" class="panel" hidden>
+    <div class="module-head"><h2>加入创作者</h2><span>28 个接口</span></div>
+    <article class="upload-flow">
+      <h3>单集 MP4 上传完整流程</h3>
+      <p class="upload-flow-lead">用户只点击一次“开始上传”，前端在内部依次完成下面 4 步。标题、介绍和第几集先创建作品记录；MP4 在第 3 步以二进制 Body 上传。</p>
+      <div class="flow-steps">
+        <section class="flow-step">
+          <span class="flow-number">1</span>
+          <h4>创建单集记录</h4>
+          <p><code>POST /api/creator/submissions</code></p>
+          <p>提交 <code>title</code>、<code>description</code>、<code>seq</code>，不提交文件。</p>
+          <div class="flow-result"><b>返回：</b><code>submissionId</code><br>表示这一集作品记录的唯一编号。</div>
+        </section>
+        <section class="flow-step">
+          <span class="flow-number">2</span>
+          <h4>初始化文件上传</h4>
+          <p><code>POST /api/creator/upload?sub=...&amp;action=init</code></p>
+          <p><code>sub</code> 使用第 1 步返回的 <code>submissionId</code>。</p>
+          <div class="flow-result"><b>返回：</b><code>uploadId</code><br>表示本次 MP4 上传任务。</div>
+        </section>
+        <section class="flow-step">
+          <span class="flow-number">3</span>
+          <h4>上传 MP4 二进制</h4>
+          <p><code>POST /api/creator/upload?...&amp;action=part</code></p>
+          <p>HTTP Body 直接放 MP4 分片，不是 JSON，也没有 <code>file</code> 字段。</p>
+          <div class="flow-result"><b>返回：</b><code>etag</code><br>每个分片对应一个 etag。</div>
+        </section>
+        <section class="flow-step">
+          <span class="flow-number">4</span>
+          <h4>完成并进入审核</h4>
+          <p><code>POST /api/creator/upload?...&amp;action=complete</code></p>
+          <p>提交所有 <code>partNumber</code> 和 <code>etag</code>，服务端合并文件。</p>
+          <div class="flow-result"><b>结果：</b>视频关联到本集记录，进入审核和转码流程。</div>
+        </section>
+      </div>
+      <div class="flow-example">
+        <div class="code"><div class="code-head"><span>第 1 步：创建单集记录</span><button class="copy">复制 JSON</button></div><pre>{
+  "title": "第 1 集",
+  "description": "本集的剧情简介、人物和内容说明",
+  "seq": 1
+}</pre></div>
+        <div class="code"><div class="code-head"><span>第 1 步：成功响应</span><button class="copy">复制 JSON</button></div><pre>{
+  "data": {
+    "submissionId": "550e8400-e29b-41d4-a716-446655440000"
+  },
+  "error": null
+}</pre></div>
+        <div class="code"><div class="code-head"><span>第 3 步：上传 41.4 MiB MP4</span></div><pre>POST /api/creator/upload
+  ?sub=550e8400-e29b-41d4-a716-446655440000
+  &amp;action=part
+  &amp;uploadId=upload-7e54ae42
+  &amp;partNumber=1
+
+Content-Type: application/octet-stream
+Body: &lt;41.4 MiB MP4 binary&gt;</pre></div>
+        <div class="code"><div class="code-head"><span>第 4 步：完成上传</span><button class="copy">复制 JSON</button></div><pre>{
+  "parts": [
+    {
+      "partNumber": 1,
+      "etag": "7b1036dd1c7c4f34"
+    }
+  ]
+}</pre></div>
+      </div>
+      <p class="flow-warning"><b>失败规则：</b>任一步失败立即停止。例如第 1 步 <code>submissions</code> 返回红叉时，前端拿不到 <code>submissionId</code>，因此不会执行 init、part 和 complete，MP4 也不会上传。单分片最大 50 MiB；41.4 MiB 文件只产生 1 个 part 请求，120 MiB 文件产生 3 个 part 请求。</p>
+    </article>
+    <p class="flow-warning"><b>调用定位：</b>申请、审核、MP4 上传位于 <code>src/pages/user/CreatorProgram.tsx</code>；商品、定制、提现、授权、设置和评论位于 <code>src/components/CreatorWorkspace.tsx</code>，通过 <code>src/api/creator.ts</code> 发出请求。下列每个接口均注明页面操作。开发环境可点“已通过”预览各页，预览账号不提交业务操作；真实请求成功前不提示保存成功。</p>
+    <div id="creator-list"></div>
+  </section>
+  <section id="affiliate" class="panel">
+    <div class="module-head"><h2>推广奖金</h2><span>3 个接口</span></div>
+    <h3>推广奖金与数据统计 · 1 个接口</h3>
+    <p class="sub">以下接口属于推广伙伴，在 /affiliate 页面直接展示数据，不要求创作者身份，不跳转加入创作者。预览模式只展示演示数据，不调用真实接口。</p>
+    <div id="affiliate-dashboard-list"></div>
+    <h3>推广资格与归因 · 2 个接口</h3>
+    <div id="affiliate-list"></div>
+  </section>
+  <details class="mapping" hidden><summary>参考字段 → CamelCase 映射 JSON</summary><div class="code"><div class="code-head"><span>字段映射</span><button class="copy">复制 JSON</button></div><pre id="mapping-json"></pre></div></details>
+</main>
+<script>
+const welfare=[
+  {
+    "m": "POST",
+    "p": "/api/user/tasks",
+    "rpc": "my_daily_tasks",
+    "caller": "getLuckyTasks",
+    "front": "进入福利页、领奖后刷新；导航读取签到待领数。",
+    "use": "查询每日和新手任务的真实进度。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "day": "2026-10-19",
+        "once": [
+          {
+            "key": "push_on",
+            "done": false,
+            "coins": 30,
+            "ready": false,
+            "xUsed": false
+          },
+          {
+            "key": "bind_x",
+            "done": false,
+            "coins": 20,
+            "ready": false,
+            "xUsed": false
+          },
+          {
+            "key": "follow_x",
+            "done": false,
+            "coins": 20,
+            "ready": false,
+            "xUsed": false
+          },
+          {
+            "key": "join_tg",
+            "done": false,
+            "coins": 20,
+            "ready": false,
+            "xUsed": false
+          }
+        ],
+        "tasks": [
+          {
+            "cap": 5,
+            "key": "checkin",
+            "done": false,
+            "earned": 0,
+            "milestone": 0,
+            "needsWatch": false
+          },
+          {
+            "cap": 3,
+            "key": "streak",
+            "done": false,
+            "earned": 0,
+            "streak": 0,
+            "minSec": 60
+          },
+          {
+            "cap": 10,
+            "key": "share",
+            "done": false,
+            "earned": 0
+          },
+          {
+            "cap": 5,
+            "key": "comment",
+            "done": false,
+            "earned": 0
+          },
+          {
+            "cap": 15,
+            "key": "rating",
+            "done": false,
+            "left": 5,
+            "earned": 0
+          },
+          {
+            "cap": 15,
+            "key": "watch",
+            "sec": 0,
+            "done": false,
+            "need": 3600,
+            "ready": false,
+            "earned": 0
+          }
+        ],
+        "total": 53,
+        "earned": 0,
+        "onceTotal": 90,
+        "restricted": false,
+        "onceEarned": 0
+      }
+    },
+    "fields": [
+      {
+        "key": "d.day",
+        "type": "string",
+        "meaning": "服务端业务日期 YYYY-MM-DD，不由浏览器决定跨日。"
+      },
+      {
+        "key": "d.once",
+        "type": "array",
+        "meaning": "一次性任务列表。"
+      },
+      {
+        "key": "d.once[].key",
+        "type": "string",
+        "meaning": "push_on 开启推送；bind_x 绑定 X；follow_x 关注 X；join_tg 加入 Telegram。任务标识值保留原样。"
+      },
+      {
+        "key": "d.once[].done",
+        "type": "boolean",
+        "meaning": "已领取；不等于 ready。"
+      },
+      {
+        "key": "d.once[].coins",
+        "type": "integer",
+        "meaning": "该任务可领金币数。"
+      },
+      {
+        "key": "d.once[].ready",
+        "type": "boolean",
+        "meaning": "服务端已核验完成，可申请领取。"
+      },
+      {
+        "key": "d.once[].xUsed",
+        "type": "boolean",
+        "meaning": "关联 X 身份已使用过，不可重复领。"
+      },
+      {
+        "key": "d.tasks",
+        "type": "array",
+        "meaning": "每日任务列表，各任务只带适用字段。"
+      },
+      {
+        "key": "d.tasks[].key",
+        "type": "string",
+        "meaning": "checkin 签到 / streak 连续追剧 / share 分享 / comment 评论 / rating 评分 / watch 今日观看；页面不显示 comment。"
+      },
+      {
+        "key": "d.tasks[].cap",
+        "type": "integer",
+        "meaning": "该任务今日奖励上限，单位金币。"
+      },
+      {
+        "key": "d.tasks[].done",
+        "type": "boolean",
+        "meaning": "任务奖励今日已领完。"
+      },
+      {
+        "key": "d.tasks[].earned",
+        "type": "integer",
+        "meaning": "该任务今日实际已得金币。"
+      },
+      {
+        "key": "d.tasks[checkin].milestone",
+        "type": "integer",
+        "meaning": "签到里程碑额外金币。"
+      },
+      {
+        "key": "d.tasks[checkin].needsWatch",
+        "type": "boolean",
+        "meaning": "签到领奖是否还需观看剧集。"
+      },
+      {
+        "key": "d.tasks[streak].streak",
+        "type": "integer",
+        "meaning": "连续追剧天数。"
+      },
+      {
+        "key": "d.tasks[streak].minSec",
+        "type": "integer",
+        "meaning": "本次追剧所需播放进度秒数。"
+      },
+      {
+        "key": "d.tasks[rating].left",
+        "type": "integer",
+        "meaning": "今日还可获评分奖励的作品数。"
+      },
+      {
+        "key": "d.tasks[watch].sec",
+        "type": "integer",
+        "meaning": "服务端已记录的今日观看秒数。"
+      },
+      {
+        "key": "d.tasks[watch].need",
+        "type": "integer",
+        "meaning": "今日观看门槛秒数。"
+      },
+      {
+        "key": "d.tasks[watch].ready",
+        "type": "boolean",
+        "meaning": "今日观看奖励可领取。"
+      },
+      {
+        "key": "d.total",
+        "type": "integer",
+        "meaning": "全部每日任务金币上限；当前 53 包含评论 5。"
+      },
+      {
+        "key": "d.earned",
+        "type": "integer",
+        "meaning": "全部每日任务已得金币。"
+      },
+      {
+        "key": "d.onceTotal",
+        "type": "integer",
+        "meaning": "全部新手任务金币上限，当前 90。"
+      },
+      {
+        "key": "d.onceEarned",
+        "type": "integer",
+        "meaning": "全部新手任务已得金币。"
+      },
+      {
+        "key": "d.restricted",
+        "type": "boolean",
+        "meaning": "当前账号暂不参与奖励。"
+      }
+    ],
+    "rules": [
+      "后端状态：已通。",
+      "已通，示例按 CamelCase 展示；当前实际返回的 x_used、needs_watch、min_sec、once_total、once_earned 已由前端递归兼容。",
+      "当前每日显示 0 / 48：53 减评论 5；若评论已有收益，也从 earned 中扣除。",
+      "福利导航红点仅由真实未签到任务产生，本期不含转盘和消息铃铛红点。"
+    ],
+    "backend": "已通",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → getLuckyTasks → src/api/lucky.ts",
+    "usage": "福利页 · 每日/新手任务、导航待领红点"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/rewards",
+    "rpc": "rewards_catalog",
+    "caller": "getLuckyRewards",
+    "front": "进入福利页、重试时读取。",
+    "use": "取得福利中心的奖励配置。当前接口已通但返回 null，不生成演示奖励卡片。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": null
+    },
+    "fields": [
+      {
+        "key": "d",
+        "type": "object | null",
+        "meaning": "当前实际为 null，表示配置尚未返回。返回对象时可按下方配置字段补齐。"
+      },
+      {
+        "key": "d.checkin.rewards",
+        "type": "integer[]",
+        "meaning": "签到周期每日奖励。"
+      },
+      {
+        "key": "d.checkin.milestones",
+        "type": "map<string, integer>",
+        "meaning": "连续天数 → 额外金币。"
+      },
+      {
+        "key": "d.checkin.multiplier",
+        "type": "number[]",
+        "meaning": "签到倍率档位。"
+      },
+      {
+        "key": "d.watchStreak.enabled",
+        "type": "boolean",
+        "meaning": "是否启用连续追剧。"
+      },
+      {
+        "key": "d.watchStreak.dailyBase",
+        "type": "integer",
+        "meaning": "追剧基础金币。"
+      },
+      {
+        "key": "d.watchStreak.rewards",
+        "type": "map<string, integer>",
+        "meaning": "连续天数 → 额外金币。"
+      },
+      {
+        "key": "d.referral.enabled",
+        "type": "boolean",
+        "meaning": "是否启用邀请奖励。"
+      },
+      {
+        "key": "d.referral.dailyShare",
+        "type": "integer",
+        "meaning": "每日分享金币。"
+      },
+      {
+        "key": "d.referral.signupInviter",
+        "type": "integer",
+        "meaning": "好友注册时邀请人所得金币。"
+      },
+      {
+        "key": "d.referral.purchasePct",
+        "type": "number",
+        "meaning": "邀请充值奖励百分数，15 表示 15%。"
+      },
+      {
+        "key": "d.rating.reward",
+        "type": "integer",
+        "meaning": "单剧评分金币。"
+      },
+      {
+        "key": "d.rating.dailyCap",
+        "type": "integer",
+        "meaning": "每日可奖励作品数。"
+      },
+      {
+        "key": "d.levels",
+        "type": "map<string, integer>",
+        "meaning": "等级 → 升级奖励金币。"
+      },
+      {
+        "key": "d.promo.enabled",
+        "type": "boolean",
+        "meaning": "活动配置开关，不能单凭它判断当前活动已开放。"
+      },
+      {
+        "key": "d.promo.nextOpenAt",
+        "type": "string | null",
+        "meaning": "下次开启时间或 null。"
+      }
+    ],
+    "rules": [
+      "后端状态：已通。",
+      "已通，用户确认的真实响应为 {\"c\":0,\"m\":\"\",\"d\":null}。",
+      "上述对象字段仅为有配置时使用的原站字段映射，不把历史数值当作我们的实际配置。评论和转盘不在本期契约内。"
+    ],
+    "backend": "已通",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → getLuckyRewards → src/api/lucky.ts",
+    "usage": "福利页 · 福利中心奖励卡片"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/checkin",
+    "rpc": "checkin_status",
+    "caller": "getLuckyCheckin",
+    "front": "福利页读取签到提示条；真实未签到时显示签到按钮。",
+    "use": "查询今日签到状态。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "today": false,
+        "streak": 0,
+        "rewards": [
+          5,
+          15,
+          30,
+          15,
+          20,
+          25,
+          60
+        ],
+        "multiplier": 1,
+        "restricted": false
+      }
+    },
+    "fields": [
+      {
+        "key": "d.today",
+        "type": "boolean",
+        "meaning": "今日是否已经签到。"
+      },
+      {
+        "key": "d.streak",
+        "type": "integer",
+        "meaning": "当前连续签到天数。"
+      },
+      {
+        "key": "d.rewards",
+        "type": "integer[]",
+        "meaning": "签到周期金币配置。"
+      },
+      {
+        "key": "d.multiplier",
+        "type": "number",
+        "meaning": "当前实际生效倍率，不是倍率数组。"
+      },
+      {
+        "key": "d.restricted",
+        "type": "boolean",
+        "meaning": "受限时不显示可领按钮。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "新拟定的我方 POST 适配地址，非原站 REST 地址；奖励由服务端按配置决定。",
+      "导航也可从 tasks 的真实 checkin 状态计算，不为红点单独新增接口。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → getLuckyCheckin → src/api/lucky.ts",
+    "usage": "福利页 · 顶部签到提示条"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/signin",
+    "rpc": "claim_checkin",
+    "caller": "claimLuckyTask",
+    "front": "福利页点击签到“领取”按钮时调用。",
+    "use": "领取今日签到奖励；仅签到改用此接口。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "coins": 5,
+        "already": false,
+        "notYet": false,
+        "restricted": false,
+        "milestoneCoins": 0
+      }
+    },
+    "fields": [
+      {
+        "key": "d.coins",
+        "type": "integer, optional",
+        "meaning": "本次实际发放金币；也兼容后端返回 awarded。"
+      },
+      {
+        "key": "d.already",
+        "type": "boolean, optional",
+        "meaning": "今日已经签到，幂等返回。"
+      },
+      {
+        "key": "d.notYet",
+        "type": "boolean, optional",
+        "meaning": "签到条件尚未满足。"
+      },
+      {
+        "key": "d.restricted",
+        "type": "boolean, optional",
+        "meaning": "账号暂不可领取签到奖励。"
+      },
+      {
+        "key": "d.milestoneCoins",
+        "type": "integer, optional",
+        "meaning": "本次签到里程碑额外金币。"
+      },
+      {
+        "key": "d.streak",
+        "type": "integer, optional",
+        "meaning": "签到后的连续签到天数。"
+      }
+    ],
+    "rules": [
+      "后端状态：待联调。",
+      "用户指定的签到领取接口；请求体为空，不提交用户 ID 或奖励数量。",
+      "仅签到领取使用本接口；观看、分享、推送和社交任务仍使用 user/coin。",
+      "成功后刷新 tasks 和签到状态。"
+    ],
+    "backend": "待联调",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → claimLuckyTask → src/api/lucky.ts",
+    "usage": "福利页 · 点击签到领取"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/watch/streak",
+    "rpc": "watch_streak_status",
+    "caller": "getLuckyWatchStreak",
+    "front": "福利页显示连续追剧和下个里程碑。",
+    "use": "查询连续追剧进度，不执行领奖。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "currentStreak": 0,
+        "bestStreak": 0,
+        "dailyBase": 3,
+        "nextAnchor": 2,
+        "nextAnchorReward": 10
+      }
+    },
+    "fields": [
+      {
+        "key": "d.currentStreak",
+        "type": "integer",
+        "meaning": "当前连续追剧天数。"
+      },
+      {
+        "key": "d.bestStreak",
+        "type": "integer",
+        "meaning": "历史最长连续追剧天数。"
+      },
+      {
+        "key": "d.dailyBase",
+        "type": "integer",
+        "meaning": "每日追剧基础金币。"
+      },
+      {
+        "key": "d.nextAnchor",
+        "type": "integer | null",
+        "meaning": "下一里程碑天数，null 表示没有下一档。"
+      },
+      {
+        "key": "d.nextAnchorReward",
+        "type": "integer",
+        "meaning": "下一里程碑金币。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → getLuckyWatchStreak → src/api/lucky.ts",
+    "usage": "福利页 · 连续追剧天数与里程碑"
+  },
+  {
+    "m": "POST",
+    "p": "/api/movie/history/report",
+    "rpc": "watch_history.upsert（复用我方已有接口）",
+    "caller": "saveMovieEpProgress",
+    "front": "PC/H5 播放器原有 5 秒记录；追剧判定前保存、每 60 秒及隐藏/离开尽力保存。",
+    "use": "复用现有单集进度记录，供服务端观看任务判定。",
+    "req": {
+      "type": "ep_prog",
+      "movie_id": 101,
+      "ep_id": 1001,
+      "ep_no": 1,
+      "duration": 60,
+      "completed": false
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": null
+    },
+    "fields": [
+      {
+        "key": "request.type",
+        "type": "string",
+        "meaning": "固定 ep_prog。"
+      },
+      {
+        "key": "request.movie_id",
+        "type": "integer",
+        "meaning": "当前实际播放剧 ID。"
+      },
+      {
+        "key": "request.ep_id",
+        "type": "integer",
+        "meaning": "当前实际播放集 ID。"
+      },
+      {
+        "key": "request.ep_no",
+        "type": "integer",
+        "meaning": "当前集序号。"
+      },
+      {
+        "key": "request.duration",
+        "type": "integer",
+        "meaning": "当前播放位置秒数，并非前端声称的有效观看总时长。"
+      },
+      {
+        "key": "request.completed",
+        "type": "boolean",
+        "meaning": "是否完成该集，当前周期记录传 false。"
+      },
+      {
+        "key": "d",
+        "type": "null | existing data",
+        "meaning": "现有接口成功以 c=0 判定，不依赖响应业务字段。"
+      }
+    ],
+    "rules": [
+      "后端状态：复用现有接口。",
+      "这是已有播放器接口，保留既有 snake_case 请求兼容性，不另造重复记录接口。",
+      "后端应按用户、集、记录时间校验并计算有效观看；页面卸载提交不保证送达。"
+    ],
+    "backend": "复用现有接口",
+    "called": true,
+    "callSite": "src/hooks/useReportEpProgressAt5s.ts → saveMovieEpProgress → src/lib/reportMovieEpProgress.ts",
+    "usage": "PC/H5 播放器 · 保存当前集观看进度"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/coin",
+    "rpc": "touch_watch_streak / claim_daily_watch / claim_daily_share / claim_bonus_task",
+    "caller": "claimLuckyTask",
+    "front": "连续追剧、分享、观看、推送和社交任务达到条件后调用 getLuckyCoins；签到除外。",
+    "use": "按 type 领取非签到任务金币，由服务端验证任务条件并保证幂等。",
+    "req": {
+      "type": "watchMore"
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "coins": 3,
+        "already": false,
+        "notYet": false,
+        "restricted": false,
+        "xUsed": false,
+        "milestoneCoins": 0,
+        "pending": false
+      }
+    },
+    "fields": [
+      {
+        "key": "request.type",
+        "type": "string",
+        "meaning": "watchMore / shareOnce / sendComment / watchRate / watchMovie / subNotice / bindX / subTel / checkTel；签到不再传 signin。"
+      },
+      {
+        "key": "d.coins",
+        "type": "integer, optional",
+        "meaning": "本次实际发放金币；也兼容后端返回 awarded。"
+      },
+      {
+        "key": "d.already",
+        "type": "boolean, optional",
+        "meaning": "已领取，幂等返回。"
+      },
+      {
+        "key": "d.notYet",
+        "type": "boolean, optional",
+        "meaning": "任务条件尚未满足。"
+      },
+      {
+        "key": "d.restricted",
+        "type": "boolean, optional",
+        "meaning": "账号暂不可领奖。"
+      },
+      {
+        "key": "d.xUsed",
+        "type": "boolean, optional",
+        "meaning": "关联 X 身份已经领取过奖励。"
+      },
+      {
+        "key": "d.milestoneCoins",
+        "type": "integer, optional",
+        "meaning": "签到或追剧里程碑额外金币。"
+      },
+      {
+        "key": "d.pending",
+        "type": "boolean, optional",
+        "meaning": "观看进度仍在结算，稍后可重试。"
+      }
+    ],
+    "rules": [
+      "后端状态：已通。",
+      "这是除签到外的统一领奖接口，不再使用 user/getCoin、user/checkin/claim、user/watch/streak/claim、user/watch/claim、user/share/claim 或 user/tasks/claim。",
+      "前端只提交任务 type，不提交用户 ID、奖励数量或观看秒数；服务端负责鉴权、验收、风控和幂等。"
+    ],
+    "backend": "已通",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → claimLuckyTask → src/api/lucky.ts",
+    "usage": "非签到任务 · 点击领取"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/rating/quota",
+    "rpc": "my_rating_quota",
+    "caller": "getLuckyRatingQuota",
+    "front": "打开评分弹窗，与候选作品同时读取。",
+    "use": "查询今日评分可奖励额度。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "left": 5,
+        "reward": 3
+      }
+    },
+    "fields": [
+      {
+        "key": "d.left",
+        "type": "integer",
+        "meaning": "剩余可奖励作品数量。"
+      },
+      {
+        "key": "d.reward",
+        "type": "integer",
+        "meaning": "每部可奖励金币。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "额度来自服务端，不硬编码每天 5 部或 3 币。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/components/LuckyRatingSheet.tsx → getLuckyRatingQuota → src/api/lucky.ts",
+    "usage": "评分弹窗 · 今日剩余额度"
+  },
+  {
+    "m": "POST",
+    "p": "/api/movie/history",
+    "rpc": "观看历史复用",
+    "caller": "getLuckyRatingCandidates",
+    "front": "打开福利页评分弹窗时调用，页面最多展示前 5 条。",
+    "use": "查询观看历史中尚未评分的作品。",
+    "req": {
+      "score": 0
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "data": [
+          {
+            "movieId": 101,
+            "title": "示例作品",
+            "currentEpisode": 2,
+            "image": "covers/101.webp",
+            "score": 0
+          }
+        ]
+      }
+    },
+    "fields": [
+      {
+        "key": "request.score",
+        "type": "integer",
+        "meaning": "固定传 0，只获取未评分作品。"
+      },
+      {
+        "key": "d.data",
+        "type": "array",
+        "meaning": "未评分历史列表；无候选时返回空数组。"
+      },
+      {
+        "key": "d.data[].movieId",
+        "type": "string | integer",
+        "meaning": "真实作品 ID，用于提交评分。"
+      },
+      {
+        "key": "d.data[].title",
+        "type": "string",
+        "meaning": "作品标题。"
+      },
+      {
+        "key": "d.data[].currentEpisode",
+        "type": "integer",
+        "meaning": "当前已观看到的集数。"
+      },
+      {
+        "key": "d.data[].image",
+        "type": "string, optional",
+        "meaning": "静态资源相对路径或 HTTPS 封面。"
+      },
+      {
+        "key": "d.data[].score",
+        "type": "integer",
+        "meaning": "筛选结果中应为 0。"
+      }
+    ],
+    "rules": [
+      "后端状态：复用现有接口。",
+      "复用现有观看历史接口，不再调用 user/rating/candidates；前端仅在本地截取前 5 条展示。"
+    ],
+    "backend": "复用现有接口",
+    "called": true,
+    "callSite": "src/components/LuckyRatingSheet.tsx → getLuckyRatingCandidates → src/api/lucky.ts",
+    "usage": "评分弹窗 · score=0 查询未评分作品"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/rate",
+    "rpc": "upsert_rating",
+    "caller": "submitLuckyRating",
+    "front": "观看历史中每部剧点击 1–5 星，提交该剧实际 ID。",
+    "use": "保存当前用户对指定剧的评分。",
+    "req": {
+      "dramaId": "101",
+      "score": 5
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": null
+    },
+    "fields": [
+      {
+        "key": "request.dramaId",
+        "type": "string",
+        "meaning": "当前剧的实际 ID；对应对方 p_drama。"
+      },
+      {
+        "key": "request.score",
+        "type": "integer",
+        "meaning": "1–5 星；对应对方 p_score。"
+      },
+      {
+        "key": "d",
+        "type": "any | null",
+        "meaning": "评分保存成功以 c=0 为准；奖励继续通过 user/coin 的 watchRate 领取。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "对方原始调用为 upsert_rating({p_drama, p_score})；我方 REST 请求按现有 CamelCase 约定使用 dramaId、score。",
+      "每部剧独立评分；前端只提交剧 ID 和星数，不提交奖励金额。",
+      "成功后当前页面锁定该剧评分，并刷新福利任务。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/History.tsx、src/pages/user/ForDemo/useForDemoEngagement.ts、src/components/LuckyRatingSheet.tsx → submitLuckyRating → src/api/lucky.ts",
+    "usage": "For You / 观看历史 · 每部剧点击星星评分"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/like",
+    "rpc": "对方点赞流程（按用户与作品切换）",
+    "caller": "toggleDramaLike",
+    "front": "For You 每部剧右侧点击“点赞”图标。",
+    "use": "切换当前用户对当前剧的点赞状态。",
+    "req": {
+      "dramaId": 101
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "liked": true,
+        "count": 1001
+      }
+    },
+    "fields": [
+      {
+        "key": "request.dramaId",
+        "type": "integer",
+        "meaning": "当前剧的实际 ID；点赞按剧维度，与收藏一致。"
+      },
+      {
+        "key": "d.liked",
+        "type": "boolean, optional",
+        "meaning": "切换后的点赞状态；缺省时前端保留乐观状态。"
+      },
+      {
+        "key": "d.count",
+        "type": "integer, optional",
+        "meaning": "切换后的点赞总数；缺省时前端按本次操作增减。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，示例不是线上返回。",
+      "只提交当前剧 ID，用户身份由登录会话取得。",
+      "接口成功以 c=0 为准；失败时前端回滚点赞状态。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/ForDemo/useForDemoEngagement.ts → toggleDramaLike → src/api/lucky.ts",
+    "usage": "For You · 每部剧右侧点赞"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/push/config",
+    "rpc": "原站浏览器推送配置（我方新增配置适配）",
+    "caller": "getLuckyPushConfig",
+    "front": "打开通知设置时读取。",
+    "use": "获取我方 Web Push VAPID 公钥。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "publicKey": "YOUR_BASE64URL_VAPID_PUBLIC_KEY"
+      }
+    },
+    "fields": [
+      {
+        "key": "d.publicKey",
+        "type": "string",
+        "meaning": "我方 VAPID 公钥，base64url 编码；绝不能返回私钥或使用对方公钥。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "此地址是我方新增配置适配，并非原站 RPC；没有真实公钥不允许订阅。",
+      "浏览器须支持 Push/Notification，且已有本站活动 Service Worker；iOS 按系统要求添加到主屏幕。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/components/LuckyAccountDialogs.tsx → getLuckyPushConfig → src/api/lucky.ts",
+    "usage": "通知设置 · 读取推送公钥"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/push/subscribe",
+    "rpc": "save_push_subscription",
+    "caller": "saveLuckyPushSubscription",
+    "front": "用户允许通知 → 建立真实 PushSubscription → 保存。",
+    "use": "保存当前账号当前设备的推送订阅。",
+    "req": {
+      "endpoint": "https://push-provider.example/subscription",
+      "p256dh": "BROWSER_SUBSCRIPTION_PUBLIC_KEY",
+      "authKey": "BROWSER_SUBSCRIPTION_AUTH_SECRET",
+      "userAgent": "Browser User Agent"
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": null
+    },
+    "fields": [
+      {
+        "key": "request.endpoint",
+        "type": "string",
+        "meaning": "浏览器返回的推送端点，不是任意业务 URL。"
+      },
+      {
+        "key": "request.p256dh",
+        "type": "string",
+        "meaning": "订阅 keys.p256dh。"
+      },
+      {
+        "key": "request.authKey",
+        "type": "string",
+        "meaning": "订阅 keys.auth，敏感数据只供后端推送，不公开展示或打日志。"
+      },
+      {
+        "key": "request.userAgent",
+        "type": "string",
+        "meaning": "本设备 navigator.userAgent。"
+      },
+      {
+        "key": "d",
+        "type": "null",
+        "meaning": "保存成功即可，随后重新读取 tasks 判断 ready。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "后端鉴权并按用户/endpoint 幂等存储；校验推送提供商端点，防止任意 URL 服务端请求。",
+      "保存失败则回滚本次新建订阅；通知权限 granted 不是已领奖。",
+      "推送消息可带 title/body/tag/url；客户端限制通知点击目标为本站。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/components/LuckyAccountDialogs.tsx → saveLuckyPushSubscription → src/api/lucky.ts",
+    "usage": "通知设置 · 开启并保存本设备订阅"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/push/unsubscribe",
+    "rpc": "remove_push_subscription",
+    "caller": "removeLuckyPushSubscription",
+    "front": "通知设置点击关闭；后端解绑后调用浏览器 unsubscribe。",
+    "use": "解绑本设备推送端点。",
+    "req": {
+      "endpoint": "https://push-provider.example/subscription"
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": null
+    },
+    "fields": [
+      {
+        "key": "request.endpoint",
+        "type": "string",
+        "meaning": "当前设备真实 endpoint；只允许解绑本人订阅。"
+      },
+      {
+        "key": "d",
+        "type": "null",
+        "meaning": "成功，接口应幂等。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/components/LuckyAccountDialogs.tsx → removeLuckyPushSubscription → src/api/lucky.ts",
+    "usage": "通知设置 · 关闭本设备通知"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/social/config",
+    "rpc": "social 配置 + 身份读取（我方 REST 适配）",
+    "caller": "getLuckySocialConfig",
+    "front": "点击关注 X / 加入 Telegram 前读取我方配置。",
+    "use": "获取官方社交入口和当前账号 Telegram 绑定状态。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "xUrl": "https://x.com/YOUR_ACCOUNT",
+        "tgChannelJoinUrl": "https://t.me/YOUR_CHANNEL",
+        "tgBotUrl": "https://t.me/YOUR_BOT",
+        "telegramLinked": false
+      }
+    },
+    "fields": [
+      {
+        "key": "d.xUrl",
+        "type": "string",
+        "meaning": "我方官方 X HTTPS 地址。"
+      },
+      {
+        "key": "d.tgChannelJoinUrl",
+        "type": "string",
+        "meaning": "我方 Telegram 频道 HTTPS 地址。"
+      },
+      {
+        "key": "d.tgBotUrl",
+        "type": "string",
+        "meaning": "我方机器人 HTTPS 地址，前端追加 start=bind_TOKEN。"
+      },
+      {
+        "key": "d.telegramLinked",
+        "type": "boolean",
+        "meaning": "当前登录身份是否已绑定 Telegram。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "我方新增配置适配，不抄原站账号或机器人；示例占位符不能直接上线。",
+      "已绑定 Telegram 的本会话首次尝试先开频道，否则由后端签发绑定 token。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → getLuckySocialConfig → src/api/lucky.ts",
+    "usage": "新手任务 · 读取我方 X/Telegram 入口"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/social/x/bind",
+    "rpc": "auth.linkIdentity(provider=x)",
+    "caller": "getLuckyTaskAction",
+    "front": "点击“绑定 X 账号”，预先打开空窗口，获取授权 URL 后导航。",
+    "use": "启动当前用户的 X 账号关联。",
+    "req": {
+      "redirectTo": "https://www.yogoshort.com"
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "url": "https://x.com/i/oauth2/authorize?state=SERVER_GENERATED_STATE"
+      }
+    },
+    "fields": [
+      {
+        "key": "request.redirectTo",
+        "type": "string",
+        "meaning": "当前本站 origin，只允许后端白名单，不能任意重定向。"
+      },
+      {
+        "key": "d.url",
+        "type": "string",
+        "meaning": "后端生成的 HTTPS OAuth 授权 URL；包含安全 state/PKCE，不能由前端伪造。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "原站使用 auth.linkIdentity SDK，这个 REST 入口是我们为自有认证设计的适配，不是声称原站已有此接口。",
+      "后端还需完成 OAuth callback：校验 state/PKCE、关联当前用户和 provider 唯一身份，并允许 tasks 读到 ready。callback 是 provider 配置，不作为页面调用接口打对号。",
+      "返回福利页重新读 tasks，不凭弹窗关闭就发金币。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → getLuckyTaskAction → src/api/lucky.ts",
+    "usage": "新手任务 · 绑定 X 账号"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/social/x/check",
+    "rpc": "request_x_follow_check",
+    "caller": "checkLuckyX",
+    "front": "从关注 X 返回后核验；领取得到 notYet 时也会触发核验并重试一次。",
+    "use": "核验是否关注我方官方 X。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "ready": false,
+        "queued": true
+      }
+    },
+    "fields": [
+      {
+        "key": "d.ready",
+        "type": "boolean",
+        "meaning": "服务端已验证，可领取。"
+      },
+      {
+        "key": "d.queued",
+        "type": "boolean, optional",
+        "meaning": "核验排队；页面等待 3 秒再读任务或重试领取。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "ready 非排队领取重试等待 300ms，queued 等待 3000ms；不得无限循环或前端伪造关注。",
+      "后端需要可用的 X 身份关联、API 权限和核验机制。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → checkLuckyX → src/api/lucky.ts",
+    "usage": "新手任务 · 从 X 返回后核验关注"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/social/telegram/bind",
+    "rpc": "tg_bind_start",
+    "caller": "getLuckyTaskAction",
+    "front": "加入 Telegram 任务需要绑定时调用。",
+    "use": "签发短期、一次性 Telegram 身份绑定 token。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": "ONE_TIME_SERVER_ISSUED_TOKEN"
+    },
+    "fields": [
+      {
+        "key": "d",
+        "type": "string",
+        "meaning": "服务端签发的短期 token，仅拼接自家 bot ?start=bind_TOKEN，不做本地生成。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "后端需机器人 webhook、token 校验/一次性消耗、Telegram 身份关联及频道成员核验；这些不在对方前端资源内。",
+      "返回页面等待 2.5 秒再刷新 tasks；ready 后才允许 claim_bonus_task 领奖。",
+      "未部署机器人与频道核验前，不得对外宣称任务已接通。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/pages/user/Lucky.tsx → getLuckyTaskAction → src/api/lucky.ts",
+    "usage": "新手任务 · Telegram 机器人绑定"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/level",
+    "rpc": "my_level_status",
+    "caller": "getLuckyLevel",
+    "front": "福利页“等级进度”按钮 / 等级奖励卡片打开弹窗时。",
+    "use": "查询当前账号经验和等级进度。",
+    "req": {},
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "xp": 0,
+        "level": 1,
+        "currNeed": 0,
+        "nextNeed": 100
+      }
+    },
+    "fields": [
+      {
+        "key": "d.xp",
+        "type": "integer",
+        "meaning": "当前累计经验。"
+      },
+      {
+        "key": "d.level",
+        "type": "integer",
+        "meaning": "当前等级。"
+      },
+      {
+        "key": "d.currNeed",
+        "type": "integer",
+        "meaning": "本等级起点累计经验。"
+      },
+      {
+        "key": "d.nextNeed",
+        "type": "integer | null",
+        "meaning": "下一等级累计经验，null 表示最高等级。"
+      }
+    ],
+    "rules": [
+      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
+      "原站返回数组首项；我方约定返回对象，前端同时兼容原始数组。",
+      "升级金币由服务端自动入账，页面不另造未核实的等级领奖操作。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/components/LuckyAccountDialogs.tsx → getLuckyLevel → src/api/lucky.ts",
+    "usage": "福利页 · 等级进度弹窗"
+  }
+];
+const creator=[
+{"m":"POST","p":"/api/user/author","rpc":"apply_creator","front":"申请弹窗点击“提交申请”时调用","use":"提交创作者入驻申请，进入审核中状态。","req":{"displayName":"创作者名称","contact":"email / Telegram","intro":"不少于 50 字的创作介绍","sampleUrl":"https://example.com/work","tools":["Sora","Kling"],"monthlyOutput":"每月 4 部","payoutMethod":"usdt"},"res":{"data":null,"error":null},"rules":["用户确认的正式申请路径为 POST /api/user/author；仅修正路径，字段和响应以联调返回为准","displayName 必填，1–30 字符","contact 必填，1–100 字符","intro 必填，50–1000 字符","sampleUrl 必填，合法 http/https URL，最多 300 字符","tools 可选：擅长的 AI 工具名称数组，例如 Sora、Kling、ComfyUI、Runway","payoutMethod：usdt / paypal / alipay / bank_wire"],"called":true,"callSite":"src/pages/user/CreatorProgram.tsx"},
+{"m":"POST","p":"/api/creator/dashboard","rpc":"creator_dashboard_v2","front":"进入 /creator 时调用；提交申请成功后再次调用确认 pending","use":"获取审核状态及创作者工作台实际展示的数据；所有操作成功后刷新此接口。","req":{},"res":{"data":{"creator":{"status":"approved","displayName":"Creator","contact":"creator@example.com","intro":"创作介绍","tools":["Sora"],"monthlyOutput":"每月 4 部","handle":"creator_name","publicBio":"公开简介","acceptsExclusive":true,"submittedAt":"2026-10-19T12:00:00Z","reviewNote":null},"totalEarnedCents":0,"availableCents":0,"pendingCents":0,"reservedCents":0,"paidOutCents":0,"followers":0,"earningsBySource":{"streaming":0,"download":0,"commission":0,"exclusive":0,"affiliate":0},"contentStats":[{"dramaId":"uuid","title":"作品标题","status":"published","episodeCount":1,"totalPlays":0,"totalLikes":0,"totalComments":0,"totalFavorites":0}],"products":[{"id":"uuid","title":"商品","status":"draft","priceCents":500,"filePath":"pending-upload"}],"activeCommissions":[{"id":"uuid","title":"已接定制单","status":"in_progress","budgetCents":50000}],"myBids":[{"id":"bid-uuid","commissionId":"uuid","title":"定制需求","priceCents":50000,"days":7,"status":"pending"}],"payouts":[{"id":"uuid","usdMicros":50000000,"status":"processing","createdAt":"2026-10-19T12:00:00Z"}],"licenses":[{"id":"uuid","dramaTitle":"作品","status":"offered","offerCents":50000,"terms":"授权范围与期限"}]},"error":null},"rules":["只返回当前页面实际读取的字段","status：pending / rejected / suspended / approved","reviewNote 仅审核未通过时有值"],"called":true,"callSite":"src/pages/user/CreatorProgram.tsx"},
+{"m":"POST","p":"/api/creator/submissions","rpc":"create_submission","front":"创作者中心“上传发布”提交 MP4 时第 1 步调用","use":"创建一个待上传的单集作品记录，并保存本集介绍。","req":{"title":"第 1 集","description":"本集的剧情简介、人物和内容说明","seq":1},"res":{"data":{"submissionId":"uuid"},"error":null},"rules":["title 必填，最多 60 字符","description 必填，最多 1000 字符","seq 必填，整数且 ≥ 1","文件不放在此 JSON 中，由返回的 submissionId 进入后续分片上传流程"],"called":true,"callSite":"src/pages/user/CreatorProgram.tsx"},
+{"m":"POST","p":"/api/creator/upload?sub={submissionId}&action=init","rpc":"/creator/upload?action=init","front":"上传 MP4 第 2 步，由 submissions 返回 submissionId 后自动调用","use":"初始化一个视频分片上传任务，取得 uploadId。","req":{"query":{"sub":"uuid","action":"init"},"body":null},"res":{"uploadId":"uuid"},"rules":["Authorization 必填：Bearer accessToken","sub 必填，值为 create_submission 返回的 submissionId","该媒体接口直接返回 JSON，不使用 data / error 包装"],"called":true,"callSite":"src/pages/user/CreatorProgram.tsx"},
+{"m":"POST","p":"/api/creator/upload?sub={submissionId}&action=part&uploadId={uploadId}&partNumber={partNumber}","rpc":"/creator/upload?action=part","front":"上传 MP4 第 3 步，按 50 MiB 自动逐片调用","use":"上传 MP4 文件的一个二进制分片。文件内容就在 HTTP Body，不使用 JSON 或 multipart/form-data。","req":{"query":{"sub":"uuid","action":"part","uploadId":"uuid","partNumber":1},"body":"<binary MP4 chunk: Blob / ArrayBuffer>"},"res":{"etag":"string"},"rules":["Authorization 必填：Bearer accessToken","Body 必须直接放本分片的二进制文件内容","单分片最大 50 MiB；最后一个分片可以小于 50 MiB","partNumber 从 1 开始连续递增","该媒体接口直接返回 JSON，不使用 data / error 包装"],"called":true,"callSite":"src/pages/user/CreatorProgram.tsx"},
+{"m":"POST","p":"/api/creator/upload?sub={submissionId}&action=complete&uploadId={uploadId}","rpc":"/creator/upload?action=complete","front":"全部分片成功后自动调用，页面进入上传完成状态","use":"提交全部分片的 partNumber 与 etag，完成 MP4 文件合并。","req":{"query":{"sub":"uuid","action":"complete","uploadId":"uuid"},"body":{"parts":[{"partNumber":1,"etag":"string"}]}},"res":{"httpStatus":200,"body":null},"rules":["Authorization 必填：Bearer accessToken","Content-Type：application/json","parts 必填，并按 partNumber 顺序提交","前端只依赖 HTTP 2xx 判断完成，不要求业务响应体"],"called":true,"callSite":"src/pages/user/CreatorProgram.tsx"},
+{"m":"POST","p":"/api/creator/earnings","rpc":"creator_earnings_report","caller":"earnings","front":"收益中心：进入时默认查近 30 天；修改日期、粒度、时区或作品后点击查询。","use":"查询创作者收益报表。","req":{"from":"2026-10-01","to":"2026-10-19","gran":"day","tz":"Asia/Shanghai","dramaId":null},"res":{"data":{"totalCents":0,"otherCents":0,"gran":"day","series":[{"bucket":"2026-10-19","cents":0}],"byDrama":[{"dramaId":"uuid","titleI18n":{"zh-CN":"作品标题"},"cents":0}]},"error":null},"rules":["from、to、gran、tz 必填；from ≤ to","gran：day / week / month；dramaId 从 dashboard.contentStats 选取，可为空","totalCents：区间总收入；otherCents：未关联作品的收入；所有 cents 单位为美元分"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.earnings"},
+{"m":"POST","p":"/api/creator/products","rpc":"create_product","caller":"createProduct","front":"下载商品 → 新增商品 → 创建草稿；上传交付先取得 productId，再上传文件。","use":"创建数字商品草稿，支持文件上传和 HTTPS 外部交付。","req":{"title":"完整版","description":"商品说明","priceCents":500,"watermark":true,"filePath":"pending-upload","deliveryType":"upload"},"res":{"data":{"productId":"uuid"},"error":null},"rules":["title 必填，最多 120 字符；description 可空，最多 1000 字符","priceCents：正整数美元分","deliveryType：upload / external；upload 时 filePath=pending-upload，随后调用 POST /api/product/upload","external 时 filePath 为 HTTPS 交付链接，watermark=false","必须返回 productId；前端也兼容 data 直接为 UUID 字符串，不能返回 data:null"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.createProduct"},
+{"m":"POST","p":"/api/creator/products/{productId}/publish","rpc":"publish_product","caller":"publishProduct","front":"下载商品列表：草稿文件已上传后点击上架。productId 来自 dashboard.products[].id。","use":"上架商品。","req":{},"res":{"data":null,"error":null},"rules":["productId 为路径参数；草稿文件未完成上传时禁用上架；成功后刷新 dashboard"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.publishProduct"},
+{"m":"POST","p":"/api/creator/products/{productId}/unpublish","rpc":"unpublish_product","caller":"unpublishProduct","front":"下载商品列表：已上架商品点击下架。","use":"下架商品。","req":{},"res":{"data":null,"error":null},"rules":["productId 为路径参数，来源 dashboard.products[].id；成功后刷新 dashboard"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.unpublishProduct"},
+{"m":"POST","p":"/api/creator/commissions","rpc":"list_commissions_public","caller":"commissions","front":"定制广场 → 公开需求：进入、切换排序和翻页时调用。","use":"查询公开定制需求，取得后续报价所需 commissionId。","req":{"sort":"newest","limit":20,"offset":0},"res":{"data":{"items":[{"id":"uuid","title":"需求标题","status":"open","budgetCents":50000}],"total":1},"error":null},"rules":["sort：newest / budget；limit：1–100；offset：非负整数","返回 items[].id 用于报价；无数据返回 items:[]，不能填示例订单"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.commissions"},
+{"m":"POST","p":"/api/creator/commissions/{commissionId}/milestones","rpc":"my_assigned_milestones","caller":"milestones","front":"定制广场 → 我的订单 → 查看进度。commissionId 来自 dashboard.activeCommissions。","use":"查询当前订单的里程碑，取得交付所需 milestoneId。","req":{},"res":{"data":{"items":[{"id":"uuid","title":"第一阶段","status":"funded","amountCents":50000}]},"error":null},"rules":["commissionId 为路径参数","status=funded / revision 时显示文件交付表单；后端仍须验证归属与状态"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.milestones"},
+{"m":"POST","p":"/api/creator/commissions/{commissionId}/bids","rpc":"bid_commission","caller":"bid","front":"定制广场 → 公开需求 → 报价 → 提交报价。","use":"提交定制需求的报价和交付计划。","req":{"priceCents":50000,"days":7,"message":"交付计划","sampleUrl":null},"res":{"data":null,"error":null},"rules":["commissionId 来自公开需求的 id；priceCents 为正整数；days 为正整数","message、sampleUrl 可空；sampleUrl 非空时必须为合法 URL","成功后刷新公开需求和 dashboard.myBids"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.bid"},
+{"m":"POST","p":"/api/creator/milestones/{milestoneId}/deliver","rpc":"deliver_milestone","caller":"deliver","front":"定制广场 → 我的订单 → funded/revision 里程碑 → 选择文件 → 提交交付。先上传文件，再提交本接口。","use":"提交里程碑交付。","req":{"filePath":"commission/uuid/video.mp4","note":"交付说明"},"res":{"data":null,"error":null},"rules":["milestoneId 从 milestones.items[].id 获取，不由用户手填","filePath 必填，从 POST /api/commission/upload 返回值获取；note 可空","成功后刷新里程碑和 dashboard"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.deliver"},
+{"m":"POST","p":"/api/creator/payout-methods","rpc":"add_payout_method","caller":"addPayoutMethod","front":"收益中心 → 新增收款方式 → 添加并等待审核。","use":"新增收款账户，等待审核后才可提现。","req":{"methodType":"crypto_wallet","payoutAssetId":"USDT_TRC20","adapterKey":"manual_crypto","details":"TXXXXXXXXXXXXXXXXXXXXXXXX","displayMask":"TXXX****XXXX"},"res":{"data":null,"error":null},"rules":["全部字段必填；details 为收款账户信息字符串，和参考前端提交类型相同","methodType：crypto_wallet / bank_account / alipay","payoutAssetId：USDT_TRC20 / USDT_ERC20 / USD_FIAT / CNY_FIAT","adapterKey：manual_crypto / manual_bank / manual_alipay；后端验证组合","成功后重新读取收款方式列表；status=pending_verification 时不可提现"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.addPayoutMethod"},
+{"m":"POST","p":"/api/creator/payout-quotes","rpc":"create_payout_quote","caller":"payoutQuote","front":"收益中心 → 选择 active 收款方式 → 输入金额 → 获取提现报价。","use":"获取提现报价和手续费供用户确认。","req":{"payoutMethodId":"uuid","usdMicros":50000000},"res":{"data":{"quoteId":"uuid","usdMicros":50000000,"feeMicros":1000000,"netUsdMicros":49000000,"expiresAt":"2026-10-19T12:10:00Z"},"error":null},"rules":["payoutMethodId 来源 POST payout-methods 中 status=active 的 id","usdMicros 为正整数，1000000=$1；前端沿用参考页面最低 $50 和余额校验，后端须再次校验","前端也兼容 data 直接返回 quoteId 字符串；不编造手续费"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.payoutQuote"},
+{"m":"POST","p":"/api/creator/payouts","rpc":"request_payout","caller":"payout","front":"收益中心 → 查看报价 → 确认提交提现。","use":"使用报价提交提现申请。","req":{"quoteId":"uuid"},"res":{"data":null,"error":null},"rules":["quoteId 从 payout-quotes 获取；报价必须未过期；后端保证幂等、防重复扣款","成功后刷新 dashboard 的余额和 payouts"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.payout"},
+{"m":"POST","p":"/api/creator/payout-methods/{methodId}/disable","rpc":"disable_payout_method","caller":"disablePayoutMethod","front":"收益中心 → 收款账户列表 → 停用。","use":"停用收款方式。","req":{},"res":{"data":null,"error":null},"rules":["methodId 来自 POST payout-methods 列表的 id；后端校验归属；成功后刷新列表并清除旧报价"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.disablePayoutMethod"},
+{"m":"POST","p":"/api/creator/licenses/{licenseId}/respond","rpc":"respond_license","caller":"respondLicense","front":"独家授权 → offered 邀请 → 接受授权 / 拒绝授权。","use":"回应平台的授权邀请。","req":{"accept":true},"res":{"data":null,"error":null},"rules":["licenseId 来自 dashboard.licenses[].id；accept 必填 boolean","仅 offered 状态显示按钮；成功后刷新 dashboard.licenses"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.respondLicense"},
+{"m":"POST","p":"/api/creator/handle","rpc":"set_creator_handle","caller":"handle","front":"设置 → 公开主页名称 → 保存主页名称。","use":"修改公开主页名称。","req":{"handle":"creator_name"},"res":{"data":null,"error":null},"rules":["handle 必填；前端 trim 并转小写；仅字母、数字、下划线","后端校验长度、保留字、唯一性和冷却期；错误直接展示；成功后刷新 dashboard.creator"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.handle"},
+{"m":"POST","p":"/api/creator/profile","rpc":"update_creator_profile","caller":"profile","front":"设置 → 创作者资料 → 保存资料时第一步。","use":"更新创作资料和独家合作偏好。","req":{"displayName":"Creator","contact":"creator@example.com","intro":"至少 50 字的创作介绍","tools":["Sora"],"monthlyOutput":"每月 4 部","acceptsExclusive":true},"res":{"data":null,"error":null},"rules":["displayName：1–30 字符；contact：1–100 字符；intro：50–1000 字符","tools：可选字符串数组；monthlyOutput：可选，最多 50 字符；acceptsExclusive：boolean","资料失败时不继续提交 public-bio；保留输入供重试"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.profile"},
+{"m":"POST","p":"/api/creator/public-bio","rpc":"update_creator_public_bio","caller":"publicBio","front":"设置 → 保存资料：profile 成功后提交公开简介，最后刷新 dashboard。","use":"更新公开主页简介。","req":{"bio":"公开展示的简介"},"res":{"data":null,"error":null},"rules":["bio 为字符串，最多 500 字符，可为空清除；后端做内容校验","此接口失败时显示错误，不能提前提示全部保存成功"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.publicBio"},
+{"m":"POST","p":"/api/creator/comments/dramas","rpc":"creator_comment_dramas","caller":"commentDramas","front":"观众反馈：进入、切换 7/30/90 天时加载作品筛选。","use":"获取有反馈的作品和统计。","req":{"days":30},"res":{"data":{"dramas":[{"dramaId":"uuid","titleI18n":{"zh-CN":"作品标题"},"slug":"work"}],"words":[]},"error":null},"rules":["days 为正整数；返回 dramas[].dramaId 用于剧集查询和评论筛选","since 为参考接口的可选 ISO 8601 时间，当前页面不传"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.commentDramas"},
+{"m":"POST","p":"/api/creator/comments/episodes","rpc":"creator_comment_episodes","caller":"commentEpisodes","front":"观众反馈：选中作品后加载该作品的剧集筛选；切换作品先清空旧 episodeId。","use":"查询作品下的剧集反馈。","req":{"dramaId":"uuid","days":30},"res":{"data":{"episodes":[{"episodeId":"uuid","seq":1}],"words":[]},"error":null},"rules":["dramaId 必填且来源 dramas；days 为正整数；since 可选，当前不传","返回 episodeId 用于评论筛选，不能把集序号当 UUID"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.commentEpisodes"},
+{"m":"POST","p":"/api/creator/comments","rpc":"creator_list_comments","caller":"comments","front":"观众反馈：进入、筛选作品/剧集/类型、搜索关键词、切换排序或翻页时调用。","use":"查询实际评论内容。","req":{"dramaId":null,"episodeId":null,"days":30,"substantive":null,"query":null,"sort":"latest","offset":0,"limit":20},"res":{"data":{"items":[{"id":"uuid","nickname":"观众","content":"评论内容","createdAt":"2026-10-19T12:00:00Z","likes":0}],"total":1},"error":null},"rules":["days、sort、offset、limit 必填；sort：latest / hot；limit：1–100；offset ≥ 0","substantive 可空或 boolean；dramaId、episodeId、query 可空","当前页先清空旧数据再加载，避免错误时展示旧作品评论"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.comments"},
+{"m":"POST","p":"/api/creator/payout-methods","rpc":"creator_payout_methods（参考项目直接读表，本站用 API 替代）","caller":"payoutMethods","front":"收益中心：进入、添加账户或停用账户后加载。","use":"取得收款方式及真实 methodId，补齐原文档缺少的提现前置步骤。","req":{},"res":{"data":{"items":[{"id":"uuid","methodType":"crypto_wallet","payoutAssetId":"USDT_TRC20","displayMask":"TXXX****XXXX","status":"active"}]},"error":null},"rules":["只返回当前用户的脱敏信息，禁止回传完整 details","status：active / pending_verification / rejected / disabled；active 才可选作提现账户"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.payoutMethods"},
+{"m":"POST","p":"/api/product/upload?id={productId}&filename={filename}","rpc":"参考媒体接口 /product/upload","caller":"uploadProduct","front":"新增商品的 upload 模式：create_product 返回 productId 后上传文件；草稿上传失败可单独补传重试。","use":"将文件关联至商品草稿。","req":{"query":{"id":"uuid","filename":"product.mp4"},"body":"<binary File>"},"res":{"httpStatus":200,"body":null},"rules":["Authorization 必填；Content-Type 为文件 MIME；HTTP Body 为二进制","id 来自 create_product 或 dashboard.products[].id；成功后刷新 dashboard，再允许上架"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.uploadProduct"},
+{"m":"POST","p":"/api/commission/upload?id={commissionId}&filename={filename}","rpc":"参考媒体接口 /commission/upload","caller":"uploadDelivery","front":"我的订单 → 里程碑交付时先上传文件。","use":"取得交付文件 filePath，供 deliver_milestone 提交。","req":{"query":{"id":"uuid","filename":"delivery.mp4"},"body":"<binary File>"},"res":{"filePath":"commission/uuid/delivery.mp4"},"rules":["id 来自当前定制订单；Authorization 必填；HTTP Body 为二进制","响应直接返回 camelCase filePath；前端兼容原参考的 file_path；上传失败不调用 deliver"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.uploadDelivery"}
+];
+const affiliate=[
+{"m":"POST","p":"/api/user/affiliate","rpc":"my_affiliate_eligibility","front":"进入 /affiliate 时调用","use":"获取推广资格进度和自动开通状态。","req":{},"res":{"c":0,"m":"","d":{"gateNetUsdCents":20000,"gatePayers":5,"invitedCount":0,"invitedCents":0,"payers":0,"state":"in_progress"}},"rules":["请求体为空对象；登录身份从 Authorization 获取","payers / gatePayers：名下付费人数 / 人数门槛","invitedCount：已邀请用户数","invitedCents：名下用户充值净额，单位人民币分","gateNetUsdCents：充值净额门槛，保留后端字段名，实际单位人民币分；20000 显示为 ¥200.00","state：in_progress 未达标 / active 已自动开通；没有申请和审核流程","达到充值净额与付费人数条件后，由后端自动升级为 active","当前实际响应未包含 referralCode / referralUrl，不编造推广链接"],"called":true,"callSite":"src/api/affiliate.ts → getAffiliateEligibility → src/pages/user/AffiliateProgram.tsx"},
+{"m":"POST","p":"/api/user/stat","rpc":"推广统计","front":"推广赚现金 /affiliate：进入真实推广后台或点击“推广后台”预览时调用；成功展示接口数据，失败时预览模式才回退演示数据。","use":"一次取得推广统计；income 用于收入区域，stat 用于最近 30 天统计区域。","req":{},"res":{"c":0,"m":"","d":{"income":{"status":"active","activatedAt":"2026-10-19T06:00:00Z","shareBps":1500,"referralCode":"ABC123","referralUrl":"https://example.com/?ref=ABC123","invitedCount":0,"totalEarnedCents":0,"pendingCents":0,"availableCents":0,"reversedCents":0,"paidOutCents":0,"earnings":[{"id":"earning_001","orderDate":"2026-10-19T06:00:00Z","amountCents":150,"entryStatus":"pending","availableAt":"2026-10-26T06:00:00Z"}]},"stat":{"holdDays":7,"summary":{"totalClicks":0,"totalDevices":0,"totalSignups":0,"totalPayers":0,"totalCommissionMicros":0},"daily":[{"dt":"2026-10-19","clicks":0,"devices":0,"signups":0,"payers":0,"commissionMicros":0}]} }},"rules":["请求体为空对象；登录身份从 Authorization 获取","d.income 只用于推广收入卡片与最近佣金记录","d.stat 只用于最近 30 天推广统计","页面只调用一次本接口，不再请求 affiliate/summary 和 affiliate/funnel","推广后台预览也会发起真实请求；请求失败时才显示演示数据并保留错误提示"],"called":true,"callSite":"src/api/affiliate.ts → getAffiliateStatistics → src/components/AffiliateDashboard.tsx → /affiliate"},
+{"m":"POST","p":"/api/affiliate/referral/claim","rpc":"claim_referral","front":"读取 ?ref=CODE 并在本地暂存；用户登录或注册成功后提交，推广码由后端校验并绑定。","use":"受邀用户登录或注册成功后，将当前用户永久归因给推广码所属用户。","req":{"code":"ABC123","deviceId":"7cbde11a-0e55-4cab-8419-d8f779f73947"},"res":{"data":{"claimed":true,"restricted":false,"rewardMode":"cash","inviteeCoins":0},"error":null},"rules":["需要登录；当前用户从 Authorization 获取","首次有效归因后永久不变，重复调用必须幂等","禁止自己邀请自己、覆盖已有邀请人和同设备批量注册","rewardMode：cash / coins；邀请人为 active 推广伙伴时使用 cash","建议错误码：INVALID_REFERRAL_CODE / SELF_REFERRAL / ALREADY_ATTRIBUTED","后续有效付费必须以服务端归因关系计算佣金，不能信任前端传入邀请人或金额"],"called":true,"callSite":"src/api/affiliate.ts → claimAffiliateReferral（页面 /creator、/affiliate 或全站推广归因触发）"}
+];
+const fieldMapping={"p_display_name":"displayName","p_contact":"contact","p_intro":"intro","p_sample_url":"sampleUrl","p_tools":"tools","p_monthly_output":"monthlyOutput","p_payout_method":"payoutMethod","p_title":"title","p_description":"description","p_seq":"seq","p_device_id":"deviceId","p_code":"code","submitted_at":"submittedAt","review_note":"reviewNote","activated_at":"activatedAt","referral_code":"referralCode","gate_payers":"gatePayers","invited_count":"invitedCount","net_usd_cents":"netUsdCents","gate_net_usd_cents":"gateNetUsdCents","share_bps":"shareBps","total_earned_cents":"totalEarnedCents","pending_cents":"pendingCents","available_cents":"availableCents","reversed_cents":"reversedCents","paid_out_cents":"paidOutCents","order_date":"orderDate","amount_cents":"amountCents","entry_status":"entryStatus","available_at":"availableAt","hold_days":"holdDays","total_clicks":"totalClicks","total_devices":"totalDevices","total_signups":"totalSignups","total_payers":"totalPayers","total_commission_micros":"totalCommissionMicros","commission_micros":"commissionMicros","avatar_url":"avatarUrl","invitee_coins":"inviteeCoins","reward_mode":"rewardMode","p_drama":"dramaId","p_episode":"episodeId","p_q":"query","p_from":"from","p_to":"to","p_gran":"gran","p_tz":"tz","p_price_cents":"priceCents","p_watermark":"watermark","p_file_path":"filePath","p_delivery_type":"deliveryType","p_product_id":"productId","p_commission_id":"commissionId","p_milestone_id":"milestoneId","p_method_type":"methodType","p_payout_asset_id":"payoutAssetId","p_adapter_key":"adapterKey","p_display_mask":"displayMask","p_payout_method_id":"payoutMethodId","p_usd_micros":"usdMicros","p_quote_id":"quoteId","p_method_id":"methodId","p_license_id":"licenseId","p_accepts_exclusive":"acceptsExclusive"};
+const json=v=>JSON.stringify(v,null,2);
+function renderFields(api){return api.fields?.length?'<div class="field-wrap"><table class="fields"><thead><tr><th>字段</th><th>类型</th><th>含义</th></tr></thead><tbody>'+api.fields.map(f=>'<tr><td><code>'+escapeHtml(f.key)+'</code></td><td>'+escapeHtml(f.type)+'</td><td>'+escapeHtml(f.meaning)+'</td></tr>').join('')+'</tbody></table></div>':''}
+const affiliateUsage={"/api/user/affiliate":"推广页 · 资格进度与自动开通状态","/api/user/stat":"推广后台 · 收入与近 30 天统计","/api/affiliate/referral/claim":"登录或注册成功 · 绑定推广归因"};
+function renderCallStatus(api){if(!api.called)return '';const live=api.backend==='已通'||api.p==='/api/user/affiliate';const pending=api.backend==='待后端新增';const reused=api.backend==='复用现有接口';const text=live?'✓ 调用已通':pending?'调用已接 · 404 待接通':reused?'调用已接 · 复用接口':'调用已接 · 未确认联调';const state=live?'is-live':pending?'is-pending':'is-unverified';return '<span class="api-called '+state+'" title="'+escapeHtml(api.callSite)+(pending?'；后端待新增，非逐接口实测结论':'')+'">'+text+'</span>'}
+function renderApi(api){const methodClass=api.m==='GET'?'get':api.m==='PATCH'?'patch':'';return `<details class="api"><summary class="api-head"><span class="method ${methodClass}">${api.m}</span><span class="path">${api.p}</span><span class="api-usage" title="${escapeHtml(api.front)}">${escapeHtml(api.usage || affiliateUsage[api.p] || api.front)}</span>${renderCallStatus(api)}</summary><div class="api-body"><p class="api-reference">参考调用：${escapeHtml(api.rpc || "—")}</p><p class="purpose"><b>作用：</b>${api.use}</p><p class="consumer"><b>前端调用：</b>${api.front}</p><div class="json-grid"><div class="code"><div class="code-head"><span>${api.m==='GET'?'Request JSON':'Request JSON'}</span><button class="copy">复制 JSON</button></div><pre>${escapeHtml(json(api.req))}</pre></div><div class="code"><div class="code-head"><span>Response JSON</span><button class="copy">复制 JSON</button></div><pre>${escapeHtml(json(api.res))}</pre></div></div>${renderFields(api)}${api.rules?.length?`<ul class="rules">${api.rules.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}</div></details>`}
+function escapeHtml(v){return v.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+const affiliateDashboard=affiliate.filter(api=>api.p==='/api/user/stat');
+document.querySelector('#welfare-list').innerHTML=welfare.map(renderApi).join('');
+document.querySelector('#creator-list').innerHTML=creator.map(renderApi).join('');document.querySelector('#affiliate-dashboard-list').innerHTML=affiliateDashboard.map(renderApi).join('');document.querySelector('#affiliate-list').innerHTML=affiliate.filter(api=>!affiliateDashboard.includes(api)).map(renderApi).join('');document.querySelector('#mapping-json').textContent=json(fieldMapping);
+document.querySelectorAll('.tab:not([hidden])').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===btn));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===btn.dataset.tab));window.scrollTo({top:document.querySelector('.tabs').offsetTop,behavior:'smooth'})}));
+document.addEventListener('click',async e=>{const btn=e.target.closest('.copy');if(!btn)return;const text=btn.closest('.code').querySelector('pre').textContent;try{await navigator.clipboard.writeText(text)}catch{const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();document.execCommand('copy');area.remove()}btn.textContent='已复制';btn.classList.add('done');setTimeout(()=>{btn.textContent='复制 JSON';btn.classList.remove('done')},1200)});
+</script>
+</body>
+</html>

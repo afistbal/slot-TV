@@ -1,6 +1,10 @@
 import { create } from 'zustand'
+import { normalizeAppLocaleCode } from '@/lib/messagesForLocale';
 
 type TTheme = 'light' | 'dark';
+
+const initialLocale = normalizeAppLocaleCode(localStorage.getItem('locale') ?? 'zh-CN');
+localStorage.setItem('locale', initialLocale);
 
 interface IRoot {
     locale: string,
@@ -15,18 +19,15 @@ interface IRoot {
 }
 
 export const useRootStore = create<IRoot>((set) => ({
-    locale: localStorage.getItem('locale') ?? 'en',
+    locale: initialLocale,
     theme: 'light',
     showInstallPrompt: false,
     sessionBootstrapReady: false,
     setLocale: (locale) => {
-        set({ locale });
-        localStorage.setItem('locale', locale);
-        if (locale === 'ar') {
-            document.body.style.direction = 'rtl';
-        } else {
-            document.body.style.direction = 'ltr';
-        }
+        const normalizedLocale = normalizeAppLocaleCode(locale);
+        set({ locale: normalizedLocale });
+        localStorage.setItem('locale', normalizedLocale);
+        document.body.style.direction = 'ltr';
     },
     setTheme: (theme) => set({ theme }),
     setShowInstallPrompt: (show) => set({ showInstallPrompt: show }),

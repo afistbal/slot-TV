@@ -2,21 +2,17 @@ const FBP_STORAGE_KEY = 'fbp';
 const FBC_STORAGE_KEY = 'fbc';
 const FBCLID_STORAGE_KEY = 'fbclid';
 
-export type AnalyticsType = 'facebook' | 'tiktok' | '';
+export type AnalyticsType = 'facebook' | '';
 
 let analyticsType: AnalyticsType = '';
 
-/** Pixel init 时写入；TikTok 配置下不传 FB log 归因字段 */
+/** Pixel 初始化时写入，用于 Facebook 广告归因。 */
 export function setAnalyticsType(type: AnalyticsType): void {
     analyticsType = type;
 }
 
 export function isFacebookAnalytics(): boolean {
     return analyticsType === 'facebook';
-}
-
-export function isTikTokAnalytics(): boolean {
-    return analyticsType === 'tiktok';
 }
 
 function readCookie(name: string): string {

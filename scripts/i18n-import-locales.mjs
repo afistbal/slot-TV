@@ -1,10 +1,10 @@
 /**
- * 将翻译后的 Excel 写回 src/locales/{code}.json（扁平 JSON，与 en.json 结构一致）。
+ * 将翻译后的 Excel 写回 src/locales/{code}.json（扁平 JSON，与 zh-CN.json 结构一致）。
  *
  * 用法：
  *   node scripts/i18n-import-locales.mjs --file ./翻译稿.xlsx
  *   node scripts/i18n-import-locales.mjs --file ./x.xlsx --out ./src/locales
- *   node scripts/i18n-import-locales.mjs --file ./x.xlsx --langs es,fr,hi
+ *   node scripts/i18n-import-locales.mjs --file ./x.xlsx --langs zh-TW
  */
 
 import fs from "node:fs";
@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import XLSX from "xlsx";
 import {
-  loadEnMessages,
+  loadSourceMessages,
   loadLocaleMessages,
   mergePreservingKeyOrder,
   parseCommaList,
@@ -29,13 +29,13 @@ function parseArgs() {
     file: null,
     out: path.join(root, "src", "locales"),
     langs: null,
-    keepEnglish: false,
+    keepSource: false,
   };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--file" && argv[i + 1]) out.file = argv[++i];
     if (argv[i] === "--out" && argv[i + 1]) out.out = path.resolve(root, argv[++i]);
     if (argv[i] === "--langs" && argv[i + 1]) out.langs = parseCommaList(argv[++i]);
-    if (argv[i] === "--keep-english") out.keepEnglish = true;
+    if (argv[i] === "--keep-source") out.keepSource = true;
   }
   return out;
 }
@@ -44,32 +44,32 @@ function sheetToRows(ws) {
   return XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 }
 
-function buildFlatMessages(rows, colIdx, enByKey, options = {}) {
-  const { stripIfMatchesEn = true } = options;
+function buildFlatMessages(rows, colIdx, sourceByKey, options = {}) {
+  const { stripIfMatchesSource = true } = options;
   const out = {};
   for (const row of rows) {
     if (!row || !row.length) continue;
     const key = String(row[0] ?? "").trim();
     if (!key || key.toLowerCase() === "key") continue;
-    const enRef = row[1] == null ? "" : String(row[1]);
+    const sourceRef = row[1] == null ? "" : String(row[1]);
     const raw = row[colIdx];
     let val = raw == null ? "" : String(raw);
     if (!val.trim()) continue;
-    if (stripIfMatchesEn && val === enRef) continue;
-    if (stripIfMatchesEn && enRef && val === enByKey[key]) continue;
+    if (stripIfMatchesSource && val === sourceRef) continue;
+    if (stripIfMatchesSource && sourceRef && val === sourceByKey[key]) continue;
     out[key] = val;
   }
   return out;
 }
 
 function main() {
-  const { file, out, langs: langsFilter, keepEnglish } = parseArgs();
+  const { file, out, langs: langsFilter, keepSource } = parseArgs();
   if (!file || !fs.existsSync(file)) {
     console.error("请指定 Excel：node scripts/i18n-import-locales.mjs --file ./xxx.xlsx");
     process.exit(1);
   }
 
-  const en = loadEnMessages();
+  const source = loadSourceMessages();
   const wb = XLSX.readFile(file);
   const sheetName = wb.SheetNames.includes("locales") ? "locales" : wb.SheetNames[0];
   const ws = wb.Sheets[sheetName];
@@ -90,28 +90,28 @@ function main() {
     const title = header[i];
     if (!title || title.toLowerCase() === "notes") break;
     const code = parseLangCodeFromHeader(title);
-    if (!code || code === "en") continue;
+    if (!code || code === "zh-CN") continue;
     if (langsFilter && !langsFilter.includes(code)) continue;
     langColumns.push({ code, colIdx: i });
   }
 
   if (!langColumns.length) {
-    console.error("未从表头解析到目标语言列（期望形如 es (Español)）");
+    console.error("未从表头解析到目标语言列（期望形如 zh-TW (繁體中文)）");
     process.exit(1);
   }
 
-  const enKeyOrder = Object.keys(en);
+  const sourceKeyOrder = Object.keys(source);
   fs.mkdirSync(out, { recursive: true });
   for (const { code, colIdx } of langColumns) {
-    const messages = buildFlatMessages(dataRows, colIdx, en, {
-      stripIfMatchesEn: !keepEnglish,
+    const messages = buildFlatMessages(dataRows, colIdx, source, {
+      stripIfMatchesSource: !keepSource,
     });
     const target = path.join(out, `${code}.json`);
     const existing = loadLocaleMessages(code);
     const { merged, changed, updatedCount, addedCount } = mergePreservingKeyOrder(
       existing,
       messages,
-      enKeyOrder,
+      sourceKeyOrder,
     );
     if (!changed) {
       console.log(`跳过 ${target}（Excel 中 ${Object.keys(messages).length} 条，无变化）`);

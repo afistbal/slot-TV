@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { Page } from '@/layouts/user';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
-import { isTikTokPlatform } from '@/platform';
 import '@/styles/profile-reelshort.scss';
 
 export default function Component({ embedded = false }: { embedded?: boolean } = {}) {
@@ -14,8 +13,6 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
   const userStore = useUserStore();
   const navigate = useNavigate();
   const isPc = useMinWidth768();
-  const isTikTok = isTikTokPlatform();
-  const showLogout = !isTikTok;
 
   const isRealAccount = userStore.signed && !userStore.isAnonymous();
 
@@ -72,22 +69,12 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
               <FormattedMessage id={`vip_${userStore.info!['vip'] as number}`} />
             </div>
           </div>
-          {isTikTok ? (
-            <div className="rs-user-detail__row">
-              <div className="rs-user-detail__label">
-                <FormattedMessage id="version" />
-              </div>
-              <div className="rs-user-detail__value">{__APP_VERSION__}</div>
-            </div>
-          ) : null}
         </div>
       </div>
 
-      {showLogout ? (
-        <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>
-          <FormattedMessage id="logout" />
-        </button>
-      ) : null}
+      <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>
+        <FormattedMessage id="logout" />
+      </button>
     </>
   );
 

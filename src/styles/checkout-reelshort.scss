@@ -22,14 +22,10 @@
     background-color: rgba(0, 0, 0, 0.1) !important;
 }
 
-/** `Page` 主滚动区：浅灰底；PWA 安装条（`#install`）出现时追加底padding，避免内容贴条 */
+/** `Page` 主滚动区：浅灰底 */
 .rs-checkout-page__bodyLight {
     background-color: #f3f4f6;
     min-height: 100%;
-}
-
-body:has(#install) .rs-checkout-page__bodyLight {
-    padding-bottom: calc(60px + max(16px, env(safe-area-inset-bottom)));
 }
 
 .rs-checkout__titlebar {

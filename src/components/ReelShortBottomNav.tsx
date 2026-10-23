@@ -65,14 +65,11 @@ function BottomNavAddDesktopH5({
     );
 }
 
-/**
- * H5 底部：黑色 Tab 栏（fixed 贴底）+ 独立悬浮「添加桌面」胶囊（在 Tab 上方，无黑底）。
- * PC 添加桌面仍走顶栏 `TopNavInstallEntry`。
- */
+/** H5 底部四栏导航。 */
 export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) {
     const isDesktop = useMinWidth768();
     const location = useLocation();
-    const showInstallPrompt = useRootStore((s) => s.showInstallPrompt);
+    const showInstallPrompt = useRootStore((state) => state.showInstallPrompt);
     const showIosAddHome = shouldShowIosAddHomeFab();
     const sourceform = `${location.pathname}${location.search}`;
 
@@ -98,10 +95,7 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
         <Fragment>
             {showAddDesktop ? (
                 <div className="reelshort-bottom-nav-add">
-                    <BottomNavAddDesktopH5
-                        variant={addVariant}
-                        onAndroidInstall={triggerAndroidInstall}
-                    />
+                    <BottomNavAddDesktopH5 variant={addVariant} onAndroidInstall={triggerAndroidInstall} />
                 </div>
             ) : null}
             <nav className="reelshort-bottom-nav" aria-label="Tab bar">

@@ -7,18 +7,8 @@ export const BRAND_DESCRIPTION =
 
 export const BRAND_CONTACT_EMAIL = import.meta.env.VITE_BRAND_CONTACT_EMAIL || 'cs@yogoshort.net';
 
-export const BRAND_COPYRIGHT_COMPANY =
-    (import.meta.env.VITE_BRAND_COPYRIGHT_COMPANY || '').trim();
-export const BRAND_COPYRIGHT_YEAR = new Date().getFullYear();
-
-const brandCopyrightSuffix = BRAND_COPYRIGHT_COMPANY
-    ? import.meta.env.VITE_BRAND_COPYRIGHT_COMPANY_BEFORE_YEAR === 'true'
-        ? `${BRAND_COPYRIGHT_COMPANY} ${BRAND_COPYRIGHT_YEAR}`
-        : `${BRAND_COPYRIGHT_YEAR} ${BRAND_COPYRIGHT_COMPANY}`
-    : `${BRAND_COPYRIGHT_YEAR}`;
-
 export const BRAND_COPYRIGHT_LINE_1 =
-    `${BRAND_DISPLAY_NAME} | All Rights Reserved | ${brandCopyrightSuffix}`;
+    `${BRAND_DISPLAY_NAME} | All Rights Reserved | ${new Date().getFullYear()}`;
 
 function normalizePublicBase(value: string): string {
     const trimmed = value.trim();

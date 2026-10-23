@@ -18,10 +18,14 @@ import {
     VideoPlayerPcEpisodeNav,
     // VideoPlayerPcUnmuteOverlay, // Legacy cold-unmute overlay, currently disabled.
     VideoPlayerSideActions,
+    VideoPlayerRatingDialog,
+    VideoPlayerAmbientLayer,
+    useVideoPlayerAmbient,
     // useFeedPlayerColdUnmuteVisible, // Legacy cold-unmute hook, currently disabled.
     // useFeedPlayerTapToUnmute, // Legacy cold-unmute hook, currently disabled.
 } from '@/components/video-player';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
+import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { cn } from '@/lib/utils';
 import { api } from '@/api';
 import { skipRemoteApi } from '@/env';
@@ -48,6 +52,7 @@ import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShar
 import type { IForYouFeedItem } from '@/types/foryouFeed';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
+import { useForDemoEngagement } from './useForDemoEngagement';
 import { foryouFeedItemKey } from './lib/foryouFeedMerge';
 import { prewarmForyouVideoEntry } from './lib/prewarmVideoEntry';
 
@@ -83,11 +88,15 @@ export function ForDemoPcPlayerShell({
     onLoadMore,
 }: ForDemoPcPlayerShellProps) {
     const navigate = useNavigate();
+    const requireAccount = useRequireAccount();
     const userStore = useUserStore();
     const data = buildPlayerDataFromFeedItem(feedItem);
     const episode = buildEpisodeFromFeedItem(feedItem);
     const episodeNo = feedItem.episode ?? 1;
     const feedEpisodeTotal = feedItem.episodes ?? 0;
+    const { ambientEnabled, toggleAmbient } = useVideoPlayerAmbient();
+    const engagement = useForDemoEngagement(feedItem);
+    const activePlayerItemId = playerItems[activeIndex]?.id ?? foryouFeedItemKey(feedItem);
     const [favorite, setFavorite] = useState(() =>
         resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
     );
@@ -128,7 +137,7 @@ export function ForDemoPcPlayerShell({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useForYouPlayerShare(data, staticBase, episodeNo);
+    } = useForYouPlayerShare(data);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
 
@@ -180,6 +189,7 @@ export function ForDemoPcPlayerShell({
     );
 
     const handleToggleFavorite = useCallback(() => {
+        if (!requireAccount()) return;
         setFavorite((prev) => {
             const next = !prev;
             setVideoFavoriteOverride(data.info.id, next);
@@ -193,7 +203,7 @@ export function ForDemoPcPlayerShell({
                 loading: false,
             });
         }
-    }, [data.info.id]);
+    }, [data.info.id, requireAccount]);
 
     const handleToggleVip = useCallback((ev?: MouseEvent) => {
         ev?.stopPropagation();
@@ -235,7 +245,7 @@ export function ForDemoPcPlayerShell({
         movieId: feedItem.id,
         epId: feedItem.ep_id,
         epNo: episodeNo,
-        playerItemId: foryouFeedItemKey(feedItem),
+        playerItemId: activePlayerItemId,
     });
 
     useEffect(() => {
@@ -347,6 +357,10 @@ export function ForDemoPcPlayerShell({
                                 />
                             }
                         />
+                        <VideoPlayerAmbientLayer
+                            active={ambientEnabled}
+                            playerItemId={activePlayerItemId}
+                        />
                         {/* Legacy cold-unmute overlay; keep commented for possible reuse.
                         <VideoPlayerPcUnmuteOverlay
                             visible={coldUnmuteVisible}
@@ -360,9 +374,16 @@ export function ForDemoPcPlayerShell({
                             showVip={!userStore.isVIP()}
                             favorite={favorite}
                             favoriteCount={data.info.favorite}
+                            liked={engagement.liked}
+                            likeCount={engagement.count}
+                            ratingScore={engagement.ratingScore}
+                            ambient={ambientEnabled}
                             onVipClick={handleToggleVip}
                             onFavoriteClick={handleToggleFavorite}
-                            onShareClick={() => setShareOpen(true)}
+                            onLikeClick={engagement.handleToggleLike}
+                            onRatingClick={() => setTimeout(() => engagement.setRatingOpen(true), 0)}
+                            onAmbientClick={toggleAmbient}
+                            onShareClick={() => void handleShareAction('link')}
                         />
                     ) : null}
                 </div>
@@ -409,6 +430,15 @@ export function ForDemoPcPlayerShell({
                 introduction={data.info.introduction ?? ''}
                 onShareAction={handleShareAction}
                 onCopyEmbedCode={handleCopyEmbedCode}
+            />
+            <VideoPlayerRatingDialog
+                open={engagement.ratingOpen}
+                title={data.info.title}
+                score={engagement.ratingScore}
+                variant="pc"
+                submitting={engagement.ratingSubmitting}
+                onOpenChange={engagement.setRatingOpen}
+                onSubmit={engagement.handleSubmitRating}
             />
         </div>
     );

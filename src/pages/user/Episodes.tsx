@@ -1,3 +1,4 @@
+import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { WebVTT } from 'videojs-vtt.js';
@@ -80,11 +81,7 @@ export default function Component() {
     const [qualityOpen, setQualityOpen] = useState(false);
     const [bufSec, setBufSec] = useState(0);
 
-    // 强制使用你指定的 HLS 测试源（接口/离线没给 video 时也能播）
-    const FORCE_HLS_URL =
-        'https://v-mps.crazymaplestudios.com/vod-112094/20ad17f462f471f0bfa85114c0db0102/d4cb2380932d4708b88aafcba0f604be-5a5f8f7839d63e04a7051032c9dde3c0-hd.m3u8';
-    // 你要求“不要用离线哪个，就用这条”，这里直接无条件强制使用
-    const effectiveVideoUrl = FORCE_HLS_URL;
+    const effectiveVideoUrl = episode?.video || '';
 
     const localImg = (file: string) => new URL(`../../assets/images/${file}`, import.meta.url).toString();
 
@@ -351,72 +348,7 @@ export default function Component() {
     // 清晰度/倍速的真实切换映射后续接入 HLS levels 再做
 
     async function toggleFullscreen() {
-        // 移动端兜底策略：
-        // - iOS Safari：必须走 video.webkitEnterFullscreen / webkitEnterFullScreen
-        // - Android/Chrome：优先 video.requestFullscreen，再回退容器 requestFullscreen
-        const wrap = scrollRef.current;
-        const video = videoRef.current as (HTMLVideoElement & {
-            webkitEnterFullscreen?: () => void;
-            webkitExitFullscreen?: () => void;
-            webkitEnterFullScreen?: () => void; // 旧写法
-        }) | null;
-
-        const doc = document as Document & {
-            webkitExitFullscreen?: () => Promise<void> | void;
-            webkitFullscreenElement?: Element | null;
-        };
-
-        const fsEl = document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
-
-        // 退出（多路兜底）
-        if (fsEl) {
-            await document.exitFullscreen().catch(() => { });
-            if (video?.webkitExitFullscreen) {
-                try {
-                    video.webkitExitFullscreen();
-                } catch {
-                    // ignore
-                }
-            }
-            if (doc.webkitExitFullscreen) await Promise.resolve(doc.webkitExitFullscreen()).catch(() => { });
-            return;
-        }
-
-        // iOS：video 专用全屏（必须用户手势同步触发）
-        if (video?.webkitEnterFullscreen) {
-            try {
-                video.webkitEnterFullscreen();
-            } catch {
-                // ignore: iOS 可能抛异常但仍会尝试切全屏
-            }
-            return;
-        }
-        if (video?.webkitEnterFullScreen) {
-            try {
-                video.webkitEnterFullScreen();
-            } catch {
-                // ignore
-            }
-            return;
-        }
-
-        // Android/Chrome：优先对 video 本体请求全屏
-        if (video?.requestFullscreen) {
-            await video.requestFullscreen().catch(() => { });
-            return;
-        }
-
-        // 最后回退：对容器请求全屏
-        const el = (wrap ?? video?.parentElement) as (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void }) | null;
-        if (!el) return;
-
-        if (el.requestFullscreen) {
-            await el.requestFullscreen().catch(() => { });
-            return;
-        }
-        if (el.webkitRequestFullscreen) {
-            await Promise.resolve(el.webkitRequestFullscreen()).catch(() => { });
-        }
+        await toggleVideoFullscreen(videoRef, scrollRef);
     }
 
     function calcSeekSec(clientX: number) {

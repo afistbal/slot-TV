@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Star as IconStar } from 'lucide-react';
+import { Bookmark as IconBookmark } from 'lucide-react';
 import { FormattedMessage } from "react-intl";
 import { useEffect, useRef, useState } from "react";
 import { api, type IPagination, type TData } from "@/api";
@@ -15,7 +15,6 @@ import { MyListCabinetConfirmPopover } from '@/components/MyListCabinetConfirmPo
 import { useConfigStore } from "@/stores/config";
 import { useRootStore } from '@/stores/root';
 import { skipRemoteApi } from '@/env';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import '@/styles/my-list-reelshort.scss';
 import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
@@ -177,7 +176,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                         >
                             <div className="rs-bi-expoItem" aria-hidden data-report="expo" />
                             <div className="rs-bi-poster">
-                                <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-bi-cover">
+                                <Link to={`/drama/${v['movie_id']}`} className="rs-bi-cover">
                                     <VideoPosterLazyCover
                                         src={
                                             movieCoverUrl(v, configStore.config['static'] as string, {
@@ -207,7 +206,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                                 </div>
                             </div>
                             <h3 className="rs-bi-title">
-                                <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE}>{v['title'] as string}</Link>
+                                <Link to={`/drama/${v['movie_id']}`}>{v['title'] as string}</Link>
                             </h3>
                             <div className="rs-bi-chapter">
                                 Episodes {v['episodes'] as number}
@@ -242,7 +241,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
         <div className="rs-my-list__grid">
             {list.map((v) => (
                 <div key={v['id'] as number} className="rs-my-list__row" data-id={v['id']} {...gesture()}>
-                    <Link to={`/video/${v['movie_id']}`} state={VIDEO_FROM_HOME_STATE} className="rs-my-list__cover block">
+                    <Link to={`/drama/${v['movie_id']}`} className="rs-my-list__cover block">
                         <VideoPosterLazyCover
                             src={
                                 movieCoverUrl(v, configStore.config['static'] as string, {
@@ -257,8 +256,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                         <div className="min-w-0 flex-1 p-1">
                             <div className="flex items-start gap-2">
                                 <Link
-                                    to={`/video/${v['movie_id']}`}
-                                    state={VIDEO_FROM_HOME_STATE}
+                                    to={`/drama/${v['movie_id']}`}
                                     className="line-clamp-2 min-w-0 flex-1 overflow-hidden text-ellipsis leading-[18px] text-white"
                                 >
                                     {v['title'] as string}
@@ -272,7 +270,7 @@ export default function Component({ variant = 'row' }: FavoriteProps) {
                                         handleCancelFavorite(v['movie_id'] as number);
                                     }}
                                 >
-                                    <IconStar className={cn('h-6 w-6 fill-amber-500 text-amber-500')} aria-hidden />
+                                    <IconBookmark className={cn('h-6 w-6 fill-amber-500 text-amber-500')} aria-hidden />
                                 </button>
                             </div>
                             <div className="rs-my-list__meta">Episodes {v['episodes'] as number}</div>

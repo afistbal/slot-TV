@@ -11,50 +11,22 @@ export const localesDir = path.join(root, "src", "locales");
  * 文件名：src/locales/{code}.json
  */
 export const LOCALE_META = {
-  en: { label: "English", locale: "en_US", country: "United States" },
-  zh: { label: "繁體中文", locale: "zh_TW", country: "Taiwan" },
-  ja: { label: "日本語", locale: "ja_JP", country: "Japan" },
-  ko: { label: "한국어", locale: "ko_KR", country: "South Korea" },
-  es: { label: "Español", locale: "es_ES", country: "Spain" },
-  th: { label: "แบบไทย", locale: "th_TH", country: "Thailand" },
-  id: { label: "Bahasa Indonesia", locale: "id_ID", country: "Indonesia" },
-  pt: { label: "Português", locale: "pt_PT", country: "Portugal" },
-  it: { label: "Italiano", locale: "it_IT", country: "Italy" },
-  de: { label: "Deutsch", locale: "de_DE", country: "Germany" },
-  fr: { label: "Français", locale: "fr_FR", country: "France" },
-  tr: { label: "Türkçe", locale: "tr_TR", country: "Turkey" },
-  ms: { label: "Melayu", locale: "ms_MY", country: "Malaysia" },
-  ar: { label: "عربي", locale: "ar_AE", country: "United Arab Emirates" },
-  vi: { label: "Tiếng Việt", locale: "vi_VN", country: "Vietnam" },
-  hi: { label: "हिंदी", locale: "hi_IN", country: "India" },
+  "zh-CN": { label: "简体中文", locale: "zh_CN", country: "中国大陆" },
+  "zh-TW": { label: "繁體中文", locale: "zh_TW", country: "中国台湾" },
 };
 
 /** 当前仓库已接入的运行时语言（src/lib/messagesForLocale.ts） */
 export const REGISTERED_LOCALE_CODES = [
-  "en",
-  "zh",
-  "ar",
-  "de",
-  "es",
-  "fr",
-  "hi",
-  "id",
-  "it",
-  "ja",
-  "ko",
-  "ms",
-  "pt",
-  "th",
-  "tr",
-  "vi",
+  "zh-CN",
+  "zh-TW",
 ];
 
 /** 新增待翻译语言；导出脚本默认只导出这些语言的待翻条目 */
-export const NEW_LOCALE_CODES = ["es", "it", "fr", "hi"];
+export const NEW_LOCALE_CODES = ["zh-TW"];
 
-/** 除 en 外全部已接入语言（导出给产品翻译用） */
+/** 除简体中文外全部已接入语言（导出给产品翻译用） */
 export function registeredTargetLocaleCodes() {
-  return REGISTERED_LOCALE_CODES.filter((code) => code !== "en");
+  return REGISTERED_LOCALE_CODES.filter((code) => code !== "zh-CN");
 }
 
 export function readJson(relOrAbs) {
@@ -74,8 +46,8 @@ export function localeFilePath(code) {
   return path.join(localesDir, `${code}.json`);
 }
 
-export function loadEnMessages() {
-  return readJson(localeFilePath("en"));
+export function loadSourceMessages() {
+  return readJson(localeFilePath("zh-CN"));
 }
 
 export function loadLocaleMessages(code) {
@@ -95,7 +67,7 @@ export function sortedKeys(messages) {
 }
 
 /**
- * 合并翻译 patch，保留 existing 原有 key 顺序；新增 key 按 referenceKeyOrder（通常 en.json）定位插入。
+ * 合并翻译 patch，保留 existing 原有 key 顺序；新增 key 按 referenceKeyOrder（通常 zh-CN.json）定位插入。
  */
 export function mergePreservingKeyOrder(existing, updates, referenceKeyOrder = null) {
   if (!updates || !Object.keys(updates).length) {
@@ -153,17 +125,21 @@ export function langColumnHeader(code) {
   return meta ? `${code} (${meta.label})` : code;
 }
 
-/** 从表头解析语言短码，如 "es (Español)" → es */
+/** 从表头解析语言代码，如 "zh-TW (繁體中文)" → zh-TW */
 export function parseLangCodeFromHeader(cell) {
   const text = String(cell ?? "").trim();
   if (!text) return null;
   const m = text.match(/^([a-z]{2}(?:-[a-z]{2})?)\b/i);
-  if (m) return m[1].toLowerCase();
+  if (m) {
+    const code = m[1].toLowerCase();
+    if (code === "zh-cn") return "zh-CN";
+    if (code === "zh-tw") return "zh-TW";
+  }
   if (text in LOCALE_META) return text;
   return null;
 }
 
-export function discoverLocaleCodes(exclude = ["en"]) {
+export function discoverLocaleCodes(exclude = ["zh-CN"]) {
   if (!fs.existsSync(localesDir)) return [];
   return fs
     .readdirSync(localesDir)
@@ -180,11 +156,11 @@ export function parseCommaList(value) {
     .filter(Boolean);
 }
 
-/** 某 key 在目标语言中是否仍待翻译（空或与英文相同） */
-export function needsTranslation(key, code, localeData, enVal) {
+/** 某 key 在目标语言中是否仍待翻译（空或与简体中文相同） */
+export function needsTranslation(key, code, localeData, sourceVal) {
   const raw = localeData[code]?.[key];
   const val = raw == null ? "" : String(raw).trim();
   if (!val) return true;
-  if (val === enVal) return true;
+  if (val === sourceVal) return true;
   return false;
 }

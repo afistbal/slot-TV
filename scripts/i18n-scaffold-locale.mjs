@@ -1,10 +1,10 @@
 /**
  * 为新增语言创建空的 src/locales/{code}.json（默认 {}）。
- * 导出脚本会以 en.json 的 key 为全集，空 json 对应列全部留空。
+ * 导出脚本会以 zh-CN.json 的 key 为全集，空 json 对应列全部留空。
  *
  * 用法：
- *   node scripts/i18n-scaffold-locale.mjs --langs es,fr,hi,it
- *   node scripts/i18n-scaffold-locale.mjs --langs es --force
+ *   node scripts/i18n-scaffold-locale.mjs --langs zh-TW
+ *   node scripts/i18n-scaffold-locale.mjs --langs zh-TW --force
  */
 
 import fs from "node:fs";
@@ -28,13 +28,13 @@ function parseArgs() {
 function main() {
   const { langs, force } = parseArgs();
   if (!langs.length) {
-    console.error("请指定语言：node scripts/i18n-scaffold-locale.mjs --langs es,fr,hi");
+    console.error("请指定语言：node scripts/i18n-scaffold-locale.mjs --langs zh-TW");
     process.exit(1);
   }
 
   for (const code of langs) {
-    if (code === "en") {
-      console.warn("跳过 en（源语言）");
+    if (code === "zh-CN") {
+      console.warn("跳过 zh-CN（源语言）");
       continue;
     }
     const file = localeFilePath(code);

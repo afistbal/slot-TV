@@ -27,25 +27,70 @@
 }
 
 .rs-profile__loginCard {
-    margin: 16px;
-    margin-right: 6px;
-    padding: 24px 10px 0 0;
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    border-radius: 12px;
+    margin: 16px 16px 12px;
+    padding: 16px;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: #141618;
     text-decoration: none;
     color: inherit;
+}
+
+.rs-profile__loginCardTop {
+    display: flex;
+    align-items: center;
+    gap: 14px;
 }
 
 .rs-profile__loginCardUserLink {
     flex: 1 1 auto;
     min-width: 0;
     display: flex;
-    gap: 24px;
+    gap: 14px;
     align-items: center;
     text-decoration: none;
     color: inherit;
+}
+
+.rs-profile__h5ProfileActions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 12px;
+}
+
+.rs-profile__h5ProfileActions > a,
+.rs-profile__h5ProfileActions > button {
+    display: flex;
+    min-width: 0;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.035);
+    padding: 7px 8px;
+    color: rgba(255, 255, 255, 0.62);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.rs-profile__h5ProfileActions svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+}
+
+.rs-profile__h5ProfileActions span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .rs-profile__loginCardMain--link {
@@ -94,60 +139,6 @@
     width: 48px;
     height: 48px;
     display: block;
-}
-
-/** TikTok Minis Profile：头像与 UID 按移动端设计稿上下居中排列。 */
-.rs-profile--tiktok {
-    .rs-profile__content {
-        align-items: stretch;
-    }
-
-    /* Keep the compact legal/contact block directly above the bottom tab. */
-    .rs-profile__content > .reelshort-footer {
-        margin-top: auto;
-    }
-
-    .rs-profile__loginCard,
-    .rs-profile__loginCard--tiktok {
-        box-sizing: border-box;
-        width: 100%;
-        margin: calc(8 / 375 * var(--app-vw)) 0 calc(18 / 375 * var(--app-vw));
-        padding: 0 calc(16 / 375 * var(--app-vw));
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: calc(8 / 375 * var(--app-vw));
-    }
-
-    .rs-profile__loginCardUserLink {
-        width: 100%;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: calc(8 / 375 * var(--app-vw));
-        text-align: center;
-    }
-
-    .rs-profile__avatarWrap {
-        width: calc(64 / 375 * var(--app-vw));
-        height: calc(64 / 375 * var(--app-vw));
-    }
-
-    .rs-profile__avatarGuestImg {
-        width: calc(64 / 375 * var(--app-vw));
-        height: calc(64 / 375 * var(--app-vw));
-    }
-
-    .rs-profile__loginCardMain,
-    .rs-profile__loginCardMain--link {
-        width: 100%;
-        justify-content: center;
-        text-align: center;
-    }
-
-    .rs-profile__vip {
-        justify-content: center;
-    }
 }
 
 .rs-profile__loginCardMain {
@@ -453,9 +444,106 @@
 .rs-profile__h5Account {
     margin: 0 calc(16 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
     padding: calc(16 / 375 * var(--app-vw));
-    border-radius: calc(12 / 375 * var(--app-vw));
-    background: #212121;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: calc(16 / 375 * var(--app-vw));
+    background: #141618;
     box-sizing: border-box;
+}
+
+.rs-profile__h5AccountLinks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(8 / 375 * var(--app-vw));
+    margin-top: calc(14 / 375 * var(--app-vw));
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: calc(12 / 375 * var(--app-vw));
+}
+
+.rs-profile__h5AccountLinks > a {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: calc(58 / 375 * var(--app-vw));
+    align-content: center;
+    gap: 3px;
+    border-radius: calc(11 / 375 * var(--app-vw));
+    background: rgba(255, 255, 255, 0.045);
+    padding: calc(9 / 375 * var(--app-vw)) calc(28 / 375 * var(--app-vw)) calc(9 / 375 * var(--app-vw)) calc(11 / 375 * var(--app-vw));
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    font-size: calc(11 / 375 * var(--app-vw));
+}
+
+.rs-profile__h5AccountLinks strong {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: calc(12 / 375 * var(--app-vw));
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rs-profile__h5AccountLinks img {
+    position: absolute;
+    top: 50%;
+    right: calc(9 / 375 * var(--app-vw));
+    width: calc(12 / 375 * var(--app-vw));
+    height: calc(12 / 375 * var(--app-vw));
+    transform: translateY(-50%);
+    opacity: 0.6;
+}
+
+.rs-profile__h5QuickGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0 calc(16 / 375 * var(--app-vw)) calc(12 / 375 * var(--app-vw));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: calc(16 / 375 * var(--app-vw));
+    background: #141618;
+    padding: calc(10 / 375 * var(--app-vw));
+}
+
+.rs-profile__h5QuickGrid > a {
+    display: flex;
+    min-width: 0;
+    min-height: calc(78 / 375 * var(--app-vw));
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: calc(7 / 375 * var(--app-vw));
+    border-radius: calc(12 / 375 * var(--app-vw));
+    padding: calc(9 / 375 * var(--app-vw)) calc(3 / 375 * var(--app-vw));
+    color: rgba(255, 255, 255, 0.82);
+    text-align: center;
+    text-decoration: none;
+    font-size: calc(11 / 375 * var(--app-vw));
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.rs-profile__h5QuickGrid > a:active {
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.rs-profile__h5QuickIcon {
+    display: grid;
+    width: calc(40 / 375 * var(--app-vw));
+    height: calc(40 / 375 * var(--app-vw));
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: calc(12 / 375 * var(--app-vw));
+    background: rgba(255, 255, 255, 0.055);
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.rs-profile__h5QuickIcon--accent {
+    background: rgba(255, 61, 93, 0.12);
+    color: #ff6f87;
+}
+
+.rs-profile__h5QuickIcon svg {
+    width: calc(20 / 375 * var(--app-vw));
+    height: calc(20 / 375 * var(--app-vw));
 }
 
 .rs-profile__h5AccountHead {

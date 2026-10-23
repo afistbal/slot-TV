@@ -30,6 +30,9 @@ export interface IForYouFeedItem {
     /** @deprecated 兼容旧字段 */
     favorite?: number;
     is_favorite?: number;
+    /** 当前剧点赞状态与数量。 */
+    is_like?: boolean;
+    like?: number;
 }
 
 export interface IForYouListPayload {

@@ -1,122 +1,78 @@
-import { BRAND_DISPLAY_NAME } from '@/constants/brand';
+import { BRAND_CONTACT_EMAIL, BRAND_DISPLAY_NAME } from '@/constants/brand';
 
 export function RefundPolicyContent() {
     return (
         <>
-            <h1 className="rs-legal-doc__title">Refund Policy</h1>
+            <h1 className="rs-legal-doc__title">退款政策</h1>
 
-            <h2 className="rs-legal-doc__h2">1. Overview</h2>
+            <h2 className="rs-legal-doc__h2">1. 适用范围</h2>
             <p>
-                {BRAND_DISPLAY_NAME} (&quot;{BRAND_DISPLAY_NAME},&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;)
-                provides online short-drama streaming services through its App, H5 web pages, and related platforms.
-                This Refund Policy explains how {BRAND_DISPLAY_NAME} handles payments, virtual currency (coins / bonus
-                coins), subscriptions (VIP membership), auto-renewal, cancellation, and refunds.
-            </p>
-            <p>
-                When you purchase coins, unlock episodes, or subscribe to any membership plan, you agree to the terms
-                described here.
+                本政策说明 {BRAND_DISPLAY_NAME} 如何处理金币、奖励金币、会员订阅、自动续费、单次购买及其他数字内容的退款。
+                购买或使用相关商品和服务，即表示您同意本政策。
             </p>
 
-            <h2 className="rs-legal-doc__h2">2. Types of Purchases</h2>
+            <h2 className="rs-legal-doc__h2">2. 购买类型</h2>
             <p>
-                <span className="rs-legal-doc__emph">Coins / Bonus coins (virtual currency): </span>
-                Used to unlock episodes and access paid content. Coins are a paid item; bonus coins are typically granted
-                through promotions or rewards.
+                <span className="rs-legal-doc__emph">金币：</span>
+                用于解锁剧集或其他付费内容。奖励金币通常通过活动、任务或赠送获得。
             </p>
             <p>
-                <span className="rs-legal-doc__emph">VIP / Membership subscriptions: </span>
-                Recurring plans (e.g., weekly, monthly, quarterly, yearly) that unlock membership benefits and renew
-                automatically unless cancelled.
+                <span className="rs-legal-doc__emph">会员订阅：</span>
+                按周、月、季度、年或购买页面所示周期提供会员权益；选择自动续费时，会在每个周期结束前自动扣款。
             </p>
             <p>
-                <span className="rs-legal-doc__emph">One-time purchases: </span>
-                Certain content or promotional bundles may be sold as single, non-recurring purchases.
+                <span className="rs-legal-doc__emph">单次购买：</span>
+                指不自动续费的内容、礼包或其他一次性数字商品。
             </p>
 
-            <h2 className="rs-legal-doc__h2">3. Refund Eligibility</h2>
-            <h3 className="rs-legal-doc__h3">3.1 Virtual currency (coins / bonus coins)</h3>
-            <p>
-                Coins are a consumable digital good. Once coins have been used to unlock content, that portion is
-                considered delivered and consumed and is generally non-refundable.
-            </p>
-            <p>
-                Unused coins may be eligible for a refund only where required by applicable law, or in the case of a
-                mistaken purchase where the coins from that order have not yet been consumed.
-            </p>
-            <p>Bonus coins and promotional coins have no cash value and are non-refundable.</p>
+            <h2 className="rs-legal-doc__h2">3. 可退款情形</h2>
+            <h3 className="rs-legal-doc__h3">3.1 金币和奖励金币</h3>
+            <p>金币属于可消耗数字商品。已经用于解锁或消费的部分视为已交付，通常不予退款。</p>
+            <p>未使用的金币仅在适用法律要求，或误购且该订单中的金币尚未使用时，才可能符合退款条件。</p>
+            <p>赠送、奖励或促销金币无现金价值，不支持退款或兑换现金。</p>
 
-            <h3 className="rs-legal-doc__h3">3.2 Subscriptions and auto-renewal</h3>
+            <h3 className="rs-legal-doc__h3">3.2 会员订阅和自动续费</h3>
+            <p>除非提前关闭自动续费，订阅会在每个计费周期结束时自动续订。</p>
+            <p>如需避免下一周期扣费，请至少在当前周期结束前 24 小时取消自动续费。</p>
+            <p>取消订阅仅停止后续续费，不会自动退还当前周期费用；会员权益可继续使用至当前付费周期结束。</p>
+            <p>已经开始或完成的计费周期通常不予退款，但适用法律或支付渠道规则另有规定的除外。</p>
+
+            <h3 className="rs-legal-doc__h3">3.3 错误扣款或未经授权的扣款</h3>
             <p>
-                Unless auto-renewal is turned off, subscriptions renew automatically at the end of each billing cycle.
-            </p>
-            <p>
-                To avoid being charged for the next cycle, cancel at least 24 hours before the current cycle ends.
-            </p>
-            <p>
-                Cancelling a subscription only stops future renewals; it does not by itself refund the current billing
-                cycle. Membership benefits continue until the end of the paid period.
-            </p>
-            <p>
-                Fees for a completed or in-progress billing cycle are generally non-refundable, except where required by
-                applicable law.
+                如果您认为发生重复扣款、金额错误或未经授权的付款，请尽快联系我们。经核查属实且符合退款条件的，
+                我们将协助处理退款。
             </p>
 
-            <h3 className="rs-legal-doc__h3">3.3 Mistaken or unauthorized charges</h3>
+            <h2 className="rs-legal-doc__h2">4. 通常不予退款的项目</h2>
+            <p>已经解锁、观看、使用或消费的金币和数字内容。</p>
+            <p>赠送、免费、任务奖励或促销所得的金币和权益。</p>
+            <p>已经开始的会员计费周期，但适用法律另有规定的除外。</p>
+            <p>已经完成退款的交易，或存在欺诈、盗刷、滥用和违反规则的订单。</p>
+
+            <h2 className="rs-legal-doc__h2">5. 通过应用商店购买</h2>
             <p>
-                If you believe you were charged in error, charged more than once, or charged without authorization,
-                please contact us as soon as possible so we can review the issue and, where appropriate, issue a refund.
+                通过 Apple App Store、Google Play 或其他第三方应用商店购买的商品，由相应平台处理付款。
+                退款应按照该平台的规则申请，平台可能要求您直接通过订单页面或账户设置提交请求。
+            </p>
+            <p>
+                我们会在合理范围内协助核查，但对于由第三方平台收取并控制的款项，可能无法直接办理退款。
             </p>
 
-            <h2 className="rs-legal-doc__h2">4. Non-Refundable Items</h2>
-            <p>Coins or content that have been unlocked, used, or consumed.</p>
-            <p>Gifted, complimentary, reward, or promotional coins.</p>
-            <p>Subscription fees for a billing cycle that has already begun (except where required by law).</p>
-            <p>Transactions that have already been refunded.</p>
+            <h2 className="rs-legal-doc__h2">6. 退款申请方式</h2>
+            <p>请通过“我的 → 反馈与帮助”或发送邮件至 {BRAND_CONTACT_EMAIL} 联系客户服务，并提供：</p>
+            <p>1. 购买所使用的账户邮箱或用户编号；</p>
+            <p>2. 订单号、交易号和购买时间；</p>
+            <p>3. 支付方式和购买平台；</p>
+            <p>4. 退款原因及能够证明问题的截图或材料。</p>
 
-            <h2 className="rs-legal-doc__h2">5. Purchases Through App Stores (Apple App Store / Google Play)</h2>
-            <p>
-                If you purchase coins or subscriptions through the Apple App Store or Google Play, those transactions are
-                processed by the respective app store. Refunds for such purchases are governed by that store&apos;s refund
-                policy, and you may need to request the refund directly from the store:
-            </p>
-            <p>
-                <span className="rs-legal-doc__emph">Apple App Store: </span>
-                Request a refund through Apple (reportaproblem.apple.com) or your Apple account settings.
-            </p>
-            <p>
-                <span className="rs-legal-doc__emph">Google Play: </span>
-                Request a refund through Google Play. Refunds within a short window after purchase may be handled by
-                Google, while later requests may be forwarded to the developer.
-            </p>
-            <p>
-                We will assist where we can, but we may be unable to directly refund amounts collected and controlled by a
-                third-party store.
-            </p>
+            <h2 className="rs-legal-doc__h2">7. 审核与到账</h2>
+            <p>我们将在收到完整资料后的合理期限内审核。必要时可能要求补充资料或进行账户验证。</p>
+            <p>批准的退款原则上原路退回，实际到账时间取决于银行、支付机构或应用商店。</p>
 
-            <h2 className="rs-legal-doc__h2">6. How to Request a Refund</h2>
-            <p>To request a refund, please contact customer support and provide the following:</p>
-            <p>1. The account email or user ID associated with the purchase.</p>
-            <p>2. The order / transaction number and the purchase date.</p>
-            <p>3. The payment method and platform used (in-app, H5, Apple, Google Play, etc.).</p>
-            <p>4. A brief explanation of the reason for the refund.</p>
+            <h2 className="rs-legal-doc__h2">8. 政策更新</h2>
             <p>
-                Contact: In the App/H5, go to &quot;Profile → Feedback &amp; Help&quot;
-            </p>
-
-            <h2 className="rs-legal-doc__h2">7. Refund Processing</h2>
-            <p>
-                We will review refund requests within a reasonable time after receiving all required information.
-            </p>
-            <p>
-                Approved refunds are returned to the original payment method. The time to appear in your account depends
-                on your payment provider or app store.
-            </p>
-
-            <h2 className="rs-legal-doc__h2">8. Changes to This Policy</h2>
-            <p>
-                We may update this Refund Policy and its related terms from time to time. Material changes will be
-                announced through the App or website. Your continued use of {BRAND_DISPLAY_NAME} after changes take
-                effect constitutes acceptance of the updated terms.
+                我们可能根据法律、支付渠道或服务变化更新本政策。重大变更将通过应用、网站或其他合理方式提示，
+                更新后的政策自公布或载明的日期起生效。
             </p>
         </>
     );

@@ -3,11 +3,10 @@ import {
     getStoredFbp,
     getStoredFbc,
     isFacebookAnalytics,
-    isTikTokAnalytics,
     syncFbAttributionCache,
     type FbLogEventName,
 } from '@/lib/fbAttribution';
-import { getStoredTtclid, syncAdAttributionCache } from '@/lib/adAttribution';
+import { syncAdAttributionCache } from '@/lib/adAttribution';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useUserStore } from '@/stores/user';
 
@@ -137,13 +136,6 @@ export async function reportPayLog(input: ReportPayLogInput): Promise<void> {
     if (fb) {
         payload.fb = fb;
     }
-    if (isTikTokAnalytics()) {
-        const ttclid = getStoredTtclid();
-        if (ttclid) {
-            payload.ttclid = ttclid;
-        }
-    }
-
     try {
         await api('log', {
             method: 'post',

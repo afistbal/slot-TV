@@ -1,113 +1,105 @@
-
 import { BRAND_DOMAIN_DISPLAY } from '@/constants/brand';
 
-export default function Component() {
+export default function MemberTerms() {
     const brandDomain = BRAND_DOMAIN_DISPLAY;
 
-    return <div className="member-terms">
-        <div>
-            Welcome to {brandDomain} Membership Service. Please carefully read and understand this Agreement before purchasing and using {brandDomain} Membership Services. Your purchase and/or use of {brandDomain} Membership Services constitutes acceptance of this Agreement.
-        </div>
+    return (
+        <div className="member-terms">
+            <p>
+                欢迎使用 {brandDomain} 会员服务。请在购买和使用会员服务前仔细阅读本协议。购买、开通或使用
+                {brandDomain} 会员服务，即表示您已阅读、理解并同意本协议全部内容。
+            </p>
 
-        <div>
-            <h2>1. Confirmation and Changes to This Agreement</h2>
-            <ol>
-                <li>This Agreement governs the use of {brandDomain} Membership Services between you and {brandDomain}. "You" refers to the individual using the Membership Services. "{brandDomain} Membership Service" includes access to premium short dramas, early access to new releases, ad-free streaming, and other privileges.</li>
-                <li>{brandDomain} may update this Agreement. The updated Agreement will replace the original upon publication. Continued use of Membership Services after updates constitutes acceptance of the modified Agreement.</li>
-            </ol>
-        </div>
+            <section>
+                <h2>1. 协议确认与变更</h2>
+                <ol>
+                    <li>本协议适用于您与 {brandDomain} 之间有关会员服务的权利义务关系。</li>
+                    <li>
+                        {brandDomain} 可以根据法律、产品或业务变化更新本协议。重大变更会通过页面公告、站内通知或其他合理方式提示；更新后的协议自公布或载明的日期起生效。
+                    </li>
+                </ol>
+            </section>
 
-        <div>
-            <h2>2. Procedures to Become a {brandDomain} Member</h2>
-            <ol>
-                <li>To use Membership Services, apply through the {brandDomain} platform. Membership Services are tied to the account or device used during application.</li>
-                <li>After agreeing to this Agreement, paying the membership fee, and completing the process, you will obtain membership qualifications. Membership Services are valid for the specified period.</li>
-                <li>Membership privileges include exclusive access to premium short dramas, early access to new releases, ad-free streaming, and other benefits. {brandDomain} may adjust privileges based on business needs.</li>
-                <li>Membership validity starts from activation. After expiration, {brandDomain} will stop providing Membership Services.</li>
-                <li>{brandDomain} may adjust membership fees. Adjustments take effect upon publication. Existing memberships are unaffected, but renewals must follow the new fee standards.</li>
-            </ol>
-        </div>
+            <section>
+                <h2>2. 会员开通</h2>
+                <ol>
+                    <li>会员服务应通过 {brandDomain} 官方页面或认可的第三方渠道开通，并绑定购买时使用的账户。</li>
+                    <li>您同意本协议并完成付款后，将在订单所示期限内获得相应会员资格。</li>
+                    <li>会员权益以购买页面的实际展示为准，可能包括会员短剧、抢先观看、免广告或其他权益。</li>
+                    <li>会员有效期自开通成功时开始计算；有效期届满且未续费时，相关权益终止。</li>
+                    <li>价格调整不影响已完成的当前订单，后续续费按照届时页面展示的价格执行。</li>
+                </ol>
+            </section>
 
-        <div>
-            <h2>3. Rules for Using {brandDomain} Membership</h2>
-            <ol>
-                <li>You must comply with this Agreement and {brandDomain}'s rules. Ensure you are the rightful account holder. Misuse may result in account suspension or termination.</li>
-                <li>{brandDomain} may adjust membership privileges and service content. Continued use constitutes acceptance of changes.</li>
-                <li>Membership Services are virtual goods. Fees are non-refundable except as required by law or this Agreement.</li>
-                <li>Membership termination results in loss of privileges and services.</li>
-                <li>Content is for personal viewing only. You do not own intellectual property rights and cannot distribute content for commercial purposes.</li>
-                <li>{brandDomain} may adjust or remove content due to legal, copyright, or operational changes.</li>
-            </ol>
-        </div>
+            <section>
+                <h2>3. 自动续费</h2>
+                <ol>
+                    <li>如果您选择自动续费方案，系统将在每个计费周期结束前通过原支付方式扣除下一周期费用。</li>
+                    <li>订阅周期、续费价格和预计扣款时间以购买页面及支付渠道规则为准。</li>
+                    <li>如需取消，请至少在当前周期结束前 24 小时，通过 Apple ID、Google 账户、支付渠道或账户设置关闭自动续费。</li>
+                    <li>取消自动续费仅停止后续扣款，当前已付费周期内的会员权益可继续使用至期限届满。</li>
+                </ol>
+            </section>
 
-        <div>
-            <h2>4. Rights Declaration</h2>
-            <ol>
-                <li>You can view Membership Service purchase information on {brandDomain}. Disputes must be raised promptly. {brandDomain}'s records are the sole evidence of purchase.</li>
-                <li>{brandDomain} is not liable for losses due to user errors, account issues, or misuse.</li>
-            </ol>
-        </div>
+            <section>
+                <h2>4. 会员使用规则</h2>
+                <ol>
+                    <li>会员仅限购买账户本人使用，不得出售、出租、转让、出借或与他人共享。</li>
+                    <li>会员内容仅供个人观看，不代表相关知识产权转让给您，也不得用于商业传播或公开放映。</li>
+                    <li>因版权、法律或运营安排，部分会员内容和权益可能调整或下架。</li>
+                    <li>会员属于数字服务。除适用法律、本协议或退款政策另有规定外，已交付的会员费用不予退还。</li>
+                </ol>
+            </section>
 
-        <div>
-            <h2>5. Penalty Rules</h2>
-            <p>Prohibited behaviors include:</p>
-            <ul>
-                <li>Obtaining membership services for profit;</li>
-                <li>Sharing membership accounts;</li>
-                <li>Misusing content;</li>
-                <li>Using stolen accounts;</li>
-                <li>Exploiting system bugs;</li>
-                <li>Violating {brandDomain}'s rules.</li>
-            </ul>
-            <p>{brandDomain} may impose penalties, including suspension or termination of services and account restrictions, without compensation or refunds.</p>
-        </div>
+            <section>
+                <h2>5. 禁止行为及处理</h2>
+                <p>您不得实施以下行为：</p>
+                <ul>
+                    <li>以营利、转售或代充为目的获取会员服务；</li>
+                    <li>共享、盗用或非法交易会员账户；</li>
+                    <li>录制、复制、传播或商业利用会员内容；</li>
+                    <li>利用系统漏洞、自动化程序或其他不正当方式获取权益；</li>
+                    <li>违反法律、本协议或 {brandDomain} 的其他规则。</li>
+                </ul>
+                <p>
+                    对违反规则的行为，{brandDomain} 可以采取撤销异常权益、限制账户、暂停或终止会员服务等措施；涉嫌违法的，将依法处理。
+                </p>
+            </section>
 
-        <div>
-            <h2>6. Force Majeure</h2>
-            <ol>
-                <li>{brandDomain} is not liable for losses due to force majeure events, including system maintenance, third-party failures, or natural disasters.</li>
-                <li>{brandDomain} will address service interruptions promptly but is not liable for resulting losses.</li>
-            </ol>
-        </div>
+            <section>
+                <h2>6. 服务调整与不可抗力</h2>
+                <ol>
+                    <li>因系统维护、版权变化、第三方故障、网络原因或业务调整，会员服务可能暂时中断或发生变化。</li>
+                    <li>因自然灾害、政府行为、公共事件或其他超出合理控制范围的情况造成影响，我们将在合理范围内协助处理。</li>
+                </ol>
+            </section>
 
-        <div>
-            <h2>7. Law</h2>
-            <ol>
-                <li>This Agreement is governed by the laws of the Republic of Singapore.</li>
-                <li>Disputes will be resolved through negotiation or litigation in the defendant's jurisdiction.</li>
-            </ol>
-        </div>
+            <section>
+                <h2>7. 退款规则</h2>
+                <ol>
+                    <li>符合适用法律、支付渠道规则或退款政策规定的订单，可以申请退款。</li>
+                    <li>申请时请提供账户信息、订单号、购买时间、支付凭证和退款原因。</li>
+                    <li>已经使用会员内容、存在欺诈或滥用行为，或者账户因违规受到限制的，可能无法退款。</li>
+                    <li>经审核批准的退款将原路退回，实际到账时间由银行、支付机构或应用商店决定。</li>
+                </ol>
+            </section>
 
-        <div>
-            <h2>8. Suspension, Interruption, and Termination of Services</h2>
-            <ol>
-                <li>{brandDomain} may change, suspend, or terminate services due to business needs or content license changes. Your rights will be protected according to the law.</li>
-            </ol>
-        </div>
+            <section>
+                <h2>8. 适用法律与争议解决</h2>
+                <ol>
+                    <li>本协议适用香港法律，但不影响您所在地区依法享有的强制性消费者保护权利。</li>
+                    <li>争议应先通过友好协商解决；协商不成的，可向依法具有管辖权的法院提起诉讼。</li>
+                </ol>
+            </section>
 
-        <div>
-            <h2>9. Miscellaneous</h2>
-            <ol>
-                <li>{brandDomain}'s failure to enforce any right under this Agreement does not waive that right.</li>
-                <li>Invalid or unenforceable provisions do not affect the remaining Agreement.</li>
-                <li>Headings are for convenience and do not affect interpretation.</li>
-                <li>Undefined terms have the meaning given in {brandDomain}'s rules.</li>
-                <li>Contact {brandDomain}'s customer service for assistance.</li>
-            </ol>
+            <section>
+                <h2>9. 其他</h2>
+                <ol>
+                    <li>本协议部分条款无效或不可执行，不影响其余条款的效力。</li>
+                    <li>未立即行使本协议项下权利，不构成对该权利的放弃。</li>
+                    <li>如需帮助，请通过 {brandDomain} 客户服务渠道联系我们。</li>
+                </ol>
+            </section>
         </div>
-
-        <div>
-            <h2>10. Refund Policy</h2>
-            <ol>
-                <li>Refunds are allowed if:
-                    <ul>
-                        <li>No paid content has been watched within 30 days of activation.</li>
-                    </ul>
-                </li>
-                <li>Refund requests must be made through {brandDomain}'s customer service. Refunds are processed according to {brandDomain}'s policies.</li>
-                <li>Refunds are not provided for terminated or restricted accounts.</li>
-                <li>{brandDomain} may deny refund requests for fraudulent or abusive behavior.</li>
-            </ol>
-        </div>
-    </div>
+    );
 }

@@ -3,46 +3,41 @@ import { Page } from "@/layouts/user";
 import { FormattedMessage } from "react-intl";
 import Forward from "@/components/Forward";
 import { toast } from "sonner";
-import { BRAND_LOGO_SRC } from "@/constants/brand";
+import { BRAND_DOMAIN_DISPLAY, BRAND_LOGO_SRC } from "@/constants/brand";
+import "@/styles/about-reelshort.scss";
 
 export default function Component() {
     function handleVersion() {
         toast(navigator.userAgent);
     }
 
-    return <Page title="about_us">
-        <div className="flex flex-col gap-4 h-full w-full py-8">
-            <div className="flex justify-center items-center flex-col gap-2">
-                <img src={BRAND_LOGO_SRC} className="text-white w-12 h-12 rounded-md" alt="" />
-                <div><FormattedMessage id="domain" /></div>
+    return <Page title="about_us" bodyClassName="rs-about__body">
+        <div className="rs-about">
+            <div className="rs-about__brand">
+                <img src={BRAND_LOGO_SRC} className="rs-about__logo" alt="" />
+                <div className="rs-about__domain">{BRAND_DOMAIN_DISPLAY}</div>
             </div>
-            <div className="m-4 rounded-md bg-white">
+            <div className="rs-about__menu">
                 <LegalDocumentLink
                     key="terms_of_service"
                     title="terms_of_service"
-                    className="flex gap-2 justify-between items-center p-4"
+                    className="rs-about__row"
                 >
-                    <div className="flex gap-1 text-gray-600">
-                        <div className="text-md"><FormattedMessage id="terms_of_service" /></div>
-                    </div>
-                    <Forward className="text-slate-400" />
+                    <span><FormattedMessage id="terms_of_service" /></span>
+                    <Forward className="rs-about__chevron" />
                 </LegalDocumentLink>
                 <LegalDocumentLink
                     key="privacy_policy"
                     title="privacy_policy"
-                    className="flex gap-2 justify-between items-center p-4 border-t border-muted"
+                    className="rs-about__row"
                 >
-                    <div className="flex gap-1 text-gray-600">
-                        <div className="text-md"><FormattedMessage id="privacy_policy" /></div>
-                    </div>
-                    <Forward className="text-slate-400" />
+                    <span><FormattedMessage id="privacy_policy" /></span>
+                    <Forward className="rs-about__chevron" />
                 </LegalDocumentLink>
-                <div key="version" className="flex gap-2 justify-between items-center p-4 border-t border-muted" onClick={handleVersion}>
-                    <div className="flex gap-1 text-gray-600">
-                        <div className="text-md"><FormattedMessage id="version" /></div>
-                    </div>
-                    <div className="text-slate-400">1.0.2</div>
-                </div>
+                <button key="version" type="button" className="rs-about__row" onClick={handleVersion}>
+                    <span><FormattedMessage id="version" /></span>
+                    <span className="rs-about__version">{__APP_VERSION__}</span>
+                </button>
             </div>
         </div>
     </Page>

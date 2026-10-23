@@ -1,4 +1,3 @@
-import { ttclidForPayCreate } from '@/lib/adAttribution';
 import { fbAttributionForPayCreate } from '@/lib/fbAttribution';
 import { reportPayLog } from '@/lib/payLog';
 
@@ -10,12 +9,11 @@ export type PayCreateRequest = {
     discount_type?: number;
 };
 
-/** 组装 `pay/create` POST body（FB 传 fbp / fbc / TT 传 ttclid，按 Pixel 渠道互斥） */
+/** 组装 `pay/create` POST body（Facebook 渠道附带 fbp / fbc）。 */
 export function buildPayCreateData(data: PayCreateRequest): Record<string, unknown> {
     const payload: Record<string, unknown> = {
         ...data,
         ...fbAttributionForPayCreate(),
-        ...ttclidForPayCreate(),
     };
     if (data.discount_type == null) {
         delete payload.discount_type;

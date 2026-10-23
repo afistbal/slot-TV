@@ -1,10 +1,10 @@
 /**
- * 导出 src/locales → Excel，以 en.json 为 key 全集与英文参考。
- * 默认只导出「待翻译」条目（目标语言列为空或与英文相同）。
+ * 导出 src/locales → Excel，以 zh-CN.json 为 key 全集与简体中文参考。
+ * 默认只导出「待翻译」条目（繁体中文列为空或与简体中文相同）。
  *
  * 用法：
  *   npm run i18n:export
- *   node scripts/i18n-export-locales.mjs --langs es,fr,hi,it
+ *   node scripts/i18n-export-locales.mjs --langs zh-TW
  *   node scripts/i18n-export-locales.mjs --all-keys
  *   node scripts/i18n-export-locales.mjs --prefix retention_promo_
  *   node scripts/i18n-export-locales.mjs --all-langs --prefix retention_promo_ --out ./dist/retention-promo-i18n.xlsx
@@ -17,7 +17,7 @@ import XLSX from "xlsx";
 import {
   discoverLocaleCodes,
   langColumnHeader,
-  loadEnMessages,
+  loadSourceMessages,
   loadLocaleMessages,
   needsTranslation,
   NEW_LOCALE_CODES,
@@ -58,22 +58,22 @@ function defaultLangs() {
     fs.existsSync(path.join(root, "src", "locales", `${code}.json`))
   );
   if (existing.length) return existing;
-  return discoverLocaleCodes(["en", "zh"]);
+  return discoverLocaleCodes(["zh-CN"]);
 }
 
 function main() {
   const { file: outArg, langs: langsArg, pendingOnly, prefix, allLangs } = parseArgs();
-  const en = loadEnMessages();
-  let allKeys = sortedKeys(en);
+  const source = loadSourceMessages();
+  let allKeys = sortedKeys(source);
   if (prefix) {
     allKeys = allKeys.filter((key) => key.startsWith(prefix));
     if (!allKeys.length) {
-      console.error(`en.json 中无匹配前缀 "${prefix}" 的 key`);
+      console.error(`zh-CN.json 中无匹配前缀 "${prefix}" 的 key`);
       process.exit(1);
     }
   }
   if (!allKeys.length) {
-    console.error("en.json 为空");
+    console.error("zh-CN.json 为空");
     process.exit(1);
   }
 
@@ -90,8 +90,8 @@ function main() {
   const localeData = Object.fromEntries(langs.map((code) => [code, loadLocaleMessages(code)]));
   const keys = pendingOnly
     ? allKeys.filter((key) => {
-        const enVal = en[key] == null ? "" : String(en[key]);
-        return langs.some((code) => needsTranslation(key, code, localeData, enVal));
+        const sourceVal = source[key] == null ? "" : String(source[key]);
+        return langs.some((code) => needsTranslation(key, code, localeData, sourceVal));
       })
     : allKeys;
 
@@ -100,17 +100,17 @@ function main() {
     process.exit(0);
   }
 
-  const header = ["key", "en (source)", ...langs.map(langColumnHeader), "notes"];
+  const header = ["key", "zh-CN (source)", ...langs.map(langColumnHeader), "notes"];
   const aoa = [
     header,
     ...keys.map((key) => {
-      const enVal = en[key] == null ? "" : String(en[key]);
+      const sourceVal = source[key] == null ? "" : String(source[key]);
       const cols = langs.map((code) => {
         const raw = localeData[code][key];
         const val = raw == null ? "" : String(raw);
         return val.trim() !== "" ? val : "";
       });
-      return [key, enVal, ...cols, ""];
+      return [key, sourceVal, ...cols, ""];
     }),
   ];
 
@@ -127,9 +127,9 @@ function main() {
 
   const readme = [
     ["说明"],
-    ["1. 请勿修改 A 列 key；B 列为 en.json 英文参考。"],
-    ["2. 默认仅导出待翻译行（目标语言列为空或与英文相同）。"],
-    ["3. 默认语言列：es / it / fr / hi；--all-langs 导出全部 15 种目标语言。"],
+    ["1. 请勿修改 A 列 key；B 列为 zh-CN.json 简体中文参考。"],
+    ["2. 默认仅导出待翻译行（繁体中文列为空或与简体中文相同）。"],
+    ["3. 当前仅维护 zh-CN / zh-TW 两种语言；目标语言为 zh-TW。"],
     ["4. 导出全部 key：加 --all-keys；按前缀：--prefix retention_promo_"],
     ["5. 导入：npm run i18n:import -- --file ./翻译稿.xlsx（仅 patch Excel 行，保留 json 原 key 顺序）"],
     ["6. 占位符如 {price}、{renewal}、{percent}、{sec} 请保留。"],

@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 // import legacy from '@vitejs/plugin-legacy'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { copyFileSync, cpSync, existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from "path"
 
@@ -83,7 +83,7 @@ function brandConfigFromEnv(env: Record<string, string>): BrandConfig {
     domainDisplay,
     description: (env.VITE_BRAND_DESCRIPTION || `Watch short dramas on ${displayName}.`).trim(),
     shareOrigin: (env.VITE_SHARE_ORIGIN || '').trim().replace(/\/+$/, ''),
-    apiBaseURL: (env.VITE_API_BASE_URL || 'https://test.yogoshort.com/api').trim(),
+    apiBaseURL: (env.VITE_API_BASE_URL || 'https://i.yogoshort.com/api').trim(),
     legalSiteUrl: (env.VITE_BRAND_LEGAL_SITE_URL || legalSiteUrlFromDomainDisplay(domainDisplay)).trim().replace(/\/+$/, ''),
     assetBase,
     faviconSrc: joinPublicAsset(assetBase, 'favorite.png'),
@@ -107,6 +107,7 @@ function patchHtmlBrand(html: string, brand: BrandConfig, version?: string): str
   const logoSrc = version ? withAssetVersion(brand.logoSrc, version) : brand.logoSrc
   let next = html
   next = replaceMetaContent(next, 'name', 'mobile-web-app-title', brand.displayName)
+  next = replaceMetaContent(next, 'name', 'apple-mobile-web-app-title', brand.displayName)
   next = replaceMetaContent(next, 'property', 'og:title', brand.displayName)
   next = replaceMetaContent(next, 'property', 'og:description', brand.description)
   next = replaceMetaContent(next, 'property', 'og:site_name', brand.displayName)
@@ -123,16 +124,8 @@ function patchManifestBrand(raw: string, brand: BrandConfig): string {
   manifest.name = brand.displayName
   manifest.short_name = brand.displayName
   manifest.icons = [
-    {
-      src: brand.icon192Src,
-      sizes: '192x192',
-      type: 'image/png',
-    },
-    {
-      src: brand.icon512Src,
-      sizes: '512x512',
-      type: 'image/png',
-    },
+    { src: brand.icon192Src, sizes: '192x192', type: 'image/png' },
+    { src: brand.icon512Src, sizes: '512x512', type: 'image/png' },
   ]
   return `${JSON.stringify(manifest, null, 4)}\n`
 }
@@ -173,7 +166,7 @@ function patchLegalSiteUrl(raw: string, brand: BrandConfig): string {
     .replace(/\bYogoShort\b/g, brand.displayName)
 }
 
-/** 与 `scripts/sync-public-html-assets.mjs` 规则一致：为 HTML 内引用的本地图标/清单加 `?v=package.version`。 */
+/** 与 `scripts/sync-public-html-assets.mjs` 规则一致：为 HTML 内引用的本地图标加 `?v=package.version`。 */
 function patchHtmlAssetRefs(html: string, version: string, brand: BrandConfig): string {
   const assetByPath: Record<string, string> = {
     '/favorite.png': brand.faviconSrc,
@@ -206,12 +199,12 @@ function inferApiOriginForPreconnect(env: Record<string, string>): string {
       /* fall through */
     }
   }
-  const proxy = (env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com').trim()
+  const proxy = (env.VITE_API_PROXY_TARGET || 'https://i.yogoshort.com').trim()
   try {
     const p = proxy.startsWith('http://') || proxy.startsWith('https://') ? proxy : `https://${proxy}`
     return new URL(p).origin
   } catch {
-    return 'https://test.yogoshort.com'
+    return 'https://i.yogoshort.com'
   }
 }
 
@@ -313,9 +306,8 @@ function htmlAssetCacheBust(version: string, brand: BrandConfig): Plugin {
         const raw = req.url?.split('?')[0] ?? ''
         const name = raw.startsWith('/') ? raw.slice(1) : raw
         if (name === 'manifest.json') {
-          const fp = path.join(process.cwd(), 'public', name)
           try {
-            const disk = readFileSync(fp, 'utf-8')
+            const disk = readFileSync(path.join(process.cwd(), 'public', name), 'utf-8')
             res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8')
             res.end(patchManifestBrand(disk, brand))
           } catch {
@@ -374,86 +366,22 @@ function patchStaticBrandFiles(outDir: string, brand: BrandConfig, version: stri
   }
 }
 
-/** TikTok Minis CLI 固定校验构建产物根目录的 `index.html`。 */
-function injectTikTokMinisClientKey(clientKey: string): Plugin {
-  return {
-    name: 'inject-tiktok-minis-client-key',
-    transformIndexHtml(html) {
-      return html.replaceAll('%VITE_TIKTOK_MINIS_CLIENT_KEY%', clientKey)
-    },
-  }
-}
-
-function finalizeTikTokMinisEntry(outDir: string): Plugin {
-  return {
-    name: 'finalize-tiktok-minis-entry',
-    closeBundle() {
-      const source = path.join(outDir, 'index.tiktok.html')
-      const target = path.join(outDir, 'index.html')
-      if (!existsSync(source)) {
-        throw new Error(`TikTok Minis entry was not emitted: ${source}`)
-      }
-      renameSync(source, target)
-    },
-  }
-}
-
-/** 开发时让 TikTok 调试桥访问根路径也能拿到 TikTok 专用 HTML 入口。 */
-function serveTikTokMinisEntry(): Plugin {
-  return {
-    name: 'serve-tiktok-minis-entry',
-    configureServer(server) {
-      return () => {
-        server.middlewares.use(async (req, res, next) => {
-          const pathname = req.url?.split('?')[0] ?? ''
-          if (pathname !== '/' && pathname !== '/index.html') {
-            next()
-            return
-          }
-
-          try {
-            const entry = readFileSync(path.join(process.cwd(), 'index.tiktok.html'), 'utf-8')
-            const html = await server.transformIndexHtml(req.url ?? '/', entry)
-            res.statusCode = 200
-            res.setHeader('Content-Type', 'text/html; charset=utf-8')
-            res.end(html)
-          } catch (error) {
-            next(error as Error)
-          }
-        })
-      }
-    },
-  }
-}
-
 // https://vite.dev/config/
-export default ({ mode, command }: { mode: string; command: string }) => {
-  const env = {
-    // TikTok variant modes (for example `tiktok-prod`) inherit the local
-    // Minis credentials, while their own env file controls the API endpoint.
-    ...(mode.startsWith('tiktok') ? loadEnv('tiktok', process.cwd(), '') : {}),
-    ...loadEnv(mode, process.cwd(), ''),
-  }
-  const isTikTokMinis = mode === 'tiktok' || env.VITE_PLATFORM === 'tiktok'
+export default ({ mode, command }: { mode: string; command: 'build' | 'serve' }) => {
+  const env = loadEnv(mode, process.cwd(), '')
   const numberedProdMatch = /^prod\d+$/.exec(mode)
   const isProdBuild = mode === 'prod' || mode === 'production'
-  const isDevServer = command === 'serve'
-  const outDir = isTikTokMinis
-    ? 'dist/tiktok'
-    : numberedProdMatch
-      ? `D:/JJ-TV/movie-www-${mode}`
-      : isProdBuild
-        ? 'D:/JJ-TV/movie-www-prod'
-        : 'D:/JJ-TV/movie-www'
-  const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'https://test.yogoshort.com'
+  const defaultOutDir = numberedProdMatch
+    ? `D:/JJ-TV/movie-www-${mode}`
+    : isProdBuild
+      ? 'D:/JJ-TV/movie-www-prod'
+      : 'D:/JJ-TV/movie-www'
+  // 临时输出目录仅用于 `vite build` 验证，不能影响 `vite --mode prod` 开发服务的公共资源解析。
+  const buildOutDirOverride = command === 'build' ? env.VITE_OUT_DIR?.trim() : ''
+  const outDir = buildOutDirOverride || defaultOutDir
+  const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'https://i.yogoshort.com'
   const apiOriginForHints = inferApiOriginForPreconnect(env)
   const brand = brandConfigFromEnv(env)
-
-  if (isTikTokMinis && !env.VITE_TIKTOK_MINIS_CLIENT_KEY?.trim()) {
-    throw new Error(
-      'Missing VITE_TIKTOK_MINIS_CLIENT_KEY. Copy .env.tiktok.example to .env.tiktok.local and set the Client Key from TikTok Developer Portal.',
-    )
-  }
 
   return defineConfig({
     define: {
@@ -461,66 +389,48 @@ export default ({ mode, command }: { mode: string; command: string }) => {
     },
     plugins: [
       htmlAssetCacheBust(appVersion, brand),
-      ...(!isTikTokMinis ? [
-        copyShareHtmlFiles(outDir),
-        opNewStatic(outDir, brand, appVersion),
-        patchStaticBrandFiles(outDir, brand, appVersion),
-      ] : [
-        injectTikTokMinisClientKey(env.VITE_TIKTOK_MINIS_CLIENT_KEY.trim()),
-        // Public legal HTML is copied verbatim by Vite. Patch its displayed
-        // YogoShort URLs/name for the TikTok YoyoShort variant as well.
-        patchStaticBrandFiles(outDir, brand, appVersion),
-        finalizeTikTokMinisEntry(outDir),
-        serveTikTokMinisEntry(),
-      ]),
+      copyShareHtmlFiles(outDir),
+      opNewStatic(outDir, brand, appVersion),
+      patchStaticBrandFiles(outDir, brand, appVersion),
       injectApiOriginPreconnect(apiOriginForHints),
       react(),
       tailwindcss(),
-      // legacy({
-      //   targets: ['defaults', 'not IE 11'],
-      // }),
-      ...(!isTikTokMinis ? [VitePWA({
+      VitePWA({
         registerType: 'prompt',
-        devOptions: {
-          enabled: !isDevServer,
-        },
         manifest: false,
         injectRegister: false,
         workbox: {
-          /** 默认 2 MiB；主 chunk 超限时 build 会失败，见 vite-plugin-pwa / workbox FAQ */
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-          // injectRegister 为 false 时插件不会自动合并这两项；手动注册仍依赖 SW 主动跳过 waiting 并接管页面。
           skipWaiting: true,
           clientsClaim: true,
-          importScripts: [`/pwa-force-reload.js?v=${appVersion}`],
-          // 控制 SW 安装体积和请求数量；懒加载路由、语言包、页面级 CSS 由 CDN 按需加载。
+          importScripts: [`/pwa-force-reload.js?v=${appVersion}`, `/push-events.js?v=${appVersion}`],
           globPatterns: [
             'assets/index-*.js',
             'assets/index-*.css',
-            'assets/brand-*.js',
           ],
-          // 不再用缓存里的 index.html 兜底所有 SPA 导航，避免旧 app shell 长时间滞留。
           navigateFallback: null,
           navigateFallbackDenylist: [
             /^\/api\//,
             /^\/op_new\//,
-            /^\/[\w-]+\.html/
+            /^\/[\w-]+\.html/,
           ],
           globIgnores: ['**/share*', '**/op_new/**', 'airwallex.html'],
         },
-      })] : [])
+      }),
+      // legacy({
+      //   targets: ['defaults', 'not IE 11'],
+      // }),
     ],
     build: {
       outDir,
-      // 由 `npm run build` 前置脚本清理 outDir，保留 `.git` / `.well-known` / Google 验证 html 等
-      emptyOutDir: isTikTokMinis,
+      // 构建脚本清理旧产物（含 assets），仅保留 .git / .well-known / Google 验证文件。
+      // 禁止 Vite 整目录清空，以免误删这些保留文件。
+      emptyOutDir: false,
       rollupOptions: {
-        input: isTikTokMinis
-          ? { index: 'index.tiktok.html' }
-          : {
-              index: 'index.html',
-              share: 'share.html',
-            },
+        input: {
+          index: 'index.html',
+          share: 'share.html',
+        },
       }
     },
     resolve: {
@@ -531,7 +441,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
     },
     server: {
       host: '0.0.0.0',
-      port: isTikTokMinis ? 5189 : 5188,
+      port: 5188,
       proxy: {
         '/api': {
           target: apiProxyTarget,
@@ -542,7 +452,7 @@ export default ({ mode, command }: { mode: string; command: string }) => {
     },
     preview: {
       host: '0.0.0.0',
-      port: isTikTokMinis ? 5189 : 5188,
+      port: 5188,
       proxy: {
         '/api': {
           target: apiProxyTarget,

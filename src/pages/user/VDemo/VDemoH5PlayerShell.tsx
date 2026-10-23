@@ -21,8 +21,10 @@ import { VideoPlayerH5BackBar } from '@/components/video-player/VideoPlayerH5Bac
 // Legacy cold-unmute overlay import, currently disabled:
 // import { VideoPlayerH5ColdUnmuteOverlay } from '@/components/video-player/VideoPlayerH5ColdUnmuteOverlay';
 import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
+import { VideoPlayerRatingDialog } from '@/components/video-player/VideoPlayerRatingDialog';
 import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
-import { TikTokRewardedFallbackOverlay } from '@/components/video-player/TikTokRewardedFallbackOverlay';
+import { VideoPlayerAmbientLayer } from '@/components/video-player/VideoPlayerAmbient';
+import { useVideoPlayerAmbient } from '@/components/video-player/useVideoPlayerAmbient';
 // Legacy cold-unmute hook imports, currently disabled:
 // import { useFeedPlayerColdUnmuteVisible } from '@/components/video-player/useFeedPlayerColdUnmuteVisible';
 // import { useFeedPlayerTapToUnmute } from '@/components/video-player/useFeedPlayerTapToUnmute';
@@ -39,14 +41,14 @@ import {
     VideoPlayerEpisodeSpeedIntroDrawers as ForYouPlayerEpisodeSpeedIntroDrawers,
 } from '@/components/video-player/views/VideoPlayerEpisodeSpeedIntroDrawers';
 import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
+import { useRequireAccount } from '@/hooks/useRequireAccount';
+import { useDramaEngagement } from '@/hooks/useDramaEngagement';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import { cn } from '@/lib/utils';
-import { resolveStaticMediaUrl } from '@/lib/resolveStaticMediaUrl';
-import { isTikTokPlatform } from '@/platform';
-import { prepareTikTokRewardedEpisodeUnlock } from '@/lib/tiktokRewardedEpisodeUnlock';
 
 import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
-import { useVDemoActiveEpisode } from './vDemoShellEpisode';
+import { fetchVDemoActiveEpisode } from './fetchVDemoEpisode';
+import { resolveVDemoShellEpisode, useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
@@ -80,6 +82,7 @@ export function VDemoH5PlayerShell({
     onEpisodeDetailReady,
 }: VDemoH5PlayerShellProps) {
     const userStore = useUserStore();
+    const requireAccount = useRequireAccount();
     const data = playerData;
     const activeRow = data.episodes[activeIndex];
     const episodeNo = activeRow?.episode ?? 1;
@@ -100,14 +103,30 @@ export function VDemoH5PlayerShell({
     const hasNext = activeIndex < data.episodes.length - 1;
     const episodeRef = useRef<HTMLDivElement>(null);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
-    const lastTikTokPrewarmAtRef = useRef<Map<number, number>>(new Map());
+    const navigationAttemptRef = useRef(0);
+    const [blockedEpisode, setBlockedEpisode] = useState<{
+        index: number;
+        detail: IPlayerEpisode | null;
+    } | null>(null);
+    const commerceRow = blockedEpisode ? data.episodes[blockedEpisode.index] : activeRow;
+    const commerceEpisode = blockedEpisode
+        ? blockedEpisode.detail ?? resolveVDemoShellEpisode(commerceRow)
+        : episode;
+    const commerceLocked = blockedEpisode != null || activeLocked;
 
     const [favorite, setFavorite] = useState(() =>
         resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
     );
+    const engagement = useDramaEngagement({
+        dramaId: data.info.id,
+        initialLiked: data.info.is_like === true,
+        initialLikeCount: data.info.like,
+        initialRatingScore: data.info.my_rating,
+    });
     const [introductionOpen, setIntroductionOpen] = useState(false);
     const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
     const [isFullscreenUi, setIsFullscreenUi] = useState(false);
+    const { ambientEnabled, toggleAmbient } = useVideoPlayerAmbient();
 
     const handleFullscreenUiChange = useCallback(
         (active: boolean) => {
@@ -126,91 +145,20 @@ export function VDemoH5PlayerShell({
         setShareShowControls,
         handleShareAction,
         handleCopyEmbedCode,
-    } = useVideoPlayerShare(data, staticBase, episodeNo);
+    } = useVideoPlayerShare(data);
 
     const shareCardPosterUrl = resolveVideoPosterUrl(staticBase, data.info, data.info.id);
-    const tiktokAutoLaunchedEpisodeIdsRef = useRef(new Set<number>());
-    const getTikTokLockedPosterUrl = useCallback(
-        (_item: DouyinFeedVideoItem, index: number) => {
-            if (!isTikTokPlatform()) return '';
-            const episodeImage = String(data.episodes[index]?.image ?? '').trim();
-            return episodeImage
-                ? resolveStaticMediaUrl(episodeImage, staticBase)
-                : shareCardPosterUrl;
-        },
-        [data.episodes, shareCardPosterUrl, staticBase],
-    );
-    const firstLockedIndex = data.episodes.findIndex(resolveEpisodeCellLocked);
-    const tiktokEpisodeOrderBlocked = Boolean(
-        isTikTokPlatform()
-        && !viewerIsVip
-        && activeLocked
-        && firstLockedIndex >= 0
-        && activeIndex > firstLockedIndex,
-    );
-    const prepareTikTokEpisodeAtIndex = useCallback(
-        (index: number) => {
-            if (!isTikTokPlatform()) return;
-            const firstLocked = data.episodes.findIndex(resolveEpisodeCellLocked);
-            if (firstLocked < 0 || index !== firstLocked) return;
-
-            const episodeId = Number(data.episodes[index]?.id);
-            if (!episodeId) return;
-            const now = Date.now();
-            const lastAttemptAt = lastTikTokPrewarmAtRef.current.get(episodeId) ?? 0;
-            if (now - lastAttemptAt < 5_000) return;
-            lastTikTokPrewarmAtRef.current.set(episodeId, now);
-            if (tiktokAutoLaunchedEpisodeIdsRef.current.has(episodeId)) return;
-            tiktokAutoLaunchedEpisodeIdsRef.current.add(episodeId);
-
-            void prepareTikTokRewardedEpisodeUnlock(episodeId)
-                .then(() => {
-                    vipCommerceRef.current?.openRewardedAd(episodeId);
-                })
-                .catch((error) => {
-                    tiktokAutoLaunchedEpisodeIdsRef.current.delete(episodeId);
-                    console.warn('[TikTok ad unlock] Prepare failed.', {
-                        episodeId,
-                        error,
-                    });
-                });
-        },
-        [data.episodes, resolveEpisodeCellLocked],
-    );
-    const renderTikTokLockedOverlay = useCallback(
-        (item: DouyinFeedVideoItem, index: number) => {
-            if (!isTikTokPlatform()) return null;
-            const episodeOrderBlocked = Boolean(
-                !viewerIsVip
-                && firstLockedIndex >= 0
-                && index > firstLockedIndex,
-            );
-            return (
-                <TikTokRewardedFallbackOverlay
-                    posterUrl={getTikTokLockedPosterUrl(item, index)}
-                    episodeOrderBlocked={episodeOrderBlocked}
-                    onRetry={() => {
-                        if (!episodeOrderBlocked) {
-                            vipCommerceRef.current?.openRewardedAd(
-                                Number(data.episodes[index]?.id),
-                            );
-                        }
-                    }}
-                />
-            );
-        },
-        [data.episodes, firstLockedIndex, getTikTokLockedPosterUrl, viewerIsVip],
-    );
-    const activeTikTokLockedPosterUrl = getTikTokLockedPosterUrl(
-        activePlayerItem,
-        activeIndex,
-    );
-
     useEffect(() => {
         setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
     }, [data.info.id, data.info.is_favorite]);
 
+    useEffect(() => {
+        navigationAttemptRef.current += 1;
+        setBlockedEpisode(null);
+    }, [activeIndex]);
+
     const handleToggleFavorite = useCallback(() => {
+        if (!requireAccount()) return;
         setFavorite((prev) => {
             const next = !prev;
             setVideoFavoriteOverride(data.info.id, next);
@@ -224,14 +172,56 @@ export function VDemoH5PlayerShell({
                 loading: false,
             });
         }
-    }, [data.info.id]);
+    }, [data.info.id, requireAccount]);
 
     const handlePaySuccessEpisodeDetail = useCallback(
         (detail: IPlayerEpisode) => {
+            const targetIndex = blockedEpisode?.index;
             applyVDemoEpisodeUnlock(detail);
+            setBlockedEpisode(null);
             onEpisodeUnlocked();
+            if (targetIndex != null) {
+                requestAnimationFrame(() => feedNavigateRef.current?.goToIndex(targetIndex));
+            }
         },
-        [onEpisodeUnlocked],
+        [blockedEpisode?.index, onEpisodeUnlocked],
+    );
+
+    const handleIncomingIndex = useCallback(
+        (index: number) => {
+            const row = data.episodes[index];
+            if (viewerIsVip || !row || !resolveVDemoDrawerEpisodeLocked(row, false)) {
+                return true;
+            }
+
+            const attempt = ++navigationAttemptRef.current;
+            void fetchVDemoActiveEpisode(row.id, false)
+                .then((detail) => {
+                    if (attempt !== navigationAttemptRef.current) {
+                        return;
+                    }
+                    if (detail) {
+                        applyVDemoEpisodeUnlock(detail);
+                        onEpisodeUnlocked();
+                    }
+                    if (detail && !detail.lock) {
+                        setBlockedEpisode(null);
+                        requestAnimationFrame(() => feedNavigateRef.current?.goToIndex(index));
+                        return;
+                    }
+                    setBlockedEpisode({ index, detail });
+                    requestAnimationFrame(() => vipCommerceRef.current?.openVip());
+                })
+                .catch(() => {
+                    if (attempt !== navigationAttemptRef.current) {
+                        return;
+                    }
+                    setBlockedEpisode({ index, detail: null });
+                    requestAnimationFrame(() => vipCommerceRef.current?.openVip());
+                });
+            return false;
+        },
+        [data.episodes, onEpisodeUnlocked, viewerIsVip],
     );
 
     const handleFeedNext = useCallback(() => {
@@ -247,24 +237,10 @@ export function VDemoH5PlayerShell({
             if (listIndex === activeIndex) {
                 return;
             }
-            prepareTikTokEpisodeAtIndex(listIndex);
             feedNavigateRef.current?.goToIndex(listIndex);
         },
-        [activeIndex, prepareTikTokEpisodeAtIndex],
+        [activeIndex],
     );
-
-    const handleIncomingIndex = useCallback(
-        (index: number) => {
-            prepareTikTokEpisodeAtIndex(index);
-        },
-        [prepareTikTokEpisodeAtIndex],
-    );
-
-    useEffect(() => {
-        if (activeLocked) {
-            prepareTikTokEpisodeAtIndex(activeIndex);
-        }
-    }, [activeIndex, activeLocked, prepareTikTokEpisodeAtIndex]);
 
     /* Legacy cold-unmute overlay wiring is intentionally disabled, not deleted.
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
@@ -315,10 +291,11 @@ export function VDemoH5PlayerShell({
                     />
                 }
                 isItemLocked={isFeedItemLocked}
-                getLockedPosterUrl={isTikTokPlatform() ? getTikTokLockedPosterUrl : undefined}
-                renderLockedOverlay={isTikTokPlatform() ? renderTikTokLockedOverlay : undefined}
-                onIncomingIndex={isTikTokPlatform() ? handleIncomingIndex : undefined}
-                preventNextFromLockedItem={isTikTokPlatform()}
+                onIncomingIndex={handleIncomingIndex}
+            />
+            <VideoPlayerAmbientLayer
+                active={ambientEnabled && !activeLocked}
+                playerItemId={activePlayerItem?.id ?? activeRow?.id ?? 0}
             />
             {/* Legacy cold-unmute overlay; keep commented for possible reuse.
             <VideoPlayerH5ColdUnmuteOverlay
@@ -326,7 +303,7 @@ export function VDemoH5PlayerShell({
                 onTapToUnmute={handleTapToUnmute}
             />
             */}
-            {activeLocked && !isTikTokPlatform() ? (
+            {activeLocked ? (
                 <VideoPlayerLockOverlay
                     variant="h5"
                     onUnlock={() => vipCommerceRef.current?.openVip()}
@@ -343,21 +320,26 @@ export function VDemoH5PlayerShell({
                     showVip={!userStore.isVIP()}
                     favorite={favorite}
                     favoriteCount={data.info.favorite}
+                    liked={engagement.liked}
+                    likeCount={engagement.count}
+                    ratingScore={engagement.ratingScore}
+                    ambient={ambientEnabled}
                     showEpisodeList
                     onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
                     onFavoriteClick={handleToggleFavorite}
+                    onLikeClick={engagement.handleToggleLike}
+                    onRatingClick={() => engagement.setRatingOpen(true)}
+                    onAmbientClick={toggleAmbient}
                     onEpisodeListClick={() => setEpisodeDrawerOpen(true)}
-                    onShareClick={() => setShareOpen(true)}
+                    onShareClick={() => void handleShareAction('link')}
                 />
             </div>
             <VideoPlayerVipCommerce
                 ref={vipCommerceRef}
                 variant="h5"
-                episodeRowId={activeRow?.id ?? 0}
-                locked={activeLocked}
-                tiktokEpisodeOrderBlocked={tiktokEpisodeOrderBlocked}
-                showTikTokLockedOverlay={false}
-                episode={episode}
+                episodeRowId={commerceRow?.id ?? 0}
+                locked={commerceLocked}
+                episode={commerceEpisode}
                 viewerIsVip={viewerIsVip}
                 onPaySuccessEpisodeDetail={handlePaySuccessEpisodeDetail}
                 shareOpen={shareOpen}
@@ -366,11 +348,7 @@ export function VDemoH5PlayerShell({
                 shareShowControls={shareShowControls}
                 onToggleShareShowControls={() => setShareShowControls((v) => !v)}
                 onClearShareEmbedCode={() => setShareEmbedCode('')}
-                posterUrl={
-                    isTikTokPlatform() && activeLocked
-                        ? activeTikTokLockedPosterUrl
-                        : shareCardPosterUrl
-                }
+                posterUrl={shareCardPosterUrl}
                 title={data.info.title}
                 onShareAction={handleShareAction}
                 onCopyEmbedCode={handleCopyEmbedCode}
@@ -392,6 +370,15 @@ export function VDemoH5PlayerShell({
                 tagsFromBackendOnly
                 maxTags={FORYOU_MAX_VISIBLE_TAGS}
                 resolveEpisodeCellLocked={resolveEpisodeCellLocked}
+            />
+            <VideoPlayerRatingDialog
+                open={engagement.ratingOpen}
+                title={data.info.title}
+                score={engagement.ratingScore}
+                variant="h5"
+                submitting={engagement.ratingSubmitting}
+                onOpenChange={engagement.setRatingOpen}
+                onSubmit={(score) => void engagement.handleSubmitRating(score)}
             />
         </div>
     );

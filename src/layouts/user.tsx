@@ -12,6 +12,13 @@ import { isVDemoPathname } from "@/constants/vDemoRoute";
 import { isForYouPathname } from "@/constants/foryouRoute";
 import { syncAdAttributionCache } from "@/lib/adAttribution";
 import { syncFbAttributionCache } from "@/lib/fbAttribution";
+import { getLuckyTasks } from '@/api/lucky';
+import { useRootStore } from '@/stores/root';
+import { useUserStore } from '@/stores/user';
+import { useLuckyStore } from '@/stores/lucky';
+import { AccountLoginDialog } from '@/components/AccountLoginDialog';
+import { useAuthPromptStore } from '@/stores/authPrompt';
+import { isAccountProtectedUrl } from '@/lib/accountAccess';
 
 const UserHome = lazy(() => import("@/pages/user/Home"));
 const UserSearch = lazy(() => import("@/pages/user/Search"));
@@ -40,6 +47,22 @@ function RouteSuspenseFallback() {
 
 export default function Component() {
     const location = useLocation();
+    const sessionReady = useRootStore(store => store.sessionBootstrapReady);
+    const userId = useUserStore(store => store.info?.id);
+    const userSigned = useUserStore(store => store.signed);
+    const userAnonymous = useUserStore(store => store.isAnonymous());
+    const requestLogin = useAuthPromptStore(store => store.requestLogin);
+    const luckyRevision = useLuckyStore(store => store.revision);
+
+    useEffect(() => {
+        if (!sessionReady) return;
+        const refreshTasks = () => {
+            if (document.visibilityState === 'visible') void getLuckyTasks(false).catch(() => undefined);
+        };
+        refreshTasks();
+        document.addEventListener('visibilitychange', refreshTasks);
+        return () => document.removeEventListener('visibilitychange', refreshTasks);
+    }, [sessionReady, userId, luckyRevision]);
 
     useEffect(() => {
         syncFbAttributionCache();
@@ -63,6 +86,37 @@ export default function Component() {
         return `${pathname}${search}`;
     }, [location]);
     const { isHome, isSearch } = usePrimaryTabKeepAlive();
+    const canSearch = userSigned && !userAnonymous;
+
+    useEffect(() => {
+        if (sessionReady && isSearch && !canSearch) requestLogin();
+    }, [canSearch, isSearch, requestLogin, sessionReady]);
+
+    useEffect(() => {
+        if (!sessionReady || canSearch) return;
+
+        const blockProtectedNavigation = (event: MouseEvent) => {
+            if (event.defaultPrevented || event.button !== 0) return;
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            const anchor = target.closest<HTMLAnchorElement>('a[href]');
+            if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+
+            let url: URL;
+            try {
+                url = new URL(anchor.href, window.location.href);
+            } catch {
+                return;
+            }
+            if (url.origin !== window.location.origin || !isAccountProtectedUrl(url)) return;
+
+            event.preventDefault();
+            requestLogin();
+        };
+
+        document.addEventListener('click', blockProtectedNavigation, true);
+        return () => document.removeEventListener('click', blockProtectedNavigation, true);
+    }, [canSearch, requestLogin, sessionReady]);
     const visitedHomeRef = useRef(false);
     const visitedSearchRef = useRef(false);
     if (isHome) visitedHomeRef.current = true;
@@ -104,7 +158,7 @@ export default function Component() {
                         </Suspense>
                     </div>
                 ) : null}
-                {visitedSearchRef.current ? (
+                {visitedSearchRef.current && canSearch ? (
                     <div
                         className={cn(
                             "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden",
@@ -127,6 +181,7 @@ export default function Component() {
             </div>
         </div>
         <ReelShortBottomNav hidden={hideBottomNav} />
+        <AccountLoginDialog />
     </div>;
 }
 

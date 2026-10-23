@@ -1,0 +1,2539 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>福利接口与源码核对</title><style>*{box-sizing:border-box}body{margin:0;background:#0c0d0f;color:#e9eef5;font:14px/1.7 system-ui,sans-serif}main{max-width:1180px;margin:28px auto;padding:0 18px 60px}h1{font-size:26px}h2{font-size:22px;margin:32px 0 14px}h3{margin:0;font-size:17px;overflow-wrap:anywhere}a{color:#ff91a4}nav{display:flex;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:2;background:#0c0d0ff5;padding:10px 0}nav a{border:1px solid #35373d;border-radius:8px;padding:6px 12px;text-decoration:none}.api,.flow{border:1px solid #30343a;border-radius:14px;background:#141619;padding:20px;margin:16px 0;scroll-margin-top:65px}.api>header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.post{font-weight:700;color:#ff6b85}.rpc{font-weight:700;color:#b5bdfd}.called{margin-left:auto;color:#65dca4;font-size:12px}.pending{color:#d8b85d;font-size:12px}.source{color:#959ca6;font-size:12px;overflow-wrap:anywhere}.json{border:1px solid #30343a;border-radius:10px;overflow:hidden;min-width:0}.json header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#1b1e22;font-size:12px}.json pre,.proof pre{margin:0;padding:14px;overflow:auto;max-height:420px;font:12px/1.7 Consolas,monospace}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}button{cursor:pointer;border:1px solid #63313f;border-radius:6px;background:#ff3d5d1a;color:#ff91a4;padding:5px 10px;white-space:nowrap}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:12px}td,th{padding:9px 12px;border:1px solid #30343a;text-align:left;vertical-align:top}.table-scroll{overflow:auto}code{overflow-wrap:anywhere}.proof{margin-top:14px;color:#a3acb7;font-size:12px}.proof summary{cursor:pointer}.warning{border-left:3px solid #cfac56;padding:10px 14px;background:#cfac5612}.group-nav{display:flex;flex-wrap:wrap;gap:12px}.flow p:last-of-type{color:#d8b85d}@media(max-width:680px){main{padding:0 12px}.api,.flow{padding:14px}.grid{grid-template-columns:1fr}.called{margin-left:0}h1{font-size:22px}nav{position:static}}</style></head><body><main><h1>福利接口与真实源码核对</h1><nav><a href="#connected">已接接口 · 2</a><a href="#flows">功能调用链</a><a href="#reference">原站调用 · 42</a><a href="#gaps">资源核查与待对接</a></nav><section id="connected"><h2>已接入我们的接口</h2><article class="api"><header><span class="post">POST</span><h3>/api/user/tasks</h3><span class="called">✓ 页面调用</span></header><p>福利任务：进入福利页、重试时拉取。</p><div class="json"><header>Request JSON<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><p class="source">Response JSON / 字段与校验：待用户提供本项目实际返回。</p><p class="source">src/pages/user/Lucky.tsx → getLuckyPage → getLuckyTasks（src/api/lucky.ts）</p></article><article class="api"><header><span class="post">POST</span><h3>/api/user/rewards</h3><span class="called">✓ 页面调用</span></header><p>福利奖励配置：进入福利页、重试时拉取。</p><div class="json"><header>Request JSON<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><p class="source">Response JSON / 字段与校验：待用户提供本项目实际返回。</p><p class="source">src/pages/user/Lucky.tsx → getLuckyPage → getLuckyRewards（src/api/lucky.ts）</p></article></section><section id="flows"><h2>逐项调用链与缺口</h2><p class="warning">原站 RPC、数据库表操作和认证 SDK 不能混写成我们已有的 REST 接口。下方只列查到的真实代码；✓ 只用于本项目有调用的接口。评论和转盘不开发。</p><article class="flow"><h3>福利数字红点和签到提示条</h3><p>原版 count = 未签到且不受限 ? 1 : 0，再加 eligible 时 free_left + gift_spins，再加 wish_pending.length。tickets 有独立提示但不直接加 count。本期不做转盘，应只接签到部分，不硬造活动次数。签到文案奖励按 rewards[(天数-1)%7] × multiplier 四舍五入。</p><p>当前缺口：需要我们的签到状态字段/路由。当前 tasks 返回数据还未提供，不能先显示虚假的 1。</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:2987</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>}
+
+function ua(e, t) {
+    let n = !!e &amp;&amp; !e.today &amp;&amp; !e.restricted,
+        r = t ? .eligible ? (t.free_left ? ? 0) + (t.gift_spins ? ? 0) : 0,
+        i = t ? .eligible ? t.tickets ? ? 0 : 0,
+        a = Array.isArray(t ? .wish_pending) ? t.wish_pending.length : 0,
+        o = +!!n + r + a;
+    return n ? {
+        count: o,
+        chipKey: `rewards.chipCheckin`,
+        chipParams: {
+            n: aa(e)
+        },
+        spins: r</pre></details></article><article class="flow"><h3>每日分享一次</h3><p>视频分享面板 → navigator.share 或复制分享文案 → log_event(share) → claim_daily_share → claim_newbie(first_share)。AbortError 直接退出。仅点福利“去做”是去视频页，不直接领奖。</p><p>当前缺口：需要我们自己的每日分享领取路由，以及是否保留视频页新手任务的决定。外部发布真实性的服务端机制不在归档里。</p><details class="proof"><summary>源码证据：chunlou.tv (2) / Feed-r2-PQT5YTxy.js:4049</summary><p class="source">SHA-256：2cd86bf6d65485038a5b82a87963c5d51549346d461194f5f88c07bea8edb3d3</p><pre>        }
+    }
+    async function _() {
+        let e = p.value;
+        if (!e) return;
+        let {
+            url: t,
+            title: n,
+            text: i
+        } = h(e);
+        if (navigator.share) try {
+            await navigator.share({
+                title: n,
+                text: i,
+                url: t</pre></details></article><article class="flow"><h3>连续追剧和今日观看不是同一接口</h3><p>播放器进度≥60 → await 保存该集 watch_history → touch_watch_streak。pending 冷却60秒后重试。今日观看另由 tasks[watch].need/sec/ready 决定，ready 后 claim_daily_watch。热度 ping_watch_batch 不能冒充奖励计时。</p><p>当前缺口：需要本项目集 ID 与原流程的映射、观看进度保存/追剧判定/每日观看领取路由；服务端防刷规则未提供。</p><details class="proof"><summary>源码证据：chunlou.tv (2) / Feed-r2-PQT5YTxy.js:6499</summary><p class="source">SHA-256：2cd86bf6d65485038a5b82a87963c5d51549346d461194f5f88c07bea8edb3d3</p><pre>            let Zn = !1,
+                Qn = 0;
+            async function $n(e, t) {
+                if (Zn || !r.user || t &lt; _d || Date.now() &lt; Qn) return;
+                Zn = !0, await Qe(e.id, r.user.id);
+                let {
+                    data: n
+                } = await R.rpc(`touch_watch_streak`), i = n;
+                if (i) {
+                    if ((i.milestone_coins ? ? 0) &gt; 0) {
+                        W(f(`feed.checkinMilestoneGranted`, {
+                            c: i.milestone_coins
+                        })), r.fetchProfile();
+                        return
+                    }</pre></details></article><article class="flow"><h3>给剧评分和三个不同限制</h3><p>评分待办：my_rating_candidates(5) + my_rating_quota → upsert_rating(p_drama,p_score)，返回数字奖励。未看过 MUST_WATCH_FIRST，日额度 DAILY_LIMIT_REACHED。待办弹窗成功后锁定该剧；播放器每天最多2次提示，只约束提示，不等于每日奖励数。</p><p>当前缺口：非空 candidates 抓包、我们评分三类路由及服务端门槛；不能继续用之前拟定的 awarded/score/left 响应。</p><details class="proof"><summary>源码证据：chunlou.tv (2) / rating-r2-WnwlVTF-.js:71</summary><p class="source">SHA-256：4d550828a82d5e7db9ba96e0636895db0a597fe9434ab2a70f70825b514baafa</p><pre>    return n ? [] : t ? ? []
+}
+async function v(e, t, n) {
+    let {
+        data: r,
+        error: a
+    } = await i.rpc(`upsert_rating`, {
+        p_drama: e,
+        p_score: t
+    });
+    if (a) {
+        let e = a.message ? ? ``;
+        return s(n(e.includes(`MUST_WATCH_FIRST`) ? `drama.mustWatchFirst` : e.includes(`DAILY_LIMIT_REACHED`) ? `drama.ratingLimitReached` : `errors.generic`)), null
+    }
+    let o = r ? ? 0;</pre></details></article><article class="flow"><h3>开启推送通知</h3><p>Web Push 能力检测 → 浏览器授权 → 等待现有 service worker → 建立/复用 PushSubscription → save_push_subscription → 刷新任务 → ready 后 claim_bonus_task(push_on)。SW 处理 push / notificationclick / pushsubscriptionchange。</p><p>当前缺口：我们的 VAPID 公钥、保存/解绑订阅路由、推送发送服务；PWA 缓存恢复不等于已经接好 Web Push。</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:679</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>}
+
+function Rt() {
+    let e = v(typeof navigator &lt; `u` &amp;&amp; `serviceWorker` in navigator &amp;&amp; typeof window &lt; `u` &amp;&amp; `PushManager` in window &amp;&amp; `Notification` in window),
+        t = v(typeof Notification &lt; `u` ? Notification.permission : `denied`);
+    async function n(e) {
+        let t = e.toJSON();
+        if (!t.endpoint || !t.keys ? .p256dh || !t.keys ? .auth) return;
+        let {
+            error: n
+        } = await z.rpc(`save_push_subscription`, {
+            p_endpoint: t.endpoint,
+            p_p256dh: t.keys.p256dh,
+            p_auth_key: t.keys.auth,
+            p_user_agent: navigator.userAgent</pre></details></article><article class="flow"><h3>绑定 X 与关注 X 分开</h3><p>绑定走 SDK auth.linkIdentity，redirectTo 为当前 origin。关注先打开配置的官方 X，再返回调用 request_x_follow_check；ready/queued 后通过 claim_bonus_task(follow_x) 领取，not_yet 不冒充成功，x_used 防跨账号重复身份奖励。</p><p>当前缺口：我们的 OAuth 绑定服务、回调和官方 X 配置；前端不能证明后台如何核验关注，归档没有这段服务端代码。</p><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2972</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                            error: e
+                        } = await k.auth.linkIdentity({
+                            provider: `x`,
+                            options: {
+                                redirectTo: window.location.origin
+                            }
+                        });
+                        e &amp;&amp; N(ne(e));
+                        return
+                    }
+                    if (e.action === `telegram`) {
+                        if (Dt($e.value, yt) === `direct`) {
+                            yt = !0, vt = !0, window.open(M.social.tgChannelJoinUrl, `_blank`, `noopener`);
+                            return
+                        }</pre></details></article><article class="flow"><h3>Telegram 频道与机器人绑定</h3><p>已有 Telegram 身份走直接频道引导；否则 tg_bind_start 返回 token，拼机器人 start=bind_TOKEN；回来刷新 once[join_tg]，ready 后 claim_bonus_task(join_tg)。不会因打开 t.me 就发金币。</p><p>当前缺口：我们自己的 bot/频道、绑定路由与机器人 webhook；现有归档没有 token 核验和频道成员查询服务。</p><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2989</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                                data: e,
+                                error: t
+                            } = await k.rpc(`tg_bind_start`);
+                            return t ? (N(ne(t)), null) : typeof e == `string` ? `${M.social.tgBotUrl}?start=bind_${e}` : null
+                        }) !== `none` &amp;&amp; (vt = !0);
+                        return
+                    }
+                    e.key === `follow_x` &amp;&amp; (St = !0), window.open(e.href, `_blank`, `noopener`)
+                }
+            }
+            async function ht() {
+                let {
+                    data: e
+                } = await k.rpc(`request_x_follow_check`), t = e ? ? {};
+                !t.ready &amp;&amp; !t.queued || (t.queued &amp;&amp; (N(n(`lucky.onceChecking`)), await new Promise(e =&gt; setTimeout(e, 3e3))), wt || X())</pre></details></article><article class="flow"><h3>按分类看剧（补抓已核实）</h3><p>Browse 调用 categories 模块读取 app_settings[key=categories] 的 list/groups，合并首页 categories/category_counts。cat/tag/q/sort/since/vip/vo 同步到 URL；分类等筛选立即重置分页，搜索词变化防抖 300ms，再由主包 browse_dramas 查询，每页24；接近底部400px继续加载。feed_pool 是另一套推荐候选池，不是分类列表接口。</p><p>当前缺口：三个 JS 正文已补齐，不再需要重抓。接下来核对本项目已有分类/列表接口的字段和游标，不擅自新增平行接口。</p><details class="proof"><summary>源码证据：chunlou.tv (3) / Browse-r2-0OtGzhsK.js:1986</summary><p class="source">SHA-256：eb3e9a06b22291315685dd55a325c0461a1d79cdabc1945c9f26423338ca1292</p><pre>                Ue = 0,
+                We = null;
+            async function Ge(e) {
+                if (e) Z.value = Ne();
+                else if (Z.value.exhausted || He.value) return;
+                let t = ++Ue;
+                He.value = !0;
+                try {
+                    let n = await be({
+                        q: U.value,
+                        cat: W.value,
+                        tag: J.value,
+                        sort: Y.value,
+                        sinceDays: X.value,
+                        vipPool: G.value,</pre></details></article><article class="flow"><h3>个人中心签到、连续追剧、等级与流水（补抓已核实）</h3><p>签到复用主包 checkin 状态缓存，claim_checkin 前检查 busy/today/restricted，成功刷新账号及签到状态。连续追剧展示另读 watch_streak_status；等级另读 my_level_status；coin_logs 表展示金币变动流水，不能与 creator 佣金明细混用。</p><p>当前缺口：源码和追剧/等级返回均已拿到；还需本项目对应接口或是否由 tasks/rewards 一并返回的明确约定，未虚构新路径。</p><details class="proof"><summary>源码证据：chunlou.tv (3) / Me-r2-Cxw1cryX.js:2339</summary><p class="source">SHA-256：e8cdce3bedcd708d4fa72256598dbaa9bb21307680c771601dd387721c82eeae</p><pre>}
+
+function Ri() {
+    let e = P(),
+        t = fe(),
+        n = t.checkin,
+        r = d(!1),
+        i = d(null);
+    async function a() {
+        await t.ensureFresh()
+    }
+    async function o() {
+        let {
+            data: e
+        } = await O.rpc(`watch_streak_status`);</pre></details></article></section><section id="reference"><h2>原站真实调用清单 · 42</h2><div class="group-nav"><a href="#source-0">福利读取</a><a href="#source-2">签到与红点</a><a href="#source-5">观看与分享</a><a href="#source-13">评分</a><a href="#source-17">新手与第三方</a><a href="#source-23">分类与选剧</a><a href="#source-28">消息红点（与福利数字独立）</a><a href="#source-32">个人中心福利关联</a></div><article class="api" id="source-0"><header><span class="rpc">RPC</span><h3>my_daily_tasks</h3><span class="pending">对应 /api/user/tasks · 返回待对齐</span></header><p><b>作用：</b>今日任务、新手任务及进度。对应我们已确认的 /api/user/tasks；实际字段仍以我们的返回为准。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>day</code></td><td>业务日期</td></tr><tr><td><code>tasks[]</code></td><td>每日任务</td></tr><tr><td><code>tasks[].key</code></td><td>任务标识</td></tr><tr><td><code>tasks[].cap</code></td><td>任务奖励上限</td></tr><tr><td><code>tasks[].done</code></td><td>是否完成</td></tr><tr><td><code>tasks[].earned</code></td><td>已获奖励</td></tr><tr><td><code>tasks[].milestone</code></td><td>签到里程碑奖励</td></tr><tr><td><code>tasks[].needs_watch</code></td><td>签到是否需要观看</td></tr><tr><td><code>tasks[].streak</code></td><td>连续天数</td></tr><tr><td><code>tasks[].min_sec</code></td><td>连续追剧提示秒数</td></tr><tr><td><code>tasks[].left</code></td><td>剩余可奖励评分数量</td></tr><tr><td><code>tasks[].sec</code></td><td>已记录观看进度</td></tr><tr><td><code>tasks[].need</code></td><td>观看门槛</td></tr><tr><td><code>tasks[].ready</code></td><td>是否可领取</td></tr><tr><td><code>once[]</code></td><td>一次性任务</td></tr><tr><td><code>once[].key / coins / done / ready / x_used</code></td><td>任务标识、奖励、完成、可领、X 身份已使用</td></tr><tr><td><code>total / earned</code></td><td>每日总上限、已获奖励</td></tr><tr><td><code>once_total / once_earned</code></td><td>新手总上限、已获奖励</td></tr><tr><td><code>restricted</code></td><td>奖励限制</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / my_daily_tasks.json</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;day&quot;: &quot;2026-10-19&quot;,
+  &quot;once&quot;: [
+    {
+      &quot;key&quot;: &quot;push_on&quot;,
+      &quot;done&quot;: false,
+      &quot;coins&quot;: 30,
+      &quot;ready&quot;: false,
+      &quot;x_used&quot;: false
+    },
+    {
+      &quot;key&quot;: &quot;bind_x&quot;,
+      &quot;done&quot;: false,
+      &quot;coins&quot;: 20,
+      &quot;ready&quot;: false,
+      &quot;x_used&quot;: false
+    },
+    {
+      &quot;key&quot;: &quot;follow_x&quot;,
+      &quot;done&quot;: false,
+      &quot;coins&quot;: 20,
+      &quot;ready&quot;: false,
+      &quot;x_used&quot;: false
+    },
+    {
+      &quot;key&quot;: &quot;join_tg&quot;,
+      &quot;done&quot;: false,
+      &quot;coins&quot;: 20,
+      &quot;ready&quot;: false,
+      &quot;x_used&quot;: false
+    }
+  ],
+  &quot;tasks&quot;: [
+    {
+      &quot;cap&quot;: 5,
+      &quot;key&quot;: &quot;checkin&quot;,
+      &quot;done&quot;: true,
+      &quot;earned&quot;: 5,
+      &quot;milestone&quot;: 0,
+      &quot;needs_watch&quot;: false
+    },
+    {
+      &quot;cap&quot;: 3,
+      &quot;key&quot;: &quot;streak&quot;,
+      &quot;done&quot;: true,
+      &quot;earned&quot;: 3,
+      &quot;streak&quot;: 1,
+      &quot;min_sec&quot;: 60
+    },
+    {
+      &quot;cap&quot;: 10,
+      &quot;key&quot;: &quot;share&quot;,
+      &quot;done&quot;: true,
+      &quot;earned&quot;: 10
+    },
+    {
+      &quot;cap&quot;: 5,
+      &quot;key&quot;: &quot;comment&quot;,
+      &quot;done&quot;: false,
+      &quot;earned&quot;: 0
+    },
+    {
+      &quot;cap&quot;: 15,
+      &quot;key&quot;: &quot;rating&quot;,
+      &quot;done&quot;: false,
+      &quot;left&quot;: 3,
+      &quot;earned&quot;: 6
+    },
+    {
+      &quot;cap&quot;: 15,
+      &quot;key&quot;: &quot;watch&quot;,
+      &quot;sec&quot;: 190,
+      &quot;done&quot;: false,
+      &quot;need&quot;: 3600,
+      &quot;ready&quot;: false,
+      &quot;earned&quot;: 0
+    }
+  ],
+  &quot;total&quot;: 53,
+  &quot;earned&quot;: 24,
+  &quot;once_total&quot;: 90,
+  &quot;restricted&quot;: false,
+  &quot;once_earned&quot;: 0
+}</pre></div><ul><li>评论仍按用户要求移除；对应上限和已领奖励也必须排除。</li><li>并非 tasks 中每个字段对每种任务都存在，不能给全部任务硬塞同一组必填字段。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2877</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                    data: e,
+                    error: t
+                } = await k.rpc(`my_daily_tasks`);
+                Y.value = t ? null : e ? ? null
+            }
+            let $e = l(() =&gt; ee(p.user)),
+                et = u(!1);
+            b(() =&gt; p.user ? .id, e =&gt; {
+                et.value = !!e &amp;&amp; A(Ot(e)) === `1`
+            }, {
+                immediate: !0
+            });
+            let tt = l(() =&gt; Y.value ? Et(xt(Y.value, n), $e.value, et.value) : null);
+
+            function nt() {</pre></details></article>
+<article class="api" id="source-1"><header><span class="rpc">RPC</span><h3>rewards_catalog</h3><span class="pending">对应 /api/user/rewards · 返回待对齐</span></header><p><b>作用：</b>奖励配置，生成福利中心卡片。对应我们已确认的 /api/user/rewards。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>checkin.rewards / milestones / multiplier</code></td><td>签到周期、里程碑、倍率档位</td></tr><tr><td><code>watch_streak.enabled / rewards / daily_base</code></td><td>连续追剧开关、里程碑、基础奖励</td></tr><tr><td><code>referral.enabled / daily_share / signup_inviter / signup_invitee / purchase_pct / daily_invite_cap</code></td><td>分享及邀请奖励配置</td></tr><tr><td><code>rating.reward / daily_cap</code></td><td>每次评分奖励、每日上限</td></tr><tr><td><code>levels</code></td><td>等级奖励配置</td></tr><tr><td><code>promo.enabled / week_hours / peak_hours / next_open_at</code></td><td>活动配置</td></tr><tr><td><code>tickets.drops / daily_cap / ttl_hours</code></td><td>抽奖券配置，本期不实现转盘</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / rewards_catalog.json</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;promo&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;peak_hours&quot;: 24,
+    &quot;week_hours&quot;: 24,
+    &quot;next_open_at&quot;: null
+  },
+  &quot;levels&quot;: {
+    &quot;2&quot;: 20,
+    &quot;3&quot;: 30,
+    &quot;5&quot;: 50,
+    &quot;8&quot;: 80,
+    &quot;10&quot;: 150,
+    &quot;15&quot;: 300,
+    &quot;20&quot;: 500
+  },
+  &quot;rating&quot;: {
+    &quot;reward&quot;: 3,
+    &quot;daily_cap&quot;: 5
+  },
+  &quot;checkin&quot;: {
+    &quot;rewards&quot;: [
+      5,
+      15,
+      30,
+      15,
+      20,
+      25,
+      60
+    ],
+    &quot;milestones&quot;: {
+      &quot;3&quot;: 30,
+      &quot;7&quot;: 50,
+      &quot;14&quot;: 200,
+      &quot;30&quot;: 500
+    },
+    &quot;multiplier&quot;: [
+      1,
+      1.3,
+      1.6,
+      2
+    ]
+  },
+  &quot;tickets&quot;: {
+    &quot;drops&quot;: null,
+    &quot;daily_cap&quot;: 3,
+    &quot;ttl_hours&quot;: 168
+  },
+  &quot;referral&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;daily_share&quot;: 10,
+    &quot;purchase_pct&quot;: 15,
+    &quot;daily_comment&quot;: 5,
+    &quot;signup_invitee&quot;: 80,
+    &quot;signup_inviter&quot;: 80,
+    &quot;daily_invite_cap&quot;: 20
+  },
+  &quot;watch_streak&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;rewards&quot;: {
+      &quot;2&quot;: 10,
+      &quot;3&quot;: 20,
+      &quot;5&quot;: 30,
+      &quot;7&quot;: 50,
+      &quot;14&quot;: 120,
+      &quot;30&quot;: 300
+    },
+    &quot;daily_base&quot;: 3
+  }
+}</pre></div><ul><li>截图中金额不是永远固定值，应读配置。原站抓包是历史样本，不替代我们后台的当前配置。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2869</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                    data: e,
+                    error: t
+                } = await k.rpc(`rewards_catalog`);
+                He.value = t ? null : e ? ? null
+            }
+            let Y = u(null);
+            async function X() {
+                let {
+                    data: e,
+                    error: t
+                } = await k.rpc(`my_daily_tasks`);
+                Y.value = t ? null : e ? ? null
+            }
+            let $e = l(() =&gt; ee(p.user)),
+                et = u(!1);</pre></details></article>
+<article class="api" id="source-2"><header><span class="rpc">RPC</span><h3>checkin_status</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>计算福利导航红点、签到提示条和今日可领签到奖励。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>today / restricted</code></td><td>今日是否已签、是否受限；可签到条件为 !today &amp;&amp; !restricted</td></tr><tr><td><code>streak / rewards / multiplier</code></td><td>根据连续天数和七日奖励表计算今日提示</td></tr><tr><td><code>raw_streak / effective_streak</code></td><td>原始、有效连续天数</td></tr><tr><td><code>watched_today</code></td><td>今日观看状态</td></tr><tr><td><code>grace_available / grace_applies_today</code></td><td>宽限状态</td></tr><tr><td><code>next_milestone / next_milestone_reward</code></td><td>下一里程碑及奖励</td></tr><tr><td><code>milestone_pending_coins / milestone_needs_watch_today</code></td><td>待结算里程碑及观看要求</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / checkin_status.json</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;today&quot;: true,
+  &quot;streak&quot;: 1,
+  &quot;rewards&quot;: [
+    5,
+    15,
+    30,
+    15,
+    20,
+    25,
+    60
+  ],
+  &quot;multiplier&quot;: 1,
+  &quot;raw_streak&quot;: 1,
+  &quot;restricted&quot;: false,
+  &quot;watched_today&quot;: true,
+  &quot;next_milestone&quot;: 3,
+  &quot;grace_available&quot;: true,
+  &quot;effective_streak&quot;: 1,
+  &quot;grace_applies_today&quot;: false,
+  &quot;next_milestone_reward&quot;: 30,
+  &quot;milestone_pending_coins&quot;: 0,
+  &quot;milestone_needs_watch_today&quot;: false
+}</pre></div><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:3077</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>                data: e,
+                error: t
+            } = await z.rpc(`checkin_status`);
+            return t ? void 0 : e ? ? null
+        },
+        apply: e =&gt; {
+            ga.value = e
+        }
+    }),
+    wa = da({
+        load: async () =&gt; {
+            let {
+                data: e,
+                error: t
+            } = await z.rpc(`promo_status`);</pre></details></article>
+<article class="api" id="source-3"><header><span class="rpc">RPC</span><h3>promo_status</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>活动状态和福利红点来源之一，不是单独的 badge 接口。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>eligible / free_left / gift_spins</code></td><td>活动资格和可用次数</td></tr><tr><td><code>tickets / wish_pending</code></td><td>抽奖券与待领心愿</td></tr><tr><td><code>ends_at / peak_ends_at / coupon / coupons</code></td><td>状态到期与刷新时机</td></tr><tr><td><code>reason</code></td><td>no_week 等状态原因</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>原始 promo_status.json 另含转盘、优惠券和奖池数据；本期文档只列红点/关闭提示实际依赖，不扩展抽奖接口。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:3089</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>                data: e,
+                error: t
+            } = await z.rpc(`promo_status`);
+            return t ? void 0 : e ? ? null
+        },
+        apply: e =&gt; {
+            _a.value = e, ma(e ? .tickets), Da()
+        }
+    });
+
+function Ta() {
+    return !!q().user
+}
+
+function Ea() {</pre></details></article>
+<article class="api" id="source-4"><header><span class="rpc">RPC</span><h3>claim_checkin</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>点击签到；成功刷新任务、签到状态及账户信息。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>restricted / already</code></td><td>受限或已领</td></tr><tr><td><code>coins / streak / milestone_coins</code></td><td>签到奖励、连续天数、里程碑奖励；源码分别读取，不能自行声称 coins 已包含 milestone_coins</td></tr></tbody></table></div><p class="source">claim_checkin.html 只有 No Content，不能当作已知返回结构</p><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:3009</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                    data: e,
+                    error: t
+                } = await k.rpc(`claim_checkin`);
+                if (Z.value = !1, t) {
+                    N(ne(t));
+                    return
+                }
+                let r = e;
+                r.restricted ? N(n(`me.rewardRestricted`), 6e3) : r.already || (N((r.milestone_coins ? ? 0) &gt; 0 ? n(`me.checkinMilestoneToast`, {
+                    c: r.coins,
+                    m: r.milestone_coins,
+                    n: r.streak
+                }) : n(`me.checkinToast`, {
+                    c: r.coins,
+                    n: r.streak</pre></details></article>
+<article class="api" id="source-5"><header><span class="rpc">TABLE</span><h3>watch_history.upsert</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>保存播放进度；连续追剧判定前先等待单集记录提交。属于数据库表操作，不是 RPC。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>[
+  {
+    &quot;user_id&quot;: &quot;&lt;当前登录用户&gt;&quot;,
+    &quot;episode_id&quot;: &quot;&lt;当前集ID&gt;&quot;,
+    &quot;progress_sec&quot;: &quot;&lt;播放进度秒数&gt;&quot;,
+    &quot;updated_at&quot;: &quot;&lt;ISO时间&gt;&quot;
+  }
+]</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>[
+  {
+    &quot;userId&quot;: &quot;&lt;当前登录用户&gt;&quot;,
+    &quot;episodeId&quot;: &quot;&lt;当前集ID&gt;&quot;,
+    &quot;progressSec&quot;: &quot;&lt;播放进度秒数&gt;&quot;,
+    &quot;updatedAt&quot;: &quot;&lt;ISO时间&gt;&quot;
+  }
+]</pre></div></div><p class="source">归档未包含响应正文</p><ul><li>全局每 60 秒提交脏数据；隐藏、pagehide 尽力提交；切集会提交当前集。</li><li>保存的是播放位置 progress_sec，前端源码本身不能证明后端如何防拖动、重复观看和刷量；需服务端逻辑或接口联调验证。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:6494</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>
+function Bu(e) {
+    return Vu(), z.from(`watch_history`).upsert(e).then(({
+        error: t
+    }) =&gt; {
+        if (!t)
+            for (let t of e) {
+                let e = $[t.episode_id];
+                e &amp;&amp; new Date(e.ts).toISOString() === t.updated_at &amp;&amp; Cu.delete(t.episode_id)
+            }
+    }, () =&gt; {})
+}
+
+function Vu() {
+    Cu.size &gt; 0 &amp;&amp; ku($, Tu)</pre></details></article>
+<article class="api" id="source-6"><header><span class="rpc">RPC</span><h3>touch_watch_streak</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>播放进度达到 60 秒时，先等待保存当前集，再触发连续追剧判定。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>streak / awarded / milestone_coins</code></td><td>连续天数、实际奖励、签到里程碑奖励</td></tr><tr><td><code>pending</code></td><td>服务端记录尚未满足时，允许 60 秒后重试</td></tr><tr><td><code>anchor</code></td><td>源码用于奖励提示的额外值；具体业务含义需后端确认</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / touch_watch_streak.json</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;streak&quot;: 1,
+  &quot;awarded&quot;: 0,
+  &quot;milestone_coins&quot;: 0
+}</pre></div><ul><li>这里的 60 是播放器进度阈值，不应擅自描述成“真实观看满 60 秒的服务端保证”。</li><li>本页挂载内用 Zn 防重复；pending 时解锁并设置 60 秒冷却。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Feed-r2-PQT5YTxy.js:6504</summary><p class="source">SHA-256：2cd86bf6d65485038a5b82a87963c5d51549346d461194f5f88c07bea8edb3d3</p><pre>                let {
+                    data: n
+                } = await R.rpc(`touch_watch_streak`), i = n;
+                if (i) {
+                    if ((i.milestone_coins ? ? 0) &gt; 0) {
+                        W(f(`feed.checkinMilestoneGranted`, {
+                            c: i.milestone_coins
+                        })), r.fetchProfile();
+                        return
+                    }
+                    if (i.pending) {
+                        Zn = !1, Qn = Date.now() + vd;
+                        return
+                    }
+                    if (i.awarded &gt; 0) {</pre></details></article>
+<article class="api" id="source-7"><header><span class="rpc">RPC</span><h3>claim_daily_watch</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>每日观看任务 ready 后显示领取；点击时提交并刷新任务。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 number</code></td><td>源码将返回值作为本次奖励数</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>观看秒数门槛来自 my_daily_tasks.tasks[watch].need，截图 3600 只是配置样例，不能在代码中永远写死。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2917</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                    data: t,
+                    error: r
+                } = await k.rpc(`claim_daily_watch`);
+                if (Z.value = !1, r) {
+                    N(ne(r));
+                    return
+                }
+                let i = t ? ? 0;
+                i &gt; 0 &amp;&amp; (N(n(`lucky.dailyClaimed`, {
+                    n: i
+                })), p.fetchProfile()), X()
+            }
+            async function Q(e) {
+                let {
+                    data: t,</pre></details></article>
+<article class="api" id="source-8"><header><span class="rpc">RPC</span><h3>claim_daily_share</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>系统分享完成或复制分享文案后领取每日分享奖励；打开分享面板本身不触发。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 number</code></td><td>本次奖励数，大于 0 时提示并刷新账户</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (3) / claim_daily_share.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>10</pre></div><ul><li>系统分享 AbortError 直接 return，不领奖。其他分享错误退回复制。</li><li>原站复制助手返回 manual 时仍会进入领奖函数，前端无法证明用户最终手动复制或真正对外发布；这是原站真实实现边界，不应承诺“已验证外部分享”。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Feed-r2-PQT5YTxy.js:4081</summary><p class="source">SHA-256：2cd86bf6d65485038a5b82a87963c5d51549346d461194f5f88c07bea8edb3d3</p><pre>        let {
+            data: e
+        } = await R.rpc(`claim_daily_share`), n = e ? ? 0;
+        n &gt; 0 &amp;&amp; (W(r(`feed.shareDailyToast`, {
+            n
+        })), await t.fetchProfile())
+    }
+    return {
+        newbieDone: i,
+        fetchNewbie: a,
+        claimNewbie: o,
+        onLike: c,
+        onFav: l,
+        bursts: u,
+        onDblTap: f,</pre></details></article>
+<article class="api" id="source-9"><header><span class="rpc">RPC</span><h3>claim_newbie</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>视频页 first_share / first_engage 新手任务，与福利页 push_on 等任务不是一套领取函数。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_task&quot;: &quot;first_share&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pTask&quot;: &quot;first_share&quot;
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 number</code></td><td>源码拿它与已完成任务数比较，并可能刷新试看，不按本次金币奖励处理</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / claim_newbie.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>2</pre></div><details class="proof"><summary>源码证据：chunlou.tv (2) / Feed-r2-PQT5YTxy.js:4000</summary><p class="source">SHA-256：2cd86bf6d65485038a5b82a87963c5d51549346d461194f5f88c07bea8edb3d3</p><pre>            {
+                data: s
+            } = await R.rpc(`claim_newbie`, {
+                p_task: n
+            });
+        if ((s ? ? 0) &gt; o) {
+            await a(), W(r(`feed.newbieGain`));
+            let t = e.currentItem();
+            t &amp;&amp; e.canPreview(t) &amp;&amp; (delete e.previewEnded.value[t.id], e.reloadPlayer())
+        }
+    }
+
+    function s() {
+        return t.isLoggedIn ? !0 : (Le(), !1)
+    }</pre></details></article>
+<article class="api" id="source-10"><header><span class="rpc">TABLE</span><h3>user_tasks.select</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>读取当前用户已完成视频页新手任务。数据库查询，不是新造 RPC。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;task&quot;,
+  &quot;user_id&quot;: &quot;&lt;当前登录用户&gt;&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;task&quot;,
+  &quot;userId&quot;: &quot;&lt;当前登录用户&gt;&quot;
+}</pre></div></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / Feed-r2-PQT5YTxy.js:3992</summary><p class="source">SHA-256：2cd86bf6d65485038a5b82a87963c5d51549346d461194f5f88c07bea8edb3d3</p><pre>        let {
+            data: e
+        } = await R.from(`user_tasks`).select(`task`).eq(`user_id`, t.user.id);
+        i.value = new Set((e ? ? []).map(e =&gt; e.task))
+    }
+    async function o(n) {
+        if (!t.isLoggedIn || i.value.has(n)) return;
+        let o = i.value.size,
+            {
+                data: s
+            } = await R.rpc(`claim_newbie`, {
+                p_task: n
+            });
+        if ((s ? ? 0) &gt; o) {
+            await a(), W(r(`feed.newbieGain`));</pre></details></article>
+<article class="api" id="source-11"><header><span class="rpc">RPC</span><h3>log_event</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>分享或观看行为统计，分享使用 p_kind=share；不等同于奖励入账。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_kind&quot;: &quot;share&quot;,
+  &quot;p_episode&quot;: &quot;&lt;集ID&gt;&quot;,
+  &quot;p_device&quot;: &quot;&lt;本机设备标识&gt;&quot;,
+  &quot;p_preview&quot;: false
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pKind&quot;: &quot;share&quot;,
+  &quot;pEpisode&quot;: &quot;&lt;集ID&gt;&quot;,
+  &quot;pDevice&quot;: &quot;&lt;本机设备标识&gt;&quot;,
+  &quot;pPreview&quot;: false
+}</pre></div></div><p class="source">归档未包含响应正文</p><ul><li>同 kind+episode 在前端按 60 秒去重。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / monitor-r2-9vSk5yN1.js:45</summary><p class="source">SHA-256：002050953b0146f8980857536484a5bc774609748b02818b02ea69a66e254c66</p><pre>    let i = `${e}:${n}`,
+        a = Date.now();
+    (m.get(i) ? ? 0) &gt; a - 6e4 || (m.set(i, a), t.rpc(`log_event`, {
+        p_kind: e,
+        p_episode: n,
+        p_device: f(),
+        p_preview: r
+    }).then(void 0, () =&gt; {}))
+}
+var _ = /Googlebot|bingbot|AdsBot|HeadlessChrome|Baiduspider|YandexBot|DuckDuckBot|facebookexternalhit|Applebot|Google-Read-Aloud|compatible;[^)]*(?:bot|crawler|spider)\b/i;
+
+function v(e) {
+    return _.test(e)
+}
+var y = e({</pre></details></article>
+<article class="api" id="source-12"><header><span class="rpc">RPC</span><h3>ping_watch_batch</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>提交视频热度分桶，不是每日观看领奖接口。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_episode&quot;: &quot;&lt;集ID&gt;&quot;,
+  &quot;p_buckets&quot;: [
+    0,
+    1,
+    2
+  ]
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pEpisode&quot;: &quot;&lt;集ID&gt;&quot;,
+  &quot;pBuckets&quot;: [
+    0,
+    1,
+    2
+  ]
+}</pre></div></div><p class="source">ping_watch_batch.html 只有 No Content，不能当作已知返回结构</p><ul><li>源码 bucket=floor(播放百分比/2)，限制为 0..49，用 Set 去重；隐藏和 pagehide 会尝试提交。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Feed-r2-PQT5YTxy.js:279</summary><p class="source">SHA-256：2cd86bf6d65485038a5b82a87963c5d51549346d461194f5f88c07bea8edb3d3</p><pre>        p_episode: e,
+        p_buckets: t
+    }) : R.rpc(`ping_watch_batch`, {
+        p_episode: e,
+        p_buckets: t
+    }).then(void 0, () =&gt; {})
+}
+
+function Dn(e, t = !1) {
+    if (e) {
+        let n = wn.get(e);
+        if (n ? .size) {
+            let r = Array.from(n);
+            wn.delete(e), En(e, r, t)
+        }</pre></details></article>
+<article class="api" id="source-13"><header><span class="rpc">RPC</span><h3>my_rating_quota</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>打开评分待办弹窗，读取今日剩余额度。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>left</code></td><td>剩余可获奖励的剧数</td></tr><tr><td><code>reward</code></td><td>单剧奖励</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / my_rating_quota.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;left&quot;: 5,
+  &quot;reward&quot;: 3
+}</pre></div><details class="proof"><summary>源码证据：chunlou.tv (2) / rating-r2-WnwlVTF-.js:51</summary><p class="source">SHA-256：4d550828a82d5e7db9ba96e0636895db0a597fe9434ab2a70f70825b514baafa</p><pre>        data: e,
+        error: t
+    } = await i.rpc(`my_rating_quota`);
+    return t ? null : e ? ? null
+}
+async function g(e) {
+    let {
+        data: t
+    } = await i.rpc(`drama_rating`, {
+        p_drama: e
+    });
+    return t ? .[0] ? .my_rating ? ? 0
+}
+async function _(e = 5) {
+    let {</pre></details></article>
+<article class="api" id="source-14"><header><span class="rpc">RPC</span><h3>my_rating_candidates</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>评分待办弹窗候选作品，默认 p_limit=5。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_limit&quot;: 5
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pLimit&quot;: 5
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>[].drama_id / slug</code></td><td>作品标识、详情路径标识</td></tr><tr><td><code>[].title_i18n</code></td><td>标题多语言对象</td></tr><tr><td><code>[].eps_watched</code></td><td>已看集数</td></tr><tr><td><code>封面</code></td><td>通过主包封面助手生成；现有候选抓包为空数组，非空对象完整字段待补录</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / my_rating_candidates.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>[]</pre></div><ul><li>源码没有 1–20 的服务端上限证据，不能把之前拟定的 20 写成对方硬规则。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / rating-r2-WnwlVTF-.js:66</summary><p class="source">SHA-256：4d550828a82d5e7db9ba96e0636895db0a597fe9434ab2a70f70825b514baafa</p><pre>        data: t,
+        error: n
+    } = await i.rpc(`my_rating_candidates`, {
+        p_limit: e
+    });
+    return n ? [] : t ? ? []
+}
+async function v(e, t, n) {
+    let {
+        data: r,
+        error: a
+    } = await i.rpc(`upsert_rating`, {
+        p_drama: e,
+        p_score: t
+    });</pre></details></article>
+<article class="api" id="source-15"><header><span class="rpc">RPC</span><h3>drama_rating</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>视频页/剧详情读取自己的已评星数。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_drama&quot;: &quot;&lt;剧ID&gt;&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pDrama&quot;: &quot;&lt;剧ID&gt;&quot;
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>[0].my_rating</code></td><td>当前用户已评星数；没有则按 0 处理</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / rating-r2-WnwlVTF-.js:57</summary><p class="source">SHA-256：4d550828a82d5e7db9ba96e0636895db0a597fe9434ab2a70f70825b514baafa</p><pre>    let {
+        data: t
+    } = await i.rpc(`drama_rating`, {
+        p_drama: e
+    });
+    return t ? .[0] ? .my_rating ? ? 0
+}
+async function _(e = 5) {
+    let {
+        data: t,
+        error: n
+    } = await i.rpc(`my_rating_candidates`, {
+        p_limit: e
+    });
+    return n ? [] : t ? ? []</pre></details></article>
+<article class="api" id="source-16"><header><span class="rpc">RPC</span><h3>upsert_rating</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>提交 1–5 星；源码及本地抓包返回数字，而非 awarded/score/left 对象。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_drama&quot;: &quot;&lt;剧ID&gt;&quot;,
+  &quot;p_score&quot;: 5
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pDrama&quot;: &quot;&lt;剧ID&gt;&quot;,
+  &quot;pScore&quot;: 5
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 number</code></td><td>实际奖励，抓包值为 3；0 表示不发奖励但可感谢评分</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / upsert_rating.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>3</pre></div><ul><li>识别服务端错误 MUST_WATCH_FIRST / DAILY_LIMIT_REACHED。具体服务端观看门槛不在前端中，不猜看几集。</li><li>待办弹窗本次成功评分后在本地 E[dramaId] 标记，防本次重复提交；额度归零禁止新的评分。</li><li>每日最多提醒 2 次是播放器“评分引导”本地提示限制，不是每日评分奖励上限。</li><li>播放器引导条件：非互动剧、main、seq&gt;=3。奖励上限由 quota / rewards_catalog.rating.daily_cap 决定。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / rating-r2-WnwlVTF-.js:75</summary><p class="source">SHA-256：4d550828a82d5e7db9ba96e0636895db0a597fe9434ab2a70f70825b514baafa</p><pre>        data: r,
+        error: a
+    } = await i.rpc(`upsert_rating`, {
+        p_drama: e,
+        p_score: t
+    });
+    if (a) {
+        let e = a.message ? ? ``;
+        return s(n(e.includes(`MUST_WATCH_FIRST`) ? `drama.mustWatchFirst` : e.includes(`DAILY_LIMIT_REACHED`) ? `drama.ratingLimitReached` : `errors.generic`)), null
+    }
+    let o = r ? ? 0;
+    return s(o &gt; 0 ? n(`drama.ratingReward`, {
+        n: o
+    }) : n(`rate.thanks`)), o
+}</pre></details></article>
+<article class="api" id="source-17"><header><span class="rpc">RPC</span><h3>claim_bonus_task</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>已核验的新手任务 ready 后领取奖励。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_task&quot;: &quot;push_on&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pTask&quot;: &quot;push_on&quot;
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>restricted / not_yet / x_used</code></td><td>受限、未达标、X 身份已使用</td></tr><tr><td><code>awarded</code></td><td>本次奖励</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>源码新手标识：push_on / bind_x / follow_x / join_tg，不等同于 claim_newbie 的 first_share / first_engage。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2931</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                    data: t,
+                    error: r
+                } = await k.rpc(`claim_bonus_task`, {
+                    p_task: e
+                });
+                if (r) return N(ne(r)), `error`;
+                let i = t;
+                if (i.restricted) N(n(`me.rewardRestricted`), 6e3);
+                else if (i.not_yet) return `not_yet`;
+                else i.x_used ? N(n(`lucky.onceXUsed`), 6e3) : (i.awarded ? ? 0) &gt; 0 &amp;&amp; (N(n(`lucky.dailyClaimed`, {
+                    n: i.awarded
+                })), p.fetchProfile());
+                return `done`
+            }
+            async function ft(e) {</pre></details></article>
+<article class="api" id="source-18"><header><span class="rpc">RPC</span><h3>save_push_subscription</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>申请通知权限后建立真实 Web Push 订阅，保存 endpoint 与公钥材料。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_endpoint&quot;: &quot;&lt;PushSubscription.endpoint&gt;&quot;,
+  &quot;p_p256dh&quot;: &quot;&lt;keys.p256dh&gt;&quot;,
+  &quot;p_auth_key&quot;: &quot;&lt;keys.auth&gt;&quot;,
+  &quot;p_user_agent&quot;: &quot;&lt;navigator.userAgent&gt;&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pEndpoint&quot;: &quot;&lt;PushSubscription.endpoint&gt;&quot;,
+  &quot;pP256dh&quot;: &quot;&lt;keys.p256dh&gt;&quot;,
+  &quot;pAuthKey&quot;: &quot;&lt;keys.auth&gt;&quot;,
+  &quot;pUserAgent&quot;: &quot;&lt;navigator.userAgent&gt;&quot;
+}</pre></div></div><p class="source">归档未包含响应正文</p><ul><li>顺序：能力检测 → Notification.requestPermission → serviceWorker.ready → getSubscription/subscribe → 保存成功 → 刷新任务。</li><li>需要我们自己的 VAPID 公钥和服务端私钥；不使用对方 key，不把 private key 发到前端。</li><li>权限 granted 或安装 PWA 均不代表订阅已保存，更不代表奖励已发。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:687</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>        let {
+            error: n
+        } = await z.rpc(`save_push_subscription`, {
+            p_endpoint: t.endpoint,
+            p_p256dh: t.keys.p256dh,
+            p_auth_key: t.keys.auth,
+            p_user_agent: navigator.userAgent
+        });
+        if (n) throw n
+    }
+    async function r() {
+        if (!(!e.value || t.value !== `granted`)) try {
+            let e = await navigator.serviceWorker.ready,
+                t = await e.pushManager.getSubscription();
+            if (!t &amp;&amp; (t = await e.pushManager.subscribe({</pre></details></article>
+<article class="api" id="source-19"><header><span class="rpc">RPC</span><h3>remove_push_subscription</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>退订/登出解绑当前订阅 endpoint；主动退订还调用 subscription.unsubscribe。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_endpoint&quot;: &quot;&lt;当前订阅endpoint&gt;&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pEndpoint&quot;: &quot;&lt;当前订阅endpoint&gt;&quot;
+}</pre></div></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:729</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>        if (!e.value) return;
+        let t = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+        t &amp;&amp; (await z.rpc(`remove_push_subscription`, {
+            p_endpoint: t.endpoint
+        }), await t.unsubscribe())
+    }
+    async function o() {
+        if (e.value) try {
+            let e = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+            if (!e) return;
+            await z.rpc(`remove_push_subscription`, {
+                p_endpoint: e.endpoint
+            })
+        } catch {}
+    }</pre></details></article>
+<article class="api" id="source-20"><header><span class="rpc">AUTH SDK</span><h3>auth.linkIdentity</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>绑定 X 使用认证 SDK，不是原站自定义的 /task/action RPC。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;provider&quot;: &quot;x&quot;,
+  &quot;options&quot;: {
+    &quot;redirectTo&quot;: &quot;&lt;window.location.origin&gt;&quot;
+  }
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;provider&quot;: &quot;x&quot;,
+  &quot;options&quot;: {
+    &quot;redirectTo&quot;: &quot;&lt;window.location.origin&gt;&quot;
+  }
+}</pre></div></div><p class="source">归档未包含响应正文</p><ul><li>源码先 rememberReturnPath，再 SDK linkIdentity。我们的 OAuth 绑定路由、provider 配置及回调尚未提供，不能凭空用一个 REST URL 代替。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2971</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                        let {
+                            error: e
+                        } = await k.auth.linkIdentity({
+                            provider: `x`,
+                            options: {
+                                redirectTo: window.location.origin
+                            }
+                        });
+                        e &amp;&amp; N(ne(e));
+                        return
+                    }
+                    if (e.action === `telegram`) {
+                        if (Dt($e.value, yt) === `direct`) {
+                            yt = !0, vt = !0, window.open(M.social.tgChannelJoinUrl, `_blank`, `noopener`);
+                            return</pre></details></article>
+<article class="api" id="source-21"><header><span class="rpc">RPC</span><h3>request_x_follow_check</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>从 X 返回后核验关注；领取发现 not_yet 也可能触发核验并重试。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>ready / queued</code></td><td>可领或已排队核验</td></tr></tbody></table></div><p class="source">request_x_follow_check.html 只有 No Content，不能当作已知返回结构</p><ul><li>queued 等 3000ms，否则 ready 等 300ms 后再次 claim_bonus_task。源码不包含服务端核验实现。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2952</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                                let {
+                                    data: r
+                                } = await k.rpc(`request_x_follow_check`), i = r ? ? {};
+                                (i.ready || i.queued) &amp;&amp; (N(n(`lucky.onceChecking`)), await new Promise(e =&gt; setTimeout(e, i.queued ? 3e3 : 300)), t = await Q(e.key))
+                            }
+                            t === `not_yet` &amp;&amp; N(n(`lucky.onceNotYet`))
+                        } finally {
+                            Z.value = !1
+                        }
+                        X();
+                        return
+                    }
+                    if (e.action === `push`) {
+                        let e = await lt();
+                        N(n(e === `ok` ? `me.pushEnabled` : e === `denied` ? `me.pushDenied` : e === `error` ? `errors.generic` : `me.pushUnavailable`)), e === `ok` &amp;&amp; X();</pre></details></article>
+<article class="api" id="source-22"><header><span class="rpc">RPC</span><h3>tg_bind_start</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>创建绑定 token，拼接自家机器人链接 ?start=bind_TOKEN。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 string</code></td><td>一次性绑定 token；必须由服务端签发，不能前端自己生成</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>已具有 Telegram 身份且本次尚未尝试时先打开频道；否则走机器人绑定。</li><li>回到页面刷新 tasks；直接频道路径还会在 2500ms 后再检查一次，未 ready 提示重新核验。</li><li>机器人 webhook / 频道成员查询 / token 消耗逻辑不在这份前端资源中，需要我们后台和机器人完成。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / Lucky-r2-DfdjFco1.js:2989</summary><p class="source">SHA-256：ca6846a95ab2215c56a3fed5bb5f294afce19515be98d7ff8d5b0af37a8835e5</p><pre>                                data: e,
+                                error: t
+                            } = await k.rpc(`tg_bind_start`);
+                            return t ? (N(ne(t)), null) : typeof e == `string` ? `${M.social.tgBotUrl}?start=bind_${e}` : null
+                        }) !== `none` &amp;&amp; (vt = !0);
+                        return
+                    }
+                    e.key === `follow_x` &amp;&amp; (St = !0), window.open(e.href, `_blank`, `noopener`)
+                }
+            }
+            async function ht() {
+                let {
+                    data: e
+                } = await k.rpc(`request_x_follow_check`), t = e ? ? {};
+                !t.ready &amp;&amp; !t.queued || (t.queued &amp;&amp; (N(n(`lucky.onceChecking`)), await new Promise(e =&gt; setTimeout(e, 3e3))), wt || X())</pre></details></article>
+<article class="api" id="source-23"><header><span class="rpc">TABLE</span><h3>categories.select</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>分类字典。是表查询，不是福利任务接口。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;slug,i18n&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;slug,i18n&quot;
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>slug / i18n</code></td><td>分类标识、多语言文案</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:417</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>                data: t,
+                error: r
+            } = await e.from(`categories`).select(`slug,i18n`);
+            !r &amp;&amp; t &amp;&amp; n(t)
+        }
+
+        function i(t, n) {
+            let r = e.value[t];
+            if (r) return n === `zh-Hant` ? r[`zh-Hant`] || r.zh || r.en : r[n] || r.en || r.zh
+        }
+        return {
+            map: e,
+            loaded: t,
+            setAll: n,
+            load: r,</pre></details></article>
+<article class="api" id="source-24"><header><span class="rpc">TABLE</span><h3>tags.select</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>标签字典。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;slug,i18n&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;slug,i18n&quot;
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>slug / i18n</code></td><td>标签标识、多语言文案</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:372</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>                data: t,
+                error: r
+            } = await e.from(`tags`).select(`slug,i18n`);
+            !r &amp;&amp; t &amp;&amp; n(t)
+        }
+
+        function i(t, n) {
+            let r = e.value[t];
+            if (r) return n === `zh-Hant` ? r[`zh-Hant`] || r.zh || r.en : r[n] || r.en || r.zh
+        }
+        let a = null;
+
+        function o() {
+            t.value || a || (a = r().catch(() =&gt; {}))
+        }</pre></details></article>
+<article class="api" id="source-25"><header><span class="rpc">RPC</span><h3>browse_dramas</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>按分类/标签/搜索/排序筛选剧，源站明确 get:true；我们接口方式需另行映射，不能假称源站也全 POST。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_limit&quot;: 24,
+  &quot;p_cat&quot;: &quot;&lt;选中的分类slug&gt;&quot;,
+  &quot;p_q&quot;: &quot;&lt;可选搜索词&gt;&quot;,
+  &quot;p_tag&quot;: &quot;&lt;可选标签&gt;&quot;,
+  &quot;p_sort&quot;: &quot;&lt;可选排序&gt;&quot;,
+  &quot;p_since&quot;: &quot;&lt;可选ISO起始时间&gt;&quot;,
+  &quot;p_vip_pool&quot;: &quot;true&quot;,
+  &quot;p_vip_only&quot;: &quot;true&quot;,
+  &quot;p_after_sort&quot;: &quot;&lt;游标&gt;&quot;,
+  &quot;p_after_created&quot;: &quot;&lt;游标时间&gt;&quot;,
+  &quot;p_after_id&quot;: &quot;&lt;游标ID&gt;&quot;,
+  &quot;p_after_heat&quot;: &quot;&lt;hot排序游标&gt;&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pLimit&quot;: 24,
+  &quot;pCat&quot;: &quot;&lt;选中的分类slug&gt;&quot;,
+  &quot;pQ&quot;: &quot;&lt;可选搜索词&gt;&quot;,
+  &quot;pTag&quot;: &quot;&lt;可选标签&gt;&quot;,
+  &quot;pSort&quot;: &quot;&lt;可选排序&gt;&quot;,
+  &quot;pSince&quot;: &quot;&lt;可选ISO起始时间&gt;&quot;,
+  &quot;pVipPool&quot;: &quot;true&quot;,
+  &quot;pVipOnly&quot;: &quot;true&quot;,
+  &quot;pAfterSort&quot;: &quot;&lt;游标&gt;&quot;,
+  &quot;pAfterCreated&quot;: &quot;&lt;游标时间&gt;&quot;,
+  &quot;pAfterId&quot;: &quot;&lt;游标ID&gt;&quot;,
+  &quot;pAfterHeat&quot;: &quot;&lt;hot排序游标&gt;&quot;
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 array</code></td><td>剧列表；响应文件存在，完整业务字段与本项目已有选剧接口另行对齐</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>请求示例列出所有分支，不表示所有参数一起必填；源码只有 p_limit 默认 24，其他按筛选/分页条件追加。</li><li>补抓 (3) 已核实 Browse 的筛选触发：搜索防抖300ms，其余筛选立即重置；每页24，游标分页。证据见下方新包条目。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:6228</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>        data: a,
+        error: o
+    } = await z.rpc(`browse_dramas`, r, {
+        get: !0
+    });
+    if (o) throw o;
+    return a ? ? []
+}
+async function su() {
+    return De(`dramas:browse-home`, async () =&gt; {
+        let {
+            data: e,
+            error: t
+        } = await z.rpc(`browse_home`, {
+            p_hot_limit: 50</pre></details></article>
+<article class="api" id="source-26"><header><span class="rpc">RPC</span><h3>feed_pool</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>推荐流候选池，不是“按分类查询”接口。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_seed&quot;: &quot;&lt;随机种子&gt;&quot;,
+  &quot;p_limit&quot;: 120,
+  &quot;p_touched&quot;: [],
+  &quot;p_exclude&quot;: []
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pSeed&quot;: &quot;&lt;随机种子&gt;&quot;,
+  &quot;pLimit&quot;: 120,
+  &quot;pTouched&quot;: [],
+  &quot;pExclude&quot;: []
+}</pre></div></div><p class="source">归档未包含响应正文</p><ul><li>有 exclude 时默认 RPC；没有 exclude 且 touched&lt;=50 可 get:true。不能把 feed_pool 和 browse_dramas 合成一个虚构分类接口。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:6271</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>            data: e,
+            error: t
+        } = await z.rpc(`feed_pool`, n);
+        if (t) throw t;
+        return tu(e)
+    }
+    let r = n.p_touched.length &gt; 50 ? void 0 : {
+        get: !0
+    };
+    return De(`dramas:feedPool:${e}`, async () =&gt; {
+        let {
+            data: e,
+            error: t
+        } = await z.rpc(`feed_pool`, n, r);
+        if (t) throw t;</pre></details></article>
+<article class="api" id="source-27"><header><span class="rpc">RPC</span><h3>browse_home</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>首页推荐/分类区聚合，源站 get:true。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_hot_limit&quot;: 50
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pHotLimit&quot;: 50
+}</pre></div></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:6239</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>            data: e,
+            error: t
+        } = await z.rpc(`browse_home`, {
+            p_hot_limit: 50
+        }, {
+            get: !0
+        });
+        if (t) throw t;
+        return iu(e)
+    }, 12e4)
+}
+async function cu(e) {
+    let {
+        data: t,
+        error: n</pre></details></article>
+<article class="api" id="source-28"><header><span class="rpc">RPC</span><h3>unread_notification_counts</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>铃铛未读统计，源站 get:true；可见时每 60 秒及返回前台刷新。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 object</code></td><td>按消息类型的未读数；抓包为空对象</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (2) / unread_notification_counts.json</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:2117</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>    let {
+        data: e
+    } = await z.rpc(`unread_notification_counts`, void 0, {
+        get: !0
+    });
+    e &amp;&amp; typeof e == `object` &amp;&amp; !Array.isArray(e) &amp;&amp; Vr(e)
+}
+var Wr = 50,
+    Gr = 4;
+
+function Kr() {
+    async function e() {
+        zr.value = !0;
+        let e = [];
+        for (let t = 0; t &lt; Gr; t++) {</pre></details></article>
+<article class="api" id="source-29"><header><span class="rpc">RPC</span><h3>list_notifications</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>打开消息列表；每批 50，最多 4 批。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_limit&quot;: 50,
+  &quot;p_offset&quot;: 0
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pLimit&quot;: 50,
+  &quot;pOffset&quot;: 0
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 array</code></td><td>消息列表；源码使用 type / is_read 等字段，抓包未提供非空对象</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:2133</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>                data: n,
+                error: r
+            } = await z.rpc(`list_notifications`, {
+                p_limit: Wr,
+                p_offset: t * Wr
+            });
+            if (r || !Array.isArray(n) || (e.push(...n), n.length &lt; Wr)) break
+        }
+        Rr.value = e, zr.value = !1
+    }
+    async function t(e) {
+        if (!e.length) return;
+        let {
+            error: t
+        } = await z.rpc(`mark_notifications_read_by_types`, {</pre></details></article>
+<article class="api" id="source-30"><header><span class="rpc">RPC</span><h3>mark_notifications_read_by_types</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>按类型标记已读，成功后删除对应未读计数。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_types&quot;: [
+    &quot;&lt;消息类型&gt;&quot;
+  ]
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pTypes&quot;: [
+    &quot;&lt;消息类型&gt;&quot;
+  ]
+}</pre></div></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:2145</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>        let {
+            error: t
+        } = await z.rpc(`mark_notifications_read_by_types`, {
+            p_types: e
+        });
+        if (t) {
+            console.error(`[notifications] mark read failed`, t);
+            return
+        }
+        let n = new Set(e);
+        Rr.value.forEach(e =&gt; {
+            n.has(e.type) &amp;&amp; (e.is_read = !0)
+        });
+        let r = { ...Fr.value
+        };</pre></details></article>
+<article class="api" id="source-31"><header><span class="rpc">RPC</span><h3>mark_all_notifications_read</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>全部标记已读，再清空本地未读计数。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (2) / index-r2-DVkf8Gl0.js:2161</summary><p class="source">SHA-256：d7377be889624cdbfc4bfffd066f99a08d0f6e27a0ebcbefde91082becfaae87</p><pre>    }
+    async function n() {
+        await z.rpc(`mark_all_notifications_read`), Rr.value.forEach(e =&gt; {
+            e.is_read = !0
+        }), Vr({})
+    }
+
+    function r(e) {
+        i(), Ur(), Br = setInterval(() =&gt; {
+            document.visibilityState === `visible` &amp;&amp; Ur()
+        }, 6e4), document.addEventListener(`visibilitychange`, Hr)
+    }
+
+    function i() {
+        Br !== null &amp;&amp; (clearInterval(Br), Br = null), document.removeEventListener(`visibilitychange`, Hr)</pre></details></article>
+<article class="api" id="source-32"><header><span class="rpc">RPC</span><h3>watch_streak_status</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>个人中心签到卡下方显示连续追剧状态，不是 touch_watch_streak 的领取操作。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>daily_base</code></td><td>连续追剧基础奖励</td></tr><tr><td><code>current_streak / best_streak</code></td><td>当前与历史最长连续天数</td></tr><tr><td><code>next_anchor / next_anchor_reward</code></td><td>下一追剧里程碑与奖励</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (3) / watch_streak_status.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;daily_base&quot;: 3,
+  &quot;best_streak&quot;: 1,
+  &quot;next_anchor&quot;: 2,
+  &quot;current_streak&quot;: 1,
+  &quot;next_anchor_reward&quot;: 10
+}</pre></div><ul><li>进度显示 current_streak/next_anchor，限制为最高100%；没有 next_anchor 时按100%。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (3) / Me-r2-Cxw1cryX.js:2351</summary><p class="source">SHA-256：e8cdce3bedcd708d4fa72256598dbaa9bb21307680c771601dd387721c82eeae</p><pre>        let {
+            data: e
+        } = await O.rpc(`watch_streak_status`);
+        i.value = e ? ? null
+    }
+    let s = u(() =&gt; {
+            let e = i.value;
+            return e ? .next_anchor ? Math.min(100, Math.round(e.current_streak / e.next_anchor * 100)) : 100
+        }),
+        {
+            supported: c,
+            permission: l,
+            requestAndSubscribe: f
+        } = pe(),
+        p = u(() =&gt; c.value &amp;&amp; l.value === &quot;default&quot;);</pre></details></article>
+<article class="api" id="source-33"><header><span class="rpc">RPC</span><h3>my_level_status</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>个人中心等级进度，源码使用 get:true，接受数组首项或对象。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>xp</code></td><td>当前经验值</td></tr><tr><td><code>level</code></td><td>当前等级</td></tr><tr><td><code>curr_need</code></td><td>当前等级经验门槛</td></tr><tr><td><code>next_need</code></td><td>下一等级门槛；null 表示满级</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (3) / my_level_status.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>[
+  {
+    &quot;xp&quot;: 5,
+    &quot;level&quot;: 1,
+    &quot;curr_need&quot;: 0,
+    &quot;next_need&quot;: 100
+  }
+]</pre></div><ul><li>经验进度=(xp-curr_need)/(next_need-curr_need)，四舍五入并限制0..100；next_need=null或区间非正则100%。</li><li>此接口是经验等级状态，不是金币发放接口；奖励规则仍由 rewards_catalog.levels 配置。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (3) / Me-r2-Cxw1cryX.js:109</summary><p class="source">SHA-256：e8cdce3bedcd708d4fa72256598dbaa9bb21307680c771601dd387721c82eeae</p><pre>        data: e,
+        error: t
+    } = await O.rpc(`my_level_status`, {}, {
+        get: !0
+    });
+    if (t) throw t;
+    return (Array.isArray(e) ? e[0] : e) ? ? null
+}
+
+function De(e) {
+    if (e.next_need == null) return 100;
+    let t = e.next_need - e.curr_need;
+    return t &lt;= 0 ? 100 : Math.min(100, Math.max(0, Math.round((e.xp - e.curr_need) / t * 100)))
+}
+var Oe = [`history`, `unfinished`, `unlocked`, `favs`];</pre></details></article>
+<article class="api" id="source-34"><header><span class="rpc">TABLE</span><h3>coin_logs.select</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>个人中心金币变动流水及加载更多；当前用户过滤、created_at 倒序、range 分页。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;id, delta, reason, ref_id, created_at&quot;,
+  &quot;user_id&quot;: &quot;&lt;当前用户&gt;&quot;,
+  &quot;order&quot;: &quot;created_at.desc&quot;,
+  &quot;range&quot;: [
+    &quot;&lt;已加载条数&gt;&quot;,
+    &quot;&lt;已加载条数+批次大小-1&gt;&quot;
+  ]
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;id, delta, reason, ref_id, created_at&quot;,
+  &quot;userId&quot;: &quot;&lt;当前用户&gt;&quot;,
+  &quot;order&quot;: &quot;created_at.desc&quot;,
+  &quot;range&quot;: [
+    &quot;&lt;已加载条数&gt;&quot;,
+    &quot;&lt;已加载条数+批次大小-1&gt;&quot;
+  ]
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>id / delta / reason / ref_id / created_at</code></td><td>流水ID、金币变动、原因、关联业务ID、时间</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>它是数据库表查询，不应伪装成原站已有的 /api/... REST 路径。</li><li>不要与推广佣金金额、创作者收入混为一套流水。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (3) / Me-r2-Cxw1cryX.js:2244</summary><p class="source">SHA-256：e8cdce3bedcd708d4fa72256598dbaa9bb21307680c771601dd387721c82eeae</p><pre>                data: n,
+                error: r
+            } = await O.from(`coin_logs`).select(`id, delta, reason, ref_id, created_at`).eq(`user_id`, e.user.id).order(`created_at`, {
+                ascending: !1
+            }).range(t, t + $ - 1);
+        if (p.value = !1, r) return;
+        let i = n ? ? [];
+        await k(i), a.value = [...a.value, ...i], f.value = i.length === $
+    }
+    async function j() {
+        s.value = !0, c.value = !1, l.value = !1;
+        let u = e.user ? .id ? ? ``,
+            [d, p, m, h, g] = await Promise.all([O.from(`favorites`).select(`created_at, drama:dramas(${Ii})`).eq(`user_id`, u).order(`created_at`, {
+                ascending: !1
+            }).limit(300), O.from(`watch_history`).select(`updated_at, progress_sec, episode:episodes(*, drama:dramas(${Ii}))`).eq(`user_id`, u).is(`hidden_at`, null).order(`updated_at`, {</pre></details></article>
+<article class="api" id="source-35"><header><span class="rpc">RPC</span><h3>my_badges</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>个人中心徽章展示，与福利数字红点不是同一概念。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 array</code></td><td>徽章列表，空返回按[]</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (3) / my_badges.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>[
+  &quot;binge_starter&quot;
+]</pre></div><details class="proof"><summary>源码证据：chunlou.tv (3) / Me-r2-Cxw1cryX.js:2711</summary><p class="source">SHA-256：e8cdce3bedcd708d4fa72256598dbaa9bb21307680c771601dd387721c82eeae</p><pre>                let {
+                    data: e
+                } = await O.rpc(`my_badges`);
+                K.value = e ? ? []
+            }
+            let me = u(() =&gt; {
+                    let e = ee.value;
+                    return e ? .eligible ? {
+                        coupon: e.coupon ? ? null,
+                        min_pack_cents: Number(e.min_pack_cents) || 499,
+                        coupon_min_pack_cents: e.coupon_min_pack_cents
+                    } : null
+                }),
+                he = u(() =&gt; {
+                    let e = me.value;</pre></details></article>
+<article class="api" id="source-36"><header><span class="rpc">RPC</span><h3>app_settings.categories</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>Browse 实际使用的分类配置入口，按 key=categories 查询 value；不是仅靠 categories 表。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;value&quot;,
+  &quot;key&quot;: &quot;categories&quot;,
+  &quot;maybeSingle&quot;: true
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;select&quot;: &quot;value&quot;,
+  &quot;key&quot;: &quot;categories&quot;,
+  &quot;maybeSingle&quot;: true
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>value.list</code></td><td>分类数组：过滤非字符串、空值、trim后去重，空配置有本地默认列表</td></tr><tr><td><code>value.groups[].key</code></td><td>分组标识</td></tr><tr><td><code>value.groups[].name_i18n</code></td><td>分组多语言名</td></tr><tr><td><code>value.groups[].items</code></td><td>分组分类项，按字符串数组清洗</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>配置在模块内缓存，可 reset 清缓存。</li><li>展示分类会合并首页返回的分类；存在 category_counts 时默认过滤数量小于2的分类；热门分类按数量取前8。</li><li>分类不超过20个或没有分组时平铺，否则显示热门/分组/其他；搜索分类是前端过滤。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (3) / categories-r2-Bpqaxe-J.js:25</summary><p class="source">SHA-256：7eace55175afc44086a167bee23b1914d25b1f9915b4d8b051adc170371d09d6</p><pre>    let {
+        data: t
+    } = await e.from(`app_settings`).select(`value`).eq(`key`, `categories`).maybeSingle();
+    return i = r(t ? .value), i
+}
+async function o() {
+    return (await a()).list
+}
+
+function s() {
+    i = null
+}
+
+function c(e, t, n, r = 2) {
+    let i = [...new Set([...e, ...t])];</pre></details></article>
+<article class="api" id="source-37"><header><span class="rpc">RPC</span><h3>trending_dramas</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>剧库排行榜增速数据，源码 get:true，缓存5分钟。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>[].drama_id / velocity</code></td><td>剧ID及增速，用于前端筛选/排序</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (3) / trending_dramas.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>[
+  {
+    &quot;drama_id&quot;: &quot;77f68b35-6c62-4d16-8439-1ee6edbe90db&quot;,
+    &quot;cur&quot;: 650,
+    &quot;velocity&quot;: 2.25
+  },
+  {
+    &quot;drama_id&quot;: &quot;d45b5afc-cb92-42c1-9e8a-ae7cee4f4ab2&quot;,
+    &quot;cur&quot;: 753,
+    &quot;velocity&quot;: 1.88
+  },
+  {
+    &quot;drama_id&quot;: &quot;4770c68a-ed8a-4e54-a0fa-9b580ab8f329&quot;,
+    &quot;cur&quot;: 421,
+    &quot;velocity&quot;: 1.72
+  },
+  {
+    &quot;drama_id&quot;: &quot;5dca73ec-6ef4-45bd-b3a5-d5bba0295fd0&quot;,
+    &quot;cur&quot;: 378,
+    &quot;velocity&quot;: 1.6
+  },
+  {
+    &quot;drama_id&quot;: &quot;4a300d09-5cbd-46ce-aed7-64a3afe3b298&quot;,
+    &quot;cur&quot;: 543,
+    &quot;velocity&quot;: 1.55
+  },
+  {
+    &quot;drama_id&quot;: &quot;a52cdf57-3a86-436f-ba8b-d3195ac7bd5a&quot;,
+    &quot;cur&quot;: 689,
+    &quot;velocity&quot;: 1.49
+  },
+  {
+    &quot;drama_id&quot;: &quot;1d087ef7-51d9-451b-b4b4-63cfb2e9df2b&quot;,
+    &quot;cur&quot;: 353,
+    &quot;velocity&quot;: 1.47
+  },
+  {
+    &quot;drama_id&quot;: &quot;228b39b5-040b-4a43-b5f5-f58d20691088&quot;,
+    &quot;cur&quot;: 1071,
+    &quot;velocity&quot;: 1.45
+  },
+  {
+    &quot;drama_id&quot;: &quot;99b6dfd9-b06f-4853-bb8e-dd0ee7b3616b&quot;,
+    &quot;cur&quot;: 275,
+    &quot;velocity&quot;: 1.45
+  },
+  {
+    &quot;drama_id&quot;: &quot;fa64c817-3a15-47cd-8061-12c1ed3750f0&quot;,
+    &quot;cur&quot;: 316,
+    &quot;velocity&quot;: 1.44
+  },
+  {
+    &quot;drama_id&quot;: &quot;eb8ac636-d93b-429d-89f1-2008eb1e4bf4&quot;,
+    &quot;cur&quot;: 1622,
+    &quot;velocity&quot;: 1.43
+  },
+  {
+    &quot;drama_id&quot;: &quot;8c91568d-f469-45cc-bd29-cd69268b6d44&quot;,
+    &quot;cur&quot;: 966,
+    &quot;velocity&quot;: 1.41
+  },
+  {
+    &quot;drama_id&quot;: &quot;02d3e682-ef3f-4416-a8a3-d30a3ab00684&quot;,
+    &quot;cur&quot;: 311,
+    &quot;velocity&quot;: 1.4
+  },
+  {
+    &quot;drama_id&quot;: &quot;cb060318-994b-4a35-a1f8-59f7bb6b8784&quot;,
+    &quot;cur&quot;: 275,
+    &quot;velocity&quot;: 1.4
+  },
+  {
+    &quot;drama_id&quot;: &quot;4f33e433-5c43-40ea-86e5-fb7573b94080&quot;,
+    &quot;cur&quot;: 386,
+    &quot;velocity&quot;: 1.37
+  },
+  {
+    &quot;drama_id&quot;: &quot;e6056127-8abb-465b-9869-ade44f6cca5f&quot;,
+    &quot;cur&quot;: 252,
+    &quot;velocity&quot;: 1.37
+  },
+  {
+    &quot;drama_id&quot;: &quot;dff7b882-cb4e-4896-a245-15ec3f551518&quot;,
+    &quot;cur&quot;: 8469,
+    &quot;velocity&quot;: 1.35
+  },
+  {
+    &quot;drama_id&quot;: &quot;e3caf5e3-3ea3-4001-a516-dd6d4aca7698&quot;,
+    &quot;cur&quot;: 5350,
+    &quot;velocity&quot;: 1.35
+  },
+  {
+    &quot;drama_id&quot;: &quot;2db57ac4-ecd5-4fae-afa0-0948eed9e565&quot;,
+    &quot;cur&quot;: 135,
+    &quot;velocity&quot;: 1.35
+  },
+  {
+    &quot;drama_id&quot;: &quot;4ea06743-be84-46c4-93c6-6a8ba70dcf9b&quot;,
+    &quot;cur&quot;: 950,
+    &quot;velocity&quot;: 1.34
+  },
+  {
+    &quot;drama_id&quot;: &quot;2dfd5823-2262-450e-a01e-ea6c5dc9521f&quot;,
+    &quot;cur&quot;: 309,
+    &quot;velocity&quot;: 1.34
+  },
+  {
+    &quot;drama_id&quot;: &quot;ab55f29c-8d0b-400e-af05-a656b209c31b&quot;,
+    &quot;cur&quot;: 550,
+    &quot;velocity&quot;: 1.33
+  },
+  {
+    &quot;drama_id&quot;: &quot;b44445fb-e42c-4de9-a679-2b535e434b00&quot;,
+    &quot;cur&quot;: 142,
+    &quot;velocity&quot;: 1.33
+  },
+  {
+    &quot;drama_id&quot;: &quot;a170dcbf-3983-4f5a-8e4c-2887422901c4&quot;,
+    &quot;cur&quot;: 327,
+    &quot;velocity&quot;: 1.32
+  },
+  {
+    &quot;drama_id&quot;: &quot;c4c97891-d2c5-4706-bc62-00fad4a40434&quot;,
+    &quot;cur&quot;: 4057,
+    &quot;velocity&quot;: 1.31
+  },
+  {
+    &quot;drama_id&quot;: &quot;3fb1bf3b-d67b-4e94-8606-08904bc97fd0&quot;,
+    &quot;cur&quot;: 1855,
+    &quot;velocity&quot;: 1.3
+  },
+  {
+    &quot;drama_id&quot;: &quot;83c25624-bd5c-4ba0-ad83-e6ae1918839a&quot;,
+    &quot;cur&quot;: 4484,
+    &quot;velocity&quot;: 1.29
+  },
+  {
+    &quot;drama_id&quot;: &quot;9ed02afd-b798-407a-8d90-c55db1a2de23&quot;,
+    &quot;cur&quot;: 3464,
+    &quot;velocity&quot;: 1.29
+  },
+  {
+    &quot;drama_id&quot;: &quot;d911a5fe-a84e-4a68-8809-dc2d216adeee&quot;,
+    &quot;cur&quot;: 800,
+    &quot;velocity&quot;: 1.29
+  },
+  {
+    &quot;drama_id&quot;: &quot;31be9a1a-1395-47f7-8f26-3409160dea28&quot;,
+    &quot;cur&quot;: 4032,
+    &quot;velocity&quot;: 1.28
+  },
+  {
+    &quot;drama_id&quot;: &quot;401da60d-b627-41b8-8ec4-f4b951c9a884&quot;,
+    &quot;cur&quot;: 1697,
+    &quot;velocity&quot;: 1.28
+  },
+  {
+    &quot;drama_id&quot;: &quot;d41f8475-39aa-4569-a808-68e548bd3b6b&quot;,
+    &quot;cur&quot;: 481,
+    &quot;velocity&quot;: 1.28
+  },
+  {
+    &quot;drama_id&quot;: &quot;62b17c51-e445-4303-b16f-f9c67d01307c&quot;,
+    &quot;cur&quot;: 186,
+    &quot;velocity&quot;: 1.28
+  },
+  {
+    &quot;drama_id&quot;: &quot;b668caf4-84a7-4178-80fe-a31e462e0c47&quot;,
+    &quot;cur&quot;: 182,
+    &quot;velocity&quot;: 1.28
+  },
+  {
+    &quot;drama_id&quot;: &quot;c2b8b300-82d2-4ebf-8de6-6eb492bd125c&quot;,
+    &quot;cur&quot;: 705,
+    &quot;velocity&quot;: 1.27
+  },
+  {
+    &quot;drama_id&quot;: &quot;cdfe6316-decc-4885-b835-414787225ef0&quot;,
+    &quot;cur&quot;: 589,
+    &quot;velocity&quot;: 1.27
+  },
+  {
+    &quot;drama_id&quot;: &quot;39970941-1503-42fc-bae6-2599c266fb3d&quot;,
+    &quot;cur&quot;: 318,
+    &quot;velocity&quot;: 1.27
+  },
+  {
+    &quot;drama_id&quot;: &quot;3150083c-ce99-4279-9b3b-184ca709ebd4&quot;,
+    &quot;cur&quot;: 229,
+    &quot;velocity&quot;: 1.27
+  },
+  {
+    &quot;drama_id&quot;: &quot;88b31cb8-5251-4da3-a4c3-6c59b6ceee51&quot;,
+    &quot;cur&quot;: 211,
+    &quot;velocity&quot;: 1.27
+  },
+  {
+    &quot;drama_id&quot;: &quot;44cdaad5-767f-42b3-8424-541b8805218c&quot;,
+    &quot;cur&quot;: 2682,
+    &quot;velocity&quot;: 1.26
+  },
+  {
+    &quot;drama_id&quot;: &quot;fe713afc-fac5-4aa8-b9b5-af308c3b1aa8&quot;,
+    &quot;cur&quot;: 507,
+    &quot;velocity&quot;: 1.26
+  },
+  {
+    &quot;drama_id&quot;: &quot;3af06659-c271-42a4-aeec-2b12f586421e&quot;,
+    &quot;cur&quot;: 209,
+    &quot;velocity&quot;: 1.26
+  },
+  {
+    &quot;drama_id&quot;: &quot;212bfb44-0932-40ed-b2f2-65ce9d4728fa&quot;,
+    &quot;cur&quot;: 1745,
+    &quot;velocity&quot;: 1.25
+  },
+  {
+    &quot;drama_id&quot;: &quot;a4a19161-de85-49cd-b9c9-d7f226478677&quot;,
+    &quot;cur&quot;: 461,
+    &quot;velocity&quot;: 1.25
+  },
+  {
+    &quot;drama_id&quot;: &quot;6a26b472-57c0-45fd-bf44-ef023bcbc833&quot;,
+    &quot;cur&quot;: 374,
+    &quot;velocity&quot;: 1.25
+  },
+  {
+    &quot;drama_id&quot;: &quot;559ed9e1-79a7-415a-af80-2d37edcd0beb&quot;,
+    &quot;cur&quot;: 172,
+    &quot;velocity&quot;: 1.25
+  },
+  {
+    &quot;drama_id&quot;: &quot;0f07fb0e-59cc-4cee-9ca4-2f338a2fdc94&quot;,
+    &quot;cur&quot;: 134,
+    &quot;velocity&quot;: 1.25
+  },
+  {
+    &quot;drama_id&quot;: &quot;535a69ae-01fe-4aab-8c61-77733e0b7a80&quot;,
+    &quot;cur&quot;: 345,
+    &quot;velocity&quot;: 1.24
+  },
+  {
+    &quot;drama_id&quot;: &quot;bd77e9ad-71a4-45fa-aff6-0e5d786dd8f3&quot;,
+    &quot;cur&quot;: 5687,
+    &quot;velocity&quot;: 1.23
+  },
+  {
+    &quot;drama_id&quot;: &quot;eea8f14b-864e-4669-b035-25f6224caab9&quot;,
+    &quot;cur&quot;: 3030,
+    &quot;velocity&quot;: 1.23
+  },
+  {
+    &quot;drama_id&quot;: &quot;1be45c59-1509-4b10-95e5-aba9ef929824&quot;,
+    &quot;cur&quot;: 438,
+    &quot;velocity&quot;: 1.23
+  },
+  {
+    &quot;drama_id&quot;: &quot;3726930c-9181-41aa-abbb-41c894b3f2af&quot;,
+    &quot;cur&quot;: 305,
+    &quot;velocity&quot;: 1.23
+  },
+  {
+    &quot;drama_id&quot;: &quot;07b52369-a0df-4201-bc43-4581e13cadf5&quot;,
+    &quot;cur&quot;: 358,
+    &quot;velocity&quot;: 1.22
+  },
+  {
+    &quot;drama_id&quot;: &quot;ef241bf2-c32e-4615-b068-27c39383e683&quot;,
+    &quot;cur&quot;: 347,
+    &quot;velocity&quot;: 1.22
+  },
+  {
+    &quot;drama_id&quot;: &quot;3a7ad83e-83d6-4d5f-915b-2427c6311686&quot;,
+    &quot;cur&quot;: 147,
+    &quot;velocity&quot;: 1.22
+  },
+  {
+    &quot;drama_id&quot;: &quot;51af2a8e-0285-4148-9aab-97dbcf8e29a0&quot;,
+    &quot;cur&quot;: 138,
+    &quot;velocity&quot;: 1.22
+  },
+  {
+    &quot;drama_id&quot;: &quot;350dc94b-4fa5-4229-810e-836121b3d580&quot;,
+    &quot;cur&quot;: 133,
+    &quot;velocity&quot;: 1.22
+  },
+  {
+    &quot;drama_id&quot;: &quot;e898b120-5422-427d-a9f2-c4b75c2c6ff6&quot;,
+    &quot;cur&quot;: 6540,
+    &quot;velocity&quot;: 1.21
+  },
+  {
+    &quot;drama_id&quot;: &quot;259da2d7-cd09-47dd-ac8e-c4f551cf6a5f&quot;,
+    &quot;cur&quot;: 1216,
+    &quot;velocity&quot;: 1.21
+  },
+  {
+    &quot;drama_id&quot;: &quot;510b546d-17fe-465c-bf0e-cd801617dbe6&quot;,
+    &quot;cur&quot;: 328,
+    &quot;velocity&quot;: 1.21
+  },
+  {
+    &quot;drama_id&quot;: &quot;6d494f39-380d-4d8f-bc20-a1d13d5e624c&quot;,
+    &quot;cur&quot;: 236,
+    &quot;velocity&quot;: 1.21
+  },
+  {
+    &quot;drama_id&quot;: &quot;a972ba93-4e57-4fab-b011-28490b1ac0ad&quot;,
+    &quot;cur&quot;: 231,
+    &quot;velocity&quot;: 1.21
+  },
+  {
+    &quot;drama_id&quot;: &quot;f3855ecc-123d-4c4a-abe9-622ee3246f11&quot;,
+    &quot;cur&quot;: 169,
+    &quot;velocity&quot;: 1.21
+  },
+  {
+    &quot;drama_id&quot;: &quot;e0799c1e-8762-4748-b99e-8a4dd5940dea&quot;,
+    &quot;cur&quot;: 134,
+    &quot;velocity&quot;: 1.21
+  },
+  {
+    &quot;drama_id&quot;: &quot;36b55c47-a4b2-421e-b13c-bdb3d23afe36&quot;,
+    &quot;cur&quot;: 2540,
+    &quot;velocity&quot;: 1.2
+  },
+  {
+    &quot;drama_id&quot;: &quot;c9df7f34-1a71-46b8-b731-48f66f0ba3fa&quot;,
+    &quot;cur&quot;: 2431,
+    &quot;velocity&quot;: 1.2
+  },
+  {
+    &quot;drama_id&quot;: &quot;72659811-0ea2-4e89-b3fb-7c96ded85cd4&quot;,
+    &quot;cur&quot;: 2098,
+    &quot;velocity&quot;: 1.2
+  },
+  {
+    &quot;drama_id&quot;: &quot;f9bd1fb0-448e-4335-9404-9fbdf8afd50d&quot;,
+    &quot;cur&quot;: 329,
+    &quot;velocity&quot;: 1.2
+  },
+  {
+    &quot;drama_id&quot;: &quot;74c18b21-8832-4b9c-889a-db74c6d916e9&quot;,
+    &quot;cur&quot;: 199,
+    &quot;velocity&quot;: 1.2
+  },
+  {
+    &quot;drama_id&quot;: &quot;793511a7-da9a-4456-bbde-ec5e25116fad&quot;,
+    &quot;cur&quot;: 174,
+    &quot;velocity&quot;: 1.2
+  },
+  {
+    &quot;drama_id&quot;: &quot;4c1fd46c-3f41-4651-bd06-948033853cb0&quot;,
+    &quot;cur&quot;: 161,
+    &quot;velocity&quot;: 1.2
+  },
+  {
+    &quot;drama_id&quot;: &quot;5e655363-7a6f-4404-988d-0cfdd7437094&quot;,
+    &quot;cur&quot;: 4929,
+    &quot;velocity&quot;: 1.19
+  },
+  {
+    &quot;drama_id&quot;: &quot;c84f7e46-b9f7-418d-9e4b-79a7593d8cde&quot;,
+    &quot;cur&quot;: 1022,
+    &quot;velocity&quot;: 1.19
+  },
+  {
+    &quot;drama_id&quot;: &quot;5d453234-4c21-4e1f-baf1-46299ed38e1b&quot;,
+    &quot;cur&quot;: 425,
+    &quot;velocity&quot;: 1.19
+  },
+  {
+    &quot;drama_id&quot;: &quot;e44679c3-e21b-48ca-b80e-260f8989fe7a&quot;,
+    &quot;cur&quot;: 3135,
+    &quot;velocity&quot;: 1.18
+  },
+  {
+    &quot;drama_id&quot;: &quot;a42e701f-6b50-4ccc-be20-a8c9c1d85b86&quot;,
+    &quot;cur&quot;: 1786,
+    &quot;velocity&quot;: 1.18
+  },
+  {
+    &quot;drama_id&quot;: &quot;58b8927c-1657-4376-84c6-e0c71cbef1f8&quot;,
+    &quot;cur&quot;: 828,
+    &quot;velocity&quot;: 1.18
+  },
+  {
+    &quot;drama_id&quot;: &quot;28a16cdb-4907-4dc7-9d55-cfde70513ccf&quot;,
+    &quot;cur&quot;: 466,
+    &quot;velocity&quot;: 1.18
+  },
+  {
+    &quot;drama_id&quot;: &quot;262b3da8-9e52-4662-a2f7-985faf15f6ff&quot;,
+    &quot;cur&quot;: 1454,
+    &quot;velocity&quot;: 1.17
+  },
+  {
+    &quot;drama_id&quot;: &quot;09d74533-e32c-47a9-9686-281cd8e5db87&quot;,
+    &quot;cur&quot;: 275,
+    &quot;velocity&quot;: 1.17
+  },
+  {
+    &quot;drama_id&quot;: &quot;54a76a6d-04f8-4cd6-bf5b-00472157492a&quot;,
+    &quot;cur&quot;: 231,
+    &quot;velocity&quot;: 1.17
+  },
+  {
+    &quot;drama_id&quot;: &quot;6f6703db-8362-44ea-9bc6-dc00535d9251&quot;,
+    &quot;cur&quot;: 193,
+    &quot;velocity&quot;: 1.17
+  },
+  {
+    &quot;drama_id&quot;: &quot;99bfe021-aa32-411d-9c0b-3142247c94e5&quot;,
+    &quot;cur&quot;: 145,
+    &quot;velocity&quot;: 1.17
+  },
+  {
+    &quot;drama_id&quot;: &quot;e6a62a6d-e6e2-49f4-8311-3c48c4c55a90&quot;,
+    &quot;cur&quot;: 131,
+    &quot;velocity&quot;: 1.17
+  },
+  {
+    &quot;drama_id&quot;: &quot;c2000963-9110-4d90-8d2a-65ae397f6fca&quot;,
+    &quot;cur&quot;: 5554,
+    &quot;velocity&quot;: 1.16
+  },
+  {
+    &quot;drama_id&quot;: &quot;984e2061-85dc-498e-bdcc-8ce4277f7443&quot;,
+    &quot;cur&quot;: 490,
+    &quot;velocity&quot;: 1.16
+  },
+  {
+    &quot;drama_id&quot;: &quot;cc66fb97-6f0a-4363-a162-97118e1d8d1a&quot;,
+    &quot;cur&quot;: 169,
+    &quot;velocity&quot;: 1.16
+  },
+  {
+    &quot;drama_id&quot;: &quot;fcafd592-c91a-4a4d-8103-2fc3d2810569&quot;,
+    &quot;cur&quot;: 160,
+    &quot;velocity&quot;: 1.16
+  },
+  {
+    &quot;drama_id&quot;: &quot;79dcbb6f-f65a-460b-b059-dff81edede43&quot;,
+    &quot;cur&quot;: 2433,
+    &quot;velocity&quot;: 1.15
+  },
+  {
+    &quot;drama_id&quot;: &quot;dcc5220c-6b9e-406a-9776-9ad8940741c6&quot;,
+    &quot;cur&quot;: 2066,
+    &quot;velocity&quot;: 1.15
+  },
+  {
+    &quot;drama_id&quot;: &quot;327daada-750a-4b84-b621-eebeeb82d348&quot;,
+    &quot;cur&quot;: 1525,
+    &quot;velocity&quot;: 1.15
+  },
+  {
+    &quot;drama_id&quot;: &quot;0d7b6b77-10b7-41f2-a2f9-102d91e6d4c7&quot;,
+    &quot;cur&quot;: 245,
+    &quot;velocity&quot;: 1.15
+  },
+  {
+    &quot;drama_id&quot;: &quot;df5604bc-8ab4-4e38-b89f-13d20d047e9a&quot;,
+    &quot;cur&quot;: 239,
+    &quot;velocity&quot;: 1.15
+  },
+  {
+    &quot;drama_id&quot;: &quot;7a824a1e-4833-480e-b0e0-ba6d5b30641c&quot;,
+    &quot;cur&quot;: 163,
+    &quot;velocity&quot;: 1.15
+  },
+  {
+    &quot;drama_id&quot;: &quot;d2c49d2e-b1f4-4543-846f-c3f59981f6c1&quot;,
+    &quot;cur&quot;: 3797,
+    &quot;velocity&quot;: 1.14
+  },
+  {
+    &quot;drama_id&quot;: &quot;38207785-237a-4057-8525-f9ccc5324e49&quot;,
+    &quot;cur&quot;: 163,
+    &quot;velocity&quot;: 1.14
+  },
+  {
+    &quot;drama_id&quot;: &quot;f24bd2d3-e6bf-4d87-9a7c-0f71f5376398&quot;,
+    &quot;cur&quot;: 3700,
+    &quot;velocity&quot;: 1.13
+  },
+  {
+    &quot;drama_id&quot;: &quot;0fd06333-b6e5-4d73-bb6a-784527b3ed72&quot;,
+    &quot;cur&quot;: 2386,
+    &quot;velocity&quot;: 1.13
+  },
+  {
+    &quot;drama_id&quot;: &quot;9a0c9466-3e51-4867-81d1-a7d8e1073d13&quot;,
+    &quot;cur&quot;: 457,
+    &quot;velocity&quot;: 1.13
+  },
+  {
+    &quot;drama_id&quot;: &quot;7f9d01e1-754d-4b8e-8d67-05a0ec26de4a&quot;,
+    &quot;cur&quot;: 350,
+    &quot;velocity&quot;: 1.13
+  },
+  {
+    &quot;drama_id&quot;: &quot;6dd3d0c7-243a-48e6-8000-106c921ad51a&quot;,
+    &quot;cur&quot;: 342,
+    &quot;velocity&quot;: 1.13
+  },
+  {
+    &quot;drama_id&quot;: &quot;45113346-401d-4395-9c4d-9093f7910d21&quot;,
+    &quot;cur&quot;: 241,
+    &quot;velocity&quot;: 1.13
+  },
+  {
+    &quot;drama_id&quot;: &quot;9699a679-44ea-45f5-9e32-3e3ec5bd946a&quot;,
+    &quot;cur&quot;: 180,
+    &quot;velocity&quot;: 1.13
+  },
+  {
+    &quot;drama_id&quot;: &quot;e76a7dfc-8529-4f91-9271-9ed9a2e2e1fc&quot;,
+    &quot;cur&quot;: 2866,
+    &quot;velocity&quot;: 1.12
+  },
+  {
+    &quot;drama_id&quot;: &quot;59193a06-0957-4eab-9385-26809509eb90&quot;,
+    &quot;cur&quot;: 882,
+    &quot;velocity&quot;: 1.12
+  },
+  {
+    &quot;drama_id&quot;: &quot;e04e06ec-3087-41d3-994c-31b00e48f150&quot;,
+    &quot;cur&quot;: 424,
+    &quot;velocity&quot;: 1.12
+  },
+  {
+    &quot;drama_id&quot;: &quot;0e5d9372-1ba9-480a-9e07-36da374255c7&quot;,
+    &quot;cur&quot;: 248,
+    &quot;velocity&quot;: 1.12
+  },
+  {
+    &quot;drama_id&quot;: &quot;9a53c3dc-c683-45a8-8f34-777997ff4c83&quot;,
+    &quot;cur&quot;: 237,
+    &quot;velocity&quot;: 1.12
+  },
+  {
+    &quot;drama_id&quot;: &quot;b31cb9c6-3037-4e28-a343-003e60b149ac&quot;,
+    &quot;cur&quot;: 148,
+    &quot;velocity&quot;: 1.12
+  },
+  {
+    &quot;drama_id&quot;: &quot;3b93fadb-928e-4933-90d1-564c0afe9b6f&quot;,
+    &quot;cur&quot;: 3177,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;b3ddfdb1-1a81-4988-886a-f86a4126427f&quot;,
+    &quot;cur&quot;: 1936,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;6774d285-c3c8-4ea7-aea4-5a0837aae521&quot;,
+    &quot;cur&quot;: 1697,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;ee1143bd-9630-421c-a8b8-284997caa708&quot;,
+    &quot;cur&quot;: 686,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;5d81fd6d-a5f3-4f9e-b569-746b23d97161&quot;,
+    &quot;cur&quot;: 606,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;b83b311c-9b90-4045-bc80-c2f91015bd0a&quot;,
+    &quot;cur&quot;: 300,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;c4dc04b1-ef85-4602-9e97-bd539ed848cb&quot;,
+    &quot;cur&quot;: 210,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;079f0efd-689d-404b-98e3-c3800e116b45&quot;,
+    &quot;cur&quot;: 183,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;640e1d83-ec2e-4339-a632-5cccda0b77fc&quot;,
+    &quot;cur&quot;: 176,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;1b1f4605-7aef-4bbd-b77e-481eeb2f37cd&quot;,
+    &quot;cur&quot;: 173,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;64ded44f-6e42-4cda-9165-32fbabb0fc13&quot;,
+    &quot;cur&quot;: 148,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;1127424f-b283-4527-a2b4-9a09f86a495f&quot;,
+    &quot;cur&quot;: 137,
+    &quot;velocity&quot;: 1.11
+  },
+  {
+    &quot;drama_id&quot;: &quot;588b0b60-2f57-4877-8f94-a25db793614c&quot;,
+    &quot;cur&quot;: 2785,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;712e8cc5-ff96-48f9-85cc-69042d66b998&quot;,
+    &quot;cur&quot;: 1342,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;9bbcb7d6-2b93-4cfa-b08e-dd61236be1cc&quot;,
+    &quot;cur&quot;: 815,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;688269c0-b079-442f-a33b-adb3fcfc2ae8&quot;,
+    &quot;cur&quot;: 664,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;02cc6a5c-2ff0-4a75-9a5e-a2f3c0a0a8a6&quot;,
+    &quot;cur&quot;: 580,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;cdb507ee-7f89-4050-b9e3-9c7d87eed569&quot;,
+    &quot;cur&quot;: 384,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;2c71c590-b109-4a20-ac8e-2b1cb6fe9173&quot;,
+    &quot;cur&quot;: 321,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;c86e3505-e52c-4d21-9d17-d0dcf6e3e956&quot;,
+    &quot;cur&quot;: 140,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;50165f66-3ce4-4928-93dc-0a416fb982f8&quot;,
+    &quot;cur&quot;: 137,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;61436178-0dd6-436d-90c5-182ebdf196e4&quot;,
+    &quot;cur&quot;: 133,
+    &quot;velocity&quot;: 1.1
+  },
+  {
+    &quot;drama_id&quot;: &quot;632acc61-1c3d-436d-97e1-529b4303745b&quot;,
+    &quot;cur&quot;: 3183,
+    &quot;velocity&quot;: 1.09
+  },
+  {
+    &quot;drama_id&quot;: &quot;9f403a0a-ad37-4942-959e-62d1dfd320dd&quot;,
+    &quot;cur&quot;: 2703,
+    &quot;velocity&quot;: 1.09
+  },
+  {
+    &quot;drama_id&quot;: &quot;fd3bf2d9-1567-461a-9467-b85d6e72bc84&quot;,
+    &quot;cur&quot;: 280,
+    &quot;velocity&quot;: 1.09
+  },
+  {
+    &quot;drama_id&quot;: &quot;88bed0eb-7f7d-4dcd-851b-1f918280f017&quot;,
+    &quot;cur&quot;: 275,
+    &quot;velocity&quot;: 1.09
+  },
+  {
+    &quot;drama_id&quot;: &quot;6b237a35-2085-431b-b1e5-0b04d0d1037d&quot;,
+    &quot;cur&quot;: 242,
+    &quot;velocity&quot;: 1.09
+  },
+  {
+    &quot;drama_id&quot;: &quot;cc7a086c-9457-4900-803c-d4ec44eab277&quot;,
+    &quot;cur&quot;: 144,
+    &quot;velocity&quot;: 1.09
+  },
+  {
+    &quot;drama_id&quot;: &quot;dddbd727-33ed-4627-8de1-3ce6499cc69a&quot;,
+    &quot;cur&quot;: 137,
+    &quot;velocity&quot;: 1.09
+  },
+  {
+    &quot;drama_id&quot;: &quot;03e013a6-faac-4ed3-b899-d6d37cbd0b40&quot;,
+    &quot;cur&quot;: 2765,
+    &quot;velocity&quot;: 1.08
+  },
+  {
+    &quot;drama_id&quot;: &quot;dcd326cc-b452-4197-8dae-6de92edcc74c&quot;,
+    &quot;cur&quot;: 1091,
+    &quot;velocity&quot;: 1.08
+  },
+  {
+    &quot;drama_id&quot;: &quot;4a89ef15-00b3-44d3-be12-62f641c1839e&quot;,
+    &quot;cur&quot;: 174,
+    &quot;velocity&quot;: 1.08
+  },
+  {
+    &quot;drama_id&quot;: &quot;ec2d24c1-effc-45e2-8710-f26b902a9c1c&quot;,
+    &quot;cur&quot;: 166,
+    &quot;velocity&quot;: 1.08
+  },
+  {
+    &quot;drama_id&quot;: &quot;6481f90f-76ab-4003-a688-da0d2b980bb3&quot;,
+    &quot;cur&quot;: 135,
+    &quot;velocity&quot;: 1.08
+  },
+  {
+    &quot;drama_id&quot;: &quot;f6c1db9d-411a-4058-93be-db937a2647bd&quot;,
+    &quot;cur&quot;: 2663,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;31707435-3f04-46c8-abb7-3633b8456d6e&quot;,
+    &quot;cur&quot;: 1541,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;468f406f-5068-4bcd-b018-64f9fbddca72&quot;,
+    &quot;cur&quot;: 1199,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;f9ea9b9c-5c4c-476f-b752-a997dc87399f&quot;,
+    &quot;cur&quot;: 469,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;ea2b1e5e-94c8-4a9a-bcb0-b801556faf88&quot;,
+    &quot;cur&quot;: 297,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;99d970f5-e1f0-4918-845c-d6a3395f1fb1&quot;,
+    &quot;cur&quot;: 285,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;b7f39ace-370b-4b3a-83f7-dfc019b883c6&quot;,
+    &quot;cur&quot;: 223,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;b22122b0-b4c8-4a71-bbac-d63050e0d2d5&quot;,
+    &quot;cur&quot;: 196,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;20505c10-6a33-41ab-8885-7c4554bc14fd&quot;,
+    &quot;cur&quot;: 186,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;8a319f95-993b-4cde-b57a-d7a33ede3108&quot;,
+    &quot;cur&quot;: 185,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;e93ac2e1-b9aa-4e7a-8fa9-f9b312199529&quot;,
+    &quot;cur&quot;: 133,
+    &quot;velocity&quot;: 1.07
+  },
+  {
+    &quot;drama_id&quot;: &quot;174166eb-aa31-494c-a229-4c6975ac8752&quot;,
+    &quot;cur&quot;: 3955,
+    &quot;velocity&quot;: 1.06
+  },
+  {
+    &quot;drama_id&quot;: &quot;eb3035bf-b812-454a-a6e3-380d60fa4fd0&quot;,
+    &quot;cur&quot;: 331,
+    &quot;velocity&quot;: 1.06
+  },
+  {
+    &quot;drama_id&quot;: &quot;ee465565-c675-4a7b-a525-05f219427cda&quot;,
+    &quot;cur&quot;: 286,
+    &quot;velocity&quot;: 1.06
+  },
+  {
+    &quot;drama_id&quot;: &quot;273ead7d-60c1-4894-999c-3b618dbeb865&quot;,
+    &quot;cur&quot;: 234,
+    &quot;velocity&quot;: 1.06
+  },
+  {
+    &quot;drama_id&quot;: &quot;f91015c6-74c4-4f00-9f89-7a4935233389&quot;,
+    &quot;cur&quot;: 154,
+    &quot;velocity&quot;: 1.06
+  },
+  {
+    &quot;drama_id&quot;: &quot;d6938d0b-0db4-42d0-8bad-6efa08dc84c4&quot;,
+    &quot;cur&quot;: 135,
+    &quot;velocity&quot;: 1.06
+  },
+  {
+    &quot;drama_id&quot;: &quot;9218039b-ab1e-4345-a41e-8219157401a0&quot;,
+    &quot;cur&quot;: 9216,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;fc3c311f-115f-4719-a5e8-869377c2a76b&quot;,
+    &quot;cur&quot;: 1139,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;502332ec-0757-4a71-a83a-a35d6ea65299&quot;,
+    &quot;cur&quot;: 907,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;3cdf1c4f-8276-4e07-b248-67559aa8ced8&quot;,
+    &quot;cur&quot;: 748,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;8b64b985-bad9-4c15-8331-32647a3281ca&quot;,
+    &quot;cur&quot;: 282,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;ec14a92e-3874-4e1d-a1f2-1d8ba292d47a&quot;,
+    &quot;cur&quot;: 273,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;f30d75e9-c89c-47ff-b1ad-81dcb4949006&quot;,
+    &quot;cur&quot;: 186,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;a132d9e0-7cf6-4935-afe5-1005d0c8282c&quot;,
+    &quot;cur&quot;: 180,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;f6b729e9-3ff4-453a-86fe-c618fa82c054&quot;,
+    &quot;cur&quot;: 146,
+    &quot;velocity&quot;: 1.05
+  },
+  {
+    &quot;drama_id&quot;: &quot;da824eb0-4487-438b-b841-5268e1f3c731&quot;,
+    &quot;cur&quot;: 4324,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;691b2616-f4fe-4eda-a1e5-dc6e8b6a8170&quot;,
+    &quot;cur&quot;: 415,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;fc25c8e8-8cce-4511-8af3-1eadc36ceadd&quot;,
+    &quot;cur&quot;: 332,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;69c4d768-0825-45e1-97f6-5a5e09be0a32&quot;,
+    &quot;cur&quot;: 307,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;377b2198-7bc5-4667-a51d-5c256956bdf6&quot;,
+    &quot;cur&quot;: 227,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;5be1517e-da2e-4cfe-ac23-dab7dcdae43f&quot;,
+    &quot;cur&quot;: 225,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;77074ee8-1da6-41eb-81da-aece1e250953&quot;,
+    &quot;cur&quot;: 187,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;7c464814-28ef-427f-af9b-8fb7ba8321d3&quot;,
+    &quot;cur&quot;: 151,
+    &quot;velocity&quot;: 1.04
+  },
+  {
+    &quot;drama_id&quot;: &quot;183be137-0d0c-4fd0-93f5-e03362ec88fc&quot;,
+    &quot;cur&quot;: 6773,
+    &quot;velocity&quot;: 1.03
+  },
+  {
+    &quot;drama_id&quot;: &quot;f5580a97-99bd-4f51-a46b-95b2b663cdd5&quot;,
+    &quot;cur&quot;: 737,
+    &quot;velocity&quot;: 1.03
+  },
+  {
+    &quot;drama_id&quot;: &quot;0a329da5-5b6c-4a5f-9e17-9c34f7ad1a92&quot;,
+    &quot;cur&quot;: 665,
+    &quot;velocity&quot;: 1.03
+  },
+  {
+    &quot;drama_id&quot;: &quot;beaeb43b-74b1-498c-b765-f04ff0b4c3f6&quot;,
+    &quot;cur&quot;: 169,
+    &quot;velocity&quot;: 1.03
+  },
+  {
+    &quot;drama_id&quot;: &quot;e07ba185-b750-4c45-9c9b-7a4e5310f95f&quot;,
+    &quot;cur&quot;: 154,
+    &quot;velocity&quot;: 1.03
+  },
+  {
+    &quot;drama_id&quot;: &quot;e4dc0ef2-db4a-41fe-9140-66963f3aaeb7&quot;,
+    &quot;cur&quot;: 137,
+    &quot;velocity&quot;: 1.03
+  },
+  {
+    &quot;drama_id&quot;: &quot;b021cec6-f553-4987-91b4-f5635ffcd1e7&quot;,
+    &quot;cur&quot;: 235,
+    &quot;velocity&quot;: 1.02
+  },
+  {
+    &quot;drama_id&quot;: &quot;9d276cfc-a2d1-44be-b810-aca32913961f&quot;,
+    &quot;cur&quot;: 214,
+    &quot;velocity&quot;: 1.02
+  },
+  {
+    &quot;drama_id&quot;: &quot;09c9890b-63f3-40ed-87a5-eb858cb7c6ed&quot;,
+    &quot;cur&quot;: 211,
+    &quot;velocity&quot;: 1.02
+  },
+  {
+    &quot;drama_id&quot;: &quot;bdab5c61-8d32-47de-8fdc-5964e9d1ee81&quot;,
+    &quot;cur&quot;: 167,
+    &quot;velocity&quot;: 1.02
+  },
+  {
+    &quot;drama_id&quot;: &quot;1ea22e9b-00d4-4966-9584-9b97f5108425&quot;,
+    &quot;cur&quot;: 140,
+    &quot;velocity&quot;: 1.02
+  },
+  {
+    &quot;drama_id&quot;: &quot;e4c51444-2f46-47f3-8f94-51303a2f8440&quot;,
+    &quot;cur&quot;: 135,
+    &quot;velocity&quot;: 1.02
+  },
+  {
+    &quot;drama_id&quot;: &quot;1bc17301-6c8f-487c-823b-c9347ea75cc9&quot;,
+    &quot;cur&quot;: 133,
+    &quot;velocity&quot;: 1.02
+  },
+  {
+    &quot;drama_id&quot;: &quot;db03738b-b289-4928-bacf-27003020e3ef&quot;,
+    &quot;cur&quot;: 2398,
+    &quot;velocity&quot;: 1.01
+  },
+  {
+    &quot;drama_id&quot;: &quot;21052a74-253a-4849-95b8-9768568984b0&quot;,
+    &quot;cur&quot;: 612,
+    &quot;velocity&quot;: 1.01
+  },
+  {
+    &quot;drama_id&quot;: &quot;df82d719-e1d4-42f5-806e-2884dce33bec&quot;,
+    &quot;cur&quot;: 376,
+    &quot;velocity&quot;: 1.01
+  },
+  {
+    &quot;drama_id&quot;: &quot;5778e055-4692-4d21-93ed-1550e60409fc&quot;,
+    &quot;cur&quot;: 212,
+    &quot;velocity&quot;: 1.01
+  },
+  {
+    &quot;drama_id&quot;: &quot;1bdf2119-fa09-40a1-a0f6-b892bff99c69&quot;,
+    &quot;cur&quot;: 131,
+    &quot;velocity&quot;: 1.01
+  },
+  {
+    &quot;drama_id&quot;: &quot;1b65d7ca-bb7a-47ed-941e-e8066cd72452&quot;,
+    &quot;cur&quot;: 2143,
+    &quot;velocity&quot;: 1
+  },
+  {
+    &quot;drama_id&quot;: &quot;30eb2852-ec92-4b3b-8817-9425d3213cc5&quot;,
+    &quot;cur&quot;: 1857,
+    &quot;velocity&quot;: 1
+  },
+  {
+    &quot;drama_id&quot;: &quot;9454166a-c5ed-419d-bec1-c202fe8e9795&quot;,
+    &quot;cur&quot;: 195,
+    &quot;velocity&quot;: 1
+  },
+  {
+    &quot;drama_id&quot;: &quot;c44edb8f-dbd2-4966-8e28-12f413572e2d&quot;,
+    &quot;cur&quot;: 175,
+    &quot;velocity&quot;: 1
+  },
+  {
+    &quot;drama_id&quot;: &quot;1a8614ff-ecfb-4028-8c1f-541fde19b4af&quot;,
+    &quot;cur&quot;: 2858,
+    &quot;velocity&quot;: 0.99
+  },
+  {
+    &quot;drama_id&quot;: &quot;834444ab-cb03-4743-bdca-830feae82e60&quot;,
+    &quot;cur&quot;: 459,
+    &quot;velocity&quot;: 0.99
+  },
+  {
+    &quot;drama_id&quot;: &quot;9cdf6c8e-ad7f-4d73-9f82-977e2aef24dc&quot;,
+    &quot;cur&quot;: 200,
+    &quot;velocity&quot;: 0.99
+  },
+  {
+    &quot;drama_id&quot;: &quot;2319a2c2-99ad-4927-853c-9e3d4fd5d811&quot;,
+    &quot;cur&quot;: 196,
+    &quot;velocity&quot;: 0.99
+  },
+  {
+    &quot;drama_id&quot;: &quot;f273d17c-99c2-4fd1-ad5b-56af518566d3&quot;,
+    &quot;cur&quot;: 154,
+    &quot;velocity&quot;: 0.99
+  },
+  {
+    &quot;drama_id&quot;: &quot;595e6b89-1d49-4691-9ebd-b4dbc14f4239&quot;,
+    &quot;cur&quot;: 138,
+    &quot;velocity&quot;: 0.99
+  },
+  {
+    &quot;drama_id&quot;: &quot;926abfd3-7ee6-4a23-9463-95e49247c61a&quot;,
+    &quot;cur&quot;: 581,
+    &quot;velocity&quot;: 0.98
+  },
+  {
+    &quot;drama_id&quot;: &quot;52ada083-5faf-4b19-b397-5f42476c395c&quot;,
+    &quot;cur&quot;: 536,
+    &quot;velocity&quot;: 0.98
+  },
+  {
+    &quot;drama_id&quot;: &quot;581ba8c6-720b-46be-952f-17ffa602ee30&quot;,
+    &quot;cur&quot;: 455,
+    &quot;velocity&quot;: 0.98
+  },
+  {
+    &quot;drama_id&quot;: &quot;c1f96b9d-862f-488d-b63a-d383f1108588&quot;,
+    &quot;cur&quot;: 195,
+    &quot;velocity&quot;: 0.98
+  },
+  {
+    &quot;drama_id&quot;: &quot;5343e13d-11a6-48a5-94f2-5eabfa91552c&quot;,
+    &quot;cur&quot;: 143,
+    &quot;velocity&quot;: 0.98
+  },
+  {
+    &quot;drama_id&quot;: &quot;27b59907-8a13-4efa-bcaa-90235f6f23f0&quot;,
+    &quot;cur&quot;: 167,
+    &quot;velocity&quot;: 0.97
+  },
+  {
+    &quot;drama_id&quot;: &quot;76ca0a76-27e3-460a-beb9-dd0af8f02d62&quot;,
+    &quot;cur&quot;: 166,
+    &quot;velocity&quot;: 0.97
+  },
+  {
+    &quot;drama_id&quot;: &quot;b9077b2b-72ff-434a-9b01-f11553ee8e52&quot;,
+    &quot;cur&quot;: 154,
+    &quot;velocity&quot;: 0.97
+  },
+  {
+    &quot;drama_id&quot;: &quot;2ec2812b-c0e0-4076-8799-458f7c4765f2&quot;,
+    &quot;cur&quot;: 8810,
+    &quot;velocity&quot;: 0.96
+  },
+  {
+    &quot;drama_id&quot;: &quot;5de826e3-23e0-4583-a1a8-313af05fc38c&quot;,
+    &quot;cur&quot;: 924,
+    &quot;velocity&quot;: 0.96
+  },
+  {
+    &quot;drama_id&quot;: &quot;f1f9f61f-92d3-41ce-b995-c1bc3c7b1faf&quot;,
+    &quot;cur&quot;: 653,
+    &quot;velocity&quot;: 0.96
+  },
+  {
+    &quot;drama_id&quot;: &quot;997a7ce8-0087-4a0f-b9c2-1eb96a078a38&quot;,
+    &quot;cur&quot;: 170,
+    &quot;velocity&quot;: 0.96
+  },
+  {
+    &quot;drama_id&quot;: &quot;729f12ca-df12-4a0d-a916-d9532a46bede&quot;,
+    &quot;cur&quot;: 139,
+    &quot;velocity&quot;: 0.96
+  },
+  {
+    &quot;drama_id&quot;: &quot;28edb110-050f-4977-85e5-c8991bb8ac8b&quot;,
+    &quot;cur&quot;: 225,
+    &quot;velocity&quot;: 0.95
+  },
+  {
+    &quot;drama_id&quot;: &quot;644cf8ae-762a-4e8a-af78-4e886ecb907f&quot;,
+    &quot;cur&quot;: 176,
+    &quot;velocity&quot;: 0.95
+  },
+  {
+    &quot;drama_id&quot;: &quot;94ef52c9-5001-4699-b3e3-812a4bf00db5&quot;,
+    &quot;cur&quot;: 3721,
+    &quot;velocity&quot;: 0.94
+  },
+  {
+    &quot;drama_id&quot;: &quot;0fedfe13-d3cf-4dda-a728-e231bd6e86df&quot;,
+    &quot;cur&quot;: 469,
+    &quot;velocity&quot;: 0.94
+  },
+  {
+    &quot;drama_id&quot;: &quot;8d3f7103-7ad5-46f2-8c6f-bca5edf3d573&quot;,
+    &quot;cur&quot;: 281,
+    &quot;velocity&quot;: 0.94
+  },
+  {
+    &quot;drama_id&quot;: &quot;74caee60-43ee-48b5-9939-6914ae1c7150&quot;,
+    &quot;cur&quot;: 154,
+    &quot;velocity&quot;: 0.94
+  },
+  {
+    &quot;drama_id&quot;: &quot;bce8db9a-b77f-4bce-a5b2-48a57e2977d0&quot;,
+    &quot;cur&quot;: 382,
+    &quot;velocity&quot;: 0.93
+  },
+  {
+    &quot;drama_id&quot;: &quot;19431701-f83d-4733-ad24-26f6c940d175&quot;,
+    &quot;cur&quot;: 869,
+    &quot;velocity&quot;: 0.92
+  },
+  {
+    &quot;drama_id&quot;: &quot;e6ffe2dc-0683-45b6-9a69-4bbfdded86ed&quot;,
+    &quot;cur&quot;: 369,
+    &quot;velocity&quot;: 0.92
+  },
+  {
+    &quot;drama_id&quot;: &quot;fb366d88-221d-4858-9f99-0036f9c1a0e2&quot;,
+    &quot;cur&quot;: 313,
+    &quot;velocity&quot;: 0.91
+  },
+  {
+    &quot;drama_id&quot;: &quot;eea00bd9-292a-4938-8b22-92c5f02bd55a&quot;,
+    &quot;cur&quot;: 177,
+    &quot;velocity&quot;: 0.9
+  },
+  {
+    &quot;drama_id&quot;: &quot;6280bbd6-66e7-4655-98fd-96730fcab8e6&quot;,
+    &quot;cur&quot;: 770,
+    &quot;velocity&quot;: 0.89
+  },
+  {
+    &quot;drama_id&quot;: &quot;d9a03e1e-a24f-475d-9bf4-afb902d98d94&quot;,
+    &quot;cur&quot;: 742,
+    &quot;velocity&quot;: 0.89
+  },
+  {
+    &quot;drama_id&quot;: &quot;e8bad178-ca0f-4a7f-b600-f33cfb038700&quot;,
+    &quot;cur&quot;: 512,
+    &quot;velocity&quot;: 0.89
+  },
+  {
+    &quot;drama_id&quot;: &quot;f41b90f1-94e3-4b24-804f-2d3c8def82c4&quot;,
+    &quot;cur&quot;: 435,
+    &quot;velocity&quot;: 0.89
+  },
+  {
+    &quot;drama_id&quot;: &quot;4f89add9-4b07-452d-a5a4-270e4478f17b&quot;,
+    &quot;cur&quot;: 169,
+    &quot;velocity&quot;: 0.89
+  },
+  {
+    &quot;drama_id&quot;: &quot;90a526e3-a79e-4d97-bcf1-fe1bf370f867&quot;,
+    &quot;cur&quot;: 407,
+    &quot;velocity&quot;: 0.88
+  },
+  {
+    &quot;drama_id&quot;: &quot;a26771e3-5214-419e-a29e-de95ec0654cb&quot;,
+    &quot;cur&quot;: 1064,
+    &quot;velocity&quot;: 0.87
+  },
+  {
+    &quot;drama_id&quot;: &quot;162677b9-f40d-46cb-9d77-c93d6316a2ae&quot;,
+    &quot;cur&quot;: 328,
+    &quot;velocity&quot;: 0.87
+  },
+  {
+    &quot;drama_id&quot;: &quot;8e0823c3-f2af-44bc-892d-4cc6310bcd25&quot;,
+    &quot;cur&quot;: 180,
+    &quot;velocity&quot;: 0.87
+  },
+  {
+    &quot;drama_id&quot;: &quot;a217ed6e-8dea-4f44-84b1-b4db85744d59&quot;,
+    &quot;cur&quot;: 152,
+    &quot;velocity&quot;: 0.87
+  },
+  {
+    &quot;drama_id&quot;: &quot;84146f9f-7cf1-4943-8366-b1ed0e593945&quot;,
+    &quot;cur&quot;: 169,
+    &quot;velocity&quot;: 0.85
+  },
+  {
+    &quot;drama_id&quot;: &quot;8086aecc-bc1c-43d9-8b86-cf0dc131f3b1&quot;,
+    &quot;cur&quot;: 570,
+    &quot;velocity&quot;: 0.84
+  },
+  {
+    &quot;drama_id&quot;: &quot;541b27e2-2b35-4e4c-a3f2-cd19e83490f9&quot;,
+    &quot;cur&quot;: 270,
+    &quot;velocity&quot;: 0.84
+  },
+  {
+    &quot;drama_id&quot;: &quot;f6cb01d7-86c7-43e9-b55c-fdff3caca675&quot;,
+    &quot;cur&quot;: 164,
+    &quot;velocity&quot;: 0.83
+  },
+  {
+    &quot;drama_id&quot;: &quot;e2dba8fb-4c34-4287-9f95-1f7d79d8a7c2&quot;,
+    &quot;cur&quot;: 593,
+    &quot;velocity&quot;: 0.82
+  },
+  {
+    &quot;drama_id&quot;: &quot;d15f9c75-8293-49b3-baf4-6a7548f5eba7&quot;,
+    &quot;cur&quot;: 249,
+    &quot;velocity&quot;: 0.82
+  },
+  {
+    &quot;drama_id&quot;: &quot;c7bae494-532a-4a8f-8b55-566ece16e115&quot;,
+    &quot;cur&quot;: 253,
+    &quot;velocity&quot;: 0.81
+  },
+  {
+    &quot;drama_id&quot;: &quot;45913c49-6944-4733-89e5-727e0c67ef33&quot;,
+    &quot;cur&quot;: 162,
+    &quot;velocity&quot;: 0.81
+  },
+  {
+    &quot;drama_id&quot;: &quot;4d9a4c99-e8af-433a-946f-7545c3501175&quot;,
+    &quot;cur&quot;: 521,
+    &quot;velocity&quot;: 0.8
+  },
+  {
+    &quot;drama_id&quot;: &quot;f68c6381-faf2-4a31-afe0-a56134941a29&quot;,
+    &quot;cur&quot;: 297,
+    &quot;velocity&quot;: 0.78
+  },
+  {
+    &quot;drama_id&quot;: &quot;2143bb23-88f0-4635-950a-cd884e37847b&quot;,
+    &quot;cur&quot;: 682,
+    &quot;velocity&quot;: 0.76
+  },
+  {
+    &quot;drama_id&quot;: &quot;530c8490-3ad5-49ca-89ac-cc15dc2aa538&quot;,
+    &quot;cur&quot;: 1383,
+    &quot;velocity&quot;: 0.75
+  },
+  {
+    &quot;drama_id&quot;: &quot;90e30007-be94-4a48-a2c6-9fb5b190ca78&quot;,
+    &quot;cur&quot;: 605,
+    &quot;velocity&quot;: 0.75
+  },
+  {
+    &quot;drama_id&quot;: &quot;97a5a4ea-1d21-4c40-a786-47ab9e8c391c&quot;,
+    &quot;cur&quot;: 298,
+    &quot;velocity&quot;: 0.75
+  },
+  {
+    &quot;drama_id&quot;: &quot;91f6d6c2-4e3d-426c-a036-7cb61ed29c5c&quot;,
+    &quot;cur&quot;: 246,
+    &quot;velocity&quot;: 0.75
+  },
+  {
+    &quot;drama_id&quot;: &quot;6a316412-103d-4e54-ada4-762622f48edf&quot;,
+    &quot;cur&quot;: 135,
+    &quot;velocity&quot;: 0.74
+  },
+  {
+    &quot;drama_id&quot;: &quot;fdc1df29-b763-485a-a52f-e38162e86e86&quot;,
+    &quot;cur&quot;: 387,
+    &quot;velocity&quot;: 0.73
+  },
+  {
+    &quot;drama_id&quot;: &quot;ae0cc60c-feb0-415f-9575-b6d652e3926a&quot;,
+    &quot;cur&quot;: 433,
+    &quot;velocity&quot;: 0.72
+  },
+  {
+    &quot;drama_id&quot;: &quot;a10af494-17fa-4941-99b3-6dd39c738884&quot;,
+    &quot;cur&quot;: 1272,
+    &quot;velocity&quot;: 0.71
+  },
+  {
+    &quot;drama_id&quot;: &quot;20b84a8a-d0aa-424d-b3ba-cab32356ac4c&quot;,
+    &quot;cur&quot;: 1016,
+    &quot;velocity&quot;: 0.69
+  },
+  {
+    &quot;drama_id&quot;: &quot;bee14b90-488b-4c02-90dd-10e135fe2392&quot;,
+    &quot;cur&quot;: 310,
+    &quot;velocity&quot;: 0.69
+  },
+  {
+    &quot;drama_id&quot;: &quot;db6a5635-32d3-4f3d-b001-1c91010ebe0d&quot;,
+    &quot;cur&quot;: 1874,
+    &quot;velocity&quot;: 0.67
+  },
+  {
+    &quot;drama_id&quot;: &quot;69821a33-2104-4671-b38e-3767bb8c8ddd&quot;,
+    &quot;cur&quot;: 393,
+    &quot;velocity&quot;: 0.65
+  },
+  {
+    &quot;drama_id&quot;: &quot;5502a05c-433a-49a9-8dee-ae2fef484b62&quot;,
+    &quot;cur&quot;: 237,
+    &quot;velocity&quot;: 0.64
+  },
+  {
+    &quot;drama_id&quot;: &quot;87126744-c9c3-411d-a1c7-3b8729fb7494&quot;,
+    &quot;cur&quot;: 640,
+    &quot;velocity&quot;: 0.63
+  },
+  {
+    &quot;drama_id&quot;: &quot;c00f8783-ea0f-4507-8378-e98529e72feb&quot;,
+    &quot;cur&quot;: 242,
+    &quot;velocity&quot;: 0.59
+  },
+  {
+    &quot;drama_id&quot;: &quot;ee07325e-10b6-4c98-b4f7-d51212adaac8&quot;,
+    &quot;cur&quot;: 356,
+    &quot;velocity&quot;: 0.54
+  },
+  {
+    &quot;drama_id&quot;: &quot;7c342842-9848-4c83-b063-1189bd132ca0&quot;,
+    &quot;cur&quot;: 327,
+    &quot;velocity&quot;: 0.53
+  }
+]</pre></div><details class="proof"><summary>源码证据：chunlou.tv (3) / Browse-r2-0OtGzhsK.js:1459</summary><p class="source">SHA-256：eb3e9a06b22291315685dd55a325c0461a1d79cdabc1945c9f26423338ca1292</p><pre>                        data: e,
+                        error: t
+                    } = await ie.rpc(`trending_dramas`, void 0, {
+                        get: !0
+                    });
+                    if (t) throw t;
+                    return e
+                }, 3e5).then(e =&gt; {
+                    c.value = (e ? ? []).filter(e =&gt; Number(e.velocity) &gt;= mr).sort((e, t) =&gt; Number(t.velocity) - Number(e.velocity)).map(e =&gt; e.drama_id)
+                }).catch(e =&gt; {
+                    console.error(`[BrowseRankSection] trending_dramas 请求失败`, e)
+                })
+            });
+            async function y() {
+                if (!(d.value || l.value)) {</pre></details></article>
+<article class="api" id="source-38"><header><span class="rpc">RPC</span><h3>get_pref_tags</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>登录用户的偏好标签，源码 get:true，与个性化推荐并行读取。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>返回值 array</code></td><td>标签数组</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (3) / get_pref_tags.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>[
+  &quot;三角关系&quot;,
+  &quot;悬疑&quot;,
+  &quot;仙子&quot;,
+  &quot;唯美&quot;,
+  &quot;复仇&quot;
+]</pre></div><details class="proof"><summary>源码证据：chunlou.tv (3) / Browse-r2-0OtGzhsK.js:1910</summary><p class="source">SHA-256：eb3e9a06b22291315685dd55a325c0461a1d79cdabc1945c9f26423338ca1292</p><pre>            async function ae() {
+                if (!a.isLoggedIn) return;
+                let [e, t] = await Promise.all([ie.rpc(`get_pref_tags`, void 0, {
+                    get: !0
+                }), ie.rpc(`recommended_dramas`, {
+                    p_limit: 12
+                }, {
+                    get: !0
+                })]);
+                N.value = e.data ? ? [];
+                let n = {};
+                for (let e of t.data ? ? []) n[e.drama_id] = Number(e.score);
+                P.value = n, b.value = await ce(Object.keys(n))
+            }
+            let U = _(``),</pre></details></article>
+<article class="api" id="source-39"><header><span class="rpc">RPC</span><h3>recommended_dramas</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>剧库登录用户推荐候选，源码 get:true，随后按剧ID读取剧资料。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_limit&quot;: 12
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pLimit&quot;: 12
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>[].drama_id / score</code></td><td>推荐作品ID及推荐分数</td></tr></tbody></table></div><p class="source">原站归档响应：chunlou.tv (3) / recommended_dramas.html</p><div class="json"><header>归档中的真实 Response JSON（不是我们接口的已确认返回）<button type="button" data-copy>复制 JSON</button></header><pre>[
+  {
+    &quot;drama_id&quot;: &quot;f24bd2d3-e6bf-4d87-9a7c-0f71f5376398&quot;,
+    &quot;score&quot;: 4937228
+  },
+  {
+    &quot;drama_id&quot;: &quot;5e655363-7a6f-4404-988d-0cfdd7437094&quot;,
+    &quot;score&quot;: 4878550
+  },
+  {
+    &quot;drama_id&quot;: &quot;c4c97891-d2c5-4706-bc62-00fad4a40434&quot;,
+    &quot;score&quot;: 4877051
+  },
+  {
+    &quot;drama_id&quot;: &quot;3b93fadb-928e-4933-90d1-564c0afe9b6f&quot;,
+    &quot;score&quot;: 4873615
+  },
+  {
+    &quot;drama_id&quot;: &quot;bd77e9ad-71a4-45fa-aff6-0e5d786dd8f3&quot;,
+    &quot;score&quot;: 4846050
+  },
+  {
+    &quot;drama_id&quot;: &quot;632acc61-1c3d-436d-97e1-529b4303745b&quot;,
+    &quot;score&quot;: 4791714
+  },
+  {
+    &quot;drama_id&quot;: &quot;da824eb0-4487-438b-b841-5268e1f3c731&quot;,
+    &quot;score&quot;: 4790900
+  },
+  {
+    &quot;drama_id&quot;: &quot;44cdaad5-767f-42b3-8424-541b8805218c&quot;,
+    &quot;score&quot;: 4723447
+  },
+  {
+    &quot;drama_id&quot;: &quot;eea8f14b-864e-4669-b035-25f6224caab9&quot;,
+    &quot;score&quot;: 4722333
+  },
+  {
+    &quot;drama_id&quot;: &quot;dff7b882-cb4e-4896-a245-15ec3f551518&quot;,
+    &quot;score&quot;: 4721666
+  },
+  {
+    &quot;drama_id&quot;: &quot;f6c1db9d-411a-4058-93be-db937a2647bd&quot;,
+    &quot;score&quot;: 4717295
+  },
+  {
+    &quot;drama_id&quot;: &quot;e898b120-5422-427d-a9f2-c4b75c2c6ff6&quot;,
+    &quot;score&quot;: 4712379
+  }
+]</pre></div><details class="proof"><summary>源码证据：chunlou.tv (3) / Browse-r2-0OtGzhsK.js:1912</summary><p class="source">SHA-256：eb3e9a06b22291315685dd55a325c0461a1d79cdabc1945c9f26423338ca1292</p><pre>                let [e, t] = await Promise.all([ie.rpc(`get_pref_tags`, void 0, {
+                    get: !0
+                }), ie.rpc(`recommended_dramas`, {
+                    p_limit: 12
+                }, {
+                    get: !0
+                })]);
+                N.value = e.data ? ? [];
+                let n = {};
+                for (let e of t.data ? ? []) n[e.drama_id] = Number(e.score);
+                P.value = n, b.value = await ce(Object.keys(n))
+            }
+            let U = _(``),
+                W = _(``),
+                G = _(!1),</pre></details></article>
+<article class="api" id="source-40"><header><span class="rpc">RPC</span><h3>log_search</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>关键词至少2字符，停输1秒后记录搜索；不等同于列表查询本身。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;p_keyword&quot;: &quot;&lt;trim后的搜索词&gt;&quot;
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;pKeyword&quot;: &quot;&lt;trim后的搜索词&gt;&quot;
+}</pre></div></div><p class="source">归档未包含响应正文</p><details class="proof"><summary>源码证据：chunlou.tv (3) / Browse-r2-0OtGzhsK.js:1974</summary><p class="source">SHA-256：eb3e9a06b22291315685dd55a325c0461a1d79cdabc1945c9f26423338ca1292</p><pre>                Le &amp;&amp; clearTimeout(Le);
+                let t = e.trim();
+                t.length &lt; 2 || (Le = setTimeout(() =&gt; void ie.rpc(`log_search`, {
+                    p_keyword: t
+                }).then(void 0, () =&gt; {}), 1e3))
+            });
+            let Re = _(Ee),
+                ze = g(() =&gt; De(Re.value, y.value.categories, y.value.category_counts)),
+                Be = _([]),
+                Ve = g(() =&gt; Te(ze.value, y.value.category_counts)),
+                Z = _(Ne()),
+                He = _(!1),
+                Ue = 0,
+                We = null;
+            async function Ge(e) {</pre></details></article>
+<article class="api" id="source-41"><header><span class="rpc">TABLE</span><h3>watch_history.select</h3><span class="pending">源码已核实 · 我方对应流程待确认</span></header><p><b>作用：</b>剧库继续观看卡片：仅当前用户、hidden_at=null、更新时间倒序，最多8条；只显示 published 的剧。</p><div class="grid"><div class="json"><header>原站请求参数（非我们的现有路由）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;user_id&quot;: &quot;&lt;当前用户&gt;&quot;,
+  &quot;hidden_at&quot;: null,
+  &quot;order&quot;: &quot;updated_at.desc&quot;,
+  &quot;limit&quot;: 8
+}</pre></div><div class="json"><header>字段转驼峰对照（保留 p 前缀，不擅自改名）<button type="button" data-copy>复制 JSON</button></header><pre>{
+  &quot;userId&quot;: &quot;&lt;当前用户&gt;&quot;,
+  &quot;hiddenAt&quot;: null,
+  &quot;order&quot;: &quot;updated_at.desc&quot;,
+  &quot;limit&quot;: 8
+}</pre></div></div><div class="table-scroll"><table><thead><tr><th>源码/抓包字段</th><th>作用</th></tr></thead><tbody><tr><td><code>progress_sec</code></td><td>观看进度秒数</td></tr><tr><td><code>episode.id / seq / kind / display_no / part / duration_sec</code></td><td>集信息与时长</td></tr><tr><td><code>episode.drama.id / slug / title_i18n / status / cover_path</code></td><td>关联剧资料</td></tr></tbody></table></div><p class="source">归档未包含响应正文</p><ul><li>进度条根据 progress_sec/duration_sec 换算为百分比并最高100%。</li></ul><details class="proof"><summary>源码证据：chunlou.tv (3) / Browse-r2-0OtGzhsK.js:1874</summary><p class="source">SHA-256：eb3e9a06b22291315685dd55a325c0461a1d79cdabc1945c9f26423338ca1292</p><pre>                let {
+                    data: e
+                } = await ie.from(`watch_history`).select(`progress_sec, episode:episodes(*, drama:dramas(id, slug, title_i18n, status, cover_path))`).eq(`user_id`, a.user.id).is(`hidden_at`, null).order(`updated_at`, {
+                    ascending: !1
+                }).limit(8);
+                k.value = (e ? ? []).map(e =&gt; {
+                    let t = e.episode;
+                    if (!t ? .drama || t.drama.status !== `published`) return null;
+                    let n = t.duration_sec ? Math.min(100, Math.round(e.progress_sec / t.duration_sec * 100)) : 0;
+                    return {
+                        episodeId: t.id,
+                        seq: t.seq,
+                        kind: t.kind,
+                        display_no: t.display_no,
+                        part: t.part,</pre></details></article></section><section id="gaps"><h2>补抓资源核查与后续对接</h2><table><thead><tr><th>资源</th><th>核查结果</th><th>关联内容</th></tr></thead><tbody><tr><td>Browse-r2-0OtGzhsK.js</td><td>正文已核实</td><td>分类页完整交互</td></tr><tr><td>categories-r2-Bpqaxe-J.js</td><td>正文已核实</td><td>分类页分类组件/筛选交互</td></tr><tr><td>Me-r2-Cxw1cryX.js</td><td>正文已核实</td><td>个人页的签到、追剧状态、等级等关联流程</td></tr></tbody></table><ul><li>chunlou.tv (3) 已补齐这三个 JS 正文，无需再次补抓它们；新增分类配置、连续追剧状态、等级和分享返回证据已收录。每处证据分别标明 (2)/(3)，不混淆版本。</li><li>评分 candidates 的非空返回、签到领取、X 关注核验、Telegram 绑定和推送订阅保存仍按实际响应核对；No Content 不是已知空响应。</li><li>这些浏览器资源没有 SQL/RLS、OAuth 服务端回调、Telegram webhook 和关注/观看防刷的后台实现。前端抓包不能证明完整服务器规则。</li><li>本项目还需确认 tasks/rewards 实际返回、其他流程对应后端路由、X/Telegram 自家配置、VAPID 公钥，以及集 ID / 剧 ID 对接。禁止复用对方账号、密钥或登录令牌。</li></ul></section></main><script>document.addEventListener("click",async event=>{const button=event.target.closest("[data-copy]");if(!button)return;const text=button.closest(".json").querySelector("pre").textContent;let copied=false;try{await navigator.clipboard.writeText(text);copied=true}catch{const area=document.createElement("textarea");area.value=text;area.style.cssText="position:fixed;opacity:0";document.body.append(area);area.select();try{copied=document.execCommand("copy")}finally{area.remove()}}button.textContent=copied?"已复制":"复制失败，请手动选择";setTimeout(()=>button.textContent="复制 JSON",1800)});</script></body></html>

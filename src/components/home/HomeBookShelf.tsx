@@ -1,35 +1,12 @@
 import { Link } from 'react-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FormattedMessage } from 'react-intl';
-import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { HomeBookItem, type HomeBookItemData } from './HomeBookItem';
 import { useHomeType1H5Scroll } from './useHomeType1H5Scroll';
 
-function normalizeEpisodeSlug(raw?: string) {
-    if (!raw) return undefined;
-    let v = String(raw).trim();
-    if (!v) return undefined;
-
-    if (v.startsWith('http://') || v.startsWith('https://')) {
-        try {
-            const u = new URL(v);
-            v = u.pathname;
-        } catch {
-            // ignore
-        }
-    }
-
-    v = v.replace(/^[#/]/, '');
-    const m = v.match(/(?:^|\/)episodes\/([^/?#]+)$/i);
-    if (m) return decodeURIComponent(m[1]);
-    if (v.startsWith('episodes/')) return decodeURIComponent(v.slice('episodes/'.length));
-    return decodeURIComponent(v);
-}
-
-function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
-    const slug = normalizeEpisodeSlug(item.episodeSlug);
-    return slug ? `/episodes/${slug}` : `/video/${item.id}`;
+function toDramaHref(item: { id: number }) {
+    return `/drama/${item.id}`;
 }
 
 /** 与 `home-reelshort.scss` 中 PC `.HomePage_type_5--pc` 宫格列断点一致 */
@@ -62,7 +39,6 @@ function usePcType5GridColumns(track: boolean) {
 export function HomeBookShelf({
     titleMessageId,
     titleHref,
-    viewAllHref: _viewAllHref,
     items,
     staticBase,
     type = 'type_1',
@@ -125,11 +101,10 @@ export function HomeBookShelf({
                             {type5PcVisibleItems.map((item) => (
                                 <HomeBookItem
                                     key={item.id}
-                                    to={toEpisodeOrVideoHref(item)}
+                                    to={toDramaHref(item)}
                                     staticBase={staticBase}
                                     item={{ ...item, showExpo: true, showPlayMask: false }}
                                     variant="style5"
-                                    linkState={VIDEO_FROM_HOME_STATE}
                                 />
                             ))}
                         </div>
@@ -138,11 +113,10 @@ export function HomeBookShelf({
                             {items.map((item) => (
                                 <HomeBookItem
                                     key={item.id}
-                                    to={toEpisodeOrVideoHref(item)}
+                                    to={toDramaHref(item)}
                                     staticBase={staticBase}
                                     item={{ ...item, showExpo: true, showPlayMask: false }}
                                     variant="style5"
-                                    linkState={VIDEO_FROM_HOME_STATE}
                                 />
                             ))}
                         </div>
@@ -160,10 +134,9 @@ export function HomeBookShelf({
                     {items.map((item) => (
                         <HomeBookItem
                             key={item.id}
-                            to={toEpisodeOrVideoHref(item)}
+                            to={toDramaHref(item)}
                             staticBase={staticBase}
                             item={item}
-                            linkState={VIDEO_FROM_HOME_STATE}
                         />
                     ))}
                 </div>

@@ -1,3 +1,4 @@
+import { lockVideoFullscreenOrientation, releaseVideoFullscreenOrientation } from './videoFullscreenOrientation';
 import type { RefObject } from "react";
 
 type FullscreenVideoElement = HTMLVideoElement & {
@@ -40,7 +41,8 @@ export async function toggleVideoFullscreen(
     video.webkitDisplayingFullscreen === true || video.webkitPresentationMode === "fullscreen";
 
   if (fsEl || iosVideoFullscreen) {
-    await document.exitFullscreen().catch(() => {});
+    releaseVideoFullscreenOrientation();
+    await document.exitFullscreen?.().catch(() => {});
     if (video.webkitExitFullscreen) {
       try {
         video.webkitExitFullscreen();
@@ -55,6 +57,12 @@ export async function toggleVideoFullscreen(
   }
 
   const el = (wrap ?? video.parentElement) as FullscreenContainerElement | null;
+  // iPhone's native player must be entered synchronously from the user's tap.
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios && !disableNativeVideoFullscreen && video.webkitEnterFullscreen) {
+    try { video.webkitEnterFullscreen(); return; } catch { /* Continue with container APIs. */ }
+  }
   if (preferContainer) {
     if (el?.requestFullscreen) {
       const ok = await el
@@ -62,6 +70,7 @@ export async function toggleVideoFullscreen(
         .then(() => true)
         .catch(() => false);
       if (ok) {
+        await lockVideoFullscreenOrientation(video);
         return;
       }
     }
@@ -70,6 +79,7 @@ export async function toggleVideoFullscreen(
         .then(() => true)
         .catch(() => false);
       if (ok) {
+        await lockVideoFullscreenOrientation(video);
         return;
       }
     }
@@ -80,31 +90,32 @@ export async function toggleVideoFullscreen(
     if (video.webkitEnterFullscreen) {
       try {
         video.webkitEnterFullscreen();
+        return;
       } catch {
         // ignore
       }
-      return;
     }
     if (video.webkitEnterFullScreen) {
       try {
         video.webkitEnterFullScreen();
+        return;
       } catch {
         // ignore
       }
-      return;
     }
   }
 
   if (video.requestFullscreen) {
-    await video.requestFullscreen().catch(() => {});
-    return;
+    const entered = await video.requestFullscreen().then(() => true).catch(() => false);
+    if (entered) { await lockVideoFullscreenOrientation(video); return; }
   }
 
   if (el?.requestFullscreen) {
-    await el.requestFullscreen().catch(() => {});
-    return;
+    const entered = await el.requestFullscreen().then(() => true).catch(() => false);
+    if (entered) { await lockVideoFullscreenOrientation(video); return; }
   }
   if (el?.webkitRequestFullscreen) {
-    await Promise.resolve(el.webkitRequestFullscreen()).catch(() => {});
+    const entered = await Promise.resolve(el.webkitRequestFullscreen()).then(() => true).catch(() => false);
+    if (entered) await lockVideoFullscreenOrientation(video);
   }
 }

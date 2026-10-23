@@ -103,9 +103,8 @@ function itemsFromMovieList(list: { [key: string]: unknown }[]): HomeBookItemDat
         .filter(Boolean) as HomeBookItemData[];
 }
 
-function toEpisodeOrVideoHref(item: { id: number; episodeSlug?: string }) {
-    const slug = normalizeEpisodeSlug(item.episodeSlug);
-    return slug ? `/episodes/${slug}` : `/video/${item.id}`;
+function toEpisodeOrVideoHref(item: { id: number }) {
+    return `/video/${item.id}`;
 }
 
 function normalizeReelShortHref(href: string) {
@@ -186,7 +185,7 @@ export default function Component() {
             scrollParentRef: scrollRef,
             showPrimaryNav: true as const,
             showLeftAction: mdUp,
-            showProfile: mdUp,
+            showProfile: true,
             showLanguage: mdUp,
             showHistory: mdUp,
         }),
@@ -635,8 +634,7 @@ export default function Component() {
                                     aria-hidden={!active}
                                 >
                                     <Link
-                                        to={toEpisodeOrVideoHref(v)}
-                                        state={VIDEO_FROM_HOME_STATE}
+                                        to={`/drama/${v.id}`}
                                         className="relative block h-full min-h-0 w-full overflow-hidden"
                                     >
                                         <VideoPosterLazyCover
@@ -688,11 +686,11 @@ export default function Component() {
                                                     to={toEpisodeOrVideoHref(currentHero)}
                                                     state={VIDEO_FROM_HOME_STATE}
                                                     className={cn(
-                                                        'flex cursor-pointer items-center justify-center bg-white font-bold text-black',
-                                                        'h-[calc(40/375*var(--app-vw))] w-[calc(168/375*var(--app-vw))] rounded-[calc(4/375*var(--app-vw))] py-[calc(11/375*var(--app-vw))] text-[calc(16/375*var(--app-vw))]',
+                                                        'flex cursor-pointer items-center justify-center bg-[#ff3d75] font-bold text-white transition-[filter,transform] hover:brightness-105 active:scale-[0.98]',
+                                                        'h-[calc(44/375*var(--app-vw))] w-[calc(152/375*var(--app-vw))] rounded-[calc(11/375*var(--app-vw))] text-[calc(15/375*var(--app-vw))]',
                                                     )}
                                                 >
-                                                    <HeroPlayIcon className="mr-[calc(4/375*var(--app-vw))] h-[calc(16/375*var(--app-vw))] w-[calc(16/375*var(--app-vw))] shrink-0" />
+                                                    <HeroPlayIcon className="mr-[calc(7/375*var(--app-vw))] h-[calc(17/375*var(--app-vw))] w-[calc(17/375*var(--app-vw))] shrink-0" />
                                                     <FormattedMessage id="play" />
                                                 </Link>
                                             </div>
@@ -817,7 +815,7 @@ export default function Component() {
                         'hover:bg-[#d42d4c] active:scale-[0.96]',
                         scrollTopFabOpaque ? 'opacity-100' : 'pointer-events-none opacity-0',
                         'right-6',
-                        /* 60px：与 pwa-install 条高度一致，整体上移避免被 z-[100] 底栏压住 */
+                        /* 避免被 z-[100] 底栏压住 */
                         liftScrollFabForBottomNav
                             ? 'bottom-[calc(var(--rs-bottom-nav-stack,0px)+1.5rem)]'
                             : 'bottom-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1.5rem))]',

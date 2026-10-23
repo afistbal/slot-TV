@@ -1,27 +1,15 @@
 
 import { useRef } from 'react';
 import type { EventData, TrackableEventName } from 'react-use-facebook-pixel';
-import { isFacebookAnalytics, isTikTokAnalytics, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
+import { isFacebookAnalytics, setAnalyticsType, type AnalyticsType } from '@/lib/fbAttribution';
 
 type FacebookPixelInstance = {
     trackEvent(name: TrackableEventName, data?: EventData[TrackableEventName]): void;
 };
 
-interface TiktokPixel {
-    init(pixelId: string, advancedMatching?: Record<string, unknown>, options?: {
-        debug: boolean;
-    }): Promise<void>;
-    pageView(): void;
-    track(event: unknown, data: unknown, options?: { event_id?: string }): void;
-};
-
-type TikTokTrackOptions = {
-    event_id?: string;
-};
-
 interface IPixel {
     instance: unknown | null;
-    track(name: unknown, data?: unknown, options?: TikTokTrackOptions): void;
+    track(name: unknown, data?: unknown): void;
 }
 
 class _Facebook implements IPixel {
@@ -32,34 +20,17 @@ class _Facebook implements IPixel {
     }
 }
 
-class _Tiktok {
-    instance: TiktokPixel | null = null;
-
-    public track(name: unknown, data?: unknown, options?: TikTokTrackOptions) {
-        // 支付
-        this.instance?.track(name, data, options);
-    }
-}
-
 class Pixel {
-    protected instance: Array<_Facebook | _Tiktok> = [];
+    protected instance: _Facebook[] = [];
 
-    public addInstance(instance: _Facebook | _Tiktok) {
+    public addInstance(instance: _Facebook) {
         this.instance.push(instance);
     }
 
-    public track(name: unknown, data?: unknown, options?: TikTokTrackOptions) {
+    public track(name: unknown, data?: unknown) {
         const raw = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
         this.instance.forEach((instance) => {
-            const payload =
-                instance instanceof _Facebook
-                    ? normalizeFbCommerceData(raw)
-                    : normalizeCommerceData(raw);
-            if (instance instanceof _Tiktok) {
-                instance.track(name, payload, options);
-            } else {
-                instance.track(name, payload);
-            }
+            instance.track(name, normalizeFbCommerceData(raw));
         });
     }
 }
@@ -153,12 +124,7 @@ function flushPendingPageView() {
     }
     const url = pendingPageViewUrl;
     pendingPageViewUrl = null;
-    if (!isFacebookAnalytics() && !isTikTokAnalytics()) {
-        return;
-    }
-    if (isTikTokAnalytics()) {
-        lastPageView = { url, ts: Date.now() };
-        singleton.track('PageView', { event_source_url: url });
+    if (!isFacebookAnalytics()) {
         return;
     }
     if (isFacebookAnalytics() && !fbPixelId) {
@@ -203,31 +169,16 @@ export async function init(config: { [key: string]: unknown }) {
         singleton.addInstance(facebook);
     };
 
-    const intitalizeTiktokPixel = async (id: string) => {
-        const instance = (await import('tiktok-pixel')).default;
-
-        instance.init(id);
-        const tiktok = new _Tiktok();
-        tiktok.instance = instance;
-        singleton.addInstance(tiktok);
-    }
-
-    const analyzation = config['analyzation'] as { type: AnalyticsType, id: string };
-    setAnalyticsType(analyzation.type);
-    if (analyzation.type === '') {
+    const analyzation = config['analyzation'] as { type?: string, id?: string };
+    const analyticsType: AnalyticsType = analyzation.type === 'facebook' ? 'facebook' : '';
+    setAnalyticsType(analyticsType);
+    if (analyticsType === '' || !analyzation.id) {
         initialized = true;
         markPixelReady();
         return;
     }
 
-    switch (analyzation.type) {
-        case 'facebook':
-            await initializeFacebookPixel(analyzation.id);
-            break;
-        case 'tiktok':
-            await intitalizeTiktokPixel(analyzation.id);
-            break;
-    }
+    await initializeFacebookPixel(analyzation.id);
 
     initialized = true;
     markPixelReady();
@@ -257,13 +208,6 @@ function enrichFbPixelData(data: Record<string, unknown>): Record<string, unknow
     return { ...data, eventSourceUrl: window.location.href };
 }
 
-function enrichTikTokPixelData(data: Record<string, unknown>): Record<string, unknown> {
-    if (typeof window === 'undefined') {
-        return data;
-    }
-    return { ...data, event_source_url: window.location.href };
-}
-
 function applyCommerceFields(data: Record<string, unknown>): Record<string, unknown> {
     const out = { ...data };
     if (out.value != null && typeof out.value !== 'number') {
@@ -285,11 +229,6 @@ function normalizeFbCommerceData(data: Record<string, unknown>): Record<string, 
     return applyCommerceFields(enrichFbPixelData({ ...data }));
 }
 
-/** TikTok 等：event_source_url；补全 contents / value */
-function normalizeCommerceData(data: Record<string, unknown>): Record<string, unknown> {
-    return applyCommerceFields(enrichTikTokPixelData({ ...data }));
-}
-
 /** 手动 PageView（SPA 路由变化）；init 前排队补发 */
 export function trackPageView(eventSourceUrl?: string) {
     if (typeof window === 'undefined') {
@@ -303,7 +242,7 @@ export function trackPageView(eventSourceUrl?: string) {
         return;
     }
 
-    if (!isFacebookAnalytics() && !isTikTokAnalytics()) {
+    if (!isFacebookAnalytics()) {
         return;
     }
 
@@ -312,12 +251,6 @@ export function trackPageView(eventSourceUrl?: string) {
         lastPageView.url === url &&
         now - lastPageView.ts < PAGE_VIEW_DEDUPE_MS
     ) {
-        return;
-    }
-
-    if (isTikTokAnalytics()) {
-        lastPageView = { url, ts: now };
-        singleton.track('PageView', { event_source_url: url });
         return;
     }
 
@@ -373,14 +306,6 @@ function trackFbStandardEvent(
     data: Record<string, unknown>,
     eventId?: string,
 ) {
-    if (isTikTokAnalytics()) {
-        singleton.track(
-            eventName,
-            normalizeCommerceData(data),
-            eventId ? { event_id: eventId } : undefined,
-        );
-        return;
-    }
     if (!fireFbEvent(eventName, data, eventId)) {
         const payload = normalizeFbCommerceData(data);
         singleton.track(
@@ -408,15 +333,6 @@ export function trackFbPurchase(
     data: Record<string, unknown>,
     eventId?: string,
 ) {
-    if (isTikTokAnalytics()) {
-        const payload = normalizeCommerceData(data);
-        singleton.track(
-            'CompletePayment',
-            payload,
-            eventId ? { event_id: eventId } : undefined,
-        );
-        return;
-    }
     trackFbStandardEvent('Purchase', data, eventId);
 }
 

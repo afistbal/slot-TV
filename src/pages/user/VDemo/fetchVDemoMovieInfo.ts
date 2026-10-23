@@ -9,6 +9,9 @@ export type VDemoPlayerData = IPlayerData & {
     info: IPlayerData['info'] & {
         /** URL 无 `:episode` 时的起播集序号 */
         play?: number;
+        like?: number;
+        is_like?: boolean;
+        my_rating?: number;
     };
     episodes: Array<{
         id: number;

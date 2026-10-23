@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState, type MouseEvent, type MutableRefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react';
 import type Player from 'xgplayer';
 
 import mountLoadingGif from '@/assets/icons/loading.gif';
 import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { cn } from '@/lib/utils';
-import { isTikTokPlatform } from '@/platform';
 
 import { FeedCenterPlayButton } from '../controls/FeedCenterPlayButton';
 import { FeedSubtitleOverlay } from '../controls/FeedSubtitleOverlay';
@@ -44,8 +43,13 @@ export function DouyinPlayerSlot({
     const [mountEl, setMountEl] = useState<HTMLDivElement | null>(null);
     const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
     const [mountLoadingVisible, setMountLoadingVisible] = useState(true);
+    const [isLongPressSpeeding, setIsLongPressSpeeding] = useState(false);
+    const longPressTimerRef = useRef<number | null>(null);
+    const longPressStartRef = useRef({ x: 0, y: 0 });
+    const previousRateRef = useRef(1);
+    const longPressActiveRef = useRef(false);
+    const suppressNextTapRef = useRef(false);
     const isDesktop = useVideoPlayerDesktop();
-    const showLoadingAnimation = !isTikTokPlatform();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
     /** PC 9:16 由外层 video-player-pc-shell 舞台约束；H5 NetShort 式 9:16 居中露黑边 */
@@ -80,6 +84,12 @@ export function DouyinPlayerSlot({
 
     const onTapVideo = useCallback(
         (event: MouseEvent) => {
+            if (suppressNextTapRef.current) {
+                suppressNextTapRef.current = false;
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
             if (chromeTapSuppressRef?.current) return;
             event.preventDefault();
             event.stopPropagation();
@@ -91,6 +101,50 @@ export function DouyinPlayerSlot({
         },
         [chromeTapSuppressRef, handleRef, infoBumpRef, onFullscreenVideoTap],
     );
+
+    const clearLongPressTimer = useCallback(() => {
+        if (longPressTimerRef.current !== null) {
+            window.clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+    }, []);
+
+    const stopLongPressSpeed = useCallback(() => {
+        clearLongPressTimer();
+        const video = (handleRef.current?.player?.video ?? null) as HTMLVideoElement | null;
+        if (longPressActiveRef.current && video) video.playbackRate = previousRateRef.current;
+        if (longPressActiveRef.current) suppressNextTapRef.current = true;
+        longPressActiveRef.current = false;
+        setIsLongPressSpeeding(false);
+    }, [clearLongPressTimer, handleRef]);
+
+    const onLongPressPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+        if (!slot.isActive || event.button !== 0 || isControlsTarget(event.target)) return;
+        clearLongPressTimer();
+        longPressStartRef.current = { x: event.clientX, y: event.clientY };
+        longPressTimerRef.current = window.setTimeout(() => {
+            const video = (handleRef.current?.player?.video ?? null) as HTMLVideoElement | null;
+            if (!video) return;
+            previousRateRef.current = video.playbackRate || 1;
+            video.playbackRate = 2;
+            longPressActiveRef.current = true;
+            suppressNextTapRef.current = true;
+            setIsLongPressSpeeding(true);
+        }, 450);
+    }, [clearLongPressTimer, handleRef, slot.isActive]);
+
+    const onLongPressPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+        const dx = event.clientX - longPressStartRef.current.x;
+        const dy = event.clientY - longPressStartRef.current.y;
+        if (!isLongPressSpeeding && Math.hypot(dx, dy) > 12) clearLongPressTimer();
+    }, [clearLongPressTimer, isLongPressSpeeding]);
+
+    useEffect(() => () => {
+        clearLongPressTimer();
+        const video = (handleRef.current?.player?.video ?? null) as HTMLVideoElement | null;
+        if (video && longPressActiveRef.current) video.playbackRate = previousRateRef.current;
+        longPressActiveRef.current = false;
+    }, [clearLongPressTimer, handleRef]);
 
     const showSubtitle = slot.isActive && Boolean(subtitleUrl.trim());
 
@@ -157,13 +211,26 @@ export function DouyinPlayerSlot({
             {...attrs}
         >
             {slot.shouldInitPlayer ? (
-                <div className={stageClassName} onClickCapture={onTapVideo}>
+                <div
+                    className={stageClassName}
+                    onClickCapture={onTapVideo}
+                    onPointerDown={onLongPressPointerDown}
+                    onPointerMove={onLongPressPointerMove}
+                    onPointerUp={stopLongPressSpeed}
+                    onPointerCancel={stopLongPressSpeed}
+                    onPointerLeave={(event) => {
+                        if (event.pointerType === 'mouse') stopLongPressSpeed();
+                    }}
+                    onContextMenu={(event) => {
+                        if (isLongPressSpeeding) event.preventDefault();
+                    }}
+                >
                     <div
                         ref={setMountEl}
                         className="douyin-player-slot__mount"
                         role="presentation"
                     />
-                    {showLoadingAnimation && mountLoadingVisible ? (
+                    {mountLoadingVisible ? (
                         <div className="douyin-player-slot__mount-loading" aria-hidden>
                             <img
                                 className="douyin-player-slot__mount-loading-img"
@@ -174,22 +241,25 @@ export function DouyinPlayerSlot({
                         </div>
                     ) : null}
                     <FeedCenterPlayButton player={slotPlayer} visible={slot.isActive} />
+                    {isLongPressSpeeding ? (
+                        <div className="douyin-player-slot__speeding" role="status" aria-live="polite">
+                            <strong>2x</strong>&nbsp;快进中
+                        </div>
+                    ) : null}
                     {showSubtitle ? (
                         <FeedSubtitleOverlay player={slotPlayer} subtitleUrl={subtitleUrl} />
                     ) : null}
                 </div>
             ) : (
                 <div className={cn(stageClassName, 'douyin-player-slot__placeholder')} aria-hidden>
-                    {showLoadingAnimation ? (
-                        <div className="douyin-player-slot__mount-loading">
-                            <img
-                                className="douyin-player-slot__mount-loading-img"
-                                src={mountLoadingGif}
-                                alt=""
-                                draggable={false}
-                            />
-                        </div>
-                    ) : null}
+                    <div className="douyin-player-slot__mount-loading">
+                        <img
+                            className="douyin-player-slot__mount-loading-img"
+                            src={mountLoadingGif}
+                            alt=""
+                            draggable={false}
+                        />
+                    </div>
                 </div>
             )}
         </div>

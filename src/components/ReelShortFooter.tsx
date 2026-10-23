@@ -4,7 +4,6 @@ import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { cn } from '@/lib/utils';
 import { BRAND_CONTACT_EMAIL, BRAND_COPYRIGHT_LINE_1 } from '@/constants/brand';
-import { isTikTokPlatform } from '@/platform';
 import '@/styles/reelshort-footer.scss';
 
 const FOOTER_CHEVRON = new URL('../assets/images/f0fb9400-5a1f-11ef-838e-777d81c2a9c7.png', import.meta.url).toString();
@@ -14,7 +13,6 @@ export type ReelShortFooterProps = {
     dockAboveBottomTab?: boolean;
     /** Profile 等页已有反馈入口时隐藏「支援中心」区块 */
     hideSupportCenter?: boolean;
-    /** TikTok Minis：协议改为个人页中的独立入口，Footer 不再重复展示协议链接。 */
     hideLegalLinks?: boolean;
 };
 
@@ -24,12 +22,9 @@ export function ReelShortFooter({
     hideLegalLinks = false,
 }: ReelShortFooterProps) {
     const appVersion = __APP_VERSION__;
-    const hideFooter = isTikTokPlatform();
     const [aboutOpen, setAboutOpen] = useState(false);
     const [supportOpen, setSupportOpen] = useState(false);
     const [contactOpen, setContactOpen] = useState(false);
-
-    if (hideFooter) return null;
 
     return (
         <footer

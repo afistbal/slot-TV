@@ -1,3 +1,4 @@
+import { toggleVideoFullscreen } from '@/lib/toggleFullscreen';
 import type Player from 'xgplayer';
 
 import { PLAYBACK_SPEEDS } from '../constants';
@@ -118,13 +119,10 @@ export async function togglePlayerFullscreen(
 ): Promise<boolean> {
     const xg = asXgPlayer(player);
     if (!xg) return false;
-    const fsEl = document.fullscreenElement;
-    if (fsEl) {
-        await xg.exitFullscreen?.().catch(() => document.exitFullscreen().catch(() => undefined));
-        return false;
-    }
+    const video = getVideoEl(player);
+    if (!video) return false;
     const el = target ?? resolveFeedSlideEl(player);
-    await xg.getFullscreen?.(el ?? undefined).catch(() => undefined);
+    await toggleVideoFullscreen({ current: video }, { current: el }, { preferContainer: true });
     return Boolean(document.fullscreenElement);
 }
 

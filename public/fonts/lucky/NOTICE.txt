@@ -1,0 +1,11 @@
+Local font assets copied from the user-supplied reference archive:
+C:/Users/Administrator/Downloads/chunlou.tv (2)/fonts.gstatic.com/
+
+Families: Inter; Noto Serif SC (700).
+Only font files already present in that archive are included. Original binary files are unmodified.
+See the original font projects for their respective SIL Open Font License notices:
+https://github.com/google/fonts/tree/main/ofl/inter
+https://github.com/google/fonts/tree/main/ofl/notoserifsc
+
+The stylesheet src/styles/lucky-fonts.scss uses locally scoped family names and local URLs.
+No fonts.googleapis.com or fonts.gstatic.com requests are made by the welfare page.

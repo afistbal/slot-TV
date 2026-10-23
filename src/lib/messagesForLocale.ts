@@ -1,28 +1,14 @@
-import enMessages from '@/locales/en.json';
+import zhCNMessages from '@/locales/zh-CN.json';
 import { BRAND_DISPLAY_NAME, BRAND_DOMAIN_DISPLAY } from '@/constants/brand';
 
 export type TIntlMessages = Record<string, string>;
 
 type LocaleLoader = () => Promise<{ default: TIntlMessages }>;
 
-const EN_MESSAGES = enMessages as TIntlMessages;
+const ZH_CN_MESSAGES = zhCNMessages as TIntlMessages;
 
 const LOCALE_LOADERS: Record<string, LocaleLoader> = {
-    ar: () => import('@/locales/ar.json'),
-    de: () => import('@/locales/de.json'),
-    es: () => import('@/locales/es.json'),
-    fr: () => import('@/locales/fr.json'),
-    hi: () => import('@/locales/hi.json'),
-    id: () => import('@/locales/id.json'),
-    it: () => import('@/locales/it.json'),
-    ja: () => import('@/locales/ja.json'),
-    ko: () => import('@/locales/ko.json'),
-    ms: () => import('@/locales/ms.json'),
-    pt: () => import('@/locales/pt.json'),
-    th: () => import('@/locales/th.json'),
-    tr: () => import('@/locales/tr.json'),
-    vi: () => import('@/locales/vi.json'),
-    zh: () => import('@/locales/zh.json'),
+    'zh-TW': () => import('@/locales/zh-TW.json'),
 };
 
 function applyBrandMessages(messages: TIntlMessages): TIntlMessages {
@@ -34,35 +20,33 @@ function applyBrandMessages(messages: TIntlMessages): TIntlMessages {
     };
 }
 
-const BRANDED_EN_MESSAGES = applyBrandMessages(EN_MESSAGES);
+const BRANDED_ZH_CN_MESSAGES = applyBrandMessages(ZH_CN_MESSAGES);
 
-const messagesCache = new Map<string, TIntlMessages>([['en', BRANDED_EN_MESSAGES]]);
+const messagesCache = new Map<string, TIntlMessages>([['zh-CN', BRANDED_ZH_CN_MESSAGES]]);
 
-function mergeWithEnglish(partial: TIntlMessages): TIntlMessages {
-    return applyBrandMessages({ ...EN_MESSAGES, ...partial });
+function mergeWithSimplifiedChinese(partial: TIntlMessages): TIntlMessages {
+    return applyBrandMessages({ ...ZH_CN_MESSAGES, ...partial });
 }
 
 /** 与 App / 语言页 `APP_LANGUAGES` 及 `localStorage.locale` 对齐 */
-export function normalizeAppLocaleCode(code: string): string {
-    const c = code.toLowerCase();
+export function normalizeAppLocaleCode(code: string): 'zh-CN' | 'zh-TW' {
+    const c = code.trim().replace(/_/g, '-').toLowerCase();
     if (
-        c === 'zh' ||
-        c === 'zh-hans' ||
         c === 'zh-hant' ||
         c === 'zh-tw' ||
-        c === 'zh-cn' ||
-        c.startsWith('zh-')
+        c === 'zh-hk' ||
+        c === 'zh-mo' ||
+        c.startsWith('zh-hant-')
     ) {
-        return 'zh';
+        return 'zh-TW';
     }
-    if (c === 'en' || c in LOCALE_LOADERS) {
-        return c;
-    }
-    return 'en';
+    // 舊版的 `zh` 代表繁體中文，保留既有使用者偏好。
+    if (c === 'zh') return 'zh-TW';
+    return 'zh-CN';
 }
 
 export function messagesForLocale(code: string): TIntlMessages {
-    return messagesCache.get(normalizeAppLocaleCode(code)) ?? BRANDED_EN_MESSAGES;
+    return messagesCache.get(normalizeAppLocaleCode(code)) ?? BRANDED_ZH_CN_MESSAGES;
 }
 
 export async function loadMessagesForLocale(code: string): Promise<TIntlMessages> {
@@ -74,11 +58,11 @@ export async function loadMessagesForLocale(code: string): Promise<TIntlMessages
 
     const loader = LOCALE_LOADERS[normalized];
     if (!loader) {
-        return BRANDED_EN_MESSAGES;
+        return BRANDED_ZH_CN_MESSAGES;
     }
 
     const loaded = await loader();
-    const messages = mergeWithEnglish(loaded.default);
+    const messages = mergeWithSimplifiedChinese(loaded.default);
     messagesCache.set(normalized, messages);
     return messages;
 }
