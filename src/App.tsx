@@ -8,7 +8,7 @@ import {
     useRouteError,
 } from "react-router";
 import { FormattedMessage, IntlProvider } from 'react-intl';
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { Toaster } from "./components/ui/sonner";
 import { useLoadingStore } from "./stores/loading";
 import { LoaderCircle } from "lucide-react";
@@ -33,6 +33,8 @@ import { useWindowPathname } from './hooks/useWindowPathname';
 import {
     describeChunkLoadError,
     isChunkLoadError,
+    markAppBootReady,
+    repairPwaAndReload,
     reloadAfterChunkLoadError,
 } from './lib/pwaChunkRecovery';
 import { loadMessagesForLocale, messagesForLocale, type TIntlMessages } from './lib/messagesForLocale';
@@ -156,34 +158,121 @@ function RequireAccountRoute({ children }: { children: ReactNode }) {
     );
 }
 
-function ErrorBoundary() {
-    const error = useRouteError();
+function retryWithFreshDocument(): void {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set('_app_repair', String(Date.now()));
+    window.location.replace(nextUrl.toString());
+}
+
+function ApplicationErrorView({ error }: { error: unknown }) {
     const errorText = describeChunkLoadError(error);
+    const chunkLoadFailed = isChunkLoadError(error);
+    const [recovering, setRecovering] = useState(chunkLoadFailed);
+    const [repairing, setRepairing] = useState(false);
+    const isChinese = /^zh(?:-|$)/i.test(navigator.language || '');
 
     useEffect(() => {
-        if (isChunkLoadError(error)) {
-            reloadAfterChunkLoadError(error);
+        if (chunkLoadFailed) {
+            setRecovering(reloadAfterChunkLoadError(error));
             return;
         }
         report(errorText);
-    }, [error, errorText]);
+    }, [chunkLoadFailed, error, errorText]);
 
-    return <div className="p-4 w-full">
-        <h1 className="text-2xl">Oops! Something went wrong.</h1>
-        <pre className="mt-4 select-all whitespace-pre-wrap">
-            {errorText}
-        </pre>
-        <div className="flex justify-center mt-4">
-            <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-md bg-red-400 text-white cursor-pointer">Reload</button>
+    if (recovering) {
+        return <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black px-6 text-white">
+            <div className="max-w-sm text-center" role="status" aria-live="polite">
+                <LoaderCircle className="mx-auto mb-5 h-8 w-8 animate-spin" />
+                <h1 className="text-xl font-semibold">
+                    {isChinese ? '正在更新应用' : 'Updating the app'}
+                </h1>
+                <p className="mt-2 text-sm text-white/70">
+                    {isChinese ? '马上就好，请稍候。' : 'This should only take a moment.'}
+                </p>
+            </div>
+        </div>;
+    }
+
+    const handleRepair = async () => {
+        if (repairing) return;
+        setRepairing(true);
+        await repairPwaAndReload();
+    };
+
+    return <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black px-6 text-white">
+        <div className="w-full max-w-sm text-center" role="alert">
+            <h1 className="text-xl font-semibold">
+                {isChinese ? '应用暂时无法加载' : 'The app could not be loaded'}
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-white/70">
+                {navigator.onLine
+                    ? (isChinese ? '请重试；如果问题仍然存在，可以修复应用缓存。' : 'Try again. If the problem continues, repair the app cache.')
+                    : (isChinese ? '请检查网络连接，恢复后再重试。' : 'Check your connection, then try again.')}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <button
+                    type="button"
+                    onClick={retryWithFreshDocument}
+                    className="min-h-11 rounded-full bg-white px-6 font-semibold text-black"
+                >
+                    {isChinese ? '重试' : 'Try again'}
+                </button>
+                <button
+                    type="button"
+                    disabled={repairing}
+                    onClick={() => void handleRepair()}
+                    className="min-h-11 rounded-full border border-white/35 px-6 font-semibold text-white disabled:opacity-50"
+                >
+                    {repairing
+                        ? (isChinese ? '正在修复…' : 'Repairing…')
+                        : (isChinese ? '修复应用' : 'Repair app')}
+                </button>
+            </div>
+            {import.meta.env.DEV ? (
+                <pre className="mt-6 max-h-40 overflow-auto whitespace-pre-wrap text-left text-xs text-white/50">
+                    {errorText}
+                </pre>
+            ) : null}
         </div>
     </div>;
+}
+
+function RouteErrorBoundary() {
+    return <ApplicationErrorView error={useRouteError()} />;
+}
+
+interface RootErrorBoundaryState {
+    error: unknown;
+    hasError: boolean;
+}
+
+export class RootErrorBoundary extends Component<{ children: ReactNode }, RootErrorBoundaryState> {
+    state: RootErrorBoundaryState = { error: null, hasError: false };
+
+    static getDerivedStateFromError(error: unknown): RootErrorBoundaryState {
+        return { error, hasError: true };
+    }
+
+    componentDidCatch(error: unknown, info: ErrorInfo): void {
+        markAppBootReady();
+        if (import.meta.env.DEV) {
+            console.error('Uncaught application error', error, info.componentStack);
+        }
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return <ApplicationErrorView error={this.state.error} />;
+        }
+        return this.props.children;
+    }
 }
 
 const router = createBrowserRouter([
     {
         path: '/',
         element: lazyRoute(LayoutUser),
-        errorElement: <ErrorBoundary />,
+        errorElement: <RouteErrorBoundary />,
         children: [
             {
                 index: true,
@@ -330,7 +419,7 @@ const router = createBrowserRouter([
     {
         path: '/page',
         element: <Outlet />,
-        errorElement: <ErrorBoundary />,
+        errorElement: <RouteErrorBoundary />,
         children: [
             /** 仅访问 `/page` 无子路径时 Outlet 为空会黑屏；落到首页 */
             {
@@ -398,7 +487,7 @@ function getInitialIntlMessages(): TIntlMessages {
     return messagesForLocale(useRootStore.getState().locale);
 }
 
-function App() {
+function AppContent() {
     const pixel = usePixel();
     const pathname = useWindowPathname();
     const rootStore = useRootStore();
@@ -416,6 +505,10 @@ function App() {
     /** 避免 StrictMode 双调用时旧 `loadData` 回写 config / 抢跑会话 */
     const loadDataGenerationRef = useRef(0);
     const secondaryPrefetchScheduledRef = useRef(false);
+
+    useEffect(() => {
+        markAppBootReady();
+    }, []);
 
     const trackDownloadOnce = useCallback(() => {
         if (downloadTrackedRef.current) return;
@@ -774,6 +867,10 @@ function App() {
             <Toaster position="top-center" />
         </>, document.body)}
     </IntlProvider>
+}
+
+function App() {
+    return <AppContent />;
 }
 
 export default App;

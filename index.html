@@ -4,10 +4,10 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favorite.png" />
-  <link rel="preload" href="/web_logo.webp?v=2.1.32" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" href="/web_logo.webp?v=2.1.33" as="image" type="image/webp" fetchpriority="high" />
   <link rel="mask-icon" href="/favorite.png" color="#FFFFFF" />
-  <link rel="manifest" href="/manifest.json?v=2.1.32" />
-  <link rel="apple-touch-icon" href="/icons/new-192.png?v=2.1.32" sizes="192x192" />
+  <link rel="manifest" href="/manifest.json?v=2.1.33" />
+  <link rel="apple-touch-icon" href="/icons/new-192.png?v=2.1.33" sizes="192x192" />
   <meta name="referrer" content="no-referrer-when-downgrade" />
   <meta name="theme-color" content="#000000" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -19,7 +19,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="c5c16d4c0a7f93a6002c37722d5bf9c90f3094c1" content="c5c16d4c0a7f93a6002c37722d5bf9c90f3094c1" />
   <meta name="facebook-domain-verification" content="m2ke3onxft8v9e3hfc0wp6wdoonk18" />
-  <meta name="app-version" content="2.1.32" />
+  <meta name="app-version" content="2.1.33" />
   <!--
     Social share defaults (safe fallback).
     后端可在返回 HTML 时按需替换以下 content 为视频级动态值。
@@ -44,11 +44,301 @@
       /* 与 `index.css` 中 `--app-canvas`（默认 #000）一致 */
       background-color: #000000;
     }
+
+    #app-boot-shell {
+      box-sizing: border-box;
+      display: flex;
+      min-height: 100%;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      text-align: center;
+    }
+
+    .app-boot-card {
+      width: min(100%, 360px);
+      opacity: 0;
+      animation: app-boot-reveal 0s 350ms forwards;
+    }
+
+    .app-boot-spinner {
+      width: 30px;
+      height: 30px;
+      margin: 0 auto 18px;
+      border: 3px solid rgba(255, 255, 255, 0.24);
+      border-top-color: #ffffff;
+      border-radius: 999px;
+      animation: app-boot-spin 0.85s linear infinite;
+    }
+
+    .app-boot-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+
+    .app-boot-detail {
+      margin: 10px 0 0;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .app-boot-actions {
+      display: none;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 22px;
+    }
+
+    .app-boot-button {
+      min-height: 42px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #111111;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 650;
+    }
+
+    .app-boot-button-secondary {
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: transparent;
+      color: #ffffff;
+    }
+
+    @keyframes app-boot-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes app-boot-reveal {
+      to { opacity: 1; }
+    }
   </style>
+  <script>
+    /**
+     * This guard deliberately lives in HTML instead of the hashed app bundle:
+     * it must still run when a stale HTML document points at an entry chunk that
+     * no longer exists. Keep it dependency-free and backwards compatible.
+     */
+    (function () {
+      var RECOVERY_PARAM = '_app_recovery';
+      var REPAIR_PARAM = '_app_repair';
+      var RECOVERY_TTL_MS = 5 * 60 * 1000;
+      var BOOT_TIMEOUT_MS = 12000;
+      var versionMeta = document.querySelector('meta[name="app-version"]');
+      var htmlVersion = versionMeta && versionMeta.content ? versionMeta.content : 'unknown';
+      var storageKey = 'slot:pwa-boot-recovery:' + htmlVersion;
+      var url = new URL(window.location.href);
+      var attemptedByUrl = url.searchParams.get(RECOVERY_PARAM) === htmlVersion;
+      var attemptedRecently = false;
+      var ready = false;
+      var recovering = false;
+      var watchdog = 0;
+      var zh = /^zh(?:-|$)/i.test(navigator.language || '');
+
+      try {
+        attemptedRecently = Date.now() - Number(sessionStorage.getItem(storageKey) || 0) < RECOVERY_TTL_MS;
+      } catch (_) {
+        attemptedRecently = false;
+      }
+
+      function shell() {
+        return document.getElementById('app-boot-shell');
+      }
+
+      function setShell(title, detail, failed) {
+        var el = shell();
+        if (!el) return;
+        var titleEl = el.querySelector('[data-boot-title]');
+        var detailEl = el.querySelector('[data-boot-detail]');
+        var spinnerEl = el.querySelector('[data-boot-spinner]');
+        var actionsEl = el.querySelector('[data-boot-actions]');
+        if (titleEl) titleEl.textContent = title;
+        if (detailEl) detailEl.textContent = detail;
+        if (spinnerEl) spinnerEl.style.display = failed ? 'none' : 'block';
+        if (actionsEl) actionsEl.style.display = failed ? 'flex' : 'none';
+      }
+
+      function showFailure(offline) {
+        setShell(
+          offline
+            ? (zh ? '网络连接不可用' : 'You appear to be offline')
+            : (zh ? '应用暂时无法加载' : 'The app could not be loaded'),
+          offline
+            ? (zh ? '恢复网络后，我们会再次尝试。' : 'We will try again when your connection returns.')
+            : (zh ? '你可以重试，或修复本机应用缓存。登录信息不会被清除。' : 'Try again, or repair the app cache. Your sign-in data will be kept.'),
+          true
+        );
+      }
+
+      function markAttempt() {
+        try {
+          sessionStorage.setItem(storageKey, String(Date.now()));
+        } catch (_) {
+          // The URL marker below is the fallback when storage is unavailable.
+        }
+      }
+
+      function navigateForRecovery() {
+        var next = new URL(window.location.href);
+        next.searchParams.set(RECOVERY_PARAM, htmlVersion);
+        window.location.replace(next.toString());
+      }
+
+      function retryWithFreshDocument() {
+        var next = new URL(window.location.href);
+        next.searchParams.set(REPAIR_PARAM, String(Date.now()));
+        window.location.replace(next.toString());
+      }
+
+      function updateWorkerBriefly() {
+        if (!('serviceWorker' in navigator)) return Promise.resolve();
+        return Promise.race([
+          navigator.serviceWorker.getRegistration('/').then(function (registration) {
+            if (!registration) return;
+            if (registration.waiting) {
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            return registration.update().catch(function () {});
+          }).catch(function () {}),
+          new Promise(function (resolve) { window.setTimeout(resolve, 1000); })
+        ]);
+      }
+
+      function recover() {
+        if (recovering) return false;
+        if (!navigator.onLine) {
+          showFailure(true);
+          window.addEventListener('online', function () { recover(); }, { once: true });
+          return false;
+        }
+        if (attemptedByUrl || attemptedRecently) {
+          showFailure(false);
+          return false;
+        }
+
+        recovering = true;
+        markAttempt();
+        setShell(
+          zh ? '正在更新应用' : 'Updating the app',
+          zh ? '马上就好，请稍候。' : 'This should only take a moment.',
+          false
+        );
+        updateWorkerBriefly().then(navigateForRecovery, navigateForRecovery);
+        return true;
+      }
+
+      function repair() {
+        setShell(
+          zh ? '正在修复应用' : 'Repairing the app',
+          zh ? '马上就好，请稍候。' : 'This should only take a moment.',
+          false
+        );
+        var unregisterWorker = 'serviceWorker' in navigator
+          ? navigator.serviceWorker.getRegistration('/').then(function (registration) {
+            return registration ? registration.unregister() : undefined;
+          })
+          : Promise.resolve();
+
+        return unregisterWorker.then(function () {
+          if (!('caches' in window)) return;
+          return caches.keys().then(function (names) {
+            return Promise.all(names
+              .filter(function (name) { return name.indexOf('workbox-precache') === 0; })
+              .map(function (name) { return caches.delete(name); }));
+          });
+        }).catch(function () {
+          // A best-effort repair still finishes with a cache-busting navigation.
+        }).then(function () {
+          var next = new URL(window.location.href);
+          next.searchParams.set(RECOVERY_PARAM, htmlVersion);
+          next.searchParams.set(REPAIR_PARAM, String(Date.now()));
+          window.location.replace(next.toString());
+        });
+      }
+
+      function markReady() {
+        if (ready) return;
+        ready = true;
+        window.clearTimeout(watchdog);
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch (_) {
+          // Ignore storage failures.
+        }
+        var current = new URL(window.location.href);
+        if (current.searchParams.has(RECOVERY_PARAM) || current.searchParams.has(REPAIR_PARAM)) {
+          current.searchParams.delete(RECOVERY_PARAM);
+          current.searchParams.delete(REPAIR_PARAM);
+          window.history.replaceState(window.history.state, '', current.toString());
+        }
+      }
+
+      window.__YOGO_BOOT_RECOVERY__ = {
+        isReady: function () { return ready; },
+        ready: markReady,
+        recover: recover,
+        repair: repair,
+        showFailure: function () { showFailure(!navigator.onLine); }
+      };
+
+      window.addEventListener('vite:preloadError', function (event) {
+        // After React has mounted, route-level boundaries distinguish a real
+        // navigation from a best-effort background prefetch.
+        if (ready) return;
+        event.preventDefault();
+        recover();
+      });
+
+      window.addEventListener('error', function (event) {
+        var target = event.target;
+        if (!target || ready) return;
+        var isScript = target.tagName === 'SCRIPT';
+        var isLink = target.tagName === 'LINK' &&
+          (target.rel === 'modulepreload' || target.rel === 'stylesheet');
+        var resourceUrl = target.src || target.href || '';
+        if ((isScript || isLink) && resourceUrl.indexOf('/assets/') !== -1) {
+          recover();
+        }
+      }, true);
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var retryButton = document.querySelector('[data-boot-retry]');
+        var repairButton = document.querySelector('[data-boot-repair]');
+        var titleEl = document.querySelector('[data-boot-title]');
+        var detailEl = document.querySelector('[data-boot-detail]');
+        if (zh && titleEl) titleEl.textContent = '正在加载';
+        if (zh && detailEl) detailEl.textContent = '请稍候。';
+        if (zh && retryButton) retryButton.textContent = '重试';
+        if (zh && repairButton) repairButton.textContent = '修复应用';
+        if (retryButton) retryButton.addEventListener('click', retryWithFreshDocument);
+        if (repairButton) repairButton.addEventListener('click', repair);
+        if (!ready) watchdog = window.setTimeout(recover, BOOT_TIMEOUT_MS);
+      }, { once: true });
+    })();
+  </script>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div id="app-boot-shell" role="status" aria-live="polite">
+      <div class="app-boot-card">
+        <div class="app-boot-spinner" data-boot-spinner aria-hidden="true"></div>
+        <p class="app-boot-title" data-boot-title>Loading…</p>
+        <p class="app-boot-detail" data-boot-detail>Please wait a moment.</p>
+        <div class="app-boot-actions" data-boot-actions>
+          <button class="app-boot-button" type="button" data-boot-retry>Try again</button>
+          <button class="app-boot-button app-boot-button-secondary" type="button" data-boot-repair>Repair app</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="top-layer"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

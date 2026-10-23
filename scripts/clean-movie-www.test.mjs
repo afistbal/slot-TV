@@ -21,10 +21,10 @@ function simulate(target, linked = false) {
     return removed;
 }
 
-test('each build removes old assets/PWA files, preserving repository and verification files', () => {
+test('manual cleanup preserves historical assets and workbox runtimes', () => {
     for (const target of ['D:/JJ-TV/movie-www', 'D:/JJ-TV/movie-www-prod']) {
         const removed = simulate(target);
-        assert.deepEqual(removed.map(({ file }) => path.win32.basename(file)), ['assets', 'index.html', 'sw.js', 'workbox-old.js', 'brands']);
+        assert.deepEqual(removed.map(({ file }) => path.win32.basename(file)), ['index.html', 'sw.js', 'brands']);
         for (const { file, options } of removed) {
             assert.equal(path.win32.dirname(file), path.win32.resolve(target));
             assert.equal(options.recursive, true);
@@ -39,13 +39,13 @@ test('refuses broad, unrelated and linked destinations', () => {
     assert.throws(() => simulate('D:/JJ-TV/movie-www-prod', true), /linked output directory/);
 });
 
-test('all build commands clean after type checking and do not retain historical assets', () => {
+test('all build commands use the staged release pipeline', () => {
     const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
     for (const name of ['build', 'build:dev', 'build:prod']) {
         const command = scripts[name];
-        assert.ok(command.indexOf('tsc -b') < command.indexOf('clean-movie-www.mjs'), name);
-        assert.ok(command.indexOf('clean-movie-www.mjs') < command.indexOf('vite build'), name);
-        assert.ok(!command.includes('prune-old-assets'), name);
+        assert.match(command, /scripts\/release-build\.mjs/, name);
+        assert.ok(!command.includes('clean-movie-www.mjs'), name);
     }
-    assert.ok(scripts['build:prod'].includes('D:/JJ-TV/movie-www-prod && vite build --mode prod'));
+    assert.match(scripts.build, /release-build\.mjs production$/);
+    assert.match(scripts['build:prod'], /release-build\.mjs prod$/);
 });

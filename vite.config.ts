@@ -24,7 +24,7 @@ const OP_NEW_MIME: Record<string, string> = {
 const packageJson = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
 ) as { version?: string }
-const appVersion = packageJson.version ?? '0.0.0'
+const appVersion = (process.env.VITE_APP_VERSION_OVERRIDE || packageJson.version || '0.0.0').trim()
 
 type BrandConfig = {
   displayName: string
@@ -402,7 +402,10 @@ export default ({ mode, command }: { mode: string; command: 'build' | 'serve' })
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           skipWaiting: true,
-          clientsClaim: true,
+          // Activate the update promptly, but let each existing page decide when it
+          // is safe to reload. Claiming an old page here mixes its old JS runtime
+          // with the new worker and can interrupt playback or checkout flows.
+          clientsClaim: false,
           importScripts: [`/pwa-force-reload.js?v=${appVersion}`, `/push-events.js?v=${appVersion}`],
           globPatterns: [
             'assets/index-*.js',
@@ -423,8 +426,9 @@ export default ({ mode, command }: { mode: string; command: 'build' | 'serve' })
     ],
     build: {
       outDir,
-      // 构建脚本清理旧产物（含 assets），仅保留 .git / .well-known / Google 验证文件。
-      // 禁止 Vite 整目录清空，以免误删这些保留文件。
+      // The release script builds in a clean staging directory, then publishes
+      // dependencies before index.html and sw.js. Keep this disabled so the
+      // deployment directory can retain hashed assets for the seven-day window.
       emptyOutDir: false,
       rollupOptions: {
         input: {

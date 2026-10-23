@@ -3,7 +3,11 @@ import path from 'path';
 
 const cliOutDir = process.argv[2];
 const outDir = path.resolve(cliOutDir || 'D:/JJ-TV/movie-www');
-const keepNames = new Set(['.git', '.well-known', 'googlefdb534d9533860b7.html']);
+const keepNames = new Set(['.git', '.well-known', 'googlefdb534d9533860b7.html', 'assets']);
+
+function shouldKeep(name) {
+    return keepNames.has(name) || /^workbox-[\w-]+\.js$/i.test(name);
+}
 
 // Only known build destinations may be cleaned. Never allow a workspace/drive root.
 if (!/^D:\/JJ-TV\/movie-www(?:-prod\d*)?$/i.test(outDir.replaceAll('\\', '/'))) {
@@ -34,7 +38,7 @@ function cleanDirExcept(dir) {
 
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
-        if (keepNames.has(ent.name)) continue;
+        if (shouldKeep(ent.name)) continue;
         const target = path.resolve(dir, ent.name);
         if (path.dirname(target) !== outDir) {
             throw new Error(`[build-clean] Target is outside the output directory: ${target}`);
@@ -44,4 +48,4 @@ function cleanDirExcept(dir) {
 }
 
 cleanDirExcept(outDir);
-console.log(`[build-clean] cleaned ${outDir} (kept: ${[...keepNames].join(', ')})`);
+console.log(`[build-clean] cleaned ${outDir} (kept: ${[...keepNames].join(', ')}, workbox-*.js)`);
