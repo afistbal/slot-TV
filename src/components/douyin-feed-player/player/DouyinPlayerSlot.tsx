@@ -24,6 +24,8 @@ type DouyinPlayerSlotProps = {
     onPlaybackModeChange?: (index: number, mode: PlaybackMode) => void;
     onStall?: (index: number, reason: string) => void;
     onFullscreenVideoTap?: (target?: EventTarget | null) => boolean;
+    onToggleFullscreen?: () => Promise<boolean>;
+    isFullscreenUi?: boolean;
     chromeTapSuppressRef?: MutableRefObject<boolean>;
     infoBumpRef?: MutableRefObject<(() => void) | null>;
 };
@@ -37,6 +39,8 @@ export function DouyinPlayerSlot({
     onPlaybackModeChange,
     onStall,
     onFullscreenVideoTap,
+    onToggleFullscreen,
+    isFullscreenUi = false,
     chromeTapSuppressRef,
     infoBumpRef,
 }: DouyinPlayerSlotProps) {
@@ -44,6 +48,7 @@ export function DouyinPlayerSlot({
     const [slotPlayer, setSlotPlayer] = useState<Player | null>(null);
     const [mountLoadingVisible, setMountLoadingVisible] = useState(true);
     const [isLongPressSpeeding, setIsLongPressSpeeding] = useState(false);
+    const [landscapeFullscreenTop, setLandscapeFullscreenTop] = useState<number | null>(null);
     const longPressTimerRef = useRef<number | null>(null);
     const longPressStartRef = useRef({ x: 0, y: 0 });
     const previousRateRef = useRef(1);
@@ -80,7 +85,12 @@ export function DouyinPlayerSlot({
     });
 
     const isControlsTarget = (target: EventTarget | null) =>
-        target instanceof Element && Boolean(target.closest('.douyin-player-controls'));
+        target instanceof Element &&
+        Boolean(
+            target.closest(
+                '.douyin-player-controls, .douyin-player-slot__landscape-fullscreen',
+            ),
+        );
 
     const onTapVideo = useCallback(
         (event: MouseEvent) => {
@@ -91,10 +101,10 @@ export function DouyinPlayerSlot({
                 return;
             }
             if (chromeTapSuppressRef?.current) return;
+            if (isControlsTarget(event.target)) return;
             event.preventDefault();
             event.stopPropagation();
             if (onFullscreenVideoTap?.(event.target)) return;
-            if (isControlsTarget(event.target)) return;
             infoBumpRef?.current?.();
             const player = handleRef.current?.player ?? null;
             void togglePlayerPlay(player);
@@ -203,6 +213,54 @@ export function DouyinPlayerSlot({
         };
     }, [slot.isActive, slot.item.url, slotPlayer]);
 
+    useEffect(() => {
+        if (!slotPlayer || !slot.isActive || !onToggleFullscreen || isDesktop) {
+            setLandscapeFullscreenTop(null);
+            return;
+        }
+
+        const video = slotPlayer.video as HTMLVideoElement | undefined;
+        if (!video) {
+            setLandscapeFullscreenTop(null);
+            return;
+        }
+
+        const syncLandscapeButton = () => {
+            const stage = video.closest('.douyin-player-slot__stage') as HTMLElement | null;
+            const { videoWidth, videoHeight } = video;
+            if (!stage || !videoWidth || !videoHeight || videoWidth <= videoHeight) {
+                setLandscapeFullscreenTop(null);
+                return;
+            }
+
+            const stageRect = stage.getBoundingClientRect();
+            const mediaHeight = Math.min(
+                stageRect.height,
+                stageRect.width / (videoWidth / videoHeight),
+            );
+            const mediaBottom = (stageRect.height + mediaHeight) / 2;
+            const lowerLetterboxHeight = Math.max(0, stageRect.height - mediaBottom);
+            const buttonCenter = mediaBottom + Math.min(48, lowerLetterboxHeight / 2);
+            setLandscapeFullscreenTop(Math.round(buttonCenter));
+        };
+
+        video.addEventListener('loadedmetadata', syncLandscapeButton);
+        video.addEventListener('resize', syncLandscapeButton);
+        const stage = video.closest('.douyin-player-slot__stage') as HTMLElement | null;
+        const resizeObserver =
+            typeof ResizeObserver !== 'undefined' && stage
+                ? new ResizeObserver(syncLandscapeButton)
+                : null;
+        resizeObserver?.observe(stage!);
+        syncLandscapeButton();
+
+        return () => {
+            video.removeEventListener('loadedmetadata', syncLandscapeButton);
+            video.removeEventListener('resize', syncLandscapeButton);
+            resizeObserver?.disconnect();
+        };
+    }, [isDesktop, onToggleFullscreen, slot.isActive, slot.item.url, slotPlayer]);
+
     return (
         <div
             className="douyin-player-slot"
@@ -245,6 +303,22 @@ export function DouyinPlayerSlot({
                         <div className="douyin-player-slot__speeding" role="status" aria-live="polite">
                             <strong>2x</strong>&nbsp;快进中
                         </div>
+                    ) : null}
+                    {landscapeFullscreenTop !== null && !isFullscreenUi ? (
+                        <button
+                            type="button"
+                            className="douyin-player-slot__landscape-fullscreen"
+                            data-vertical-swipe-ignore
+                            style={{ top: landscapeFullscreenTop }}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                void onToggleFullscreen?.();
+                            }}
+                            aria-label="全屏播放"
+                        >
+                            全屏播放
+                        </button>
                     ) : null}
                     {showSubtitle ? (
                         <FeedSubtitleOverlay player={slotPlayer} subtitleUrl={subtitleUrl} />

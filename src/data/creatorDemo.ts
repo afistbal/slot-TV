@@ -1,5 +1,4 @@
 import type { CreatorRecord } from '@/api/creator';
-import type { AffiliateFunnel, AffiliateSummary } from '@/api/affiliate';
 
 /** Local display fixtures only. Never use these IDs for a business mutation. */
 export function isCreatorDemo(value: unknown): boolean {
@@ -60,11 +59,4 @@ export function creatorDemoRead(kind: CreatorDemoRead, query: CreatorRecord = {}
     if (kind === 'earnings') return demo({ totalCents: 28500, otherCents: 0, gran: query.gran ?? 'day', series: [{ bucket: query.from ?? '2026-10-01', cents: 8500 }, { bucket: query.to ?? '2026-10-19', cents: 20000 }], byDrama: [{ dramaId: work.dramaId, titleI18n: { 'zh-CN': work.title }, cents: 28500 }] });
     if (kind === 'payoutMethods') return demo({ items: [demo({ id: 'demo-method-1', methodType: 'crypto_wallet', payoutAssetId: 'USDT_TRC20', displayMask: 'DEMO****1234', status: 'active' }), demo({ id: 'demo-method-2', methodType: 'alipay', payoutAssetId: 'CNY_FIAT', displayMask: 'demo****mail', status: 'pending_verification' })] });
     throw new Error(`Unknown creator demo resource: ${kind}`);
-}
-
-export function demoAffiliateSummary(): AffiliateSummary {
-    return { status: 'active', activatedAt: date, shareBps: 1500, referralCode: 'DEMO', referralUrl: '', invitedCount: 28, totalEarnedCents: 18600, pendingCents: 3600, availableCents: 15000, reversedCents: 0, paidOutCents: 0, earnings: [{ id: 'demo-earning-1', orderDate: date, amountCents: 1800, entryStatus: 'pending', availableAt: '2026-10-26T08:00:00Z' }] };
-}
-export function demoAffiliateFunnel(): AffiliateFunnel {
-    return { holdDays: 7, summary: { totalClicks: 360, totalDevices: 240, totalSignups: 28, totalPayers: 8, totalCommissionMicros: 186000000 }, daily: [{ dt: '2026-10-19', clicks: 36, devices: 24, signups: 3, payers: 1, commissionMicros: 18000000 }] };
 }

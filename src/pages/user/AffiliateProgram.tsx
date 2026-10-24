@@ -1,8 +1,6 @@
 import { openSharePoster } from '@/stores/sharePoster';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { useSearchParams } from 'react-router';
-import { ProgramFlowPreview } from '@/components/ProgramFlowPreview';
 import { AffiliateDashboard } from '@/components/AffiliateDashboard';
 import { ProgramIcon } from '@/components/ProgramIcon';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
@@ -177,33 +175,10 @@ export default function AffiliateProgram() {
     const sessionBootstrapReady = useRootStore((store) => store.sessionBootstrapReady);
     const uid = useUserStore((store) => getUserUidForDisplay(store.info));
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [searchParams, setSearchParams] = useSearchParams();
     const [eligibility, setEligibility] = useState<AffiliateEligibility>(() => readAffiliateEligibilityCache(uid) ?? emptyAffiliateEligibility(uid));
     const [requestState, setRequestState] = useState<'loading' | 'ready' | 'error'>('loading');
     const [requestError, setRequestError] = useState('');
-    const preview = searchParams.get('preview');
-    const previewState = preview === 'active' || preview === 'in_progress' ? preview : null;
-    const state: AffiliateState = previewState ?? eligibility.state;
-    const displayedEligibility: AffiliateEligibility = previewState ? {
-        state: previewState,
-        payers: 0,
-        gatePayers: 5,
-        invitedCount: 0,
-        invitedCents: 0,
-        gateNetUsdCents: 20000,
-        referralCode: uid,
-        referralUrl: buildAffiliateShareUrl(uid),
-    } : eligibility;
-    const previewSteps = [
-        { id: 'in_progress', label: t('affiliate_preview_progress') },
-        { id: 'active', label: t('affiliate_preview_active') },
-    ];
-
-    function selectPreview(nextPreview: string) {
-        const nextParams = new URLSearchParams(searchParams);
-        nextParams.set('preview', nextPreview);
-        setSearchParams(nextParams, { replace: true });
-    }
+    const state = eligibility.state;
 
     const loadAffiliate = useCallback(async () => {
         setRequestState('loading');
@@ -225,23 +200,18 @@ export default function AffiliateProgram() {
     }, [uid]);
 
     useEffect(() => {
-        if (previewState) {
-            setRequestState('ready');
-            return;
-        }
         if (sessionBootstrapReady) void loadAffiliate();
-    }, [loadAffiliate, previewState, sessionBootstrapReady]);
+    }, [loadAffiliate, sessionBootstrapReady]);
 
     return (
         <div className="creator-program-page">
             <div ref={scrollRef} className="creator-program-page__scroll">
                 <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
-                <ProgramFlowPreview title={t('program_preview_title')} hint={t('program_preview_hint')} active={previewState ?? state} steps={previewSteps} onSelect={selectPreview} exitLabel={t('program_preview_exit')} onExit={previewState ? () => { const next = new URLSearchParams(searchParams); next.delete('preview'); setSearchParams(next, { replace: true }); } : undefined} />
                 <main className="affiliate-reference">
                     <header><h1>{t('affiliate_title')}</h1><p>{t('affiliate_subtitle')}</p></header>
-                    {!previewState && requestState === 'error' ? <div className="affiliate-reference__refresh-note" role="status"><span>数据刷新失败，当前展示上次数据</span><button type="button" onClick={() => void loadAffiliate()}>重试</button><small>{requestError}</small></div> : null}
-                    {state === 'in_progress' ? <AffiliateProgress eligibility={displayedEligibility} /> : null}
-                    {state === 'active' ? <AffiliateDashboard preview={previewState === 'active'} sessionReady={sessionBootstrapReady} /> : null}
+                    {requestState === 'error' ? <div className="affiliate-reference__refresh-note" role="status"><span>数据刷新失败，当前展示上次数据</span><button type="button" onClick={() => void loadAffiliate()}>重试</button><small>{requestError}</small></div> : null}
+                    {state === 'in_progress' ? <AffiliateProgress eligibility={eligibility} /> : null}
+                    {state === 'active' ? <AffiliateDashboard sessionReady={sessionBootstrapReady} /> : null}
                     <AffiliateExplainer />
                 </main>
             </div>

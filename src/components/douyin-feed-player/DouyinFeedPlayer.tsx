@@ -1201,6 +1201,12 @@ export function DouyinFeedPlayer({
                                             ? handleFullscreenVideoTap
                                             : undefined
                                     }
+                                    onToggleFullscreen={
+                                        fullscreenEnabled && index === activeIndex
+                                            ? feedFullscreen.toggleFullscreen
+                                            : undefined
+                                    }
+                                    isFullscreenUi={feedFullscreen.isFullscreenUi}
                                     chromeTapSuppressRef={chromeTapSuppressRef}
                                     infoBumpRef={
                                         hasTopContent && index === activeIndex

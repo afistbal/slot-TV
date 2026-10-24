@@ -220,7 +220,6 @@ export default function Lucky() {
                     </>}
                 </section>
                 {data.rewards.length ? <section className="lucky-center lucky-panel"><div className="lucky-center__head"><h2>{label('lucky_center_title')}</h2><LuckyIcon name="gift" size={22} /></div><div className="lucky-center__grid">{data.rewards.map((card) => <button key={card.key} type="button" onClick={() => card.key === 'level' ? setAccountDialog('level') : visit(card.to)}><span className="lucky-center__icon"><LuckyIcon name={card.icon} size={18} /></span><strong>{label(card.title)}</strong><p>{label(card.description)}</p><em>{label('lucky_complete')}<LuckyIcon name="chevron-right" size={12} /></em></button>)}</div></section> : null}
-                <div className="lucky-settings"><button type="button" className="lucky-task__button" onClick={() => setAccountDialog('push')}>通知设置</button><button type="button" className="lucky-task__button" onClick={() => setAccountDialog('level')}>等级进度</button></div>
             </> : null}
         </main>
         <ReelShortFooter dockAboveBottomTab />

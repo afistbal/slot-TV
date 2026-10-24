@@ -3,18 +3,10 @@ import type Player from 'xgplayer';
 
 import { getFeedPlayerById } from '@/components/douyin-feed-player';
 import { getPlayerCurrentTime } from '@/components/douyin-feed-player/controls/playerControlsApi';
-import { reportMovieEpProgress, saveMovieEpProgress } from '@/lib/reportMovieEpProgress';
-import { touchLuckyWatchStreak } from '@/api/lucky';
-import { useLuckyStore } from '@/stores/lucky';
-import { skipRemoteApi } from '@/env';
+import { reportMovieEpProgress } from '@/lib/reportMovieEpProgress';
 
 const REPORT_THRESHOLD_SEC = 5;
-const WATCH_STREAK_THRESHOLD_SEC = 3;
 const MAX_ATTACH_ATTEMPTS = 300;
-const currentLocalDay = () => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-};
 
 export function useReportEpProgressAt5s(options: {
     movieId: number;
@@ -39,45 +31,24 @@ export function useReportEpProgressAt5s(options: {
         let detach: (() => void) | null = null;
         let rafId = 0;
         let attempts = 0;
-        let lastSavedAt = 0;
-        let lastStreakAt = 0;
-        let streakDoneDay = '';
-        let saving = false;
-        let claimingStreak = false;
         let attachedPlayer: Player | null = null;
+        let lastReportedDuration = -1;
 
-        const claimWatchStreak = async (player: Player) => {
-            if (skipRemoteApi || claimingStreak || disposed) return;
+        const reportCurrentProgress = (player: Player, allowBeforeThreshold = false) => {
             const currentTime = getPlayerCurrentTime(player);
-            const today = currentLocalDay();
-            const now = Date.now();
-            if (currentTime < WATCH_STREAK_THRESHOLD_SEC || streakDoneDay === today || now - lastStreakAt < 5000) return;
-            claimingStreak = true;
-            lastStreakAt = now;
-            try {
-                // 到达门槛立即请求奖励，不让观看进度保存结果阻断 coin。
-                const result = await touchLuckyWatchStreak();
-                if (!result.pending) streakDoneDay = today;
-                useLuckyStore.getState().setProgressError('');
-            } catch (reason) {
-                useLuckyStore.getState().setProgressError(reason instanceof Error ? reason.message : String(reason));
-            } finally {
-                claimingStreak = false;
-            }
-        };
+            if (!Number.isFinite(currentTime) || currentTime <= 0) return;
+            if (!allowBeforeThreshold && currentTime < REPORT_THRESHOLD_SEC) return;
 
-        const saveForRewards = async (player: Player, final = false) => {
-            if (skipRemoteApi || saving || disposed && !final) return;
-            const currentTime = getPlayerCurrentTime(player);
-            const now = Date.now();
-            if (currentTime < WATCH_STREAK_THRESHOLD_SEC || !final && now - lastSavedAt < 60000) return;
-            saving = true; lastSavedAt = now;
-            try {
-                await saveMovieEpProgress({ movie_id: movieId, ep_id: epId, ep_no: epNo, duration: Math.floor(currentTime), completed: false });
-                useLuckyStore.getState().setProgressError('');
-            } catch (reason) {
-                useLuckyStore.getState().setProgressError(reason instanceof Error ? reason.message : String(reason));
-            } finally { saving = false; }
+            const duration = Math.floor(currentTime);
+            if (duration === lastReportedDuration) return;
+            lastReportedDuration = duration;
+            reportMovieEpProgress({
+                movie_id: movieId,
+                ep_id: epId,
+                ep_no: epNo,
+                duration,
+                completed: false,
+            });
         };
 
         const maybeReport = (player: Player) => {
@@ -89,24 +60,12 @@ export function useReportEpProgressAt5s(options: {
                 return;
             }
             reportedRef.current = true;
-            reportMovieEpProgress({
-                movie_id: movieId,
-                ep_id: epId,
-                ep_no: epNo,
-                duration: Math.floor(currentTime),
-                completed: false,
-            });
+            reportCurrentProgress(player);
         };
 
         const attach = (player: Player) => {
             attachedPlayer = player;
-            const onTime = () => {
-                maybeReport(player);
-                if (getPlayerCurrentTime(player) >= WATCH_STREAK_THRESHOLD_SEC) {
-                    void claimWatchStreak(player);
-                    void saveForRewards(player);
-                }
-            };
+            const onTime = () => maybeReport(player);
             player.on('timeupdate', onTime);
             detach = () => player.off('timeupdate', onTime);
             maybeReport(player);
@@ -130,16 +89,17 @@ export function useReportEpProgressAt5s(options: {
         tryAttach();
         const onHidden = () => {
             if (document.visibilityState === 'hidden' && attachedPlayer) {
-                void claimWatchStreak(attachedPlayer);
-                void saveForRewards(attachedPlayer, true);
+                reportCurrentProgress(attachedPlayer, true);
             }
         };
         document.addEventListener('visibilitychange', onHidden);
 
         return () => {
-            disposed = true;
             document.removeEventListener('visibilitychange', onHidden);
-            if (attachedPlayer) void saveForRewards(attachedPlayer, true);
+            if (attachedPlayer) {
+                reportCurrentProgress(attachedPlayer, true);
+            }
+            disposed = true;
             cancelAnimationFrame(rafId);
             detach?.();
         };

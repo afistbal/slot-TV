@@ -49,7 +49,6 @@ async function luckyRequest<T>(path: string, data: Record<string, unknown> = {},
 }
 const pause = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 function invalidateLucky() { taskCache = undefined; pageCache = undefined; useLuckyStore.getState().invalidate(); }
-let watchStreakFlight: Promise<LuckyClaimResult> | undefined;
 export function withoutLuckyComments(data: LuckyPageData): LuckyPageData {
     const comment = (row: { key: string }) => /comment/i.test(row.key);
     const removed = data.daily.tasks.filter(comment);
@@ -200,17 +199,6 @@ export async function claimLuckyDailyShare(): Promise<number | undefined> {
     const result = await getLuckyCoins('shareOnce');
     if (result.notYet || result.restricted || result.xUsed) throw new Error('分享奖励暂不可领取');
     return result.coins;
-}
-export function touchLuckyWatchStreak(): Promise<LuckyClaimResult> {
-    if (watchStreakFlight) return watchStreakFlight;
-    const promise = getLuckyCoins('watchMore').then(result => {
-        if (result.notYet || result.restricted || result.xUsed) throw new Error('观看更多奖励暂不可领取');
-        return result;
-    }).finally(() => {
-        if (watchStreakFlight === promise) watchStreakFlight = undefined;
-    });
-    watchStreakFlight = promise;
-    return promise;
 }
 export function luckyHttpsUrl(value: unknown, label: string): string {
     if (typeof value !== 'string' || !value) throw new Error(label + '尚未配置');

@@ -1123,12 +1123,23 @@
         line-height: 1.2;
     }
 
-    /** 单侧一项约 52px；整体上移半项（26px） */
+    /**
+     * H5 右侧操作栏最多 7 项。旧布局按 4 项固定 bottom:236px + gap:16px，
+     * 新增点赞/打分/氛围后会把首项顶进状态栏；改为随视口居中并保留舒展间距。
+     */
     .video-player-h5-side-actions {
         z-index: 10;
-        bottom: calc(210px + 26px);
+        top: 50%;
+        right: max(16px, env(safe-area-inset-right));
+        bottom: auto;
         width: 40px;
+        gap: clamp(10px, 1.8dvh, 16px);
+        transform: translateY(-50%);
         pointer-events: auto;
+    }
+
+    .video-player-h5-side-actions > button {
+        flex: 0 0 auto;
     }
 
     .video-player-h5-bottom {
