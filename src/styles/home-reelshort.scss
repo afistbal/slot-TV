@@ -864,3 +864,37 @@
         background: linear-gradient(270deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
     }
 }
+.home-hero-play-button {
+    display: flex;
+    width: calc(132 / 375 * var(--app-vw));
+    height: calc(40 / 375 * var(--app-vw));
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: calc(9 / 375 * var(--app-vw));
+    background: linear-gradient(135deg, #f5da91 0%, #e8c268 54%, #ce9b37 100%);
+    box-shadow: 0 calc(5 / 375 * var(--app-vw)) calc(16 / 375 * var(--app-vw)) rgba(0, 0, 0, 0.34);
+    color: #281b02;
+    font-size: calc(15 / 375 * var(--app-vw));
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    transition: filter 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.home-hero-play-button:hover {
+    filter: brightness(1.04);
+}
+
+.home-hero-play-button:active {
+    transform: translateY(1px) scale(0.985);
+    box-shadow: 0 calc(2 / 375 * var(--app-vw)) calc(8 / 375 * var(--app-vw)) rgba(0, 0, 0, 0.28);
+}
+
+.home-hero-play-button__icon {
+    width: calc(16 / 375 * var(--app-vw));
+    height: calc(16 / 375 * var(--app-vw));
+    flex: 0 0 auto;
+    margin-right: calc(6 / 375 * var(--app-vw));
+}

@@ -4,7 +4,7 @@
     --rs-bottom-tab-inner-height: calc(var(--rs-vw, min(100vw, 480px)) * 50 / 375);
     --rs-bottom-tab-safe: env(safe-area-inset-bottom, 0px);
     --rs-bottom-tab-bar-height: calc(var(--rs-bottom-tab-inner-height) + var(--rs-bottom-tab-safe));
-    --rs-bottom-add-gap: calc(var(--rs-vw, min(100vw, 480px)) * 10 / 375);
+    --rs-bottom-add-gap: calc(var(--rs-vw, min(100vw, 480px)) * 7 / 375);
     --rs-bottom-add-btn-height: calc(var(--rs-vw, min(100vw, 480px)) * 36 / 375);
     --rs-bottom-nav-stack: var(--rs-bottom-tab-bar-height);
 }
@@ -103,24 +103,24 @@ html.has-rs-bottom-nav .root {
     height: var(--rs-bottom-add-btn-height);
     align-items: center;
     justify-content: center;
-    gap: calc(var(--rs-vw, min(100vw, 480px)) * 7 / 375);
+    gap: calc(var(--rs-vw, min(100vw, 480px)) * 6 / 375);
     margin: 0;
     padding: 0 calc(var(--rs-vw, min(100vw, 480px)) * 14 / 375);
-    border: 1px solid rgba(255, 210, 28, 0.38);
+    border: 1px solid rgba(232, 194, 104, 0.34);
     border-radius: calc(var(--rs-vw, min(100vw, 480px)) * 36 / 375);
-    background: rgba(17, 17, 17, 0.94);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    color: #ffd21c;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 210, 28, 0.04) inset;
+    background: linear-gradient(180deg, rgba(28, 25, 18, 0.76), rgba(8, 8, 8, 0.82));
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    backdrop-filter: blur(14px) saturate(120%);
+    color: rgba(245, 223, 170, 0.9);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     cursor: pointer;
     transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 .reelshort-bottom-nav__add:hover {
-    border-color: rgba(255, 210, 28, 0.58);
-    background: rgba(28, 26, 17, 0.98);
+    border-color: rgba(232, 194, 104, 0.5);
+    background: linear-gradient(180deg, rgba(43, 37, 23, 0.88), rgba(10, 10, 10, 0.9));
 }
 
 .reelshort-bottom-nav__add:active {
@@ -129,8 +129,8 @@ html.has-rs-bottom-nav .root {
 
 .reelshort-bottom-nav__add-icon {
     flex: 0 0 auto;
-    width: calc(var(--rs-vw, min(100vw, 480px)) * 18 / 375);
-    height: calc(var(--rs-vw, min(100vw, 480px)) * 18 / 375);
+    width: calc(var(--rs-vw, min(100vw, 480px)) * 17 / 375);
+    height: calc(var(--rs-vw, min(100vw, 480px)) * 17 / 375);
     fill: none;
     stroke: currentColor;
     stroke-width: 1.7;

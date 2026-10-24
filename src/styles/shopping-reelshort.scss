@@ -323,7 +323,7 @@
         }
     }
 
-    /** 与金幣儲值标题 `RadixRc` 中 `text-[calc(16/375*var(--app-vw,100vw))] … md:text-[16px]` 对齐 */
+    /** 与金幣充值标题 `RadixRc` 中 `text-[calc(16/375*var(--app-vw,100vw))] … md:text-[16px]` 对齐 */
     .rs-shopping__introTitle {
         box-sizing: border-box;
         width: 100%;
@@ -492,7 +492,7 @@
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
-    /** 金幣儲值區塊：與上方 VIP 套餐區間距（H5 / PC） */
+    /** 金幣充值區塊：與上方 VIP 套餐區間距（H5 / PC） */
     .rs-shopping__coinSection {
         margin-top: 20px;
 
@@ -519,7 +519,7 @@
         }
     }
 
-    /** 金幣儲值套餐卡：H5 / PC 统一底色 */
+    /** 金幣充值套餐卡：H5 / PC 统一底色 */
     .rs-shopping__coinSku {
         --un-bg-opacity: 1;
         background-color: rgb(41 41 41 / var(--un-bg-opacity));

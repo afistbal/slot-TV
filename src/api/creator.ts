@@ -38,7 +38,7 @@ export async function creatorRequest<T = CreatorRecord>(method: 'POST', path: st
         throw new Error('演示记录仅供查看，不提交真实业务操作 / 示範紀錄僅供查看');
     }
     const token = localStorage.getItem('token')?.trim();
-    if (!token) throw new Error('请先登录 / 請先登入');
+    if (!token) throw new Error('请先登录 / 請先登錄');
     const url = new URL(path.replace(/^\/+/, ''), new URL(apiBaseURL, window.location.origin));
     const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Accept-Language': localStorage.getItem('locale') ?? 'zh-CN' };
     let body: BodyInit | undefined;

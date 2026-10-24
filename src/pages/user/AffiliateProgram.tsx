@@ -1,10 +1,10 @@
 import { openSharePoster } from '@/stores/sharePoster';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useSearchParams } from 'react-router';
 import { ProgramFlowPreview } from '@/components/ProgramFlowPreview';
 import { AffiliateDashboard } from '@/components/AffiliateDashboard';
-import { ProgramIcon, type ProgramIconName } from '@/components/ProgramIcon';
+import { ProgramIcon } from '@/components/ProgramIcon';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import {
     affiliateErrorMessage,
@@ -29,6 +29,7 @@ type AffiliateEligibility = {
 };
 
 type UnknownRecord = Record<string, unknown>;
+const AFFILIATE_ELIGIBILITY_CACHE_PREFIX = 'yogo:affiliate-eligibility:v1:';
 
 function isRecord(value: unknown): value is UnknownRecord {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -66,15 +67,36 @@ function normalizeAffiliate(data: unknown, uid: string): AffiliateEligibility | 
     };
 }
 
-function AffiliateStateCard({ icon, title, description, action, tone = 'green' }: { icon: ProgramIconName; title: string; description: string; action?: ReactNode; tone?: 'green' | 'gold' }) {
-    return (
-        <section className={`affiliate-reference__state affiliate-reference__state--${tone}`}>
-            <span><ProgramIcon name={icon} /></span>
-            <h2>{title}</h2>
-            <p>{description}</p>
-            {action}
-        </section>
-    );
+function emptyAffiliateEligibility(uid: string): AffiliateEligibility {
+    return {
+        state: 'in_progress',
+        payers: 0,
+        gatePayers: 0,
+        invitedCount: 0,
+        invitedCents: 0,
+        gateNetUsdCents: 0,
+        referralCode: uid,
+        referralUrl: buildAffiliateShareUrl(uid),
+    };
+}
+
+function readAffiliateEligibilityCache(uid: string): AffiliateEligibility | null {
+    if (!uid) return null;
+    try {
+        const cached = JSON.parse(localStorage.getItem(`${AFFILIATE_ELIGIBILITY_CACHE_PREFIX}${uid}`) ?? 'null');
+        return normalizeAffiliate(cached, uid);
+    } catch {
+        return null;
+    }
+}
+
+function writeAffiliateEligibilityCache(uid: string, eligibility: AffiliateEligibility): void {
+    if (!uid) return;
+    try {
+        localStorage.setItem(`${AFFILIATE_ELIGIBILITY_CACHE_PREFIX}${uid}`, JSON.stringify(eligibility));
+    } catch {
+        // Rendering the fresh response is still useful when storage is blocked.
+    }
 }
 
 function AffiliateExplainer() {
@@ -133,7 +155,7 @@ function AffiliateProgress({ eligibility }: { eligibility: AffiliateEligibility 
                 <p>{t('affiliate_progress_desc')}</p>
                 <div className="affiliate-progress__rows">
                     {rows.map((row) => {
-                        const percent = row.target <= 0 ? 100 : Math.min(100, Math.round((row.current / row.target) * 100));
+                        const percent = row.target <= 0 ? 0 : Math.min(100, Math.round((row.current / row.target) * 100));
                         const value = (amount: number) => row.money ? `¥${(amount / 100).toFixed(2)}` : amount.toLocaleString();
                         return <div key={row.label}><span><b>{row.label}</b><strong>{value(row.current)} / {value(row.target)}</strong></span><i><em style={{ width: `${percent}%` }} /></i></div>;
                     })}
@@ -156,13 +178,13 @@ export default function AffiliateProgram() {
     const uid = useUserStore((store) => getUserUidForDisplay(store.info));
     const scrollRef = useRef<HTMLDivElement>(null);
     const [searchParams, setSearchParams] = useSearchParams();
-    const [eligibility, setEligibility] = useState<AffiliateEligibility | null>(null);
+    const [eligibility, setEligibility] = useState<AffiliateEligibility>(() => readAffiliateEligibilityCache(uid) ?? emptyAffiliateEligibility(uid));
     const [requestState, setRequestState] = useState<'loading' | 'ready' | 'error'>('loading');
     const [requestError, setRequestError] = useState('');
     const preview = searchParams.get('preview');
     const previewState = preview === 'active' || preview === 'in_progress' ? preview : null;
-    const state: AffiliateState = previewState ?? eligibility?.state ?? 'in_progress';
-    const displayedEligibility = eligibility ?? (previewState ? {
+    const state: AffiliateState = previewState ?? eligibility.state;
+    const displayedEligibility: AffiliateEligibility = previewState ? {
         state: previewState,
         payers: 0,
         gatePayers: 5,
@@ -171,7 +193,7 @@ export default function AffiliateProgram() {
         gateNetUsdCents: 20000,
         referralCode: uid,
         referralUrl: buildAffiliateShareUrl(uid),
-    } : null);
+    } : eligibility;
     const previewSteps = [
         { id: 'in_progress', label: t('affiliate_preview_progress') },
         { id: 'active', label: t('affiliate_preview_active') },
@@ -189,12 +211,17 @@ export default function AffiliateProgram() {
             const normalized = normalizeAffiliate(await getAffiliateEligibility(), uid);
             if (!normalized) throw new Error('POST /api/user/affiliate：200 · 返回数据格式无效');
             setEligibility(normalized);
+            writeAffiliateEligibilityCache(uid, normalized);
             setRequestError('');
             setRequestState('ready');
         } catch (error) {
             setRequestError(affiliateErrorMessage(error));
             setRequestState('error');
         }
+    }, [uid]);
+
+    useEffect(() => {
+        setEligibility(readAffiliateEligibilityCache(uid) ?? emptyAffiliateEligibility(uid));
     }, [uid]);
 
     useEffect(() => {
@@ -212,9 +239,8 @@ export default function AffiliateProgram() {
                 <ProgramFlowPreview title={t('program_preview_title')} hint={t('program_preview_hint')} active={previewState ?? state} steps={previewSteps} onSelect={selectPreview} exitLabel={t('program_preview_exit')} onExit={previewState ? () => { const next = new URLSearchParams(searchParams); next.delete('preview'); setSearchParams(next, { replace: true }); } : undefined} />
                 <main className="affiliate-reference">
                     <header><h1>{t('affiliate_title')}</h1><p>{t('affiliate_subtitle')}</p></header>
-                    {!previewState && requestState === 'loading' ? <AffiliateStateCard icon="clock" title={t('loading')} description="" /> : null}
-                    {!previewState && requestState === 'error' ? <AffiliateStateCard icon="clock" tone="gold" title="推广接口调用失败" description={requestError} action={<button type="button" className="creator-program__button" onClick={() => void loadAffiliate()}>重试</button>} /> : null}
-                    {(previewState || requestState === 'ready') && state === 'in_progress' && displayedEligibility ? <AffiliateProgress eligibility={displayedEligibility} /> : null}
+                    {!previewState && requestState === 'error' ? <div className="affiliate-reference__refresh-note" role="status"><span>数据刷新失败，当前展示上次数据</span><button type="button" onClick={() => void loadAffiliate()}>重试</button><small>{requestError}</small></div> : null}
+                    {state === 'in_progress' ? <AffiliateProgress eligibility={displayedEligibility} /> : null}
                     {state === 'active' ? <AffiliateDashboard preview={previewState === 'active'} sessionReady={sessionBootstrapReady} /> : null}
                     <AffiliateExplainer />
                 </main>

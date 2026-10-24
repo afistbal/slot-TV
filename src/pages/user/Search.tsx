@@ -1059,7 +1059,26 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 }
                 await ensureCategoryTags(selectedCategoryId);
             } else {
-                await ensureMovieTags();
+                // 普通搜索页的标签与热门影片互不依赖，并行请求可少等一次接口往返。
+                const state = useSearchStore.getState();
+                const canReuseList =
+                    state.list.length > 0 &&
+                    searchUrlMatchesStore(location.search) &&
+                    state.listScopeKey === buildSearchListScopeKey(state, false);
+                const tagsRequest = ensureMovieTags();
+                if (canReuseList) {
+                    await tagsRequest;
+                    if (cancelled) return;
+                    searchStore.setLoading(false);
+                    requestAnimationFrame(() => {
+                        if (cancelled) return;
+                        const el = scrollRef.current;
+                        if (el) el.scrollTop = useSearchStore.getState().scrollTop;
+                    });
+                    return;
+                }
+                await Promise.all([tagsRequest, loadData()]);
+                return;
             }
             if (cancelled) return;
 

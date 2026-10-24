@@ -203,7 +203,7 @@ export default function Lucky() {
                 {data.checkin && !data.checkin.today && !data.checkin.restricted && data.daily.tasks.some(task => task.key === 'checkin') ? <div className="lucky-checkin-strip"><span>{w('今天签到领', '今天簽到領')} +{data.daily.tasks.find(task => task.key === 'checkin')?.coins ?? 0} 币</span><button type="button" className="lucky-task__button is-claim" disabled={Boolean(busy) || demo} onClick={() => { const task = data.daily.tasks.find(item => item.key === 'checkin'); if (task) void handleTask(task); }}>签到领币</button></div> : null}
                 <section className="lucky-closed lucky-panel">
                     <span className="lucky-closed__icon"><LuckyIcon name="sparkle" size={24} /></span>
-                    <h1>{closed ? w('幸运充值日暂未开启', '幸運儲值日暫未開啟') : w('福利中心')}</h1>
+                    <h1>{closed ? w('幸运充值日暂未开启', '幸運充值日暫未開啟') : w('福利中心')}</h1>
                     <p>{closed ? w('开启时站内信通知你，日常福利照常领', '開啟時站內信通知你，日常福利照常領') : label('lucky_subtitle')}</p>
                     {closed && data.promo.nextOpenAt ? <small>{w('下次开启：', '下次開啟：')}{new Date(data.promo.nextOpenAt).toLocaleString(intl.locale)}</small> : null}
                 </section>

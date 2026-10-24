@@ -15,22 +15,87 @@ type DashboardData = {
     demo: boolean;
 };
 
+const AFFILIATE_DASHBOARD_CACHE_PREFIX = 'yogo:affiliate-dashboard:v1:';
+
+function emptyAffiliateSummary(uid: string): AffiliateSummary {
+    return {
+        status: 'active',
+        activatedAt: '',
+        shareBps: 0,
+        referralCode: uid,
+        referralUrl: buildAffiliateShareUrl(uid),
+        invitedCount: 0,
+        totalEarnedCents: 0,
+        pendingCents: 0,
+        availableCents: 0,
+        reversedCents: 0,
+        paidOutCents: 0,
+        earnings: [],
+    };
+}
+
+function emptyAffiliateFunnel(): AffiliateFunnel {
+    return {
+        holdDays: 0,
+        summary: {
+            totalClicks: 0,
+            totalDevices: 0,
+            totalSignups: 0,
+            totalPayers: 0,
+            totalCommissionMicros: 0,
+        },
+        daily: [],
+    };
+}
+
+function emptyDashboardData(uid: string): DashboardData {
+    return { summary: emptyAffiliateSummary(uid), funnel: emptyAffiliateFunnel(), errors: [], demo: false };
+}
+
+function readDashboardCache(uid: string): DashboardData | null {
+    if (!uid) return null;
+    try {
+        const cached = JSON.parse(localStorage.getItem(`${AFFILIATE_DASHBOARD_CACHE_PREFIX}${uid}`) ?? 'null') as Partial<DashboardData> | null;
+        if (!cached?.summary || !cached.funnel) return null;
+        return { summary: cached.summary, funnel: cached.funnel, errors: [], demo: false };
+    } catch {
+        return null;
+    }
+}
+
+function writeDashboardCache(uid: string, summary: AffiliateSummary, funnel: AffiliateFunnel): void {
+    if (!uid) return;
+    try {
+        localStorage.setItem(`${AFFILIATE_DASHBOARD_CACHE_PREFIX}${uid}`, JSON.stringify({ summary, funnel }));
+    } catch {
+        // Keep rendering fresh data when storage is unavailable.
+    }
+}
+
 export function AffiliateDashboard({ preview, sessionReady }: { preview: boolean; sessionReady: boolean }) {
     const intl = useIntl();
     const t = (id: string) => intl.formatMessage({ id });
     const w = (cn: string, tw = cn) => intl.locale === 'zh-TW' ? tw : cn;
-    const [data, setData] = useState<DashboardData>({ summary: null, funnel: null, errors: [], demo: false });
-    const [loading, setLoading] = useState(!preview);
-    const [revision, setRevision] = useState(0);
     const uid = useUserStore((store) => getUserUidForDisplay(store.info));
+    const [data, setData] = useState<DashboardData>(() => preview
+        ? { summary: demoAffiliateSummary(), funnel: demoAffiliateFunnel(), errors: [], demo: true }
+        : readDashboardCache(uid) ?? emptyDashboardData(uid));
+    const [loading, setLoading] = useState(false);
+    const [revision, setRevision] = useState(0);
 
     useEffect(() => {
+        if (preview) {
+            setData({ summary: demoAffiliateSummary(), funnel: demoAffiliateFunnel(), errors: [], demo: true });
+            setLoading(false);
+            return;
+        }
         if (!sessionReady) return;
         let cancelled = false;
         setLoading(true);
-        setData({ summary: null, funnel: null, errors: [], demo: false });
+        setData(readDashboardCache(uid) ?? emptyDashboardData(uid));
         void getAffiliateStatistics().then((result) => {
             if (cancelled) return;
+            writeDashboardCache(uid, result.income, result.stat);
             setData({
                 summary: result.income,
                 funnel: result.stat,
@@ -40,16 +105,11 @@ export function AffiliateDashboard({ preview, sessionReady }: { preview: boolean
             setLoading(false);
         }).catch((error) => {
             if (cancelled) return;
-            setData({
-                summary: demoAffiliateSummary(),
-                funnel: demoAffiliateFunnel(),
-                errors: [affiliateErrorMessage(error)],
-                demo: true,
-            });
+            setData((current) => ({ ...current, errors: [affiliateErrorMessage(error)], demo: false }));
             setLoading(false);
         });
         return () => { cancelled = true; };
-    }, [preview, sessionReady, revision]);
+    }, [preview, sessionReady, revision, uid]);
 
     const { summary, funnel, errors, demo } = data;
     const referralUrl = buildAffiliateShareUrl(uid);
@@ -62,15 +122,15 @@ export function AffiliateDashboard({ preview, sessionReady }: { preview: boolean
         if (referralUrl) openSharePoster({ url: referralUrl, title: '邀请好友，一起看精彩短剧', inviteCode: new URL(referralUrl).searchParams.get('ref') || undefined });
     }
 
-    return <section className="affiliate-inline-dashboard" aria-label={t('affiliate_dashboard_title')}>
+    return <section className="affiliate-inline-dashboard" aria-label={t('affiliate_dashboard_title')} aria-busy={loading}>
         <header className="affiliate-inline-dashboard__heading">
             <div><h2>{t('affiliate_dashboard_title')}</h2><p>{t('affiliate_dashboard_desc')}</p></div>
             <span className="creator-program__status-badge creator-program__status-badge--approved"><ProgramIcon name="checkCircle" />{preview ? w('推广后台预览', '推廣後台預覽') : t('affiliate_active_title')}</span>
         </header>
-        {loading ? <p role="status">{t('loading')}</p> : null}
-        {errors.length ? <div className="creator-workspace__error" role="alert">
-            {errors.map((error) => <p key={error}>{error}</p>)}
-            <button type="button" className="creator-program__button creator-program__button--ghost" disabled={loading} onClick={() => setRevision((value) => value + 1)}>{w('重新加载', '重新載入')}</button>
+        {errors.length ? <div className="affiliate-reference__refresh-note" role="status">
+            <span>{w('数据刷新失败，当前展示上次数据', '資料重新整理失敗，目前顯示上次資料')}</span>
+            <button type="button" disabled={loading} onClick={() => setRevision((value) => value + 1)}>{w('重试', '重試')}</button>
+            {errors.map((error) => <small key={error}>{error}</small>)}
         </div> : null}
         {demo ? <p className="creator-workspace__demo">{preview
             ? w('演示假数据：仅供查看推广后台，不代表真实资格、收益或订单。', '示範假資料：僅供查看推廣後台，不代表真實資格、收益或訂單。')

@@ -42,7 +42,7 @@ import { ReelShortBasicsSpin } from "./components/ReelShortBasicsSpin";
 import { PcLoginDialog } from './pages/user/Login';
 
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
-import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
+import { installUserRouteIntentPrefetch, scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
 import { BRAND_DISPLAY_NAME } from "./constants/brand";
 import { syncLuckyPushSubscription } from './lib/luckyPushSubscription';
 
@@ -93,9 +93,18 @@ function YogoGroupIframe({ enabled }: { enabled: boolean }) {
 }
 
 function RouteLazyFallback() {
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => setVisible(true), 180);
+        return () => window.clearTimeout(timer);
+    }, []);
+
+    if (!visible) return null;
+
     return (
-        <div className="fixed inset-0 z-[9998] min-h-0 bg-app-canvas">
-            <ReelShortBasicsSpin visible variant="modal" withOverlay={false} />
+        <div className="flex h-full min-h-0 w-full items-center justify-center bg-app-canvas" aria-live="polite">
+            <ReelShortBasicsSpin visible variant="inline" withOverlay={false} />
         </div>
     );
 }
@@ -509,6 +518,7 @@ function AppContent() {
 
     useEffect(() => {
         markAppBootReady();
+        return installUserRouteIntentPrefetch();
     }, []);
 
     useEffect(() => {

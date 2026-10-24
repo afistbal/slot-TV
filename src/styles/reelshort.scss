@@ -50,13 +50,15 @@
     }
 }
 
-/* Chunlou 对标顶栏：保留本项目 Logo，导航骨架、图标与响应式规则跟随对标站。 */
-.reelshort-topnav {
-    min-height: 56px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(12, 13, 15, 0.82) !important;
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
+/* Chunlou 对标桌面顶栏；H5 首页继续使用历史版本的透明叠图导航。 */
+@media (min-width: 768px) {
+    .reelshort-topnav {
+        min-height: 56px;
+        border-bottom: 0;
+        background: #050505 !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }
 
 .reelshort-topnav__inner--benchmark {
@@ -876,22 +878,30 @@ button.reelshort-nav-drawer__close path {
 }
 
 .reelshort-nav-drawer__item-icon {
+    display: block;
     width: 18px;
     height: 18px;
     flex: 0 0 18px;
+    transform: translateY(1px);
 }
 
 .reelshort-nav-drawer__item-label {
+    display: flex;
     min-width: 0;
+    height: 18px;
+    align-items: center;
     overflow: hidden;
+    line-height: 18px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .reelshort-nav-drawer__chevron {
+    display: block;
     width: 18px;
     height: 18px;
     margin-left: auto;
+    transform: translateY(1px);
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
@@ -901,7 +911,7 @@ button.reelshort-nav-drawer__close path {
 }
 
 .reelshort-nav-drawer__chevron.is-open {
-    transform: rotate(180deg);
+    transform: translateY(1px) rotate(180deg);
 }
 
 .reelshort-nav-drawer__languages {
@@ -1242,6 +1252,25 @@ a.reelshort-topnav__brand-link {
     background: transparent;
 }
 
+@media (max-width: 767px) {
+    /* 滚动后的实色状态只覆盖真实导航行；空的二级导航占位继续透出下面内容。 */
+    .reelshort-topnav--transparent,
+    .reelshort-topnav--solid {
+        background: transparent;
+    }
+
+    .reelshort-topnav--transparent .reelshort-topnav__row,
+    .reelshort-topnav--solid .reelshort-topnav__row {
+        background: rgba(0, 0, 0, 0.9);
+        box-shadow: 0 12px 18px rgba(0, 0, 0, 0.34);
+    }
+
+    .reelshort-topnav--transparent .reelshort-topnav__h5-subnav,
+    .reelshort-topnav--solid .reelshort-topnav__h5-subnav {
+        background: transparent;
+    }
+}
+
 
 .reelshort-topnav__h5-subnav .reelshort-topnav__segment-link {
     margin: 0 calc(16 / 375 * var(--app-vw));
@@ -1317,6 +1346,12 @@ a.reelshort-topnav__brand-link {
 
     @media (min-width: 768px) {
         gap: 8px;
+    }
+}
+
+@media (max-width: 767px) {
+    .reelshort-topnav__right .reelshort-topnav__actions {
+        gap: calc(4 / 375 * var(--app-vw));
     }
 }
 

@@ -261,6 +261,8 @@ function TopNavSearchEntry() {
         'relative flex cursor-pointer flex-col items-center justify-center text-white',
         'hover:text-[var(--rs-brand,#d4a853)]',
       )}
+      onPointerEnter={prefetchSearchRouteChunk}
+      onPointerDown={prefetchSearchRouteChunk}
       onClick={() => navigate('/search')}
     >
       <span role="img" className="reelshort-topnav__search-icon-wrap text-[min(6vw,1.5rem)] text-current">
@@ -946,6 +948,56 @@ export function ReelShortTopNav({
     };
   }, [allowTransparent, scrollParentRef]);
 
+  const legacyMobileNav = !isMd ? (
+    <div className="reelshort-topnav__inner">
+      <div className="reelshort-topnav__row">
+        <div className="reelshort-topnav__left">
+          {leftAction === 'menu' ? (
+            <button
+              type="button"
+              className="reelshort-topnav__menu-btn"
+              onClick={() => setMenuOpen(true)}
+              aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
+            >
+              <ReelShortMenuIcon className="reelshort-topnav__menu-btn-icon" />
+            </button>
+          ) : null}
+          {leftAction === 'back' ? (
+            <button
+              type="button"
+              className="reelshort-topnav__menu-btn"
+              onClick={handleBack}
+              aria-label={intl.formatMessage({ id: 'back', defaultMessage: 'Back' })}
+            >
+              {isLtr ? <ChevronLeft className="reelshort-topnav__back-icon" aria-hidden /> : <ChevronRight className="reelshort-topnav__back-icon" aria-hidden />}
+            </button>
+          ) : null}
+        </div>
+
+        <div className="reelshort-topnav__brand-cluster reelshort-topnav__brand-cluster--with-primary">
+          <Link to="/" className="reelshort-topnav__brand-link">
+            <img
+              src={BRAND_TOPNAV_WORDMARK_SRC}
+              alt={BRAND_DISPLAY_NAME}
+              className="reelshort-topnav__brand-wordmark"
+              width={BRAND_TOPNAV_WORDMARK_WIDTH}
+              height={BRAND_TOPNAV_WORDMARK_HEIGHT}
+            />
+          </Link>
+        </div>
+
+        <div className="reelshort-topnav__right">
+          <div className="reelshort-topnav__actions">
+            {showRightActions && showSearch ? <div className="reelshort-topnav__search"><TopNavSearchEntry /></div> : null}
+            {showRightActions ? <TopNavInstallEntry /> : null}
+            {showRightActions && showProfile ? <NavProfileAvatar /> : null}
+          </div>
+        </div>
+      </div>
+      {showPrimaryNav ? <div className="reelshort-topnav__h5-subnav" aria-hidden /> : null}
+    </div>
+  ) : null;
+
   return (
     <>
       <header
@@ -954,7 +1006,7 @@ export function ReelShortTopNav({
           headerSolid ? 'reelshort-topnav--solid' : 'reelshort-topnav--transparent',
         )}
       >
-        <div className="reelshort-topnav__inner reelshort-topnav__inner--benchmark">
+        {legacyMobileNav ?? <div className="reelshort-topnav__inner reelshort-topnav__inner--benchmark">
           <div className="reelshort-topnav__benchmark-row">
             {leftAction === 'back' ? (
               <button
@@ -1072,7 +1124,7 @@ export function ReelShortTopNav({
               </div>
             ) : profilePcActions ? <TopNavInstallEntry /> : null}
           </div>
-        </div>
+        </div>}
       </header>
 
       <ReelShortNavDrawer open={menuOpen} onOpenChange={setMenuOpen} />

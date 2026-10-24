@@ -15,6 +15,8 @@ import usePixel from '@/hooks/usePixel';
 import { showBottomTabBar } from '@/env';
 import {
     prefetchAffiliateRouteChunk,
+    prefetchForYouRouteChunk,
+    prefetchHomeRouteChunk,
     prefetchLuckyRouteChunk,
     prefetchProfileRouteChunk,
 } from '@/lib/prefetchSecondaryUserRoutes';
@@ -103,6 +105,8 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                     <NavLink
                         to="/"
                         end
+                        onPointerEnter={prefetchHomeRouteChunk}
+                        onPointerDown={prefetchHomeRouteChunk}
                         className={({ isActive }) =>
                             cn('reelshort-bottom-nav__tab', isActive && 'reelshort-bottom-nav__tab--active')
                         }
@@ -123,6 +127,8 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                     <NavLink
                         to={FORYOU_PATH}
                         state={VIDEO_FROM_HOME_STATE}
+                        onPointerEnter={prefetchForYouRouteChunk}
+                        onPointerDown={prefetchForYouRouteChunk}
                         className={({ isActive }) =>
                             cn('reelshort-bottom-nav__tab', isActive && 'reelshort-bottom-nav__tab--active')
                         }

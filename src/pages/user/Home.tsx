@@ -179,13 +179,13 @@ export default function Component() {
     const homeStore = useHomeStore();
     const scrollRef = useRef<HTMLDivElement>(null);
     const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
-    /** H5 使用紧凑顶栏：菜单 + Logo + 搜索 + 用户；PC 展开完整导航。 */
+    /** H5 首页：左侧菜单、居中 Logo、右侧搜索；PC 展开完整导航。 */
     const homeTopNavProps = useMemo(
         () => ({
             scrollParentRef: scrollRef,
             showPrimaryNav: true as const,
-            leftAction: 'menu' as const,
-            showProfile: true,
+            showLeftAction: true,
+            showProfile: mdUp,
             showLanguage: mdUp,
             showHistory: mdUp,
         }),
@@ -662,7 +662,7 @@ export default function Component() {
                                 aria-hidden
                             />
                             <div
-                                className="absolute left-0 right-0 top-0 z-[2] h-[40%] max-h-[170px] bg-gradient-to-b from-black to-transparent md:max-h-[170px]"
+                                className="absolute left-0 right-0 top-0 z-[2] h-[28%] max-h-[110px] bg-gradient-to-b from-black/80 via-black/30 to-transparent"
                                 aria-hidden
                             />
                             {topLen > 0 ? (
@@ -685,12 +685,9 @@ export default function Component() {
                                                 <Link
                                                     to={toEpisodeOrVideoHref(currentHero)}
                                                     state={VIDEO_FROM_HOME_STATE}
-                                                    className={cn(
-                                                        'flex cursor-pointer items-center justify-center bg-[var(--rs-brand)] font-bold text-[var(--rs-brand-foreground)] transition-[filter,transform] hover:brightness-105 active:scale-[0.98]',
-                                                        'h-[calc(44/375*var(--app-vw))] w-[calc(152/375*var(--app-vw))] rounded-[calc(11/375*var(--app-vw))] text-[calc(15/375*var(--app-vw))]',
-                                                    )}
+                                                    className="home-hero-play-button"
                                                 >
-                                                    <HeroPlayIcon className="mr-[calc(7/375*var(--app-vw))] h-[calc(17/375*var(--app-vw))] w-[calc(17/375*var(--app-vw))] shrink-0" />
+                                                    <HeroPlayIcon className="home-hero-play-button__icon" />
                                                     <FormattedMessage id="play" />
                                                 </Link>
                                             </div>

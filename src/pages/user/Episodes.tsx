@@ -1158,7 +1158,7 @@ export default function Component() {
                                 </div>
 
                                 <div className="rs-paywall__section">
-                                    <div className="rs-paywall__secTitle">儲值金幣</div>
+                                    <div className="rs-paywall__secTitle">充值金幣</div>
                                     <div className="rs-paywall__coinGrid">
                                         {[
                                             { coins: '1,150', now: '1,000', free: '150', price: '$9.99', bonus: '+15%' },
