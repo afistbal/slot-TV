@@ -61,7 +61,7 @@ export default function Component() {
         return (
             <div className="rs-my-list-page rs-my-list-page--h5 flex h-full min-h-0 flex-col bg-app-canvas text-white">
                 {showTopBar ? (
-                    <ReelShortTopNav leftAction="none" showSearch={false} showRightActions={false} />
+                    <ReelShortTopNav leftAction="menu" showSearch={false} showRightActions={false} />
                 ) : null}
                 <div className="rs-my-list-page__scroll flex min-h-0 min-w-0 flex-1 flex-col">
                     <div className="rs-my-list-page__inner">

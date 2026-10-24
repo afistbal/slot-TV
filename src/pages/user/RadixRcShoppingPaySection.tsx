@@ -668,11 +668,11 @@ export default function RadixRcShoppingPaySection({
                             backgroundColor: '#333333',
                         },
                         '.Button': {
-                            backgroundColor: '#FF3D5DFF',
-                            color: '#FFFFFF',
+                            backgroundColor: '#E8C268',
+                            color: '#2B1E00',
                         },
                         '.Button > div': {
-                            color: '#FFFFFF',
+                            color: '#2B1E00',
                         },
                     },
                 };

@@ -2,9 +2,10 @@ import { Fragment, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FormattedMessage } from 'react-intl';
 import { NavLink, useLocation, useNavigate } from 'react-router';
+import { Gift, HandCoins } from 'lucide-react';
 import '@/styles/reelshort-bottom-nav.scss';
 import { cn } from '@/lib/utils';
-import { bottomTabAddDesktopIcon, bottomTabIcons } from '@/constants/bottomTabAssets';
+import { bottomTabIcons } from '@/constants/bottomTabAssets';
 import { FORYOU_PATH, isForYouPathname } from '@/constants/foryouRoute';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
@@ -13,7 +14,8 @@ import { useRootStore } from '@/stores/root';
 import usePixel from '@/hooks/usePixel';
 import { showBottomTabBar } from '@/env';
 import {
-    prefetchMyListRouteChunk,
+    prefetchAffiliateRouteChunk,
+    prefetchLuckyRouteChunk,
     prefetchProfileRouteChunk,
 } from '@/lib/prefetchSecondaryUserRoutes';
 
@@ -52,12 +54,11 @@ function BottomNavAddDesktopH5({
 
     return (
         <button type="button" className="reelshort-bottom-nav__add" onClick={handleClick}>
-            <img
-                className="reelshort-bottom-nav__add-icon"
-                src={bottomTabAddDesktopIcon}
-                alt=""
-                loading="lazy"
-            />
+            <svg className="reelshort-bottom-nav__add-icon" viewBox="0 0 24 24" aria-hidden>
+                <rect x="5.5" y="2.5" width="13" height="19" rx="3" />
+                <path d="M12 7v7M8.5 10.5h7" />
+                <path d="M10.25 18h3.5" />
+            </svg>
             <span className="reelshort-bottom-nav__add-text">
                 <FormattedMessage id="add_desktop_short" />
             </span>
@@ -71,7 +72,6 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
     const location = useLocation();
     const showInstallPrompt = useRootStore((state) => state.showInstallPrompt);
     const showIosAddHome = shouldShowIosAddHomeFab();
-    const sourceform = `${location.pathname}${location.search}`;
 
     const isForYouPage = isForYouPathname(location.pathname);
     const showTabs = showBottomTabBar && !isDesktop && !hidden && !isForYouPage;
@@ -141,33 +141,38 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                         )}
                     </NavLink>
                     <NavLink
-                        to={`/my-list?sourceform=${encodeURIComponent(sourceform)}`}
-                        state={{ sourceform }}
-                        onPointerEnter={prefetchMyListRouteChunk}
-                        onPointerDown={prefetchMyListRouteChunk}
+                        to="/lucky"
+                        onPointerEnter={prefetchLuckyRouteChunk}
+                        onPointerDown={prefetchLuckyRouteChunk}
                         className={({ isActive }) =>
                             cn(
                                 'reelshort-bottom-nav__tab',
-                                (isActive || location.pathname.startsWith('/my-list')) &&
+                                (isActive || location.pathname.startsWith('/lucky')) &&
                                     'reelshort-bottom-nav__tab--active',
                             )
                         }
                     >
-                        {({ isActive }) => {
-                            const active = isActive || location.pathname.startsWith('/my-list');
-                            return (
-                                <>
-                                    <img
-                                        className="reelshort-bottom-nav__tab-icon"
-                                        src={active ? bottomTabIcons.myList.active : bottomTabIcons.myList.nor}
-                                        alt=""
-                                    />
-                                    <span className="reelshort-bottom-nav__tab-label">
-                                        <FormattedMessage id="my_list" />
-                                    </span>
-                                </>
-                            );
-                        }}
+                        <Gift className="reelshort-bottom-nav__tab-icon reelshort-bottom-nav__tab-icon--vector" aria-hidden />
+                        <span className="reelshort-bottom-nav__tab-label">
+                            <FormattedMessage id="nav_lucky" />
+                        </span>
+                    </NavLink>
+                    <NavLink
+                        to="/affiliate"
+                        onPointerEnter={prefetchAffiliateRouteChunk}
+                        onPointerDown={prefetchAffiliateRouteChunk}
+                        className={({ isActive }) =>
+                            cn(
+                                'reelshort-bottom-nav__tab',
+                                (isActive || location.pathname.startsWith('/affiliate')) &&
+                                    'reelshort-bottom-nav__tab--active',
+                            )
+                        }
+                    >
+                        <HandCoins className="reelshort-bottom-nav__tab-icon reelshort-bottom-nav__tab-icon--vector" aria-hidden />
+                        <span className="reelshort-bottom-nav__tab-label">
+                            <FormattedMessage id="nav_commission_short" />
+                        </span>
                     </NavLink>
                     <NavLink
                         to="/profile"

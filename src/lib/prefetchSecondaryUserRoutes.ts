@@ -7,6 +7,7 @@ let profileDone = false;
 let searchDone = false;
 let myListDone = false;
 let luckyDone = false;
+let affiliateDone = false;
 
 export function prefetchProfileRouteChunk(): void {
     if (profileDone) return;
@@ -45,6 +46,16 @@ export function prefetchLuckyRouteChunk(): void {
         .then(() => undefined)
         .catch(() => {
             luckyDone = false;
+        });
+}
+
+export function prefetchAffiliateRouteChunk(): void {
+    if (affiliateDone) return;
+    affiliateDone = true;
+    void import('../pages/user/AffiliateProgram')
+        .then(() => undefined)
+        .catch(() => {
+            affiliateDone = false;
         });
 }
 

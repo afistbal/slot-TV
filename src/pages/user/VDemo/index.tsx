@@ -318,7 +318,7 @@ export default function VDemoPage() {
     const pcTopNav = isDesktop ? (
         <div className="video-vertical-pc-topnav">
             <Suspense fallback={null}>
-                <ReelShortTopNav leftAction="none" showSearch />
+                <ReelShortTopNav leftAction="menu" showSearch />
             </Suspense>
         </div>
     ) : null;

@@ -899,7 +899,7 @@ function WebRadixRc({
                                         <div
                                             className={cn(
                                                 'absolute right-0 top-0 flex h-4 min-w-[2.25rem] items-center justify-center rounded-tr-[4px] rounded-bl-[4px] px-2',
-                                                'bg-gradient-to-r from-[#E52E2E] to-[#EB4C46]',
+                                                'bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)]',
                                                 'text-[10px] font-medium leading-none text-white md:text-xs',
                                             )}
                                         >

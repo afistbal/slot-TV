@@ -339,8 +339,8 @@
     align-items: center;
     justify-content: center;
     font-size: calc(18 / 375 * 100vw);
-    background: #ff3d5d33;
-    color: #fe4167;
+    background: var(--rs-brand-soft);
+    color: var(--rs-brand);
     cursor: not-allowed;
 }
 

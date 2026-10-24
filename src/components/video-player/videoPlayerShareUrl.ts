@@ -11,7 +11,7 @@ function parseMovieFromVideoUrl(): string | undefined {
 }
 
 /** For You 和视频页分享同一部剧的详情链接，不携带当前集数。 */
-export function resolveVideoSharePageUrl(movieId?: string | number): string {
+export function resolveVideoSharePageUrl(movieId?: string | number, referralCode = ''): string {
     if (typeof window === 'undefined') {
         return '';
     }
@@ -19,7 +19,7 @@ export function resolveVideoSharePageUrl(movieId?: string | number): string {
     if (id == null) {
         return '';
     }
-    return buildDramaShareUrl(id);
+    return buildDramaShareUrl(id, referralCode);
 }
 
 /** `movie/info` 剧封：`d.info` + `is_rename` */

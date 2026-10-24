@@ -833,7 +833,7 @@ export default function Component() {
                                         </p>
                                         <button
                                             type="button"
-                                            className="cursor-pointer rtl font-700 w-full relative flex-center bg-[#E52E2E] text-white/90 leading-normal rounded-4px text-14/vw h-48px min-h-48px md:text-16px md:w-320px"
+                                            className="cursor-pointer rtl font-700 w-full relative flex-center bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] leading-normal rounded-4px text-14/vw h-48px min-h-48px md:text-16px md:w-320px"
                                             onClick={() => setPayOpen(true)}
                                         >
                                             <i
@@ -959,7 +959,7 @@ export default function Component() {
                                                         ) : null}
 
                                                         {locked ? (
-                                                            <div className="absolute right-0 top-0 flex-center rounded-lb-6px rounded-rt-6px bg-[#E52E2E] h-14/vw text-12/vw w-18/vw">
+                                                            <div className="absolute right-0 top-0 flex-center rounded-lb-6px rounded-rt-6px bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] h-14/vw text-12/vw w-18/vw">
                                                                 <span role="img" className="anticon">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false">
                                                                         <path

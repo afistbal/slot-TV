@@ -123,7 +123,7 @@ export function HomeRowPagerShelf({
     const shelfHead = (
         <div className="home_floorTitle__cIyIp HomePage_shelfHead">
             <h2>
-                <Link to={titleHref} className="text-white hover:text-[#E52E2E]">
+                <Link to={titleHref} className="text-white hover:text-[var(--rs-brand)]">
                     <FormattedMessage id={titleMessageId} />
                 </Link>
             </h2>

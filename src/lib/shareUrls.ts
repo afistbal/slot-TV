@@ -5,10 +5,15 @@ const origin = () => (shareOrigin || 'https://yogoshort.com').replace(/\/+$/, ''
 export function buildAffiliateShareUrl(uid: string): string {
     const id = uid.trim();
     if (!id) return '';
-    return `https://yogoshort.com/share/cf${encodeURIComponent(id)}?s=share`;
+    const query = new URLSearchParams({ ref: id, s: 'share' });
+    return `${origin()}/share/cf${encodeURIComponent(id)}?${query.toString()}`;
 }
 
-export function buildDramaShareUrl(movieId: string | number): string {
+export function buildDramaShareUrl(movieId: string | number, referralCode = ''): string {
     const id = String(movieId).trim();
-    return id ? `${origin()}/share/${encodeURIComponent(id)}` : '';
+    if (!id) return '';
+
+    const ref = referralCode.trim();
+    const query = ref ? `?${new URLSearchParams({ ref }).toString()}` : '';
+    return `${origin()}/share/${encodeURIComponent(id)}${query}`;
 }

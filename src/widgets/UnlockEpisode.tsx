@@ -93,7 +93,7 @@ export default function UnlockEpisode({
     }
 
     async function handlePaymentSubmit(payment: number) {
-        let result = await api<TData>('pay/create', {
+        const result = await api<TData>('pay/create', {
             method: 'post',
             data: buildPayCreateData({
                 payment,
@@ -187,7 +187,7 @@ export default function UnlockEpisode({
                         {!userStore.isVIP() && (
                             <div className="p-4 pb-0">
                                 <div
-                                    className="rounded-md h-26 shadow-lg bg-linear-to-r from-amber-300 to-red-400 relative flex items-center p-4"
+                                    className="rounded-md h-26 shadow-lg bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] relative flex items-center p-4"
                                     onClick={handleToggleVip}
                                 >
                                     <img
@@ -213,14 +213,14 @@ export default function UnlockEpisode({
                                             <div className="text-3xl font-bold">
                                                 ${v.price}
                                             </div>
-                                            <div className="text-rose-500 text-bold text-sm bg-white px-2.5 py-1 leading-4 rounded-full">
+                                            <div className="text-[var(--rs-brand-foreground)] text-bold text-sm bg-white/70 px-2.5 py-1 leading-4 rounded-full">
                                                 <FormattedMessage id="limited_time_offer" values={{
                                                     off: (100 - Math.floor((parseFloat(v.price) / parseFloat(v.renewal_price)) * 100)) + '%'
                                                 }}/>
                                             </div>
                                         </div>
-                                        <div className="rounded-full px-4 py-1 bg-purple-500">
-                                            <div className="text text-white text-shadow-lg">
+                                        <div className="rounded-full px-4 py-1 bg-[#2b1e00]/85">
+                                            <div className="text text-[var(--rs-brand)] text-shadow-lg">
                                                 <FormattedMessage id="enjoy" />
                                             </div>
                                         </div>
@@ -238,7 +238,7 @@ export default function UnlockEpisode({
                                         className={cn(
                                             'relative overflow-hidden rounded-md p-4 flex flex-col bg-white shadow-md',
                                             v.name.indexOf('off') !== -1 &&
-                                                'col-span-2 bg-linear-90 from-cyan-100 to-purple-100',
+                                                'col-span-2 bg-linear-90 from-amber-50 to-yellow-100',
                                         )}
                                     >
                                         <div className="flex font-bold gap-1 text-lg items-center">
@@ -250,7 +250,7 @@ export default function UnlockEpisode({
                                             />
                                             <div
                                                 className={cn(
-                                                    v.name.indexOf('off') !== -1 && 'text-red-400',
+                                                    v.name.indexOf('off') !== -1 && 'text-[var(--rs-brand)]',
                                                 )}
                                             >
                                                 {v.coin}
@@ -263,7 +263,7 @@ export default function UnlockEpisode({
                                             ${v.price}
                                         </div>
                                         {v.bouns > '0.0' && (
-                                            <div className="absolute top-0 right-0 text-xs bg-red-400 text-white px-2 py-0.5 rounded-bl-md rounded-tr-md">
+                                            <div className="absolute top-0 right-0 text-xs bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] px-2 py-0.5 rounded-bl-md rounded-tr-md">
                                                 {v.name.indexOf('off') !== -1 && (
                                                     <FormattedMessage id="limited_time" />
                                                 )}
@@ -271,7 +271,7 @@ export default function UnlockEpisode({
                                             </div>
                                         )}
                                         {v.name.indexOf('off') !== -1 && (
-                                            <div className="absolute opacity-10 text-4xl text-red-400 bottom-4 right-4">
+                                            <div className="absolute opacity-10 text-4xl text-[var(--rs-brand)] bottom-4 right-4">
                                                 SALE
                                             </div>
                                         )}

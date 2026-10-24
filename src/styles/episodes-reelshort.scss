@@ -49,7 +49,7 @@
 }
 
 .rs-episodes__epBtn--active {
-    background-image: radial-gradient(116.67% 135.17% at 95.16% 96%, rgba(255, 61, 93, 0.32) 0, rgba(45, 45, 45, 0) 80%) !important;
+    background-image: radial-gradient(116.67% 135.17% at 95.16% 96%, rgb(232 194 104 / 0.26) 0, rgba(45, 45, 45, 0) 80%) !important;
 }
 
 .rs-episodes__playerShell {
@@ -445,7 +445,7 @@
 }
 
 .xgplayer .xgplayer-progress-played {
-    background: linear-gradient(-90deg, #fa1f41, #e31106);
+    background: var(--rs-brand);
 }
 
 .xgplayer .xgplayer-progress-cache {
@@ -454,9 +454,9 @@
 
 .xgplayer .xgplayer-progress-btn {
     display: block;
-    background: rgba(255, 94, 94, 0.304);
-    border: 0.5px solid rgba(255, 94, 94, 0.057);
-    box-shadow: 0 0 1px rgba(255, 0, 0, 0.384);
+    background: rgb(232 194 104 / 30%);
+    border: 0.5px solid rgb(232 194 104 / 10%);
+    box-shadow: 0 0 1px rgb(232 194 104 / 38%);
     width: 20px;
     height: 20px;
     border-radius: 30px;
@@ -874,7 +874,8 @@
 }
 
 .bg-\[\#E52E2E\] {
-    background: #e52e2e;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
 }
 
 .text-white\/90 {
@@ -1316,8 +1317,8 @@
     font-weight: 700;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;
-    background: linear-gradient(90deg, #e52e2e 0%, #eb4c46 100%);
-    color: #fff;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
 }
 
 .rs-paywall__more {
@@ -1465,9 +1466,9 @@
 }
 
 .rs-episodes__pageBtn.is-active {
-    background: rgba(255, 61, 93, 0.2);
-    color: #ff3d5d;
-    outline: 1px solid rgba(255, 61, 93, 0.15);
+    background: rgb(232 194 104 / 0.2);
+    color: var(--rs-brand);
+    outline: 1px solid rgb(232 194 104 / 0.15);
 }
 
 .rs-episodes__full {
@@ -1543,9 +1544,9 @@
 }
 
 .rs-episodes__allEpBtn.is-active {
-    background: rgba(255, 61, 93, 0.18);
-    border-color: rgba(255, 61, 93, 0.22);
-    color: #ff3d5d;
+    background: rgb(232 194 104 / 0.18);
+    border-color: rgb(232 194 104 / 0.22);
+    color: var(--rs-brand);
 }
 
 .rs-episodes__actions {
@@ -1845,7 +1846,7 @@
 
 /* radial bg utility used by current episode */
 .bg-\[radial-gradient\(116\.67\%_135\.17\%_at_95\.16\%_96\%\,rgba\(255\,61\,93\,0\.32\)_0\%\,rgba\(45\,45\,45\,0\.00\)_80\%\)\] {
-    background: radial-gradient(116.67% 135.17% at 95.16% 96%, rgba(255, 61, 93, 0.32) 0%, rgba(45, 45, 45, 0) 80%);
+    background: radial-gradient(116.67% 135.17% at 95.16% 96%, rgb(232 194 104 / 0.26) 0%, rgba(45, 45, 45, 0) 80%);
 }
 
 .font-SofiaSemiBold {

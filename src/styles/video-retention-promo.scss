@@ -338,7 +338,7 @@
 .rs-retention-promo__offerCardOff {
     font-weight: 500;
     font-size: 12px;
-    color: #C90000;
+    color: var(--rs-brand-foreground);
 }
 
 .rs-retention-promo__offerCardPriceRow {
@@ -359,7 +359,7 @@
     font-weight: bold;
     font-size: 36px;
     line-height: 1;
-    color: #C90000;
+    color: var(--rs-brand-foreground);
     font-family: DIN Alternate, DIN Alternate;
     text-align: center;
 }
@@ -503,7 +503,8 @@
     padding: 10px;
     border: 0;
     border-radius: 8px;
-    background: #FF3D5D;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
     font-weight: 500;
     font-size: 16px;
     color: #FFFFFF;

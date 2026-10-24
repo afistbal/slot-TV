@@ -1,64 +1,87 @@
-import { useState } from 'react';
+import { useState, type MouseEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { FormattedMessage, useIntl } from 'react-intl';
+import {
+    Bookmark,
+    Crown,
+    Gift,
+    Globe2,
+    Grid2X2,
+    History,
+    Home,
+    Search,
+    Share2,
+    Smartphone,
+    Sparkles,
+    UserRound,
+    type LucideIcon,
+} from 'lucide-react';
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
 import { useRootStore } from '@/stores/root';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
+import { FORYOU_PATH } from '@/constants/foryouRoute';
+import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import {
+    BRAND_DISPLAY_NAME,
+    BRAND_TOPNAV_WORDMARK_HEIGHT,
+    BRAND_TOPNAV_WORDMARK_SRC,
+    BRAND_TOPNAV_WORDMARK_WIDTH,
+} from '@/constants/brand';
 
 function isLocaleActive(current: string | null | undefined, code: string | null | undefined): boolean {
-    if (current == null || code == null) {
-        return false;
-    }
+    if (current == null || code == null) return false;
     const c = current.toLowerCase();
     const p = code.toLowerCase();
-    if (c === p) {
-        return true;
-    }
+    if (c === p) return true;
     if (p === 'zh') {
         return c === 'zh-tw' || c.startsWith('zh-hant') || (c.startsWith('zh-') && !c.startsWith('zh-hans') && !c.startsWith('zh-cn'));
     }
     return c.startsWith(`${p}-`) || c.startsWith(`${p}_`);
 }
 
-function AntDrawerCloseIcon({ className }: { className?: string }) {
+function CloseIcon() {
     return (
-        <svg
-            fillRule="evenodd"
-            viewBox="64 64 896 896"
-            width="1em"
-            height="1em"
-            className={className}
-            aria-hidden
-        >
-            <path
-                fill="#fff"
-                d="M799.86 166.31c.02 0 .04.02.08.06l57.69 57.7c.04.03.05.05.06.08a.12.12 0 010 .06c0 .03-.02.05-.06.09L569.93 512l287.7 287.7c.04.04.05.06.06.09a.12.12 0 010 .07c0 .02-.02.04-.06.08l-57.7 57.69c-.03.04-.05.05-.07.06a.12.12 0 01-.07 0c-.03 0-.05-.02-.09-.06L512 569.93l-287.7 287.7c-.04.04-.06.05-.09.06a.12.12 0 01-.07 0c-.02 0-.04-.02-.08-.06l-57.69-57.7c-.04-.03-.05-.05-.06-.07a.12.12 0 010-.07c0-.03.02-.05.06-.09L454.07 512l-287.7-287.7c-.04-.04-.05-.06-.06-.09a.12.12 0 010-.07c0-.02.02-.04.06-.08l57.7-57.69c.03-.04.05-.05.07-.06a.12.12 0 01.07 0c.03 0 .05.02.09.06L512 454.07l287.7-287.7c.04-.04.06-.05.09-.06a.12.12 0 01.07 0z"
-            />
+        <svg viewBox="0 0 18 18" aria-hidden>
+            <path d="M4 4l10 10M14 4L4 14" />
         </svg>
     );
 }
 
-function ChevronDown({ className, open }: { className?: string; open: boolean }) {
+function ChevronDown({ open }: { open: boolean }) {
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 18 18"
-            width="1em"
-            height="1em"
-            className={cn('text-white transition-transform duration-300', open && 'rotate-180', className)}
-            aria-hidden
-        >
-            <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.5"
-                d="m16 6-7 7-7-7"
-            />
+        <svg className={cn('reelshort-nav-drawer__chevron', open && 'is-open')} viewBox="0 0 18 18" aria-hidden>
+            <path d="m4 7 5 5 5-5" />
         </svg>
+    );
+}
+
+function DrawerItem({
+    to,
+    icon: Icon,
+    active,
+    children,
+    state,
+    onClick,
+}: {
+    to: string;
+    icon: LucideIcon;
+    active?: boolean;
+    children: ReactNode;
+    state?: unknown;
+    onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
+}) {
+    return (
+        <Link
+            to={to}
+            state={state}
+            className={cn('reelshort-nav-drawer__item', active && 'is-active')}
+            onClick={onClick}
+        >
+            <Icon className="reelshort-nav-drawer__item-icon" aria-hidden strokeWidth={1.7} />
+            <span className="reelshort-nav-drawer__item-label">{children}</span>
+        </Link>
     );
 }
 
@@ -75,13 +98,18 @@ export function ReelShortNavDrawer({
     const [langOpen, setLangOpen] = useState(false);
     const sourceform = `${location.pathname}${location.search}`;
     const requireAccount = useRequireAccount();
+    const pathname = location.pathname;
+    const closeDrawer = () => onOpenChange(false);
 
     function selectLocale(code: string) {
-        if (rootStore.locale === code) {
-            return;
-        }
+        if (rootStore.locale === code) return;
         localStorage.setItem('locale', code);
         window.location.reload();
+    }
+
+    function handleAccountLink(event: MouseEvent<HTMLAnchorElement>) {
+        if (!requireAccount()) event.preventDefault();
+        closeDrawer();
     }
 
     return (
@@ -89,122 +117,133 @@ export function ReelShortNavDrawer({
             <DrawerContent
                 aria-describedby={undefined}
                 handler={false}
+                overlayClassName="reelshort-nav-drawer__overlay"
                 className={cn(
-                    // 必须盖过顶部导航（topnav z-index:100）
                     'reelshort-nav-drawer',
-                    'h-full max-h-none w-full max-w-full rounded-none border-0 border-r border-white/10 bg-app-surface p-0 text-white shadow-xl',
-                    'data-[vaul-drawer-direction=left]:w-full data-[vaul-drawer-direction=left]:border-r',
-                    'max-w-none sm:max-w-none',
+                    'h-full max-h-none rounded-none border-0 border-r p-0 text-white shadow-xl',
+                    'data-[vaul-drawer-direction=left]:border-r',
                 )}
             >
                 <DrawerTitle className="sr-only">
                     <FormattedMessage id="nav_menu" defaultMessage="Menu" />
                 </DrawerTitle>
-                <div className="reelshort-nav-drawer__header">
-                    <DrawerClose
-                        type="button"
-                        aria-label={intl.formatMessage({ id: 'cancel' })}
-                        className="reelshort-nav-drawer__close"
-                    >
-                        <AntDrawerCloseIcon />
-                    </DrawerClose>
-                </div>
 
-                <div className="reelshort-nav-drawer__scroll">
-                    <div className="reelshort-nav-drawer__content">
-                        <div>
+                <div className="reelshort-nav-drawer__inner">
+                    <div className="reelshort-nav-drawer__header">
+                        <Link to={FORYOU_PATH} className="reelshort-nav-drawer__logo" onClick={closeDrawer}>
+                            <img
+                                src={BRAND_TOPNAV_WORDMARK_SRC}
+                                alt={BRAND_DISPLAY_NAME}
+                                width={BRAND_TOPNAV_WORDMARK_WIDTH}
+                                height={BRAND_TOPNAV_WORDMARK_HEIGHT}
+                            />
+                        </Link>
+                        <DrawerClose
+                            type="button"
+                            aria-label={intl.formatMessage({ id: 'cancel' })}
+                            className="reelshort-nav-drawer__close"
+                        >
+                            <CloseIcon />
+                        </DrawerClose>
+                    </div>
+
+                    <div className="reelshort-nav-drawer__scroll">
+                        <nav
+                            className="reelshort-nav-drawer__content"
+                            aria-label={intl.formatMessage({ id: 'nav_menu', defaultMessage: 'Menu' })}
+                        >
+                            <DrawerItem to="/" icon={Home} active={pathname === '/'} onClick={closeDrawer}>
+                                <FormattedMessage id="home" />
+                            </DrawerItem>
+                            <DrawerItem
+                                to={FORYOU_PATH}
+                                state={VIDEO_FROM_HOME_STATE}
+                                icon={Sparkles}
+                                active={pathname === FORYOU_PATH || pathname.startsWith('/video/')}
+                                onClick={closeDrawer}
+                            >
+                                <FormattedMessage id="for_you" defaultMessage="For You" />
+                            </DrawerItem>
+                            <DrawerItem
+                                to="/categories"
+                                icon={Grid2X2}
+                                active={pathname.startsWith('/categories') || pathname.startsWith('/drama/')}
+                                onClick={closeDrawer}
+                            >
+                                <FormattedMessage id="nav_categories" defaultMessage="Browse" />
+                            </DrawerItem>
+                            <DrawerItem to="/search" icon={Search} active={pathname.startsWith('/search')} onClick={closeDrawer}>
+                                <FormattedMessage id="nav_search_label" defaultMessage="Search" />
+                            </DrawerItem>
+
                             <button
                                 type="button"
-                                className="flex w-full cursor-pointer select-none items-center justify-between transition-colors"
-                                onClick={() => setLangOpen((v) => !v)}
+                                className={cn('reelshort-nav-drawer__item', langOpen && 'is-expanded')}
+                                aria-expanded={langOpen}
+                                onClick={() => setLangOpen((value) => !value)}
                             >
-                                <div className="py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white">
-                                    <FormattedMessage id="language" />
-                                </div>
-                                <div className="flex items-center">
-                                    <ChevronDown open={langOpen} className="text-[min(4.8vw,1.125rem)]" />
-                                </div>
+                                <Globe2 className="reelshort-nav-drawer__item-icon" aria-hidden strokeWidth={1.7} />
+                                <span className="reelshort-nav-drawer__item-label"><FormattedMessage id="language" /></span>
+                                <ChevronDown open={langOpen} />
                             </button>
                             <div
-                                className={cn(
-                                    'overflow-hidden transition-all duration-300 ease-in-out',
-                                    langOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0',
-                                )}
+                                className={cn('reelshort-nav-drawer__languages', langOpen && 'is-open')}
                                 aria-hidden={!langOpen}
                             >
-                                <div className="flex flex-col pt-1">
-                                    {APP_LANGUAGES.map((lang) => {
-                                        const active = isLocaleActive(rootStore.locale, lang.code);
-                                        return (
-                                            <button
-                                                key={lang.code}
-                                                type="button"
-                                                className="flex w-full cursor-pointer select-none items-center justify-between py-3 text-left text-[min(4.27vw,1rem)] font-bold tracking-normal transition-colors"
-                                                onClick={() => selectLocale(lang.code)}
-                                            >
-                                                <span
-                                                    className={cn(
-                                                        active
-                                                            ? 'text-[var(--rs-brand,#d4a853)]'
-                                                            : 'text-white',
-                                                    )}
-                                                >
-                                                    {lang.label}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                {APP_LANGUAGES.map((lang) => (
+                                    <button
+                                        key={lang.code}
+                                        type="button"
+                                        className={cn(
+                                            'reelshort-nav-drawer__language',
+                                            isLocaleActive(rootStore.locale, lang.code) && 'is-active',
+                                        )}
+                                        onClick={() => selectLocale(lang.code)}
+                                    >
+                                        {lang.label}
+                                    </button>
+                                ))}
                             </div>
-                        </div>
 
-                        <div>
-                            <Link
-                                to="/lucky"
-                                className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
-                                onClick={() => onOpenChange(false)}
-                            >
+                            <DrawerItem to="/lucky" icon={Gift} active={pathname.startsWith('/lucky')} onClick={closeDrawer}>
                                 <FormattedMessage id="nav_lucky" />
-                            </Link>
-                        </div>
-
-                        <div>
-                            <Link
-                                to="/creator"
-                                className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
-                                onClick={(event) => {
-                                    if (!requireAccount()) event.preventDefault();
-                                    onOpenChange(false);
-                                }}
-                            >
+                            </DrawerItem>
+                            <DrawerItem to="/creator" icon={Crown} active={pathname.startsWith('/creator')} onClick={handleAccountLink}>
                                 <FormattedMessage id="nav_join_creator" />
-                            </Link>
-                        </div>
-
-                        <div>
-                            <Link
-                                to="/affiliate"
-                                className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
-                                onClick={() => onOpenChange(false)}
-                            >
+                            </DrawerItem>
+                            <DrawerItem to="/affiliate" icon={Share2} active={pathname.startsWith('/affiliate')} onClick={closeDrawer}>
                                 <FormattedMessage id="nav_affiliate" />
-                            </Link>
-                        </div>
-
-                        <div>
-                            {/*
-                             * H5 观看记录在 `/my-list/history`（与 Profile 内菜单一致）；
-                             * `/profile?tab=history` 仅在 PC 侧栏解析，移动端会落在 Profile 首页导致「没跳进对应页」。
-                             */}
-                            <Link
+                            </DrawerItem>
+                            <DrawerItem
                                 to={`/my-list/history?sourceform=${encodeURIComponent(sourceform)}`}
                                 state={{ sourceform }}
-                                className="flex cursor-pointer select-none items-center justify-between py-[min(2.67vw,0.75rem)] pt-[min(1.6vw,0.4rem)] text-[min(5.33vw,1.25rem)] font-bold text-white transition-colors hover:text-white/90"
-                                onClick={() => onOpenChange(false)}
+                                icon={History}
+                                active={pathname.startsWith('/my-list/history')}
+                                onClick={closeDrawer}
                             >
                                 <FormattedMessage id="nav_watch_history" />
-                            </Link>
-                        </div>
+                            </DrawerItem>
+                            <DrawerItem
+                                to={`/my-list?sourceform=${encodeURIComponent(sourceform)}`}
+                                state={{ sourceform }}
+                                icon={Bookmark}
+                                active={pathname === '/my-list'}
+                                onClick={closeDrawer}
+                            >
+                                <FormattedMessage id="my_list" />
+                            </DrawerItem>
+                            <DrawerItem
+                                to="/page/ios-add-home"
+                                icon={Smartphone}
+                                active={pathname === '/page/ios-add-home'}
+                                onClick={closeDrawer}
+                            >
+                                <FormattedMessage id="add_desktop_short" />
+                            </DrawerItem>
+                            <DrawerItem to="/profile" icon={UserRound} active={pathname.startsWith('/profile')} onClick={closeDrawer}>
+                                <FormattedMessage id="nav_personal_center" />
+                            </DrawerItem>
+                        </nav>
                     </div>
                 </div>
             </DrawerContent>

@@ -53,7 +53,7 @@
     width: 72px;
     height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 42%, #a855f7 100%);
+    background: var(--rs-brand);
     box-shadow:
         0 6px 24px rgba(251, 191, 36, 0.35),
         inset 0 1px 0 rgba(255, 255, 255, 0.35);
@@ -71,7 +71,7 @@
     font-size: 20px;
     font-weight: 700;
     letter-spacing: 0.02em;
-    background: linear-gradient(90deg, #fef3c7, #fde68a, #e9d5ff);
+    background: linear-gradient(90deg, #fff6db, var(--rs-brand), #f0cf7c);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -179,13 +179,13 @@
     font-weight: 700;
     font-size: 15px;
     color: #140808;
-    background: linear-gradient(90deg, #fb923c, #d946ef);
+    background: var(--rs-brand);
     border: none;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8px 28px rgba(217, 70, 239, 0.28);
+    box-shadow: 0 8px 28px rgb(232 194 104 / 28%);
     -webkit-tap-highlight-color: transparent;
 }
 

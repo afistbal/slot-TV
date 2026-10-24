@@ -148,14 +148,14 @@ export function VideoPlayerSideActions({
                         <Flame
                             className={cn(
                                 'h-8 w-8 text-white transition-colors',
-                                ambient && 'fill-[#ff315f] text-[#ff315f]',
+                                ambient && 'fill-[var(--rs-brand)] text-[var(--rs-brand)]',
                             )}
                             aria-hidden
                         />
                     }
                     label={<FormattedMessage id="video_ambient" defaultMessage="氛围" />}
                     onClick={onAmbientClick}
-                    labelClassName={ambient ? 'text-[#ff5b7d]' : 'text-white'}
+                    labelClassName={ambient ? 'text-[var(--rs-brand)]' : 'text-white'}
                 />
             ) : null}
             {showEpisodeList && onEpisodeListClick ? (

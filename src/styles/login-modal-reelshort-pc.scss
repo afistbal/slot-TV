@@ -1,5 +1,5 @@
 /**
- * PC 登录弹层：主区背景图为 `src/assets/images/login-pc-modal-bg.png`（Vite 打包，cover 铺底）。
+ * PC 登录弹层：使用暖金与象牙白的柔和背景，和全站品牌色一致。
  */
 
 .rs-login-modal__overlay {
@@ -75,11 +75,13 @@
     text-align: center;
 }
 
-/* 主面板：PC 底图用同目录 `login-pc-modal-bg.png`（Vite 从本 SCSS 解析 url） */
+/* 主面板：保留轻盈层次，同时去除旧粉色背景。 */
 .rs-login-modal .LoginModal_login_body__DH86w.rs-login-modal__body-panel {
-    background-color: #e8d4c4;
-    background-image: url('../assets/images/login-pc-modal-bg.png');
-    /* cover / position 继承自 .LoginModal_login_body__DH86w */
+    background-color: #f7f1e4;
+    background-image:
+        radial-gradient(circle at 14% 8%, rgb(232 194 104 / 34%), transparent 32%),
+        radial-gradient(circle at 88% 28%, rgb(232 194 104 / 18%), transparent 36%),
+        linear-gradient(160deg, #fffaf0, #f3ead8 58%, #e9d7ae);
 }
 
 .rs-login-modal .LoginModal_logo__ahMlI {
@@ -292,7 +294,7 @@
     margin-left: 8px;
     font-size: 14px;
     font-weight: 500;
-    color: #e52e2e;
+    color: var(--rs-brand);
     cursor: pointer;
     user-select: none;
     display: inline-flex;
@@ -313,8 +315,8 @@
     margin-top: 8px;
     border: 0;
     border-radius: 24px;
-    background: linear-gradient(90deg, #e52e2e 0%, #c41e1e 100%);
-    color: #fff;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;

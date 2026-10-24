@@ -23,7 +23,6 @@ import {
   BRAND_TOPNAV_WORDMARK_SRC,
   BRAND_TOPNAV_WORDMARK_WIDTH,
 } from '@/constants/brand';
-import iconHead from '@/assets/images/icon_head.739421aa.png';
 import iconLangGlobe from '@/assets/icons/topnav-language-globe.svg';
 import iconLangChevron from '@/assets/icons/topnav-language-chevron.svg';
 import iconTopnavDownload from '@/assets/icons/topnav-download.svg';
@@ -108,6 +107,21 @@ function TopNavHistoryIcon({ className }: { className?: string }) {
       </defs>
     </svg>
   );
+}
+
+const PROFILE_AVATAR_TONES = ['amber', 'coral', 'violet', 'blue', 'teal', 'rose'] as const;
+
+function getProfileAvatarFallback(name: string, uid: string) {
+  const seed = (name || uid || BRAND_DISPLAY_NAME).trim();
+  const initial = Array.from(seed)[0]?.toLocaleUpperCase() || 'Y';
+  let hash = 0;
+  for (const char of seed) {
+    hash = (hash * 31 + (char.codePointAt(0) ?? 0)) >>> 0;
+  }
+  return {
+    initial,
+    tone: PROFILE_AVATAR_TONES[hash % PROFILE_AVATAR_TONES.length],
+  };
 }
 
 function dedupeMovieRowsById(rows: TData[]): TData[] {
@@ -578,6 +592,14 @@ function NavProfileAvatar() {
       ? getUserAvatarDisplayUrl(userStore.info as { [key: string]: unknown } | undefined)
       : undefined;
   const hasPhoto = Boolean(avatar);
+  const userName = String(
+    userStore.info?.['name']
+      ?? userStore.info?.['nickname']
+      ?? userStore.info?.['username']
+      ?? '',
+  ).trim();
+  const userUid = getUserUidForDisplay(userStore.info ?? undefined);
+  const avatarFallback = getProfileAvatarFallback(userName, userUid);
 
   const [open, setOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
@@ -630,11 +652,15 @@ function NavProfileAvatar() {
       }}
     />
   ) : (
-    <img
-      src={iconHead}
-      alt=""
-      className="reelshort-topnav__profile-avatar--placeholder"
-    />
+    <span
+      className={cn(
+        'reelshort-topnav__profile-avatar--placeholder',
+        `reelshort-topnav__profile-avatar--tone-${avatarFallback.tone}`,
+      )}
+      aria-hidden
+    >
+      {avatarFallback.initial}
+    </span>
   );
 
   if (!isDesktop) {
@@ -660,9 +686,6 @@ function NavProfileAvatar() {
       navigate('/page/login');
     }
   }
-
-  const userName = String(userStore.info?.['name'] ?? '');
-  const userUid = getUserUidForDisplay(userStore.info ?? undefined);
 
   return (
     <DropdownMenu
@@ -947,12 +970,15 @@ export function ReelShortTopNav({
               <>
                 <button
                   type="button"
-                  className="reelshort-topnav__benchmark-logo reelshort-topnav__benchmark-logo--menu"
+                  className="reelshort-topnav__benchmark-menu-btn"
                   onClick={() => setMenuOpen(true)}
                   aria-label={intl.formatMessage({ id: 'nav_open_menu' })}
                 >
-                  <img src={BRAND_TOPNAV_WORDMARK_SRC} alt={BRAND_DISPLAY_NAME} width={BRAND_TOPNAV_WORDMARK_WIDTH} height={BRAND_TOPNAV_WORDMARK_HEIGHT} />
+                  <ReelShortMenuIcon />
                 </button>
+                <Link to={FORYOU_PATH} className="reelshort-topnav__benchmark-logo reelshort-topnav__benchmark-logo--mobile">
+                  <img src={BRAND_TOPNAV_WORDMARK_SRC} alt={BRAND_DISPLAY_NAME} width={BRAND_TOPNAV_WORDMARK_WIDTH} height={BRAND_TOPNAV_WORDMARK_HEIGHT} />
+                </Link>
                 <Link to={FORYOU_PATH} className="reelshort-topnav__benchmark-logo reelshort-topnav__benchmark-logo--desktop">
                   <img src={BRAND_TOPNAV_WORDMARK_SRC} alt={BRAND_DISPLAY_NAME} width={BRAND_TOPNAV_WORDMARK_WIDTH} height={BRAND_TOPNAV_WORDMARK_HEIGHT} />
                 </Link>
@@ -1007,11 +1033,11 @@ export function ReelShortTopNav({
                 onClick={(event) => {
                   if (!requireAccount()) event.preventDefault();
                 }}
-                className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--wide', isActive && 'is-active')}
+                className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item', isActive && 'is-active')}
               >
                 <Crown aria-hidden /><span><FormattedMessage id="nav_join_creator" /></span>
               </NavLink>
-              <NavLink to="/affiliate" className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--wide', isActive && 'is-active')}>
+              <NavLink to="/affiliate" className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item', isActive && 'is-active')}>
                 <Coins aria-hidden /><span><FormattedMessage id="nav_affiliate" /></span>
               </NavLink>
             </nav>
@@ -1019,6 +1045,18 @@ export function ReelShortTopNav({
             <div className="reelshort-topnav__benchmark-spacer" />
             {showRightActions ? (
               <div className="reelshort-topnav__benchmark-actions">
+                {showSearch ? (
+                  <NavLink
+                    to="/search"
+                    onPointerEnter={prefetchSearchRouteChunk}
+                    onPointerDown={prefetchSearchRouteChunk}
+                    className="reelshort-topnav__benchmark-mobile-search"
+                    aria-label={searchLabel}
+                    title={searchLabel}
+                  >
+                    <Search aria-hidden />
+                  </NavLink>
+                ) : null}
                 <TopNavInstallEntry />
                 {showLanguage ? <div className="reelshort-topnav__benchmark-language"><TopNavLanguageSwitcher /></div> : null}
                 {showHistory ? (

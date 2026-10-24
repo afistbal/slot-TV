@@ -41,8 +41,9 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
             const remaining = Math.max(0, count(row.need) - count(row.sec));
             if (remaining > 0) description = w(locale, `还差 ${Math.ceil(remaining / 60)} 分钟`, `還差 ${Math.ceil(remaining / 60)} 分鐘`);
         }
+        const claimable = key === 'checkin' ? row.needsWatch !== true : key === 'watch' && ready;
         tasks.push({ key, icon, title, coins: count(row.cap), earned: count(row.earned), done, ready,
-            description: description || undefined, action: key === 'checkin' && row.needsWatch !== true || ready ? 'claim' : 'go',
+            description: description || undefined, action: claimable ? 'claim' : 'go',
             to: key === 'rating' ? '/lucky?rate=1' : '/foryou' });
     }
     const onceRows = data.once.map(object);
@@ -70,17 +71,12 @@ export function luckyClaimableBadge(value: unknown): number | null {
     const data = object(camelLuckyPayload(value));
     if (!Array.isArray(data.tasks)) return null;
     if (data.restricted === true) return 0;
-    const daily = data.tasks.map(object).filter(row => {
-        if (row.done === true || count(row.cap) <= 0) return false;
-        if (row.key === 'checkin') return row.needsWatch !== true;
-        return row.ready === true;
-    }).length;
-    const newcomer = list(data.once).map(object).filter(row => !hiddenNewcomerTaskKeys.has(String(row.key)) && row.done !== true && row.ready === true && row.xUsed !== true && count(row.coins) > 0).length;
-    return daily + newcomer;
+    const checkin = data.tasks.map(object).find(row => row.key === 'checkin');
+    return checkin && checkin.done !== true && count(checkin.cap) > 0 && checkin.needsWatch !== true ? 1 : 0;
 }
 
-// Backward-compatible export for existing callers while the badge now counts
-// every task that can actually be claimed, not only check-in.
+// The benchmark header badge is a compact welfare reminder, not a count of
+// every ready task. Our current product has check-in but no wheel/wish prizes.
 export const luckyCheckinBadge = luckyClaimableBadge;
 
 export function decodeLuckyCatalog(value: unknown, locale = 'zh-CN'): Pick<LuckyPageData, 'promo' | 'rewards'> {

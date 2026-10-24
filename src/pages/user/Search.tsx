@@ -1261,10 +1261,10 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                 <ReelShortTopNav
                     scrollParentRef={scrollRef}
                     showPrimaryNav={isCategoriesPage}
-                    leftAction={isCategoriesPage ? 'none' : isH5InnerNavPage ? 'back' : 'menu'}
+                    leftAction={isH5InnerNavPage ? 'back' : 'menu'}
                     showRightActions={!isH5InnerNavPage}
                     showSearch={isCategoriesPage}
-                    showProfile={!isCategoriesPage && !isH5InnerNavPage}
+                    showProfile={!isH5InnerNavPage}
                     showLanguage={!isH5InnerNavPage}
                     showHistory={!isH5InnerNavPage}
                 />
@@ -1916,9 +1916,9 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                         'pointer-events-auto fixed z-[101] size-10 shrink-0 rounded-full border-0 p-0 leading-none',
                         'md:h-12 md:w-12',
                         'flex items-center justify-center gap-0 shadow-none',
-                        'bg-[#e73857] text-white',
+                        'bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)]',
                         'transition-[background-color,transform,opacity] duration-200 ease-out',
-                        'hover:bg-[#d42d4c] active:scale-[0.96]',
+                        'hover:bg-[var(--rs-brand-hover)] active:scale-[0.96]',
                         scrollTopFabOpaque ? 'opacity-100' : 'pointer-events-none opacity-0',
                         'right-6',
                         liftScrollFabForBottomNav

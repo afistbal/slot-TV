@@ -32,7 +32,7 @@ export function VideoPlayerLockOverlay({
                 )}
             >
                 <div
-                    className="pointer-events-auto flex cursor-pointer items-center justify-center gap-2 rounded-full bg-linear-to-r from-amber-400 to-red-400 p-4 px-12 text-xl font-bold text-white"
+                    className="pointer-events-auto flex cursor-pointer items-center justify-center gap-2 rounded-full bg-[var(--rs-brand)] p-4 px-12 text-xl font-bold text-[var(--rs-brand-foreground)]"
                     onClick={(event) => handleUnlockClick(event, onUnlock)}
                 >
                     <Unlock className="h-5 w-5 stroke-4" />

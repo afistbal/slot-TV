@@ -44,6 +44,7 @@ import { PcLoginDialog } from './pages/user/Login';
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
 import { scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
 import { BRAND_DISPLAY_NAME } from "./constants/brand";
+import { syncLuckyPushSubscription } from './lib/luckyPushSubscription';
 
 const YOGO_GROUP_IFRAME_SRC = 'https://mnby97.cc/assets/js/group.html?p=vE8hIfgY';
 
@@ -510,6 +511,25 @@ function AppContent() {
         markAppBootReady();
     }, []);
 
+    useEffect(() => {
+        if (!checked || !sessionBootstrapReady || !localStorage.getItem('token')) return;
+
+        let cancelled = false;
+        const syncPush = () => {
+            if (cancelled || !navigator.onLine) return;
+            void syncLuckyPushSubscription().catch(() => undefined);
+        };
+
+        syncPush();
+        window.addEventListener('yogo:push-subscription-changed', syncPush);
+        window.addEventListener('online', syncPush);
+        return () => {
+            cancelled = true;
+            window.removeEventListener('yogo:push-subscription-changed', syncPush);
+            window.removeEventListener('online', syncPush);
+        };
+    }, [checked, sessionBootstrapReady]);
+
     const trackDownloadOnce = useCallback(() => {
         if (downloadTrackedRef.current) return;
         downloadTrackedRef.current = true;
@@ -713,48 +733,66 @@ function AppContent() {
             loading: false,
         });
 
-        let aliveTimer: number | undefined;
+        const ALIVE_WATCH_SECONDS = 30;
+        const SAMPLE_INTERVAL_MS = 1000;
+        let watchedSeconds = 0;
+        let lastSampleAt = performance.now();
+        let lastVideoTimes = new WeakMap<HTMLVideoElement, number>();
 
         const pingAlive = () => {
-            api('alive', {
+            void api('alive', {
                 method: 'post',
                 loading: false,
                 toastOnError: false,
             });
         };
 
-        const startAlivePolling = () => {
-            if (aliveTimer !== undefined) {
-                return;
-            }
-            pingAlive();
-            aliveTimer = window.setInterval(pingAlive, 30000);
+        const isVisiblePlayingVideo = (video: HTMLVideoElement) => {
+            if (video.paused || video.ended || video.seeking || video.playbackRate <= 0
+                || video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return false;
+            const nativeVideo = video as HTMLVideoElement & { webkitDisplayingFullscreen?: boolean };
+            if (document.pictureInPictureElement === video || document.fullscreenElement === video
+                || nativeVideo.webkitDisplayingFullscreen === true) return true;
+            const style = window.getComputedStyle(video);
+            if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+            const rect = video.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.bottom > 0
+                && rect.left < window.innerWidth && rect.top < window.innerHeight;
         };
 
-        const stopAlivePolling = () => {
-            if (aliveTimer === undefined) {
-                return;
+        const sampleWatchTime = () => {
+            const now = performance.now();
+            // Do not let a throttled/background timer turn a long gap into watch time.
+            const elapsedSeconds = Math.min((now - lastSampleAt) / 1000, SAMPLE_INTERVAL_MS / 1000 * 1.5);
+            lastSampleAt = now;
+            if (document.visibilityState !== 'visible') return;
+
+            let videoAdvanced = false;
+            for (const video of document.querySelectorAll<HTMLVideoElement>('video')) {
+                if (!isVisiblePlayingVideo(video)) continue;
+                const currentTime = video.currentTime;
+                const previousTime = lastVideoTimes.get(video);
+                lastVideoTimes.set(video, currentTime);
+                if (previousTime !== undefined && currentTime > previousTime) videoAdvanced = true;
             }
-            window.clearInterval(aliveTimer);
-            aliveTimer = undefined;
+
+            if (!videoAdvanced) return;
+            watchedSeconds += elapsedSeconds;
+            if (watchedSeconds < ALIVE_WATCH_SECONDS) return;
+            watchedSeconds -= ALIVE_WATCH_SECONDS;
+            pingAlive();
         };
 
         const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                startAlivePolling();
-            } else {
-                stopAlivePolling();
-            }
+            lastSampleAt = performance.now();
+            lastVideoTimes = new WeakMap<HTMLVideoElement, number>();
         };
 
-        if (document.visibilityState === 'visible') {
-            startAlivePolling();
-        }
-
+        const aliveTimer = window.setInterval(sampleWatchTime, SAMPLE_INTERVAL_MS);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
-            stopAlivePolling();
+            window.clearInterval(aliveTimer);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [checked, sessionBootstrapReady]);

@@ -25,6 +25,7 @@ import { skipRemoteApi } from '@/env';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { openSharePoster } from '@/stores/sharePoster';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
 import { buildDramaShareUrl } from '@/lib/shareUrls';
@@ -34,6 +35,7 @@ import { fetchVDemoMovieInfo, type VDemoPlayerData } from '@/pages/user/VDemo/fe
 import { useConfigStore } from '@/stores/config';
 import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { useRootStore } from '@/stores/root';
+import { useUserStore } from '@/stores/user';
 import {
     resolveVideoFavorite,
     setVideoFavoriteOverride,
@@ -98,6 +100,7 @@ export default function DramaDetail() {
     const staticBase = useConfigStore((state) => String(state.config.static ?? ''));
     const isDesktop = useMinWidth768();
     const requireAccount = useRequireAccount();
+    const referralCode = useUserStore((state) => getUserUidForDisplay(state.info));
     const movieId = Number(params.id);
 
     const [data, setData] = useState<VDemoPlayerData | null>(null);
@@ -253,8 +256,8 @@ export default function DramaDetail() {
 
     const handleShare = useCallback(() => {
         if (!requireAccount()) return;
-        openSharePoster({ url: buildDramaShareUrl(movieId), title: data?.info.title ?? '', coverUrl, reward: true });
-    }, [movieId, data?.info.title, coverUrl, requireAccount]);
+        openSharePoster({ url: buildDramaShareUrl(movieId, referralCode), title: data?.info.title ?? '', coverUrl, reward: true });
+    }, [movieId, data?.info.title, coverUrl, referralCode, requireAccount]);
 
     if (loading) {
         return (

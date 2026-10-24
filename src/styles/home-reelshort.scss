@@ -195,7 +195,7 @@
             width: 100%;
 
             .BookItem_read_progress__q_bYT {
-                background-color: #fe4167;
+                background-color: var(--rs-brand);
                 height: calc(0.53333 * var(--app-vw) / 100);
                 border-top-right-radius: calc(8 * var(--app-vw) / 100);
                 border-bottom-right-radius: calc(8 * var(--app-vw) / 100);
@@ -241,7 +241,7 @@
     }
 
     .BookItem_chapter_progress__Ev8ed {
-        color: #d5495b;
+        color: var(--rs-brand);
     }
 
     .BookItem_playCount__klKNX {

@@ -1,10 +1,15 @@
 @use './lucky-fonts';
 // Layout and breakpoints mirror Lucky / DailyTasks / RewardsCenter from chunlou.tv (2).
-// Only the reference gold/green theme is replaced by our pink-red theme.
+// Match the benchmark welfare palette: champagne gold for rewards/actions and
+// emerald green for completed states.
 .lucky-page, .lucky-rating-sheet {
-    --lucky-accent: #ff3d5d;
-    --lucky-accent-soft: rgba(255, 61, 93, .12);
-    --lucky-accent-line: rgba(255, 61, 93, .35);
+    --lucky-accent: #e8c268;
+    --lucky-accent-soft: rgba(232, 194, 104, .12);
+    --lucky-accent-line: rgba(232, 194, 104, .35);
+    --lucky-on-accent: #2b1e00;
+    --lucky-success: #2ee59d;
+    --lucky-success-soft: #0a3d29;
+    --lucky-success-line: rgba(46, 229, 157, .35);
     --lucky-bg: #0c0d0f;
     --lucky-sf: #141619;
     --lucky-sf2: #1b1e22;
@@ -23,7 +28,7 @@
 .lucky-page__main > .lucky-panel + .lucky-panel { margin-top: 16px; }
 .lucky-panel { border: 1px solid var(--lucky-line); border-radius: 24px; background: var(--lucky-sf); }
 .lucky-local-icon { display: inline-block; flex: 0 0 auto; background-color: currentColor; mask-size: contain; -webkit-mask-size: contain; mask-position: center; -webkit-mask-position: center; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; vertical-align: middle; pointer-events: none; }
-.lucky-closed { overflow: hidden; padding: 24px; text-align: center; background-image: radial-gradient(120% 90% at 50% 0%, rgba(255,61,93,.14), transparent 60%); }
+.lucky-closed { overflow: hidden; padding: 24px; text-align: center; background-image: radial-gradient(120% 120% at 0% 0%, rgba(232, 194, 104, .12), transparent 60%); }
 .lucky-closed__icon { display: grid; width: 56px; height: 56px; place-items: center; margin: 0 auto 12px; border-radius: 50%; background: var(--lucky-accent-soft); color: var(--lucky-accent); box-shadow: 0 0 0 1px var(--lucky-accent-line); }
 .lucky-closed h1, .lucky-section-title, .lucky-center h2 { font-family: 'Lucky Noto Serif SC', 'Songti SC', STSong, serif; font-weight: 700; }
 .lucky-closed h1 { margin: 0; font-size: 20px; line-height: 28px; }
@@ -40,16 +45,17 @@
 .lucky-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--lucky-accent); transition: width .5s; }
 .lucky-task-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .lucky-task { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; border-radius: 16px; background: var(--lucky-sf2); padding: 10px 12px; }
-.lucky-task--done { opacity: .6; }
 .lucky-task__icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--lucky-accent-soft); color: var(--lucky-accent); box-shadow: 0 0 0 1px var(--lucky-accent-line); }
+.lucky-task--done .lucky-task__icon { background: var(--lucky-success-soft); color: var(--lucky-success); box-shadow: 0 0 0 1px var(--lucky-success-line); }
 .lucky-task__copy { min-width: 0; }
 .lucky-task__copy strong, .lucky-task__copy small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .lucky-task__copy strong { font-size: 13px; font-weight: 600; line-height: 20px; }
 .lucky-task__copy small { color: var(--lucky-muted); font-size: 11px; line-height: 15px; }
 .lucky-task__copy small b { color: var(--lucky-accent); font-weight: 600; }
-.lucky-task__done { flex-shrink: 0; color: var(--lucky-accent); font-size: 11px; font-weight: 600; }
-.lucky-task__button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; height: 28px; border: 1px solid var(--lucky-accent-line, rgba(255,61,93,.35)); border-radius: 12px; background: transparent; padding: 0 10px; color: var(--lucky-accent, #ff3d5d); font: inherit; font-size: 11px; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; }
-.lucky-task__button.is-claim { border-color: transparent; background: var(--lucky-accent, #ff3d5d); color: white; box-shadow: 0 4px 18px #ff3d5d33; }
+.lucky-task--done .lucky-task__copy small b { color: var(--lucky-success); }
+.lucky-task__done { flex-shrink: 0; color: var(--lucky-success); font-size: 11px; font-weight: 600; }
+.lucky-task__button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; height: 28px; border: 1px solid var(--lucky-accent-line); border-radius: 12px; background: transparent; padding: 0 10px; color: var(--lucky-accent); font: inherit; font-size: 11px; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; }
+.lucky-task__button.is-claim { border-color: transparent; background: var(--lucky-accent); color: var(--lucky-on-accent); box-shadow: 0 4px 18px rgba(232, 194, 104, .2); }
 .lucky-task__button:disabled { cursor: wait; opacity: .5; }
 .lucky-newcomer { margin-top: 16px; border-top: 1px solid var(--lucky-line); padding-top: 12px; }
 .lucky-newcomer__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 12px; margin-bottom: 8px; }
@@ -99,11 +105,11 @@
 @media (min-width: 1280px) { .lucky-page__main { max-width: 1152px; } .lucky-task-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1536px) { .lucky-page__main { max-width: 1280px; } }
 @media (hover: hover) {
-    .lucky-task__button:hover:not(:disabled) { border-color: rgba(255,61,93,.6); background: rgba(255,61,93,.09); }
-    .lucky-task__button.is-claim:hover:not(:disabled) { background: #ff526e; }
-    .lucky-center__grid > button:hover { border-color: rgba(255,61,93,.5); background: rgba(255,61,93,.06); }
+    .lucky-task__button:hover:not(:disabled) { border-color: rgba(232, 194, 104, .6); background: rgba(232, 194, 104, .09); }
+    .lucky-task__button.is-claim:hover:not(:disabled) { background: #f0cf7c; box-shadow: 0 8px 26px rgba(232, 194, 104, .32); }
+    .lucky-center__grid > button:hover { border-color: rgba(232, 194, 104, .5); background: rgba(232, 194, 104, .06); }
 }
-.lucky-page button:focus-visible, .lucky-rating-sheet button:focus-visible { outline: 2px solid #ff6f88; outline-offset: 3px; }
+.lucky-page button:focus-visible, .lucky-rating-sheet button:focus-visible { outline: 2px solid #e8c268; outline-offset: 3px; }
 .lucky-rating-overlay { background: #0009; backdrop-filter: blur(4px); }
 .lucky-rating-sheet[data-slot='dialog-content'] { display: flex; flex-direction: column; --lucky-accent-line: #e9c36159; width: min(448px, calc(100% - 40px)); max-height: 85vh; max-height: 85dvh; overflow: hidden; border: 1px solid var(--lucky-accent-line); border-radius: 24px; background: linear-gradient(180deg, #23262b, #17191c); padding: 20px 20px max(20px, env(safe-area-inset-bottom)); }
 .lucky-rating-sheet > header { flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }

@@ -23,7 +23,7 @@
     height: 64px;
     border-radius: 16px;
     object-fit: contain;
-    box-shadow: 0 10px 28px rgb(255 59 92 / 18%);
+    box-shadow: 0 10px 28px rgb(232 194 104 / 18%);
 }
 
 .rs-about__domain {
@@ -74,7 +74,7 @@
 .rs-about__row:focus-visible {
     position: relative;
     z-index: 1;
-    outline: 2px solid #ff3d5d;
+    outline: 2px solid var(--rs-brand);
     outline-offset: -2px;
 }
 

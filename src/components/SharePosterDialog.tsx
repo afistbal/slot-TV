@@ -35,7 +35,7 @@ async function renderPoster(data: SharePosterData): Promise<Blob> {
         ctx.drawImage(cover, (720 - cover.width * scale) / 2, (860 - cover.height * scale) / 2, cover.width * scale, cover.height * scale);
     } else {
         const glow = ctx.createLinearGradient(0, 0, 720, 860);
-        glow.addColorStop(0, '#571d47'); glow.addColorStop(.5, '#30203e'); glow.addColorStop(1, '#101216');
+        glow.addColorStop(0, '#4a3518'); glow.addColorStop(.5, '#2a2118'); glow.addColorStop(1, '#101216');
         ctx.fillStyle = glow; ctx.fillRect(0, 0, 720, 860);
         ctx.font = '800 70px sans-serif'; ctx.fillStyle = '#ffffff18'; ctx.fillText(BRAND_DISPLAY_NAME, 60, 450);
     }
@@ -45,10 +45,10 @@ async function renderPoster(data: SharePosterData): Promise<Blob> {
     if (logo) ctx.drawImage(logo, 40, 36, 224, 64);
     ctx.fillStyle = '#fff'; ctx.font = '700 32px sans-serif';
     ctx.fillText(data.inviteCode ? '邀请好友，一起发现好剧' : '好剧值得一起看', 42, 148);
-    ctx.fillStyle = '#ff6b94'; ctx.font = '600 20px sans-serif'; ctx.fillText('精彩短剧 · 扫码即看', 42, 186);
+    ctx.fillStyle = '#e8c268'; ctx.font = '600 20px sans-serif'; ctx.fillText('精彩短剧 · 扫码即看', 42, 186);
     ctx.font = '800 42px sans-serif'; ctx.fillStyle = '#fff';
     let line = ''; const lines: string[] = [];
-    const words = data.title.match(/[A-Za-z0-9'’\-]+\s*|./gu) ?? [];
+    const words = data.title.match(/[A-Za-z0-9'’-]+\s*|./gu) ?? [];
     for (const word of words) {
         if (ctx.measureText(line + word).width > 630 && line) { lines.push(line.trim()); line = word; } else line += word;
     }
@@ -58,7 +58,7 @@ async function renderPoster(data: SharePosterData): Promise<Blob> {
         if (index === 2 && lines.length > 3) { while (ctx.measureText(display + '…').width > 630) display = display.slice(0, -1); display += '…'; }
         ctx.fillText(display, 42, 724 + index * 54);
     });
-    ctx.fillStyle = '#ff3d75'; ctx.fillRect(42, 884, 52, 5);
+    ctx.fillStyle = '#e8c268'; ctx.fillRect(42, 884, 52, 5);
     ctx.font = '600 22px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(data.inviteCode ? '我的邀请码' : '扫码观看完整剧集', 42, 934);
     ctx.font = '800 32px sans-serif';
     if (data.inviteCode) ctx.fillText(data.inviteCode, 42, 982, 390);

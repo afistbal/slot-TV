@@ -31,18 +31,18 @@ export default function Payment({ open, onSubmit, onOpenChange }: { open: boolea
                 </div>
             </DrawerTitle>
             <div className="border-t border-white/10 p-8 flex flex-col gap-4">
-                <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 1 ? 'border-red-400 bg-red-50' : '')} onClick={() => setPayment(1)}>
+                <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 1 ? 'border-[var(--rs-brand)] bg-[var(--rs-brand-soft)]' : '')} onClick={() => setPayment(1)}>
                     <img src={applePay} alt="Apple Pay" className="h-[30px]" />
-                    {payment === 1 && <Check className="text-red-400 absolute right-8" />}
+                    {payment === 1 && <Check className="text-[var(--rs-brand)] absolute right-8" />}
                 </button>
-                <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 2 ? 'border-red-400 bg-red-50' : '')} onClick={() => setPayment(2)}>
+                <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 2 ? 'border-[var(--rs-brand)] bg-[var(--rs-brand-soft)]' : '')} onClick={() => setPayment(2)}>
                     <img src={googlePay} alt="Google Pay" className="h-[28px]" />
-                    {payment === 2 && <Check className="text-red-400 absolute right-8" />}
+                    {payment === 2 && <Check className="text-[var(--rs-brand)] absolute right-8" />}
                 </button>
-                <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 3 ? 'border-red-400 bg-red-50' : '')} onClick={() => setPayment(3)}>
+                <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 3 ? 'border-[var(--rs-brand)] bg-[var(--rs-brand-soft)]' : '')} onClick={() => setPayment(3)}>
                     <img src={visa} alt="Visa" className="h-5" />
                     <img src={master} alt="Master" className="h-6" />
-                    {payment === 3 && <Check className="text-red-400 absolute right-8" />}
+                    {payment === 3 && <Check className="text-[var(--rs-brand)] absolute right-8" />}
                 </button>
                 {/* <button className={cn("px-4 border rounded-full h-16 bg-white/50 flex gap-1 items-center justify-center relative", payment === 2 ? 'border-red-400 bg-red-50' : '')} onClick={() => setPayment(2)}>
                             <img src={paypal} alt="PayPal" className="h-6 mx-auto" />

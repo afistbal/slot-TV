@@ -86,7 +86,7 @@ export default function Component() {
           </div>
           <Link
             to="/"
-            className="mt-6 inline-flex h-12 w-[min(72vw,320px)] items-center justify-center rounded-md bg-[#ff3b5c] text-lg font-semibold text-white/90"
+            className="mt-6 inline-flex h-12 w-[min(72vw,320px)] items-center justify-center rounded-md bg-[var(--rs-brand)] text-lg font-semibold text-[var(--rs-brand-foreground)]"
           >
             <FormattedMessage id="home" />
           </Link>

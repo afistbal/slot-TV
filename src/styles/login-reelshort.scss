@@ -14,7 +14,10 @@
 .rs-login__bg {
     position: fixed;
     inset: 0;
-    background: url('../assets/images/ec9725d0-83b2-11ee-aed2-cfe3d80f70eb.png') center / cover no-repeat;
+    background:
+        radial-gradient(circle at 20% 15%, rgb(232 194 104 / 22%), transparent 34%),
+        radial-gradient(circle at 82% 78%, rgb(232 194 104 / 14%), transparent 38%),
+        linear-gradient(155deg, #17191c, #0c0d0f 62%);
     z-index: 0;
 }
 
@@ -214,8 +217,8 @@
         width: 100%;
         height: calc(48 / 375 * var(--app-vw));
         border-radius: 9999px;
-        background: linear-gradient(90deg, #ff3b5c, #ff4b6e);
-        color: #fff;
+        background: var(--rs-brand);
+        color: var(--rs-brand-foreground);
         font-size: calc(16 / 375 * var(--app-vw));
     }
 
@@ -383,10 +386,9 @@
             margin: 0;
         }
 
-        /* 发送按钮（右侧红字） */
-        .text-red-400,
+        /* 发送按钮（右侧品牌色）；校验错误仍保留语义红色。 */
         .rs-login__drawerSend {
-            color: #ff3b5c !important;
+            color: var(--rs-brand) !important;
             font-weight: 500;
             flex-shrink: 0;
             height: 100%;
@@ -422,9 +424,9 @@
         height: 52px;
         font-size: 18px;
         font-weight: 500;
-        background: linear-gradient(90deg, #ff3b5c 0%, #ff4b6e 100%) !important;
-        box-shadow: 0 10px 24px rgba(255, 59, 92, 0.22);
-        color: rgba(255, 255, 255, 0.9) !important;
+        background: var(--rs-brand) !important;
+        box-shadow: 0 10px 24px rgb(232 194 104 / 0.22);
+        color: var(--rs-brand-foreground) !important;
     }
 }
 

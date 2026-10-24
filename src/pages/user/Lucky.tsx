@@ -9,6 +9,7 @@ import { LuckyIcon } from '@/components/LuckyIcon';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { createLuckyDemoData } from '@/data/luckyDemo';
+import { enableLuckyPushSubscription } from '@/lib/luckyPushSubscription';
 import { useRootStore } from '@/stores/root';
 import { useLuckyStore } from '@/stores/lucky';
 import '@/styles/lucky.scss';
@@ -49,7 +50,7 @@ function TaskRows({ rows, busy, onAction, label }: { rows: LuckyTask[]; busy: st
     return <ul className="lucky-task-grid">{rows.map((task) => <li key={task.key} className={`lucky-task${task.done ? ' lucky-task--done' : ''}`}>
         <span className="lucky-task__icon"><LuckyIcon name={task.done ? 'check' : task.icon} size={15} /></span>
         <span className="lucky-task__copy"><strong>{label(task.title)}</strong><small><b>+{task.done ? task.earned ?? task.coins : task.coins}</b>{task.description ? ` · ${label(task.description)}` : ''}</small></span>
-        {task.xUsed ? <span /> : task.done ? <span className="lucky-task__done">{label('lucky_claimed')}</span> : <button type="button" className={`lucky-task__button${task.ready || task.action === 'claim' ? ' is-claim' : ''}`} disabled={Boolean(busy)} onClick={() => onAction(task)}>{busy === task.key ? label('lucky_claiming') : label(task.ready || task.action === 'claim' ? 'lucky_claim' : 'lucky_go')}</button>}
+        {task.xUsed ? <span /> : task.done ? <span className="lucky-task__done">{label('lucky_claimed')}</span> : <button type="button" className={`lucky-task__button${task.action === 'claim' ? ' is-claim' : ''}`} disabled={Boolean(busy)} onClick={() => onAction(task)}>{busy === task.key ? label('lucky_claiming') : label(task.action === 'claim' ? 'lucky_claim' : 'lucky_go')}</button>}
     </li>)}</ul>;
 }
 
@@ -141,13 +142,16 @@ export default function Lucky() {
     async function handleTask(task: LuckyTask) {
         if (task.done || busyRef.current) return;
         if (task.key === 'rating') { setRatingOpen(true); return; }
-        if (task.action === 'go' && !task.ready && task.to) { visit(task.to); return; }
+        if (task.action === 'go' && task.to) { visit(task.to); return; }
         if (demo) { toast.info(w('演示模式仅预览，不提交任务或发放真实奖励。', '示範模式僅供預覽，不提交任務或發放真實獎勵。')); return; }
-        if (task.key === 'push_on' && !task.ready) { setAccountDialog('push'); return; }
         busyRef.current = true; setBusy(task.key); setTaskError('');
         let popup: Window | null = null;
         try {
-            if (task.ready || task.action === 'claim') {
+            if (task.key === 'push_on' && !task.ready) {
+                await enableLuckyPushSubscription();
+                toast.success(w('推送通知已开启，请领取新手奖励', '推送通知已開啟，請領取新手獎勵'));
+                await load(true, true);
+            } else if (task.action === 'claim') {
                 const result = await claimLuckyTask(task);
                 if (result.restricted) throw new Error(w('当前账号暂不能领取奖励', '目前帳號暫不能領取獎勵'));
                 if (result.notYet) throw new Error(w('任务尚未完成，请完成后再领取', '任務尚未完成，請完成後再領取'));
@@ -157,7 +161,9 @@ export default function Lucky() {
                     toast.success(result.coins === undefined ? w('领取成功', '領取成功') : intl.formatMessage({ id: 'lucky_claim_success' }, { coins: result.coins }));
                     if ((result.milestoneCoins ?? 0) > 0) toast.success(w(`里程碑额外奖励 +${result.milestoneCoins} 币`, `里程碑額外獎勵 +${result.milestoneCoins} 幣`));
                 }
-                await load(true);
+                // The claim response is only the result of this attempt. Pull the
+                // authoritative task state again before updating labels/badges.
+                await load(true, true);
             } else {
                 // X OAuth follows the source site's same-tab account-link flow. X follow and
                 // Telegram keep this page open so focus/visibility can trigger server verification.

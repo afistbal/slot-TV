@@ -129,7 +129,7 @@
 }
 
 .video-h5-drawer__episodeTab--active {
-    color: #ff4d6d;
+    color: var(--rs-brand);
     font-weight: 600;
 }
 
@@ -141,7 +141,7 @@
     height: 2px;
     margin-left: -10px;
     border-radius: 2px;
-    background-color: #ff4d6d;
+    background-color: var(--rs-brand);
 }
 
 .video-h5-drawer__episodeGrid {
@@ -170,8 +170,8 @@
 }
 
 .video-h5-drawer__episodeCell--active {
-    border-color: #ff4d6d;
-    background-color: rgba(255, 77, 109, 0.12);
+    border-color: var(--rs-brand);
+    background-color: var(--rs-brand-soft);
 }
 
 .video-h5-drawer__episodeNum {
@@ -212,7 +212,7 @@
     width: 14px;
     height: 14px;
     border-radius: 0 7px 0 7px;
-    background-color: #e52e2e;
+    background-color: var(--rs-brand);
     pointer-events: none;
 
     img {
@@ -287,7 +287,7 @@
 }
 
 .video-h5-drawer__speedRow--active {
-    background-color: #ff4d6d;
+    background-color: var(--rs-brand);
     font-weight: 600;
 }
 

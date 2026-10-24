@@ -96,17 +96,17 @@ export default function Countdown({
 
     return (
         <div className="flex gap-1 items-center justify-center">
-            <div className="text-sm leading-3.5 p-2 rounded-sm bg-pink-400 text-white">
+            <div className="text-sm leading-3.5 p-2 rounded-sm bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)]">
                 <FormattedMessage id="limited_time" />
             </div>
             <div className="flex gap-1">
-                <div className="bg-pink-400 text-white text-sm leading-3.5 p-2 rounded-sm tabular-nums">
+                <div className="bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] text-sm leading-3.5 p-2 rounded-sm tabular-nums">
                     {pad2(hours)}
                 </div>
-                <div className="bg-pink-400 text-white text-sm leading-3.5 p-2 rounded-sm tabular-nums">
+                <div className="bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] text-sm leading-3.5 p-2 rounded-sm tabular-nums">
                     {pad2(minutes)}
                 </div>
-                <div className="bg-pink-400 text-white text-sm leading-3.5 p-2 rounded-sm tabular-nums">
+                <div className="bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] text-sm leading-3.5 p-2 rounded-sm tabular-nums">
                     {pad2(seconds)}
                 </div>
             </div>

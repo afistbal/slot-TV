@@ -43,7 +43,7 @@ export default function Coin({
     const [loading, setLoading] = useState(true);
 
     async function handlePaymentSubmit(payment: number) {
-        let result = await api<TData>('pay/create', {
+        const result = await api<TData>('pay/create', {
             method: 'post',
             data: buildPayCreateData({
                 payment,
@@ -166,14 +166,14 @@ export default function Coin({
                                     className={cn(
                                         'relative overflow-hidden rounded-md p-4 flex flex-col bg-white shadow-md',
                                         v.name.indexOf('off') !== -1 &&
-                                        'col-span-2 bg-linear-90 from-cyan-100 to-purple-100',
+                                        'col-span-2 bg-linear-90 from-amber-50 to-yellow-100',
                                     )}
                                 >
                                     <div className="flex font-bold gap-1 text-lg items-center">
                                         <img src={coinIcon} width={24} height={24} className="mb-1" />
                                         <div
                                             className={cn(
-                                                v.name.indexOf('off') !== -1 && 'text-red-400',
+                                                v.name.indexOf('off') !== -1 && 'text-[var(--rs-brand)]',
                                             )}
                                         >
                                             {v.coin}
@@ -184,7 +184,7 @@ export default function Coin({
                                     </div>
                                     <div className="text-sm text-slate-400 px-1">${v.price}</div>
                                     {v.bouns > '0.0' && (
-                                        <div className="absolute top-0 right-0 text-xs bg-red-400 text-white px-2 py-0.5 rounded-bl-md rounded-tr-md">
+                                        <div className="absolute top-0 right-0 text-xs bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] px-2 py-0.5 rounded-bl-md rounded-tr-md">
                                             {v.name.indexOf('off') !== -1 && (
                                                 <FormattedMessage id="limited_time" />
                                             )}
@@ -192,7 +192,7 @@ export default function Coin({
                                         </div>
                                     )}
                                     {v.name.indexOf('off') !== -1 && (
-                                        <div className="absolute opacity-10 text-4xl text-red-400 bottom-4 right-4">
+                                        <div className="absolute opacity-10 text-4xl text-[var(--rs-brand)] bottom-4 right-4">
                                             SALE
                                         </div>
                                     )}

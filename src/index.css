@@ -85,7 +85,7 @@ a {
 }
 
 a.active {
-    color: #f44250;
+    color: var(--rs-brand);
 }
 
 video::cue {
@@ -218,14 +218,19 @@ video::cue {
     --app-canvas: #000000;
     --app-surface: #222222;
     --app-overlay: rgb(0 0 0 / 0.75);
-    --rs-brand: #d4a853;
+    --rs-brand: #e8c268;
+    --rs-brand-hover: #f0cf7c;
+    --rs-brand-soft: rgb(232 194 104 / 0.12);
+    --rs-brand-line: rgb(232 194 104 / 0.35);
+    --rs-brand-foreground: #2b1e00;
+    --rs-success: #2ee59d;
     --background: var(--app-canvas);
     --foreground: #fafafa;
     --card: var(--app-surface);
     --card-foreground: #fafafa;
     --popover: var(--app-surface);
     --popover-foreground: #fafafa;
-    --primary: #d4a853;
+    --primary: var(--rs-brand);
     --primary-foreground: var(--app-canvas);
     --secondary: rgb(255 255 255 / 0.08);
     --secondary-foreground: #fafafa;
@@ -244,12 +249,12 @@ video::cue {
     --chart-5: oklch(0.769 0.188 70.08);
     --sidebar: var(--app-surface);
     --sidebar-foreground: #fafafa;
-    --sidebar-primary: #d4a853;
+    --sidebar-primary: var(--rs-brand);
     --sidebar-primary-foreground: var(--app-surface);
     --sidebar-accent: rgb(255 255 255 / 0.08);
     --sidebar-accent-foreground: #fafafa;
     --sidebar-border: rgb(255 255 255 / 0.1);
-    --sidebar-ring: #d4a853;
+    --sidebar-ring: var(--rs-brand);
 }
 
 .dark {

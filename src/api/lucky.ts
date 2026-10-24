@@ -49,39 +49,7 @@ async function luckyRequest<T>(path: string, data: Record<string, unknown> = {},
 }
 const pause = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 function invalidateLucky() { taskCache = undefined; pageCache = undefined; useLuckyStore.getState().invalidate(); }
-const WATCH_STREAK_COMPLETE_KEY = 'lucky:watch-streak-complete-v2';
 let watchStreakFlight: Promise<LuckyClaimResult> | undefined;
-
-function localDay(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
-function luckyTaskDay(): string {
-    const day = record(camelLuckyPayload(useLuckyStore.getState().tasks)).day;
-    return typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : localDay();
-}
-function sessionFingerprint(): string {
-    let hash = 2166136261;
-    for (const char of session()) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
-    return (hash >>> 0).toString(36);
-}
-function watchStreakCompletedToday(): boolean {
-    if (typeof localStorage === 'undefined' || typeof localStorage.getItem !== 'function') return false;
-    try {
-        const marker = record(JSON.parse(localStorage.getItem(WATCH_STREAK_COMPLETE_KEY) ?? 'null'));
-        return marker.day === luckyTaskDay() && marker.session === sessionFingerprint();
-    } catch {
-        return false;
-    }
-}
-function rememberWatchStreakCompletedToday(): void {
-    if (typeof localStorage === 'undefined' || typeof localStorage.setItem !== 'function') return;
-    try {
-        localStorage.setItem(WATCH_STREAK_COMPLETE_KEY, JSON.stringify({ day: luckyTaskDay(), session: sessionFingerprint() }));
-    } catch {
-        // Storage may be unavailable in private/restricted browser contexts; server idempotency remains the fallback.
-    }
-}
 export function withoutLuckyComments(data: LuckyPageData): LuckyPageData {
     const comment = (row: { key: string }) => /comment/i.test(row.key);
     const removed = data.daily.tasks.filter(comment);
@@ -234,11 +202,9 @@ export async function claimLuckyDailyShare(): Promise<number | undefined> {
     return result.coins;
 }
 export function touchLuckyWatchStreak(): Promise<LuckyClaimResult> {
-    if (watchStreakCompletedToday()) return Promise.resolve({ already: true });
     if (watchStreakFlight) return watchStreakFlight;
     const promise = getLuckyCoins('watchMore').then(result => {
         if (result.notYet || result.restricted || result.xUsed) throw new Error('观看更多奖励暂不可领取');
-        if (!result.pending) rememberWatchStreakCompletedToday();
         return result;
     }).finally(() => {
         if (watchStreakFlight === promise) watchStreakFlight = undefined;

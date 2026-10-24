@@ -29,7 +29,7 @@
 }
 
 .rs-language__item--active {
-    color: #fe4167;
+    color: var(--rs-brand);
 }
 
 .rs-language__label {
@@ -41,5 +41,5 @@
     width: calc(20 / 375 * var(--app-vw));
     height: calc(20 / 375 * var(--app-vw));
     flex-shrink: 0;
-    color: #fe4167;
+    color: var(--rs-brand);
 }

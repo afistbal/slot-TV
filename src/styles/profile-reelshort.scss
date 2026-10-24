@@ -175,7 +175,7 @@
     margin: 0 16px;
     border-radius: 12px;
     padding: 16px;
-    background: #d48aff;
+    background: var(--rs-brand);
     position: relative;
     display: flex;
     align-items: center;
@@ -280,8 +280,8 @@
     padding: 0 calc(16 / 375 * var(--app-vw));
     border: none;
     border-radius: calc(4 / 375 * var(--app-vw));
-    background: #e52e2e;
-    color: #fff;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
     font-size: calc(14 / 375 * var(--app-vw));
     font-weight: 600;
     cursor: pointer;
@@ -537,8 +537,8 @@
 }
 
 .rs-profile__h5QuickIcon--accent {
-    background: rgba(255, 61, 93, 0.12);
-    color: #ff6f87;
+    background: var(--rs-brand-soft);
+    color: var(--rs-brand);
 }
 
 .rs-profile__h5QuickIcon svg {
@@ -627,8 +627,8 @@
     padding: 0 calc(16 / 375 * var(--app-vw));
     border: 0;
     border-radius: calc(18 / 375 * var(--app-vw));
-    background: #FF3D5D;
-    color: #fff;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
     font-size: calc(14 / 375 * var(--app-vw));
     cursor: pointer;
     font-family: PingFang SC, PingFang SC;

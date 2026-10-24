@@ -179,12 +179,12 @@ export default function Component() {
     const homeStore = useHomeStore();
     const scrollRef = useRef<HTMLDivElement>(null);
     const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
-    /** H5 首页顶栏：仅 Logo + Home/Categories + 搜索；PC 保留汉堡/语言/头像 */
+    /** H5 使用紧凑顶栏：菜单 + Logo + 搜索 + 用户；PC 展开完整导航。 */
     const homeTopNavProps = useMemo(
         () => ({
             scrollParentRef: scrollRef,
             showPrimaryNav: true as const,
-            showLeftAction: mdUp,
+            leftAction: 'menu' as const,
             showProfile: true,
             showLanguage: mdUp,
             showHistory: mdUp,
@@ -686,7 +686,7 @@ export default function Component() {
                                                     to={toEpisodeOrVideoHref(currentHero)}
                                                     state={VIDEO_FROM_HOME_STATE}
                                                     className={cn(
-                                                        'flex cursor-pointer items-center justify-center bg-[#ff3d75] font-bold text-white transition-[filter,transform] hover:brightness-105 active:scale-[0.98]',
+                                                        'flex cursor-pointer items-center justify-center bg-[var(--rs-brand)] font-bold text-[var(--rs-brand-foreground)] transition-[filter,transform] hover:brightness-105 active:scale-[0.98]',
                                                         'h-[calc(44/375*var(--app-vw))] w-[calc(152/375*var(--app-vw))] rounded-[calc(11/375*var(--app-vw))] text-[calc(15/375*var(--app-vw))]',
                                                     )}
                                                 >
@@ -806,13 +806,13 @@ export default function Component() {
                     size="icon"
                     aria-label={intl.formatMessage({ id: 'scroll_to_top' })}
                     className={cn(
-                        /* 与 ReelShort `ant-float-btn-primary` 一致：#e73857、无投影 */
+                        /* 与当前品牌主色一致，保持无投影 */
                         'pointer-events-auto fixed z-[101] size-10 shrink-0 rounded-full border-0 p-0 leading-none',
                         'md:h-12 md:w-12',
                         'flex items-center justify-center gap-0 shadow-none',
-                        'bg-[#e73857] text-white',
+                        'bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)]',
                         'transition-[background-color,transform,opacity] duration-200 ease-out',
-                        'hover:bg-[#d42d4c] active:scale-[0.96]',
+                        'hover:bg-[var(--rs-brand-hover)] active:scale-[0.96]',
                         scrollTopFabOpaque ? 'opacity-100' : 'pointer-events-none opacity-0',
                         'right-6',
                         /* 避免被 z-[100] 底栏压住 */

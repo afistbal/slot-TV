@@ -163,10 +163,10 @@
         cursor: pointer;
         border: 0;
         border-radius: calc(8 / 375 * var(--app-vw));
-        background: linear-gradient(90deg, #e52e2e 0%, #c41e1e 100%);
+        background: var(--rs-brand);
         font-size: calc(16 / 375 * var(--app-vw));
         font-weight: 700;
-        color: rgba(255, 255, 255, 0.95);
+        color: var(--rs-brand-foreground);
         -webkit-tap-highlight-color: transparent;
         transition: opacity 0.15s ease;
 

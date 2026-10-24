@@ -302,7 +302,7 @@
 
 .rs-profile__pc-cabinet .rs-bi-readProgress,
 .rs-search-page .rs-bi-readProgress {
-    background-color: #fe4167;
+    background-color: var(--rs-brand);
     height: 4px;
     border-top-right-radius: 30px;
     border-bottom-right-radius: 30px;
@@ -354,7 +354,7 @@
 
 .rs-profile__pc-cabinet .rs-bi-title a:hover,
 .rs-search-page .rs-bi-title a:hover {
-    color: #e52e2e;
+    color: var(--rs-brand);
 }
 
 .rs-profile__pc-cabinet .rs-bi-chapter {
@@ -375,7 +375,7 @@
 
 .rs-profile__pc-cabinet .rs-bi-chapterProgress,
 .rs-search-page .rs-bi-chapterProgress {
-    color: #d5495b;
+    color: var(--rs-brand);
 }
 
 /* DashboardCabinet_loadingMore__HXK8e */

@@ -14,8 +14,12 @@ self.addEventListener('notificationclick', event => {
     let target = new URL('/lucky', self.location.origin);
     try { const url = new URL(event.notification.data?.url, self.location.origin); if (url.origin === self.location.origin) target = url; } catch { /* safe default */ }
     event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
-        const client = clients.find(item => item.url === target.href);
-        if (client) return client.focus();
+        const client = clients.find(item => item.visibilityState === 'visible') || clients[0];
+        if (client) {
+            await client.focus();
+            if ('navigate' in client) return client.navigate(target.href);
+            return client;
+        }
         return self.clients.openWindow(target.href);
     }));
 });

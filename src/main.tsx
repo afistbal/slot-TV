@@ -11,6 +11,7 @@ const PWA_UPDATE_CHECK_MAX_INTERVAL_MS = 5 * 60 * 1000
 const PWA_SERVICE_WORKER_URL = '/sw.js'
 const PWA_FORCE_RELOAD_MESSAGE = 'PWA_FORCE_RELOAD'
 const PWA_FORCE_RELOAD_ACK_MESSAGE = 'PWA_FORCE_RELOAD_ACK'
+const PUSH_SUBSCRIPTION_CHANGED_MESSAGE = 'yogo-push-subscription-changed'
 const PWA_DEFERRED_RELOAD_STORAGE_KEY = 'slot:pwa-deferred-reload'
 const PWA_LAST_RELOAD_STORAGE_KEY = 'slot:pwa-last-reload'
 const PWA_UPDATE_QUERY_KEY = '_pwa_update'
@@ -175,7 +176,12 @@ if (getDeferredPwaReloadId()) {
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (!event.data || event.data.type !== PWA_FORCE_RELOAD_MESSAGE) return
+    if (!event.data) return
+    if (event.data.type === PUSH_SUBSCRIPTION_CHANGED_MESSAGE) {
+      window.dispatchEvent(new Event(PUSH_SUBSCRIPTION_CHANGED_MESSAGE))
+      return
+    }
+    if (event.data.type !== PWA_FORCE_RELOAD_MESSAGE) return
     const updateId = normalizePwaUpdateId(event.data.updateId)
     reloadOrDeferForPwaUpdate(updateId)
     const replyPort = event.ports[0]

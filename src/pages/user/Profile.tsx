@@ -699,11 +699,11 @@ export default function Component() {
             >
                 <ReelShortTopNav
                     scrollParentRef={scrollRef}
-                    /* PC?????????? brand-cluster ?? ? ????????H5 ?????/?? subnav */
+                    /* H5 使用统一紧凑顶栏；PC 继续展示账户页桌面操作区。 */
                     showPrimaryNav={isPc}
-                    showSearch={isPc}
+                    showSearch
                     showProfile={false}
-                    leftAction={isPc ? 'menu' : 'none'}
+                    leftAction="menu"
                     rightActionsMode={isPc ? 'profilePc' : 'default'}
                 />
                 {isPc ? (

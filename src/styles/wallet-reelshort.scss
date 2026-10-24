@@ -87,8 +87,8 @@
     height: calc(36 / 375 * var(--app-vw));
     padding: 0 calc(16 / 375 * var(--app-vw));
     border-radius: calc(4 / 375 * var(--app-vw));
-    background: #e52e2e;
-    color: #fff;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
     font-size: calc(14 / 375 * var(--app-vw));
     font-weight: 600;
     text-decoration: none;
@@ -131,7 +131,7 @@
 }
 
 .rs-wallet-tx__tab--active {
-    color: #e83a57;
+    color: var(--rs-brand);
     font-weight: 500;
 
     &::after {
@@ -141,7 +141,7 @@
         bottom: 5px;
         width: calc(40 / 375 * var(--app-vw));
         height: calc(3 / 375 * var(--app-vw));
-        background-color: #e83a57;
+        background-color: var(--rs-brand);
         transform: translateX(-50%);
         border-radius: 1px;
     }
@@ -284,7 +284,7 @@
     --rs-wallet-pc-tab-pad-b: 14px;
     --rs-wallet-pc-tab-size: 16px;
     --rs-wallet-pc-tab-line: 3px;
-    --rs-wallet-pc-accent: #ff3d5d;
+    --rs-wallet-pc-accent: var(--rs-brand);
     --rs-wallet-pc-row-bg: #1c1c1c;
     --rs-wallet-pc-row-radius: 8px;
     --rs-wallet-pc-row-gap: 10px;
@@ -578,8 +578,8 @@
     }
 
     &:not(:disabled):hover {
-        border-color: rgba(255, 61, 93, 0.45);
-        color: var(--rs-wallet-pc-accent, #ff3d5d);
+        border-color: rgb(232 194 104 / 0.45);
+        color: var(--rs-wallet-pc-accent, var(--rs-brand));
     }
 }
 
@@ -610,9 +610,9 @@
         background-color 0.15s ease;
 
     &--active {
-        border-color: var(--rs-wallet-pc-accent, #ff3d5d);
-        color: var(--rs-wallet-pc-accent, #ff3d5d);
-        background: rgba(255, 61, 93, 0.08);
+        border-color: var(--rs-wallet-pc-accent, var(--rs-brand));
+        color: var(--rs-wallet-pc-accent, var(--rs-brand));
+        background: rgb(232 194 104 / 0.08);
     }
 
     &:not(.rs-wallet-pcPagination__num--active):hover {

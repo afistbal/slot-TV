@@ -171,8 +171,8 @@ export function VideoPlayerAmbientLayer({
                 className="absolute -inset-[6%] origin-center transition-opacity duration-200"
                 style={{
                     background:
-                        'radial-gradient(circle at 50% 48%, transparent 24%, rgba(255,28,92,0.08) 55%, rgba(255,16,73,0.48) 100%)',
-                    boxShadow: 'inset 0 0 54px rgba(255, 32, 104, 0.35)',
+                        'radial-gradient(circle at 50% 48%, transparent 24%, rgba(232,194,104,0.08) 55%, rgba(232,194,104,0.48) 100%)',
+                    boxShadow: 'inset 0 0 54px rgba(232, 194, 104, 0.35)',
                     mixBlendMode: 'screen',
                     opacity: 0.25,
                 }}

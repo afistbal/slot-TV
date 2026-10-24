@@ -162,8 +162,8 @@
         @media (max-width: 767px) {
             .rs-search-page__tag--active {
                 border-color: transparent !important;
-                background: #FF3D5D !important;
-                color: #fff !important;
+                background: var(--rs-brand) !important;
+                color: var(--rs-brand-foreground) !important;
                 font-weight: 700;
             }
         }
@@ -220,8 +220,8 @@
 
         &--active {
             border-color: transparent;
-            background: #FF3D5D;
-            color: #fff;
+            background: var(--rs-brand);
+            color: var(--rs-brand-foreground);
             font-weight: 700;
         }
     }
@@ -354,7 +354,7 @@
 
         &--active {
             background: #111111;
-            color: #FF3D5D;
+            color: var(--rs-brand);
             font-weight: 700;
         }
     }
@@ -654,8 +654,8 @@
 
         .rs-search-page__tag--active {
             border-color: transparent !important;
-            background: #FF3D5D !important;
-            color: #fff !important;
+            background: var(--rs-brand) !important;
+            color: var(--rs-brand-foreground) !important;
             font-weight: 700;
         }
     }
@@ -777,8 +777,8 @@
         }
 
         &--active {
-            border-bottom-color: #FF3D5D;
-            color: #FF3D5D;
+            border-bottom-color: var(--rs-brand);
+            color: var(--rs-brand);
             font-weight: 700;
         }
     }
@@ -822,8 +822,8 @@
 
         &--active {
             border-color: transparent !important;
-            background: rgba(255, 61, 93, 0.28) !important;
-            color: #FF3D5D !important;
+            background: rgb(232 194 104 / 0.22) !important;
+            color: var(--rs-brand) !important;
             font-weight: 700;
         }
     }
@@ -975,7 +975,7 @@
         }
 
         &:not(:disabled):hover {
-            color: #fe4167;
+            color: var(--rs-brand);
         }
 
         &--nav {
@@ -1029,12 +1029,12 @@
 
         &:not(:disabled):hover {
             background: rgba(255, 255, 255, 0.14);
-            color: #fe4167;
+            color: var(--rs-brand);
         }
 
         &--active {
-            background: rgba(254, 65, 103, 0.25);
-            color: #fe4167;
+            background: rgb(232 194 104 / 0.2);
+            color: var(--rs-brand);
             font-weight: 600;
         }
     }

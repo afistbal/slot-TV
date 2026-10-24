@@ -199,7 +199,7 @@ function WebVip({ open, from, onOpenChange }: VipProps) {
                         <div className="text-xl font-bold text-amber-950"><FormattedMessage id={`${v.name}`} /></div>
                     </div>
                     <div className="text-slate-800 text-3xl font-bold flex items-center gap-1"><span className="text-lg">$</span>{v.price}</div>
-                    <div className="absolute top-0 right-0 text-xs bg-red-400 text-white px-2 py-0.5 rounded-bl-md rounded-tr-md">
+                    <div className="absolute top-0 right-0 text-xs bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] px-2 py-0.5 rounded-bl-md rounded-tr-md">
                         <FormattedMessage id="limited_time_offer" values={{
                             off: (100 - Math.floor((parseFloat(v.price) / parseFloat(v.renewal_price)) * 100)) + '%'
                         }} />
@@ -212,7 +212,7 @@ function WebVip({ open, from, onOpenChange }: VipProps) {
                     }} />
                 </div>
             </div>}
-            <Button className="mt-2 bg-linear-to-r from-red-400 to-purple-400 font-bold" onClick={handleOpenPayment} disabled={loading}><FormattedMessage id="activate" /></Button>
+            <Button className="mt-2 bg-[var(--rs-brand)] text-[var(--rs-brand-foreground)] font-bold" onClick={handleOpenPayment} disabled={loading}><FormattedMessage id="activate" /></Button>
             <Payment open={paymentOpen} onOpenChange={handleOpenPayment} onSubmit={handleSubmit} />
         </DialogContent>
     </Dialog>

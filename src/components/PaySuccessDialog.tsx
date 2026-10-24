@@ -45,7 +45,7 @@ export default function PaySuccessDialog({
           <div className="mt-8 flex w-full flex-col gap-2">
             <button
               type="button"
-              className="h-12 w-full cursor-pointer rounded bg-[#E52E2E] text-base font-bold text-white/90"
+              className="h-12 w-full cursor-pointer rounded bg-[var(--rs-brand)] text-base font-bold text-[var(--rs-brand-foreground)]"
               onClick={handleConfirm}
             >
               <FormattedMessage id="ok" />
