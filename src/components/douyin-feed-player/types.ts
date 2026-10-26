@@ -3,6 +3,8 @@ import type { MutableRefObject, ReactNode, RefObject } from 'react';
 
 export type DouyinFeedVideoItem = {
     id: string | number;
+    /** 业务集数，用于播放心跳上报。 */
+    episode?: number;
     url: string;
     /** VTT 路径（必填字段；空字符串 = 本条无字幕） */
     subtitle: string;

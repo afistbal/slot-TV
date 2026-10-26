@@ -1,4 +1,5 @@
 export const IMMERSIVE_FULLSCREEN_CLASS = 'video-fullscreen-target--immersive';
+export const LANDSCAPE_FULLSCREEN_CLASS = 'video-fullscreen-target--landscape';
 export const IMMERSIVE_FULLSCREEN_EVENT = 'douyin-feed-immersive-change';
 
 export function getFullscreenElement(): Element | null {

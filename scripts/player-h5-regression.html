@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh"><meta charset="utf-8"><title>H5 player regression</title>
+<style>body{background:#171717;color:white;font:14px sans-serif}iframe{width:390px;height:844px;border:0}pre{white-space:pre-wrap}button{padding:12px}</style>
+<button id="run">运行两页手机交互回归</button><pre id="result">等待运行</pre>
+<iframe id="player" title="手机播放器"></iframe>
+<script type="module">
+const frame = document.querySelector('#player');
+const output = document.querySelector('#result');
+const results = [];
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const waitFor = async (read, label) => {
+    for (let i = 0; i < 150; i++) {
+        const value = read();
+        if (value) return value;
+        await delay(100);
+    }
+    throw new Error(`Timeout: ${label}`);
+};
+const assert = (ok, label, detail) => {
+    results.push({ passed: Boolean(ok), label, detail });
+    output.textContent = JSON.stringify(results, null, 2);
+    if (!ok) throw new Error(label);
+};
+const load = async path => {
+    frame.src = path;
+    await new Promise(resolve => frame.onload = resolve);
+    return waitFor(() => {
+        const video = frame.contentDocument.querySelector('.douyin-player-slot[data-active="true"] video');
+        return video?.videoWidth ? video : null;
+    }, 'video metadata');
+};
+const check = async (path, video) => {
+    const win = frame.contentWindow;
+    const doc = frame.contentDocument;
+    const surface = video.closest('.douyin-player-slot');
+    // Dispatch on the letterbox, outside the centered video stage: the old implementation missed it.
+    const touch = new win.Touch({identifier:1,target:surface,clientX:120,clientY:110});
+    const send = (type, touches = [touch]) => surface.dispatchEvent(new win.TouchEvent(type, {
+        bubbles:true,cancelable:true,touches,targetTouches:touches,changedTouches:[touch],
+    }));
+    const rate = video.playbackRate;
+    send('touchstart');
+    await delay(520);
+    assert(video.playbackRate === 2 && /2x/.test(surface.querySelector('.douyin-player-slot__speeding')?.textContent || ''),
+        `${path}: 长按黑边达到2x并显示提示`, {rate:video.playbackRate});
+    send('touchend', []);
+    await delay(60);
+    assert(video.playbackRate === rate && !surface.querySelector('.douyin-player-slot__speeding'),
+        `${path}: 松手恢复原速度并隐藏提示`, {rate:video.playbackRate});
+    await delay(550);
+    send('touchstart');
+    surface.dispatchEvent(new win.TouchEvent('touchmove', {bubbles:true,touches:[
+        new win.Touch({identifier:1,target:surface,clientX:120,clientY:150}),
+    ]}));
+    await delay(520);
+    assert(video.playbackRate === rate && !surface.querySelector('.douyin-player-slot__speeding'), `${path}: 滑动不误触发倍速`);
+    send('touchcancel', []);
+    send('touchstart');
+    await delay(520);
+    win.dispatchEvent(new win.Event('blur'));
+    await delay(60);
+    assert(video.playbackRate === rate && !surface.querySelector('.douyin-player-slot__speeding'), `${path}: 切后台恢复倍速`);
+    send('touchcancel', []);
+    await delay(550);
+    const landscape = video.videoWidth > video.videoHeight;
+    doc.querySelector('.douyin-player-slot__landscape-fullscreen, .video-player-h5-fullscreen').click();
+    await delay(250);
+    const target = doc.querySelector('.video-fullscreen-target');
+    assert(target.classList.contains('video-fullscreen-target--immersive') &&
+        target.classList.contains('video-fullscreen-target--landscape') === landscape,
+        `${path}: 只有横屏剧全屏旋转`, {landscape,classes:target.className});
+    await delay(3200);
+    doc.querySelector('.douyin-player-fullscreen-exit').click();
+    await delay(250);
+    assert(!target.classList.contains('video-fullscreen-target--immersive') &&
+        !target.classList.contains('video-fullscreen-target--landscape') && win.getComputedStyle(target).transform === 'none',
+        `${path}: 控件隐藏后仍可退出并清除旋转`);
+};
+document.querySelector('#run').onclick = async () => {
+    results.length = 0;
+    try {
+        for (const path of ['/video/4189086100831590/1', '/foryou']) {
+            const video = await load(path);
+            await check(path, video);
+            if (path === '/foryou' && video.videoWidth <= video.videoHeight) {
+                const watchFull = [...frame.contentDocument.querySelectorAll('button')]
+                    .find(button => button.textContent.includes('观看全集'));
+                if (!watchFull) throw new Error('Missing Watch Full for portrait video');
+                watchFull.click();
+                await waitFor(() => frame.contentWindow.location.pathname.startsWith('/video/'), 'portrait Video route');
+                const portrait = await waitFor(() => {
+                    const current = frame.contentDocument.querySelector('.douyin-player-slot[data-active="true"] video');
+                    return current?.videoWidth ? current : null;
+                }, 'portrait Video metadata');
+                assert(portrait.videoWidth <= portrait.videoHeight, '/video: 实际竖屏剧数据');
+                await check('/video 竖屏剧', portrait);
+                await load('/foryou');
+            }
+        }
+        // Feed data may start with either orientation. Walk its real loaded items
+        // to exercise landscape fullscreen on /foryou as well.
+        for (let i = 0; i < 12; i++) {
+            const doc = frame.contentDocument;
+            const surface = doc.querySelector('.douyin-player-slot[data-active="true"]');
+            const video = surface?.querySelector('video');
+            if (video?.videoWidth > video?.videoHeight) {
+                await check('/foryou 横屏剧', video);
+                break;
+            }
+            const next = doc.querySelector('.video-player-next-episode-trigger');
+            if (!next || i === 11) throw new Error('No landscape item in loaded ForYou feed');
+            next.click();
+            await waitFor(() => {
+                const active = doc.querySelector('.douyin-player-slot[data-active="true"]');
+                return active !== surface && active?.querySelector('video')?.videoWidth;
+            }, 'next ForYou metadata');
+        }
+        output.textContent += '\n全部通过（合成触摸事件，不代表真机触摸测试）';
+    } catch (error) { output.textContent += `\nFAILED ${error.stack}`; }
+};
+</script></html>

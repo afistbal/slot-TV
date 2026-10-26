@@ -31,18 +31,23 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
     for (const [key, icon, title] of definitions) {
         const row = byKey.get(key);
         if (!row || count(row.cap) <= 0 && count(row.earned) <= 0) continue;
-        const done = row.done === true;
+        const backendDone = row.done === true;
+        const earned = count(row.earned);
+        const usesEarnedClaimState = key === 'streak' || key === 'watch';
+        // 追剧、视频任务的 done 表示任务已完成、可以领取；earned > 0 才表示已经领取。
+        // 其他任务继续沿用各自现有的后端状态定义。
+        const claimed = usesEarnedClaimState ? earned > 0 : backendDone;
         let description = '';
-        if (!done && key === 'checkin') description = row.needsWatch === true ? w(locale, '先观看剧集再领取', '先觀看劇集再領取') : count(row.milestone) > 0 ? w(locale, `里程碑额外 +${count(row.milestone)} 币`, `里程碑額外 +${count(row.milestone)} 幣`) : '';
-        if (!done && key === 'streak' && count(row.minSec) > 0) description = w(locale, `看够 ${count(row.minSec)} 秒`, `看夠 ${count(row.minSec)} 秒`);
-        if (!done && key === 'rating' && count(row.left) > 0) description = w(locale, `还可评 ${count(row.left)} 部`, `還可評 ${count(row.left)} 部`);
+        if (!backendDone && key === 'checkin') description = row.needsWatch === true ? w(locale, '先观看剧集再领取', '先觀看劇集再領取') : count(row.milestone) > 0 ? w(locale, `里程碑额外 +${count(row.milestone)} 币`, `里程碑額外 +${count(row.milestone)} 幣`) : '';
+        if (!backendDone && key === 'streak' && count(row.minSec) > 0) description = w(locale, `看够 ${count(row.minSec)} 秒`, `看夠 ${count(row.minSec)} 秒`);
+        if (!backendDone && key === 'rating' && count(row.left) > 0) description = w(locale, `还可评 ${count(row.left)} 部`, `還可評 ${count(row.left)} 部`);
         const ready = row.ready === true;
-        if (!done && key === 'watch' && !ready) {
+        if (!backendDone && key === 'watch' && !ready) {
             const remaining = Math.max(0, count(row.need) - count(row.sec));
             if (remaining > 0) description = w(locale, `还差 ${Math.ceil(remaining / 60)} 分钟`, `還差 ${Math.ceil(remaining / 60)} 分鐘`);
         }
-        const claimable = key === 'checkin' ? row.needsWatch !== true : key === 'watch' && ready;
-        tasks.push({ key, icon, title, coins: count(row.cap), earned: count(row.earned), done, ready,
+        const claimable = usesEarnedClaimState ? backendDone && !claimed : key === 'checkin' ? row.needsWatch !== true : false;
+        tasks.push({ key, icon, title, coins: count(row.cap), earned, done: claimed, ready: usesEarnedClaimState ? claimable : ready,
             description: description || undefined, action: claimable ? 'claim' : 'go',
             to: key === 'rating' ? '/lucky?rate=1' : '/foryou' });
     }

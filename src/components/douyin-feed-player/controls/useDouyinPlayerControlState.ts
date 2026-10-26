@@ -85,6 +85,7 @@ export function useDouyinPlayerControlState(
             return;
         }
         const reapply = () => {
+            if (video.dataset.longPressSpeeding === 'true') return;
             applyPlaybackSpeed(player, FIXED_PLAYBACK_SPEED_INDEX, false);
         };
         reapply();

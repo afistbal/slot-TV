@@ -9,8 +9,10 @@ import { isUserHoldPause, scheduleActivePlay } from '../player/createXgPlayer';
 
 import {
     getFullscreenElement,
+    isIosNativeVideoFullscreen,
     IMMERSIVE_FULLSCREEN_CLASS,
     IMMERSIVE_FULLSCREEN_EVENT,
+    LANDSCAPE_FULLSCREEN_CLASS,
 } from './feedPlayerFullscreen';
 import { getVideoEl } from './playerControlsApi';
 
@@ -31,14 +33,15 @@ function dispatchImmersiveChange(active: boolean) {
     );
 }
 
-function setImmersiveDom(el: HTMLElement | null, active: boolean) {
+function setFullscreenDom(
+    el: HTMLElement | null,
+    immersiveActive: boolean,
+    landscapeActive = false,
+) {
     if (!el) return;
-    if (active) {
-        el.classList.add(IMMERSIVE_FULLSCREEN_CLASS);
-    } else {
-        el.classList.remove(IMMERSIVE_FULLSCREEN_CLASS);
-    }
-    dispatchImmersiveChange(active);
+    el.classList.toggle(IMMERSIVE_FULLSCREEN_CLASS, immersiveActive);
+    el.classList.toggle(LANDSCAPE_FULLSCREEN_CLASS, landscapeActive);
+    dispatchImmersiveChange(immersiveActive);
 }
 
 export function useFeedPlayerFullscreen({
@@ -51,6 +54,9 @@ export function useFeedPlayerFullscreen({
     enabled = true,
 }: UseFeedPlayerFullscreenOptions) {
     const [keepFullscreen, setKeepFullscreen] = useState(false);
+    const [landscapeFullscreen, setLandscapeFullscreen] = useState(false);
+    const [mobileCssFullscreen, setMobileCssFullscreen] = useState(false);
+    const mobileCssFullscreenRef = useRef(false);
     useEffect(() => () => releaseVideoFullscreenOrientation(), []);
     const [pcFullscreen, setPcFullscreen] = useState(false);
     const suppressUntilRef = useRef(0);
@@ -71,9 +77,21 @@ export function useFeedPlayerFullscreen({
 
     useEffect(() => {
         if (!enabled || isDesktop) return;
-        setImmersiveDom(fullscreenTargetRef.current, isImmersive);
-        return () => setImmersiveDom(fullscreenTargetRef.current, false);
-    }, [enabled, fullscreenTargetRef, isDesktop, isImmersive]);
+        const fullscreenTarget = fullscreenTargetRef.current;
+        setFullscreenDom(
+            fullscreenTarget,
+            isImmersive,
+            isFullscreenUi && landscapeFullscreen,
+        );
+        return () => setFullscreenDom(fullscreenTarget, false, false);
+    }, [
+        enabled,
+        fullscreenTargetRef,
+        isDesktop,
+        isFullscreenUi,
+        isImmersive,
+        landscapeFullscreen,
+    ]);
 
     const shouldIgnoreFullscreenExit = useCallback(() => {
         return switchingRef.current || Date.now() <= suppressUntilRef.current;
@@ -98,6 +116,16 @@ export function useFeedPlayerFullscreen({
     }, []);
 
     const forceExitFullscreen = useCallback(async () => {
+        // Restore the page immediately, before any asynchronous native API call.
+        mobileCssFullscreenRef.current = false;
+        setKeepFullscreen(false);
+        setPcFullscreen(false);
+        setLandscapeFullscreen(false);
+        setMobileCssFullscreen(false);
+        switchingRef.current = false;
+        suppressUntilRef.current = 0;
+        restoreEpisodeRef.current = null;
+        if (!isDesktop) setFullscreenDom(fullscreenTargetRef.current, false, false);
         releaseVideoFullscreenOrientation();
         const video = getVideoEl(getActivePlayerRef.current()) as
             | (HTMLVideoElement & { webkitExitFullscreen?: () => void })
@@ -107,7 +135,7 @@ export function useFeedPlayerFullscreen({
         if (document.fullscreenElement) {
             await document.exitFullscreen().catch(() => undefined);
         }
-        if (video?.webkitExitFullscreen) {
+        if (video?.webkitExitFullscreen && isIosNativeVideoFullscreen(video)) {
             try {
                 video.webkitExitFullscreen();
             } catch {
@@ -118,11 +146,6 @@ export function useFeedPlayerFullscreen({
             await Promise.resolve(doc.webkitExitFullscreen()).catch(() => undefined);
         }
 
-        setKeepFullscreen(false);
-        setPcFullscreen(false);
-        if (!isDesktop) {
-            setImmersiveDom(fullscreenTargetRef.current, false);
-        }
     }, [fullscreenTargetRef, isDesktop]);
 
     const toggleFullscreen = useCallback(async () => {
@@ -136,10 +159,28 @@ export function useFeedPlayerFullscreen({
             return false;
         }
 
+        const isLandscapeVideo =
+            video.videoWidth > 0 && video.videoWidth > video.videoHeight;
+        setLandscapeFullscreen(isLandscapeVideo);
+
+        // hgdju uses a fixed page layer plus a 90-degree CSS rotation for mobile
+        // landscape videos. This works consistently on iPhone, where the native
+        // video fullscreen API cannot be forced into landscape by the page.
+        if (!isDesktop) {
+            markUserGesture();
+            mobileCssFullscreenRef.current = true;
+            setMobileCssFullscreen(true);
+            setPcFullscreen(false);
+            setKeepFullscreen(true);
+            setFullscreenDom(fullscreenTargetRef.current, true, isLandscapeVideo);
+            return true;
+        }
+
         await toggleVideoFullscreen({ current: video }, fullscreenTargetRef, {
             preferContainer: true,
             disableNativeVideoFullscreen: isDesktop,
         });
+        setMobileCssFullscreen(false);
         const nowFullscreen = Boolean(getFullscreenElement());
         if (nowFullscreen || !isDesktop) {
             setKeepFullscreen(true);
@@ -154,8 +195,13 @@ export function useFeedPlayerFullscreen({
         const onFullscreenChange = () => {
             const inFullscreen = Boolean(getFullscreenElement());
             setPcFullscreen(inFullscreen);
+            // Mobile landscape uses hgdju's CSS fullscreen route. There is
+            // intentionally no document.fullscreenElement in this mode.
+            if (!inFullscreen && mobileCssFullscreenRef.current) return;
             if (isDesktop && !inFullscreen) {
                 setKeepFullscreen(false);
+                setLandscapeFullscreen(false);
+                setMobileCssFullscreen(false);
                 switchingRef.current = false;
                 suppressUntilRef.current = 0;
                 return;
@@ -164,21 +210,32 @@ export function useFeedPlayerFullscreen({
                 return;
             }
             setKeepFullscreen(inFullscreen);
-            if (!inFullscreen) setImmersiveDom(fullscreenTargetRef.current, false);
+            if (!inFullscreen) {
+                setLandscapeFullscreen(false);
+                setMobileCssFullscreen(false);
+                setFullscreenDom(fullscreenTargetRef.current, false, false);
+            }
         };
 
         const attachVideoGuards = (video: HTMLVideoElement | null) => {
             if (!video || isDesktop) return () => undefined;
 
             const onWebkitBeginFullscreen = () => {
+                if (mobileCssFullscreenRef.current) return;
                 setPcFullscreen(true);
                 setKeepFullscreen(true);
             };
 
             const onWebkitEndFullscreen = () => {
+                // Some mobile browsers emit native-video fullscreen events during
+                // rotation even when our page fullscreen is still active.
+                if (mobileCssFullscreenRef.current) return;
                 setPcFullscreen(false);
                 setKeepFullscreen(false);
-                setImmersiveDom(fullscreenTargetRef.current, false);
+                setLandscapeFullscreen(false);
+                mobileCssFullscreenRef.current = false;
+                setMobileCssFullscreen(false);
+                setFullscreenDom(fullscreenTargetRef.current, false, false);
                 const handledEndedAdvance = onIosNativeFullscreenEndRef.current?.() === true;
                 if (!handledEndedAdvance && !shouldIgnoreFullscreenExit()) {
                     resumeIfPaused();
@@ -208,7 +265,7 @@ export function useFeedPlayerFullscreen({
         document.addEventListener('fullscreenchange', onFullscreenChange);
         document.addEventListener('webkitfullscreenchange', onFullscreenChange as EventListener);
 
-        let detachVideoGuard = attachVideoGuards(getVideoEl(getActivePlayerRef.current()));
+        const detachVideoGuard = attachVideoGuards(getVideoEl(getActivePlayerRef.current()));
         onFullscreenChange();
 
         return () => {
@@ -225,12 +282,30 @@ export function useFeedPlayerFullscreen({
         fullscreenTargetRef,
         isDesktop,
         keepFullscreen,
+        mobileCssFullscreen,
         resumeIfPaused,
         shouldIgnoreFullscreenExit,
     ]);
 
     useEffect(() => {
         if (!enabled || !keepFullscreen || isDesktop) return;
+
+        if (mobileCssFullscreen) {
+            const video = getVideoEl(getActivePlayerRef.current());
+            const syncDirection = () => {
+                if (!mobileCssFullscreenRef.current || !video) return;
+                setLandscapeFullscreen(video.videoWidth > 0 && video.videoWidth > video.videoHeight);
+            };
+            syncDirection();
+            video?.addEventListener('loadedmetadata', syncDirection);
+            video?.addEventListener('resize', syncDirection);
+            restoreEpisodeRef.current = activeEpisodeKey;
+            onEpisodeFullscreenReady();
+            return () => {
+                video?.removeEventListener('loadedmetadata', syncDirection);
+                video?.removeEventListener('resize', syncDirection);
+            };
+        }
 
         if (restoreEpisodeRef.current === activeEpisodeKey || restoreInFlightRef.current) {
             return;
@@ -281,6 +356,7 @@ export function useFeedPlayerFullscreen({
         fullscreenTargetRef,
         isDesktop,
         keepFullscreen,
+        mobileCssFullscreen,
         onEpisodeFullscreenReady,
     ]);
 

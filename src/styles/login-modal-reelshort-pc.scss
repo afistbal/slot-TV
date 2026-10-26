@@ -357,25 +357,51 @@
 }
 
 /* 受保护操作在手机端同样使用弹窗；保持内容可见且不超出动态视口。 */
-@media (max-width: 767px) {
+@media (max-width: 1039px), (pointer: coarse) and (max-height: 600px) {
     .rs-login-modal__dialog {
-        width: calc(100% - 24px) !important;
-        max-width: calc(100% - 24px) !important;
+        width: min(460px, calc(100vw - 32px)) !important;
+        max-width: calc(100vw - 32px) !important;
         height: min(600px, calc(100dvh - 24px)) !important;
         min-height: 0 !important;
         max-height: calc(100dvh - 24px) !important;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .rs-login-modal .LoginModal_login_body__DH86w {
-        height: 100%;
-        padding-top: clamp(76px, 15vh, 112px);
+        min-width: 0;
+        height: auto;
+        min-height: 100%;
+        padding-top: clamp(64px, 12dvh, 100px);
     }
 
-    .rs-login-modal .LoginModal_login_btn_item__FxNs7,
-    .rs-login-modal__auth-tabs,
-    .rs-login-modal__or,
-    .rs-login-modal__email-fields,
-    .rs-login-modal__email-submit {
+    .rs-login-modal .LoginModal_close_btn__KOxVA {
+        top: 16px;
+        right: 16px;
+    }
+
+    .rs-login-modal :is(.LoginModal_login_btn_item__FxNs7, .rs-login-modal__auth-tabs,
+        .rs-login-modal__or, .rs-login-modal__email-fields, .rs-login-modal__email-submit) {
         width: min(340px, calc(100% - 40px));
+        max-width: calc(100% - 40px);
+        min-width: 0;
+        flex-shrink: 0;
+    }
+
+    .rs-login-modal .rs-login-modal__email-fields > * {
+        min-width: 0;
+        width: 100%;
+    }
+
+    // Prevent iOS from zooming the page when focusing a small-font input.
+    .rs-login-modal .rs-login-modal__email-input {
+        font-size: 16px;
+    }
+
+    .rs-login-modal .LoginModal_login_text__3ZrIq {
+        min-width: 0;
+        margin-left: 12px;
+        overflow-wrap: anywhere;
     }
 }

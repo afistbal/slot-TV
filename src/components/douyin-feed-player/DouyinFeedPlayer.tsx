@@ -756,8 +756,42 @@ export function DouyinFeedPlayer({
             scrollSettleTimer = null;
         };
 
+        let viewportWidth = root.clientWidth;
+        let viewportHeight = root.clientHeight;
+        let viewportChanging = false;
+        let viewportSettleTimer: number | undefined;
+        const stabilizeViewport = (force = false): boolean => {
+            const width = root.clientWidth;
+            const height = root.clientHeight;
+            if (!force && !viewportChanging && width === viewportWidth && height === viewportHeight) return false;
+            viewportWidth = width;
+            viewportHeight = height;
+            viewportChanging = true;
+            scrollSyncLockRef.current = true;
+            clearScrollSettleTimer();
+            // Resizing changes slide offsets. Do not interpret the old scrollTop
+            // divided by the new height as a swipe to a different episode.
+            const slide = itemRefs.current.get(activeIndexRef.current);
+            if (slide) root.scrollTop = slide.offsetTop;
+            window.clearTimeout(viewportSettleTimer);
+            viewportSettleTimer = window.setTimeout(() => {
+                const activeSlide = itemRefs.current.get(activeIndexRef.current);
+                if (activeSlide) root.scrollTop = activeSlide.offsetTop;
+                viewportChanging = false;
+                scrollSyncLockRef.current = false;
+            }, 180);
+            return true;
+        };
+        const onViewportResize = () => { stabilizeViewport(); };
+        const onOrientationChange = () => { stabilizeViewport(true); };
+        const viewportObserver = new ResizeObserver(onViewportResize);
+        viewportObserver.observe(root);
+        window.addEventListener('resize', onViewportResize);
+        window.addEventListener('orientationchange', onOrientationChange);
+
         const commitScrollIndex = (source: 'scroll' | 'scrollend' | 'scroll-sync') => {
             chromeTapStartRef.current = null;
+            if (stabilizeViewport()) return;
 
             const height = root.clientHeight || window.innerHeight;
             const idx = Math.round(root.scrollTop / height);
@@ -860,6 +894,10 @@ export function DouyinFeedPlayer({
 
         const onChromeTouchEnd = (event: TouchEvent) => {
             if (!fullscreenEnabledRef.current || !feedFullscreenRef.current.isFullscreenUi) return;
+            if (event.target instanceof Element && event.target.closest('[data-long-press-speeding="true"]')) {
+                chromeTapStartRef.current = null;
+                return;
+            }
             if (
                 event.target instanceof Element &&
                 event.target.closest('.douyin-player-controls')
@@ -892,6 +930,7 @@ export function DouyinFeedPlayer({
 
         const onScroll = () => {
             chromeTapStartRef.current = null;
+            if (stabilizeViewport()) return;
             if (scrollSyncLockRef.current) {
                 commitScrollIndex('scroll-sync');
                 return;
@@ -922,6 +961,10 @@ export function DouyinFeedPlayer({
         window.addEventListener('keydown', onKey);
 
         return () => {
+            viewportObserver.disconnect();
+            window.clearTimeout(viewportSettleTimer);
+            window.removeEventListener('resize', onViewportResize);
+            window.removeEventListener('orientationchange', onOrientationChange);
             clearScrollSettleTimer();
             wheel.dispose();
             touch();
@@ -1182,6 +1225,7 @@ export function DouyinFeedPlayer({
                         key={String(item.id)}
                         ref={(el) => bindSlideRef(index, el)}
                         className="douyin-feed-player__slide slider-video"
+                        data-episode={item.episode}
                         {...feedAttrs}
                     >
                         {slot ? (

@@ -10,7 +10,7 @@ import { writeMutedPreference } from '@/components/douyin-feed-player/controls/m
 import { unlockUserAudio } from '@/components/douyin-feed-player/feed/userGesturePlay';
 import Loader from '@/components/Loader';
 import { useDelayedVisible } from '@/hooks/useDelayedVisible';
-import { useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
+import { isPhonePlaybackDevice, useVideoPlayerDesktop } from '@/hooks/useVideoPlayerDesktop';
 import { useConfigStore } from '@/stores/config';
 import { useRootStore } from '@/stores/root';
 import { useUserStore } from '@/stores/user';
@@ -420,6 +420,7 @@ export default function VDemoPage() {
         <div
             ref={fullscreenTargetRef}
             className="v-demo v-demo--h5 foryou-vertical video-fullscreen-target fixed inset-0 z-0 overflow-hidden bg-black"
+            data-player-phone={isPhonePlaybackDevice() || undefined}
         >
             {playerBody}
         </div>

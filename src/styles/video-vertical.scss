@@ -81,6 +81,40 @@
     min-height: 100%;
 }
 
+.video-fullscreen-target--immersive .douyin-player-slot__stage--aspect {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+}
+
+/**
+ * hgdju 的移动端横屏方案：外层固定铺满视口，竖持手机时把播放舞台旋转 90°；
+ * 手机已经横过来时取消旋转。避免依赖 iOS 不支持的 Screen Orientation lock。
+ */
+@media (orientation: portrait) {
+    .video-fullscreen-target--immersive.video-fullscreen-target--landscape {
+        inset: auto !important;
+        top: 50% !important;
+        left: 50% !important;
+        width: 100dvh !important;
+        max-width: none !important;
+        height: 100vw !important;
+        min-height: 100vw !important;
+        transform: translate(-50%, -50%) rotate(90deg);
+        transform-origin: center center;
+    }
+}
+
+@media (orientation: landscape) {
+    .video-fullscreen-target--immersive.video-fullscreen-target--landscape {
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        transform: none;
+    }
+}
+
 .video-fullscreen-target:fullscreen>.video-vertical-swiper,
 .video-fullscreen-target:-webkit-full-screen>.video-vertical-swiper,
 .video-fullscreen-target:fullscreen>.foryou-vertical,
@@ -899,6 +933,71 @@
     }
 }
 
+/** Landscape H5: a slim single rail, with labels beside icons to preserve height. */
+@media (orientation: landscape) and (max-height: 600px) {
+    :is(.for-demo--h5, .v-demo--h5)[data-player-phone] {
+        .video-player-h5-side-actions {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            justify-content: safe center;
+            gap: clamp(3px, 1dvh, 5px);
+            width: 72px;
+            top: max(16px, env(safe-area-inset-top));
+            bottom: max(76px, calc(env(safe-area-inset-bottom) + 60px));
+            right: max(12px, env(safe-area-inset-right));
+            max-height: none;
+            overflow-y: auto;
+            scrollbar-width: none;
+            transform: none;
+        }
+
+        .video-player-side-action {
+            flex-direction: row;
+            justify-content: flex-start;
+            gap: 8px;
+            width: 72px;
+            min-height: clamp(26px, 7.4dvh, 32px);
+            text-shadow: 0 1px 4px rgb(0 0 0 / 60%);
+        }
+
+        .video-player-side-action__icon {
+            flex: 0 0 22px;
+            width: 22px;
+            height: 22px;
+
+            > svg, > img { width: 20px; height: 20px; }
+        }
+
+        .video-player-side-action__label {
+            flex: 1;
+            min-width: 0;
+            font-size: 11px;
+            line-height: 16px;
+            height: 16px;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+        }
+
+        .video-player-root .video-player-h5-info {
+            padding-right: calc(80px + env(safe-area-inset-right));
+        }
+
+        .video-player-root .video-player-h5-bottom {
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+        }
+
+        // The toolbar already has a fullscreen entry; the portrait-only chip
+        // would sit on top of the progress and transport controls here.
+        .douyin-player-slot__landscape-fullscreen { display: none; }
+    }
+}
+
 /** PC / H5 共用：底部标题、简介、标签 */
 .video-player-root .video-player-h5-bottom {
     z-index: 10;
@@ -1274,6 +1373,69 @@
         min-height: calc(100% + 4px);
         object-fit: cover;
         object-position: center;
+    }
+}
+
+/** Only phone landscape: consistent typography and compact, safe-area-aware chrome. */
+@media (orientation: landscape) and (max-height: 600px) {
+    :is(.for-demo--h5, .v-demo--h5)[data-player-phone] {
+        .video-player-h5-topbar,
+        .for-demo-feed-back-topbar {
+            padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+            gap: 4px;
+        }
+
+        .video-player-h5-topbar-back { width: 32px; height: 32px; }
+        .video-player-h5-topbar-ep { font-size: 13px; line-height: 20px; font-weight: 600; }
+
+        .video-player-root .video-player-h5-bottom {
+            gap: 4px;
+            padding: 16px max(16px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+            background: linear-gradient(180deg, transparent, rgb(0 0 0 / 36%) 45%, rgb(0 0 0 / 70%));
+        }
+
+        .video-player-root .video-player-h5-info {
+            width: min(68%, 560px);
+            max-width: calc(100% - 88px);
+            padding-right: 0;
+            text-shadow: 0 1px 4px rgb(0 0 0 / 55%);
+        }
+
+        .video-player-root .video-player-h5-title-row { gap: 6px; margin-bottom: 3px; }
+        .video-player-root .video-player-h5-title { font-size: 16px; line-height: 22px; font-weight: 600; }
+        .video-player-root .video-player-h5-title-chevron { width: 14px; height: 14px; opacity: 0.75; }
+        .video-player-root .video-player-h5-desc { gap: 3px; margin-bottom: 5px; font-size: 12px; line-height: 17px; color: rgb(255 255 255 / 76%); }
+        .video-player-root .video-player-h5-tags { gap: 5px; margin-bottom: 5px; }
+        .video-player-root .video-player-h5-tag { padding: 1px 7px; border-radius: 5px; font-size: 10px; line-height: 17px; background: rgb(255 255 255 / 14%); }
+
+        .foryou-watch-full-btn {
+            min-height: 30px;
+            margin-bottom: 4px;
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 20px;
+            background: rgb(255 255 255 / 14%);
+        }
+
+        .video-player-root .video-player-h5-toolbar { min-height: 28px; gap: 10px; }
+        .video-player-root .video-player-h5-time { font-size: 11px; line-height: 16px; font-variant-numeric: tabular-nums; color: rgb(255 255 255 / 85%); }
+        .video-player-root .video-player-h5-toolbar-actions { gap: 12px; }
+        .video-player-root .video-player-h5-toolbar-actions > * { display: flex; align-items: center; justify-content: center; min-width: 30px; min-height: 30px; }
+        .video-player-root .video-player-h5-speed { font-size: 12px; line-height: 16px; }
+        .video-player-root .video-player-progress-thumb { right: -4.5px; width: 9px; height: 9px; }
+
+        .douyin-player-fullscreen-exit {
+            top: max(8px, env(safe-area-inset-top));
+            left: max(12px, env(safe-area-inset-left));
+            min-height: 32px;
+            padding: 0 10px;
+            border-radius: 16px;
+            background: rgb(0 0 0 / 38%);
+            font-size: 12px;
+            line-height: 18px;
+            svg { width: 16px; height: 16px; }
+        }
     }
 }
 

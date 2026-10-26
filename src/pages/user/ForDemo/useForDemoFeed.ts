@@ -22,6 +22,7 @@ function mapRowsToPlayerItems(rows: IForYouFeedItem[], staticBase: string): Douy
         return {
             // 列表位 index 保证跨页重复 id-ep_id 时播放器 slide key 仍唯一
             id: `${foryouFeedItemKey(row)}#${index}`,
+            episode: row.episode ?? 1,
             url: url ?? '',
             subtitle: row.subtitle != null ? String(row.subtitle) : '',
         };

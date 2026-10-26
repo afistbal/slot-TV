@@ -1,0 +1,57 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>H5 orientation regression</title>
+<style>body{background:#171717;color:white;font:14px sans-serif}iframe{width:390px;height:844px;border:0}pre{white-space:pre-wrap}button{padding:12px}</style>
+<button id="run">运行转屏回归</button><pre id="result">等待运行</pre><iframe id="player" title="手机播放器"></iframe>
+<script type="module">
+const frame=document.querySelector('#player'), output=document.querySelector('#result');
+const results=[];
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const waitFor=async(read,label)=>{for(let i=0;i<180;i++){const value=read();if(value)return value;await delay(100);}throw new Error(`Timeout: ${label}`);};
+const assert=(ok,label,detail)=>{results.push({passed:!!ok,label,detail});output.textContent=JSON.stringify(results,null,2);if(!ok)throw new Error(label);};
+const active=()=>frame.contentDocument.querySelector('.douyin-player-slot[data-active="true"]');
+const resize=async(w,h)=>{frame.style.width=`${w}px`;frame.style.height=`${h}px`;await delay(700);};
+document.querySelector('#run').onclick=async()=>{
+ results.length=0;
+ try{
+  for(const path of ['/video/4189086100831590/1','/foryou']){
+   await resize(390,844);
+   frame.src=path;await new Promise(resolve=>frame.onload=resolve);
+   await waitFor(()=>active()?.querySelector('video')?.videoWidth,'initial metadata');
+   const doc=frame.contentDocument,win=frame.contentWindow;
+   // Desktop automation keeps its UA: opt this fixture into the phone-only styling.
+   doc.querySelector('.video-fullscreen-target').dataset.playerPhone='true';
+   for(let i=0;i<2;i++){
+    const before=active();doc.querySelector('.video-player-next-episode-trigger').click();
+    await waitFor(()=>active()!==before&&active()?.querySelector('video')?.videoWidth,'next metadata');
+   }
+   const slot=active(),video=slot.querySelector('video'),index=slot.dataset.index;
+   assert(Number(index)>0,`${path}: 从非首集开始验证`,{index});
+   await delay(500);
+   if(!video.paused) slot.querySelector('.douyin-player-slot__stage').click();
+   const position=video.currentTime;
+   doc.querySelector('.video-player-h5-fullscreen').click();await delay(350);
+   for(let i=0;i<3;i++){
+    for(const [w,h] of [[844,390],[390,844]]){
+     await resize(w,h);
+     const target=doc.querySelector('.video-fullscreen-target');
+     assert(target.classList.contains('video-fullscreen-target--immersive')&&active()===slot&&slot.querySelector('video')===video,
+      `${path}: 第${i+1}轮 ${w}×${h} 全屏及视频节点保持`,{index:active()?.dataset.index,transform:win.getComputedStyle(target).transform});
+     assert(Math.abs(video.currentTime-position)<1,`${path}: 转屏保持播放位置`,{before:position,after:video.currentTime,paused:video.paused});
+    }
+   }
+   video.dispatchEvent(new win.Event('webkitendfullscreen'));await delay(100);
+   assert(doc.querySelector('.video-fullscreen-target--immersive'),`${path}: 原生视频退出事件不误清除页面全屏`);
+   doc.querySelector('.douyin-player-fullscreen-exit').click();await delay(250);
+   assert(!doc.querySelector('.video-fullscreen-target--immersive'),`${path}: 点击退出正常恢复`);
+   await resize(844,390);
+   const rail=doc.querySelector('.video-player-h5-side-actions');
+   const railRect=rail.getBoundingClientRect();
+   const buttons=[...rail.querySelectorAll('button')].map(button=>button.getBoundingClientRect());
+   assert(win.getComputedStyle(rail).display==='flex'&&buttons.every(r=>r.top>=0&&r.bottom<=390&&r.left>=0&&r.right<=844)&&buttons.every(r=>Math.abs(r.left-buttons[0].left)<1),
+    `${path}: 横屏右栏全部在视口内`,{count:buttons.length,top:railRect.top,bottom:railRect.bottom});
+   assert(!buttons.some((a,i)=>buttons.slice(i+1).some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)),`${path}: 右栏按钮互不重叠`);
+   assert(win.getComputedStyle(doc.querySelector('.douyin-player-slot__landscape-fullscreen')||rail).display==='none'||!doc.querySelector('.douyin-player-slot__landscape-fullscreen'),`${path}: 横屏不显示重复悬浮全屏按钮`);
+  }
+  output.textContent+='\n全部通过（浏览器尺寸变化与模拟事件，尚非真机测试）';
+ }catch(error){output.textContent+=`\nFAILED ${error.stack}`;}
+};
+</script></html>

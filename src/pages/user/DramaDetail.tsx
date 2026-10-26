@@ -32,6 +32,7 @@ import { buildDramaShareUrl } from '@/lib/shareUrls';
 import { resolveMovieTagLocalLabel } from '@/lib/movieTagLabels';
 import { cn } from '@/lib/utils';
 import { fetchVDemoMovieInfo, type VDemoPlayerData } from '@/pages/user/VDemo/fetchVDemoMovieInfo';
+import { resolveVDemoDrawerEpisodeLocked } from '@/pages/user/VDemo/vDemoUnlock';
 import { useConfigStore } from '@/stores/config';
 import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { useRootStore } from '@/stores/root';
@@ -101,6 +102,7 @@ export default function DramaDetail() {
     const isDesktop = useMinWidth768();
     const requireAccount = useRequireAccount();
     const referralCode = useUserStore((state) => getUserUidForDisplay(state.info));
+    const viewerIsVip = useUserStore((state) => Boolean(state.signed && state.info?.is_vip));
     const movieId = Number(params.id);
 
     const [data, setData] = useState<VDemoPlayerData | null>(null);
@@ -185,7 +187,14 @@ export default function DramaDetail() {
     const resumeEpisode = Math.max(1, Number(data?.info.play ?? firstEpisode));
     const views = readCount(rawInfo, ['views', 'play_count', 'view_count', 'plays']);
     const durationMinutes = readCount(rawInfo, ['duration_minutes', 'durationMinutes', 'minutes']);
-    const freeEpisodes = data?.episodes.filter((episode) => Number(episode.locked) !== 1 && Number(episode.vip) !== 1).length ?? 0;
+    const freeEpisodes = useMemo(() => {
+        let count = 0;
+        for (const episode of data?.episodes ?? []) {
+            if (Number(episode.vip) !== 0) break;
+            count += 1;
+        }
+        return count;
+    }, [data?.episodes]);
 
     const handleToggleFavorite = useCallback(async () => {
         if (!requireAccount()) return;
@@ -343,7 +352,7 @@ export default function DramaDetail() {
                         </div>
                         <div className="drama-detail__episodes">
                             {data.episodes.map((episode) => {
-                                const locked = Number(episode.locked) === 1;
+                                const locked = resolveVDemoDrawerEpisodeLocked(episode, viewerIsVip);
                                 const vip = Number(episode.vip) === 1;
                                 return (
                                     <Link

@@ -7,6 +7,9 @@
     height: 100%;
     background: #000;
     overflow: hidden;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .douyin-player-slot__stage {

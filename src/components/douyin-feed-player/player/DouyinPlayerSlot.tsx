@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type MutableRefObject } from 'react';
 import type Player from 'xgplayer';
 
 import mountLoadingGif from '@/assets/icons/loading.gif';
@@ -11,6 +11,7 @@ import { togglePlayerPlay } from '../controls/playerControlsApi';
 import { getFeedItemDataAttrs } from '../feed/buildPlayerSlots';
 import type { PlaybackMode, PlayerSlotState } from '../types';
 import { useDouyinPlayerSlot } from './useDouyinPlayerSlot';
+import { bindLongPressSpeed } from './bindLongPressSpeed';
 
 import './douyin-player-slot.scss';
 
@@ -49,11 +50,8 @@ export function DouyinPlayerSlot({
     const [mountLoadingVisible, setMountLoadingVisible] = useState(true);
     const [isLongPressSpeeding, setIsLongPressSpeeding] = useState(false);
     const [landscapeFullscreenTop, setLandscapeFullscreenTop] = useState<number | null>(null);
-    const longPressTimerRef = useRef<number | null>(null);
-    const longPressStartRef = useRef({ x: 0, y: 0 });
-    const previousRateRef = useRef(1);
-    const longPressActiveRef = useRef(false);
-    const suppressNextTapRef = useRef(false);
+    const surfaceRef = useRef<HTMLDivElement | null>(null);
+    const suppressTapUntilRef = useRef(0);
     const isDesktop = useVideoPlayerDesktop();
     const attrs = getFeedItemDataAttrs(slot.isActive);
 
@@ -94,8 +92,7 @@ export function DouyinPlayerSlot({
 
     const onTapVideo = useCallback(
         (event: MouseEvent) => {
-            if (suppressNextTapRef.current) {
-                suppressNextTapRef.current = false;
+            if (Date.now() < suppressTapUntilRef.current) {
                 event.preventDefault();
                 event.stopPropagation();
                 return;
@@ -112,49 +109,15 @@ export function DouyinPlayerSlot({
         [chromeTapSuppressRef, handleRef, infoBumpRef, onFullscreenVideoTap],
     );
 
-    const clearLongPressTimer = useCallback(() => {
-        if (longPressTimerRef.current !== null) {
-            window.clearTimeout(longPressTimerRef.current);
-            longPressTimerRef.current = null;
-        }
-    }, []);
-
-    const stopLongPressSpeed = useCallback(() => {
-        clearLongPressTimer();
-        const video = (handleRef.current?.player?.video ?? null) as HTMLVideoElement | null;
-        if (longPressActiveRef.current && video) video.playbackRate = previousRateRef.current;
-        if (longPressActiveRef.current) suppressNextTapRef.current = true;
-        longPressActiveRef.current = false;
-        setIsLongPressSpeeding(false);
-    }, [clearLongPressTimer, handleRef]);
-
-    const onLongPressPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-        if (!slot.isActive || event.button !== 0 || isControlsTarget(event.target)) return;
-        clearLongPressTimer();
-        longPressStartRef.current = { x: event.clientX, y: event.clientY };
-        longPressTimerRef.current = window.setTimeout(() => {
-            const video = (handleRef.current?.player?.video ?? null) as HTMLVideoElement | null;
-            if (!video) return;
-            previousRateRef.current = video.playbackRate || 1;
-            video.playbackRate = 2;
-            longPressActiveRef.current = true;
-            suppressNextTapRef.current = true;
-            setIsLongPressSpeeding(true);
-        }, 450);
-    }, [clearLongPressTimer, handleRef, slot.isActive]);
-
-    const onLongPressPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-        const dx = event.clientX - longPressStartRef.current.x;
-        const dy = event.clientY - longPressStartRef.current.y;
-        if (!isLongPressSpeeding && Math.hypot(dx, dy) > 12) clearLongPressTimer();
-    }, [clearLongPressTimer, isLongPressSpeeding]);
-
-    useEffect(() => () => {
-        clearLongPressTimer();
-        const video = (handleRef.current?.player?.video ?? null) as HTMLVideoElement | null;
-        if (video && longPressActiveRef.current) video.playbackRate = previousRateRef.current;
-        longPressActiveRef.current = false;
-    }, [clearLongPressTimer, handleRef]);
+    useEffect(() => {
+        const surface = surfaceRef.current;
+        const video = slotPlayer?.video as HTMLVideoElement | undefined;
+        if (!surface || !video || !slot.isActive) return;
+        return bindLongPressSpeed(surface, video, (active) => {
+            suppressTapUntilRef.current = active ? Infinity : Date.now() + 500;
+            setIsLongPressSpeeding(active);
+        });
+    }, [slot.isActive, slot.item.url, slotPlayer]);
 
     const showSubtitle = slot.isActive && Boolean(subtitleUrl.trim());
 
@@ -239,8 +202,20 @@ export function DouyinPlayerSlot({
                 stageRect.width / (videoWidth / videoHeight),
             );
             const mediaBottom = (stageRect.height + mediaHeight) / 2;
-            const lowerLetterboxHeight = Math.max(0, stageRect.height - mediaBottom);
-            const buttonCenter = mediaBottom + Math.min(48, lowerLetterboxHeight / 2);
+            const slide = stage.closest('.douyin-feed-player__slide');
+            const info = slide?.querySelector('.video-player-h5-info') as HTMLElement | null;
+            const infoTop = info
+                ? info.getBoundingClientRect().top - stageRect.top
+                : stageRect.height;
+            const desiredCenter = mediaBottom + 20;
+            const maxCenterBeforeTitle = infoTop - 22;
+            // hgdju keeps this chip immediately after the landscape picture and before
+            // the title block. If the remaining gap is too small, keep it just inside
+            // the picture instead of allowing it to cover the title.
+            const buttonCenter =
+                maxCenterBeforeTitle >= mediaBottom + 14
+                    ? Math.min(desiredCenter, maxCenterBeforeTitle)
+                    : mediaBottom - 22;
             setLandscapeFullscreenTop(Math.round(buttonCenter));
         };
 
@@ -263,6 +238,7 @@ export function DouyinPlayerSlot({
 
     return (
         <div
+            ref={surfaceRef}
             className="douyin-player-slot"
             data-index={slot.index}
             data-active={slot.isActive ? 'true' : 'false'}
@@ -272,16 +248,6 @@ export function DouyinPlayerSlot({
                 <div
                     className={stageClassName}
                     onClickCapture={onTapVideo}
-                    onPointerDown={onLongPressPointerDown}
-                    onPointerMove={onLongPressPointerMove}
-                    onPointerUp={stopLongPressSpeed}
-                    onPointerCancel={stopLongPressSpeed}
-                    onPointerLeave={(event) => {
-                        if (event.pointerType === 'mouse') stopLongPressSpeed();
-                    }}
-                    onContextMenu={(event) => {
-                        if (isLongPressSpeeding) event.preventDefault();
-                    }}
                 >
                     <div
                         ref={setMountEl}

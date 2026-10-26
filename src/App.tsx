@@ -749,9 +749,31 @@ function AppContent() {
         let lastSampleAt = performance.now();
         let lastVideoTimes = new WeakMap<HTMLVideoElement, number>();
 
-        const pingAlive = () => {
+        const routeEpisode = () => {
+            const segments = window.location.pathname.split('/').filter(Boolean);
+            const videoRouteIndex = segments.findIndex(segment => segment === 'video' || segment === 'v-demo');
+            if (videoRouteIndex >= 0) {
+                const value = Number(segments[videoRouteIndex + 2]);
+                if (Number.isSafeInteger(value) && value > 0) return value;
+            }
+            const episodesRouteIndex = segments.findIndex(segment => segment === 'episodes');
+            if (episodesRouteIndex >= 0) {
+                const match = segments[episodesRouteIndex + 1]?.match(/^episode-(\d+)-/i);
+                const value = Number(match?.[1]);
+                if (Number.isSafeInteger(value) && value > 0) return value;
+            }
+            return undefined;
+        };
+
+        const playingEpisode = (video: HTMLVideoElement) => {
+            const value = Number(video.closest<HTMLElement>('[data-episode]')?.dataset.episode);
+            return Number.isSafeInteger(value) && value > 0 ? value : routeEpisode();
+        };
+
+        const pingAlive = (episode: number) => {
             void api('alive', {
                 method: 'post',
+                data: { eposide: episode },
                 loading: false,
                 toastOnError: false,
             });
@@ -777,20 +799,22 @@ function AppContent() {
             lastSampleAt = now;
             if (document.visibilityState !== 'visible') return;
 
-            let videoAdvanced = false;
+            let currentEpisode: number | undefined;
             for (const video of document.querySelectorAll<HTMLVideoElement>('video')) {
                 if (!isVisiblePlayingVideo(video)) continue;
                 const currentTime = video.currentTime;
                 const previousTime = lastVideoTimes.get(video);
                 lastVideoTimes.set(video, currentTime);
-                if (previousTime !== undefined && currentTime > previousTime) videoAdvanced = true;
+                if (previousTime !== undefined && currentTime > previousTime) {
+                    currentEpisode = playingEpisode(video);
+                }
             }
 
-            if (!videoAdvanced) return;
+            if (currentEpisode === undefined) return;
             watchedSeconds += elapsedSeconds;
             if (watchedSeconds < ALIVE_WATCH_SECONDS) return;
             watchedSeconds -= ALIVE_WATCH_SECONDS;
-            pingAlive();
+            pingAlive(currentEpisode);
         };
 
         const handleVisibilityChange = () => {

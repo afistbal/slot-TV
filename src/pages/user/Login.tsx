@@ -474,12 +474,9 @@ export function PcLoginDialog({
         >
             <DialogContent
                 hideCloseButton
+                contentPreset="plain"
                 overlayClassName="rs-login-modal__overlay"
-                className={cn(
-                    'rs-login-modal__dialog rs-login-modal LoginModal_login_modal__oygOe',
-                    /* 对标 ant-modal-content：460×600；窄屏 width 用 min 避免溢出 */
-                    '!w-[min(460px,calc(100%-2rem))] !h-[600px] !min-h-[600px] !max-h-[600px] !max-w-[min(460px,calc(100%-2rem))] sm:!max-w-[min(460px,calc(100%-2rem))] !p-0 !box-border',
-                )}
+                className="rs-login-modal__dialog rs-login-modal LoginModal_login_modal__oygOe"
                 onEscapeKeyDown={handlePcDialogEscape}
                 onPointerDownOutside={handlePcDialogOutside}
             >

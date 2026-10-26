@@ -1,7 +1,11 @@
 import { useSyncExternalStore } from 'react';
 
-/** 播放页 PC 壳断点：≥1040 才进桌面布局，避免大屏手机横屏（宽 844–932）误切 PC */
+/** Keep the existing desktop/tablet breakpoint; only phones stay H5 through rotation. */
 const QUERY = '(min-width: 1040px)';
+
+export function isPhonePlaybackDevice(): boolean {
+    return /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(navigator.userAgent);
+}
 
 function subscribe(onChange: () => void) {
     const mq = window.matchMedia(QUERY);
@@ -10,7 +14,7 @@ function subscribe(onChange: () => void) {
 }
 
 function getSnapshot() {
-    return window.matchMedia(QUERY).matches;
+    return !isPhonePlaybackDevice() && window.matchMedia(QUERY).matches;
 }
 
 function getServerSnapshot() {

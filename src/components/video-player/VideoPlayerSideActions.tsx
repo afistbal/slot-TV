@@ -20,17 +20,17 @@ function SideActionItem({
     return (
         <button
             type="button"
-            className="group flex min-w-10 cursor-pointer flex-col items-center gap-0.5 border-0 bg-transparent p-0 text-white outline-none transition-transform duration-150 hover:scale-105 active:scale-90"
+            className="video-player-side-action group flex min-w-10 cursor-pointer flex-col items-center gap-0.5 border-0 bg-transparent p-0 text-white outline-none transition-transform duration-150 hover:scale-105 active:scale-90"
             onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 onClick(event);
             }}
         >
-            <span className="grid h-9 w-9 place-items-center">
+            <span className="video-player-side-action__icon grid h-9 w-9 place-items-center">
                 {icon}
             </span>
-            <span className={cn('h-4 text-center text-[11px] font-medium leading-4', labelClassName)}>{label}</span>
+            <span className={cn('video-player-side-action__label h-4 text-center text-[11px] font-medium leading-4', labelClassName)}>{label}</span>
         </button>
     );
 }

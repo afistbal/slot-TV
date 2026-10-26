@@ -174,10 +174,20 @@ export function DouyinPlayerControls({
             setScrubbing(false);
             return;
         }
-        hideChrome();
-    }, [clearChromeTimer, hideChrome, isFullscreenUi, syncChromeVisible]);
+        if (isDesktop) {
+            hideChrome();
+        } else {
+            showChrome();
+        }
+    }, [clearChromeTimer, hideChrome, isDesktop, isFullscreenUi, showChrome, syncChromeVisible]);
 
     useEffect(() => () => clearChromeTimer(), [clearChromeTimer]);
+
+    useEffect(() => {
+        if (isDesktop || !isFullscreenUi || !scrubbing) return;
+        clearChromeTimer();
+        syncChromeVisible(true);
+    }, [clearChromeTimer, isDesktop, isFullscreenUi, scrubbing, syncChromeVisible]);
 
     useEffect(() => {
         if (!chromeVideoTapRef) return;
@@ -238,6 +248,24 @@ export function DouyinPlayerControls({
     }, [bumpChrome, ctl.progressDragging, ctl.onSeekRatio, ctl.setProgressDragging]);
 
     return (
+        <>
+        {!isDesktop && isFullscreenUi ? (
+            <button
+                type="button"
+                className={cn('douyin-player-fullscreen-exit', chromeHidden && 'douyin-player-fullscreen-exit--hidden')}
+                tabIndex={chromeHidden ? -1 : undefined}
+                aria-hidden={chromeHidden}
+                aria-label="退出全屏"
+                data-vertical-swipe-ignore
+                onClick={(event) => {
+                    event.stopPropagation();
+                    void ctl.onToggleFullscreen();
+                }}
+            >
+                <Minimize size={18} aria-hidden />
+                退出全屏
+            </button>
+        ) : null}
         <div
             className={cn(
                 'douyin-player-controls video-player-root video-player-ui',
@@ -326,6 +354,11 @@ export function DouyinPlayerControls({
                             setScrubbing(false);
                             bumpChrome();
                         }}
+                        onTouchCancel={() => {
+                            ctl.setProgressDragging(false);
+                            setScrubbing(false);
+                            bumpChrome();
+                        }}
                     >
                         <div className="video-player-progress-track w-full h-1 bg-white/50 rounded-full overflow-visible">
                             <div
@@ -394,7 +427,9 @@ export function DouyinPlayerControls({
                                 />
                             </div>
                         ) : null}
-                        <div
+                        <button
+                            type="button"
+                            aria-label={ctl.isFullscreen ? '退出全屏' : '全屏播放'}
                             className="video-player-h5-fullscreen text-white flex shrink-0 items-center justify-center cursor-pointer"
                             onClick={(e) => {
                                 stopBubble(e);
@@ -407,11 +442,12 @@ export function DouyinPlayerControls({
                             ) : (
                                 <img src={fullscreenIcon} alt="" className="w-5 h-5" />
                             )}
-                        </div>
+                        </button>
                     </div>
                 </div>
                 </div>
             </div>
         </div>
+        </>
     );
 }

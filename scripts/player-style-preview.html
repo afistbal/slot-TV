@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>H5 样式与控件回归</title>
+<style>
+body{margin:0;background:#24262b;color:white;font:13px sans-serif}nav{position:fixed;bottom:0;left:0;right:0;z-index:2;height:56px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#24262b}button{padding:6px 10px}iframe{display:block;width:844px;height:390px;border:0}pre{white-space:pre-wrap;margin:12px;max-width:820px}
+</style>
+<nav>
+<button id="video">视频页</button><button id="foryou">推荐页</button>
+<button id="portrait">竖屏</button><button id="landscape">横屏</button>
+<button id="info">显示标题</button><button id="test">检查全屏隐藏</button>
+<select id="size" aria-label="手机尺寸"><option value="390,844">390 × 844</option><option value="320,640">320 × 640</option><option value="844,390">844 × 390</option><option value="390,360">390 × 360</option></select>
+<span id="status">等待加载</span>
+</nav>
+<iframe id="player" title="手机实际播放页"></iframe><pre id="result"></pre>
+<script type="module">
+const frame=document.querySelector('#player'),out=document.querySelector('#result'),status=document.querySelector('#status');
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const waitFor=async(read)=>{for(let i=0;i<240;i++){const value=read();if(value)return value;await delay(100);}throw Error('加载超时');};
+const active=()=>frame.contentDocument.querySelector('.douyin-player-slot[data-active="true"]');
+const resize=async(w,h)=>{frame.style.width=`${w}px`;frame.style.height=`${h}px`;await delay(300);};
+const showInfo=()=>{const slot=active(),video=slot?.querySelector('video');video?.pause();slot?.querySelector('.douyin-player-slot__stage')?.click();video?.pause();};
+async function load(path){status.textContent='加载中';frame.src=path;await new Promise(resolve=>frame.onload=resolve);await waitFor(()=>active()?.querySelector('video')?.videoWidth);frame.contentDocument.querySelector('.video-fullscreen-target').dataset.playerPhone='true';showInfo();status.textContent=path+' 已就绪';}
+document.querySelector('#video').onclick=()=>load('/video/4189086100831590/1');
+document.querySelector('#foryou').onclick=()=>load('/foryou');
+document.querySelector('#portrait').onclick=()=>resize(390,844);
+document.querySelector('#landscape').onclick=()=>resize(844,390);
+document.querySelector('#size').onchange=event=>resize(...event.target.value.split(',').map(Number));
+document.querySelector('#info').onclick=showInfo;
+document.querySelector('#test').onclick=async()=>{
+ const results=[],doc=frame.contentDocument,win=frame.contentWindow;
+ const check=(ok,label)=>{results.push({passed:!!ok,label});out.textContent=JSON.stringify(results,null,2);if(!ok)throw Error(label);};
+ const visible=()=>win.getComputedStyle(doc.querySelector('.douyin-player-fullscreen-exit')).visibility!=='hidden';
+ const barVisible=()=>Number(win.getComputedStyle(doc.querySelector('.video-player-h5-bottom')).opacity)>.9;
+ try{
+ doc.querySelector('.video-player-h5-fullscreen').click();await delay(200);
+ check(visible()&&barVisible(),'进入全屏显示退出按钮和进度条');
+ await delay(3450);check(!visible()&&!barVisible(),'3 秒无操作同时隐藏');
+ active().querySelector('.douyin-player-slot__stage').click();await delay(450);
+ check(visible()&&barVisible(),'点击画面恢复退出按钮和进度条');
+ const track=doc.querySelector('.video-player-h5-progress-track-wrap'),rect=track.getBoundingClientRect();
+ track.dispatchEvent(new win.MouseEvent('mousedown',{bubbles:true,clientX:rect.left+rect.width*.1}));
+ await delay(3450);check(visible()&&barVisible(),'持续拖动进度条超过 3 秒仍显示');
+ win.dispatchEvent(new win.MouseEvent('mouseup',{bubbles:true}));
+ await delay(3450);check(!visible()&&!barVisible(),'松手 3 秒后自动隐藏');
+ active().querySelector('.douyin-player-slot__stage').click();await delay(100);
+ doc.querySelector('.douyin-player-fullscreen-exit').click();await delay(200);
+ check(!doc.querySelector('.video-fullscreen-target--immersive'),'点击退出仍正常恢复');
+ showInfo();status.textContent='全部通过';
+ }catch(error){status.textContent=error.message;}
+};
+await load('/video/4189086100831590/1');
+</script>
+</html>

@@ -7,6 +7,37 @@
     pointer-events: auto;
 }
 
+.douyin-player-fullscreen-exit {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 18px;
+    background: rgb(0 0 0 / 45%);
+    color: #fff;
+    font-size: 12px;
+    pointer-events: auto;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.douyin-player-fullscreen-exit--hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.video-player-h5-fullscreen {
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
 /** Outer layer only moves; keep opacity at 1 to avoid backdrop-filter color jumps. */
 .douyin-player-controls .video-player-h5-bottom {
     position: absolute;

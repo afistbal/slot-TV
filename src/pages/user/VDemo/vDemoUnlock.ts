@@ -50,7 +50,7 @@ export function resolveVDemoDrawerEpisodeLocked(
     if (batchDetail != null) {
         return isEpisodeDetailLocked(batchDetail.lock);
     }
-    return row.vip !== 0 && row.locked === 1;
+    return Number(row.vip) !== 0 && isEpisodeDetailLocked(row.locked);
 }
 
 export function applyVDemoEpisodeUnlock(ep: IPlayerEpisode): void {

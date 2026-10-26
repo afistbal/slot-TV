@@ -49,6 +49,7 @@ export function buildVDemoFeedItems(
 
         return {
             id: row.id,
+            episode: Number(row.episode),
             url: locked ? '' : video,
             subtitle,
         };
@@ -68,6 +69,7 @@ export function areVDemoFeedItemsEqual(
         const right = b[i];
         if (
             left.id !== right.id ||
+            left.episode !== right.episode ||
             left.url !== right.url ||
             (left.subtitle ?? '') !== (right.subtitle ?? '')
         ) {
