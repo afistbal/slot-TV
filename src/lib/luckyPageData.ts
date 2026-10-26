@@ -2,8 +2,21 @@ import type { LuckyPageData, LuckyRewardCard, LuckyTask } from '@/api/lucky';
 
 type RecordValue = Record<string, unknown>;
 const object = (value: unknown): RecordValue => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : {};
-const count = (value: unknown): number => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : 0;
-const finite = (value: unknown): number => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
+const numeric = (value: unknown): number => typeof value === 'number'
+    ? value
+    : typeof value === 'string' && value.trim() !== '' ? Number(value) : Number.NaN;
+const isCount = (value: unknown): boolean => {
+    const parsed = numeric(value);
+    return Number.isSafeInteger(parsed) && parsed >= 0;
+};
+const count = (value: unknown): number => {
+    const parsed = numeric(value);
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+};
+const finite = (value: unknown): number => {
+    const parsed = numeric(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+};
 const list = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
 const w = (locale: string, cn: string, tw = cn) => locale === 'zh-TW' ? tw : cn;
 const hiddenNewcomerTaskKeys = new Set(['bind_x', 'follow_x', 'join_tg']);
@@ -18,8 +31,7 @@ export function camelLuckyPayload(value: unknown): unknown {
 
 export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPageData, 'daily' | 'newcomer'> {
     const data = object(camelLuckyPayload(value));
-    if (!Array.isArray(data.tasks) || !Array.isArray(data.once) || !Number.isSafeInteger(data.total) || !Number.isSafeInteger(data.earned) || !Number.isSafeInteger(data.onceTotal)
-        || Number(data.total) < 0 || Number(data.earned) < 0 || Number(data.onceTotal) < 0) throw new Error('POST /api/user/tasks：任务返回结构无效');
+    if (!Array.isArray(data.tasks) || !Array.isArray(data.once) || !isCount(data.total) || !isCount(data.earned) || !isCount(data.onceTotal)) throw new Error('POST /api/user/tasks：任务返回结构无效');
     const raw = data.tasks.map(object);
     const removed = raw.filter(row => /comment/i.test(String(row.key)));
     const byKey = new Map(raw.map(row => [String(row.key), row]));

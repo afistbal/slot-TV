@@ -43,6 +43,7 @@ import {
 } from '@/lib/movieTagLabels';
 import iconTag from '@/assets/images/icon_tag@2x.png';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
+import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
 import '@/styles/search-reelshort.scss';
 import '@/styles/shelf-reelshort.scss';
 
