@@ -297,7 +297,7 @@ export async function getLuckyPushConfig(): Promise<{ publicKey: string }> {
 export async function saveLuckyPushSubscription(subscription: PushSubscription): Promise<void> {
     const data = subscription.toJSON();
     if (!data.endpoint || !data.keys?.p256dh || !data.keys.auth) throw new Error('浏览器未返回完整推送订阅');
-    await luckyRequest(luckyRoutes.pushSubscribe, { endpoint: data.endpoint, p256dh: data.keys.p256dh, authKey: data.keys.auth, userAgent: navigator.userAgent }, true);
+    await luckyRequest(luckyRoutes.pushSubscribe, { endpoint: data.endpoint, keys: { p256dh: data.keys.p256dh, auth: data.keys.auth }, userAgent: navigator.userAgent }, true);
     invalidateLucky();
 }
 export async function removeLuckyPushSubscription(endpoint: string): Promise<void> {

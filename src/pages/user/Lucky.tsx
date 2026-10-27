@@ -9,7 +9,7 @@ import { LuckyIcon } from '@/components/LuckyIcon';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { createLuckyDemoData } from '@/data/luckyDemo';
-import { enableLuckyPushSubscription } from '@/lib/luckyPushSubscription';
+import { enableLuckyPushSubscription, type LuckyPushProgress } from '@/lib/luckyPushSubscription';
 import { useRootStore } from '@/stores/root';
 import { useLuckyStore } from '@/stores/lucky';
 import '@/styles/lucky.scss';
@@ -79,6 +79,7 @@ export default function Lucky() {
     const [taskError, setTaskError] = useState('');
     const [demo, setDemo] = useState(preview || Boolean(initialResult?.demo));
     const [busy, setBusy] = useState('');
+    const [pushProgress, setPushProgress] = useState<LuckyPushProgress | null>(null);
     const label = useCallback((text: string) => Object.prototype.hasOwnProperty.call(intl.messages, text) ? intl.formatMessage({ id: text }) : text, [intl]);
     const w = useCallback((cn: string, tw = cn) => intl.locale === 'zh-TW' ? tw : cn, [intl.locale]);
 
@@ -148,7 +149,8 @@ export default function Lucky() {
         let popup: Window | null = null;
         try {
             if (task.key === 'push_on' && !task.ready) {
-                await enableLuckyPushSubscription();
+                await enableLuckyPushSubscription(undefined, setPushProgress);
+                setPushProgress(null);
                 toast.success(w('推送通知已开启，请领取新手奖励', '推送通知已開啟，請領取新手獎勵'));
                 await load(true, true);
             } else if (task.action === 'claim') {
@@ -189,7 +191,7 @@ export default function Lucky() {
             popup?.close();
             const message = reason instanceof Error ? reason.message : String(reason);
             setTaskError(message); toast.error(message);
-        } finally { busyRef.current = false; if (activeRef.current) setBusy(''); }
+        } finally { busyRef.current = false; if (activeRef.current) { setBusy(''); setPushProgress(null); } }
     }
 
     const left = data ? Math.max(0, data.daily.total - data.daily.earned) : 0;
@@ -208,8 +210,9 @@ export default function Lucky() {
                     {closed && data.promo.nextOpenAt ? <small>{w('下次开启：', '下次開啟：')}{new Date(data.promo.nextOpenAt).toLocaleString(intl.locale)}</small> : null}
                 </section>
                 <section id="daily" ref={dailyRef} className="lucky-daily lucky-panel">
-                    <h2 className="lucky-section-title"><LuckyIcon name="gift" size={18} />{label('lucky_daily_title')}</h2>
+                    <div className="lucky-daily__heading"><h2 className="lucky-section-title"><LuckyIcon name="gift" size={18} />{label('lucky_daily_title')}</h2><button type="button" className="lucky-task__button" disabled={Boolean(busy) || demo} onClick={() => setAccountDialog('push')}>{w('通知设置', '通知設定')}</button></div>
                     {taskError ? <p className="lucky-task-error" role="alert">{taskError}</p> : null}
+                    {pushProgress ? <p role="status">{pushProgress === 'permission' ? w('请在浏览器提示中允许通知', '請在瀏覽器提示中允許通知') : pushProgress === 'connection' ? w('正在连接通知服务…', '正在連接通知服務…') : w('正在保存通知设置…', '正在儲存通知設定…')}</p> : null}
                     {progressError ? <p className="lucky-task-error" role="alert">{progressError}</p> : null}
                     {data.watchStreak ? <p className="lucky-streak-status">连续追剧 {data.watchStreak.currentStreak} 天 · 最长 {data.watchStreak.bestStreak} 天{data.watchStreak.nextAnchor ? ` · 下个里程碑 ${data.watchStreak.nextAnchor} 天 +${data.watchStreak.nextAnchorReward} 币` : ''}</p> : null}
                     {data.daily.restricted ? <p className="lucky-restricted">{w('当前账号暂不参与奖励，仍可正常观看', '目前帳號暫不參與獎勵，仍可正常觀看')}</p> : <>

@@ -531,11 +531,11 @@ function AppContent() {
         };
 
         syncPush();
-        window.addEventListener('yogo:push-subscription-changed', syncPush);
+        window.addEventListener('yogo-push-subscription-changed', syncPush);
         window.addEventListener('online', syncPush);
         return () => {
             cancelled = true;
-            window.removeEventListener('yogo:push-subscription-changed', syncPush);
+            window.removeEventListener('yogo-push-subscription-changed', syncPush);
             window.removeEventListener('online', syncPush);
         };
     }, [checked, sessionBootstrapReady]);

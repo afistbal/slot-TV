@@ -5,6 +5,23 @@ import {
 } from '@/api/lucky';
 
 const SERVICE_WORKER_READY_TIMEOUT_MS = 10_000;
+const PUSH_OPERATION_TIMEOUT_MS = 30_000;
+const PUSH_DISABLED_KEY = 'yogo:push-disabled';
+export type LuckyPushProgress = 'permission' | 'connection' | 'saving';
+
+async function pushOperation<T>(promise: Promise<T>, message: string): Promise<T> {
+    let timer = 0;
+    try {
+        return await Promise.race([
+            promise,
+            new Promise<never>((_, reject) => {
+                timer = window.setTimeout(() => reject(new Error(message)), PUSH_OPERATION_TIMEOUT_MS);
+            }),
+        ]);
+    } finally {
+        if (timer) window.clearTimeout(timer);
+    }
+}
 
 function ensurePushSupport(): void {
     if (!window.isSecureContext
@@ -52,8 +69,10 @@ export async function inspectLuckyPushSubscription(): Promise<{ subscribed: bool
     return { subscribed: Boolean(await registration.pushManager.getSubscription()) };
 }
 
-export async function enableLuckyPushSubscription(
+async function subscribeLuckyPushSubscription(
     preferredRegistration?: ServiceWorkerRegistration,
+    automatic = false,
+    onProgress?: (stage: LuckyPushProgress) => void,
 ): Promise<PushSubscription> {
     ensurePushSupport();
 
@@ -64,23 +83,30 @@ export async function enableLuckyPushSubscription(
     // Keep the permission prompt directly inside the user's click call stack.
     // Fetching config or waiting for the worker before this can make Safari and
     // Chromium treat the prompt as no longer user initiated.
-    if (Notification.permission !== 'granted'
-        && await Notification.requestPermission() !== 'granted') {
-        throw new Error('未获得通知权限，请在浏览器设置中允许通知后重试。');
+    if (Notification.permission !== 'granted') {
+        onProgress?.('permission');
+        const permission = await pushOperation(Notification.requestPermission(), '等待通知授权超时，请检查地址栏旁的通知提示，或在网站设置中允许通知后重试。');
+        if (permission !== 'granted') throw new Error('未获得通知权限，请在浏览器设置中允许通知后重试。');
     }
 
+    onProgress?.('connection');
     const [config, registration] = await Promise.all([
         getLuckyPushConfig(),
         getPushWorker(preferredRegistration),
     ]);
+    if (automatic && localStorage.getItem(PUSH_DISABLED_KEY) === '1') {
+        throw new Error('本设备已关闭推送通知。');
+    }
     const previous = await registration.pushManager.getSubscription();
-    const subscription = previous ?? await registration.pushManager.subscribe({
+    const subscription = previous ?? await pushOperation(registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: vapidKey(config.publicKey),
-    });
+    }), '连接浏览器通知服务超时，请检查网络后重试。');
 
     try {
+        onProgress?.('saving');
         await saveLuckyPushSubscription(subscription);
+        if (!automatic) localStorage.removeItem(PUSH_DISABLED_KEY);
         return subscription;
     } catch (reason) {
         if (!previous) await subscription.unsubscribe().catch(() => false);
@@ -88,8 +114,18 @@ export async function enableLuckyPushSubscription(
     }
 }
 
+export async function enableLuckyPushSubscription(
+    preferredRegistration?: ServiceWorkerRegistration,
+    onProgress?: (stage: LuckyPushProgress) => void,
+): Promise<PushSubscription> {
+    return subscribeLuckyPushSubscription(preferredRegistration, false, onProgress);
+}
+
 export async function disableLuckyPushSubscription(): Promise<void> {
     ensurePushSupport();
+    // Browser notification permission stays granted after unsubscribe. Remember
+    // the user's choice so startup/online synchronization does not undo it.
+    localStorage.setItem(PUSH_DISABLED_KEY, '1');
     const registration = await getPushWorker();
     const subscription = await registration.pushManager.getSubscription();
     if (!subscription) return;
@@ -109,7 +145,7 @@ export async function syncLuckyPushSubscription(
     preferredRegistration?: ServiceWorkerRegistration,
 ): Promise<boolean> {
     ensurePushSupport();
-    if (Notification.permission !== 'granted') return false;
-    await enableLuckyPushSubscription(preferredRegistration);
+    if (Notification.permission !== 'granted' || localStorage.getItem(PUSH_DISABLED_KEY) === '1') return false;
+    await subscribeLuckyPushSubscription(preferredRegistration, true);
     return true;
 }
