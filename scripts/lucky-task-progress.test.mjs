@@ -60,7 +60,7 @@ test('reported daily total 48 stays 48 even when a hidden comment cap is 3', () 
     assert.deepEqual(Array.from(result.daily.tasks, task => task.coins), [15, 3, 30, 15, 15]);
     assert.equal(result.newcomer.total, 30);
     assert.equal(result.newcomer.tasks[0].coins, 30);
-    assert.equal(result.newcomer.tasks[0].action, 'claim');
+    assert.equal(result.newcomer.tasks[0].action, 'push');
 });
 
 test('newcomer total counts visible task coins independently of the once aggregate', () => {
@@ -87,4 +87,15 @@ test('claimed newcomer rewards remain part of the one-time total', () => {
     });
     assert.equal(result.newcomer.total, 30);
     assert.equal(result.newcomer.tasks[0].done, true);
+});
+
+test('push always uses subscribe even when the server reports it ready', () => {
+    for (const ready of [false, true]) {
+        const result = exports.decodeLuckyTasks({
+            tasks: [], total: 0, earned: 0, once_total: 30,
+            once: [{ key: 'push_on', coins: 30, done: false, ready }],
+        });
+        assert.equal(result.newcomer.tasks[0].action, 'push');
+        assert.equal(result.newcomer.tasks[0].done, false);
+    }
 });

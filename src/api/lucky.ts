@@ -22,7 +22,7 @@ export type LuckyTaskAction = { url: string; kind: LuckySocialActionKind };
 export type LuckyRatingQuota = { left: number; reward: number };
 export type LuckyRatingCandidate = { dramaId: string; title: string; coverUrl: string; epsWatched: number; myRating?: number };
 export type LuckyRatingResult = number | undefined;
-export type LuckyCoinType = 'watchMore' | 'shareOnce' | 'sendComment' | 'watchRate' | 'watchMovie' | 'subNotice' | 'bindX' | 'subTel' | 'checkTel';
+export type LuckyCoinType = 'watchMore' | 'shareOnce' | 'sendComment' | 'watchRate' | 'watchMovie' | 'bindX' | 'subTel' | 'checkTel';
 export type LuckySocialConfig = { xUrl: string; xHandle?: string; tgChannelJoinUrl: string; tgChannel?: string; tgBotUrl: string; telegramLinked?: boolean };
 
 // Backend implementation contracts approved by the user; these are our planned
@@ -205,7 +205,8 @@ export async function checkLuckyX(): Promise<{ ready: boolean; queued?: boolean 
 }
 export async function claimLuckyTask(task: Pick<LuckyTask, 'key'>): Promise<LuckyClaimResult> {
     if (task.key === 'checkin') return claimLuckySignin();
-    const types: Record<string, LuckyCoinType> = { streak: 'watchMore', share: 'shareOnce', rating: 'watchRate', watch: 'watchMovie', push_on: 'subNotice', bind_x: 'bindX', join_tg: 'subTel' };
+    if (task.key === 'push_on') throw new Error('推送奖励由订阅接口自动发放，请使用开启通知操作');
+    const types: Record<string, LuckyCoinType> = { streak: 'watchMore', share: 'shareOnce', rating: 'watchRate', watch: 'watchMovie', bind_x: 'bindX', join_tg: 'subTel' };
     const type = types[task.key];
     if (!type) throw new Error(task.key === 'follow_x' ? '关注 X 暂未提供对应的领奖 type，不能当作绑定 X 领奖' : '该任务不能直接领取奖励');
     return getLuckyCoins(type);
@@ -305,18 +306,30 @@ export async function toggleDramaLike(dramaId: number): Promise<{ liked?: boolea
         ...(isCount(count) ? { count } : {}),
     };
 }
-export async function getLuckyPushConfig(): Promise<{ publicKey: string }> {
-    const data = await luckyRequest<{ publicKey: string }>(luckyRoutes.pushConfig);
-    return valid(luckyRoutes.pushConfig, data, typeof data.publicKey === 'string' && /^[A-Za-z0-9_-]+$/.test(data.publicKey));
+type LuckyPushConfig = { publicKey: string };
+let pushConfigCache: { session: string; at: number; data: LuckyPushConfig } | undefined;
+let pushConfigFlight: { session: string; promise: Promise<LuckyPushConfig> } | undefined;
+export function getLuckyPushConfig(): Promise<LuckyPushConfig> {
+    const key = session();
+    if (pushConfigCache?.session === key && Date.now() - pushConfigCache.at < 5 * 60 * 1000) return Promise.resolve(pushConfigCache.data);
+    if (pushConfigFlight?.session === key) return pushConfigFlight.promise;
+    const promise = luckyRequest<LuckyPushConfig>(luckyRoutes.pushConfig).then(data => {
+        valid(luckyRoutes.pushConfig, data, typeof data.publicKey === 'string' && /^[A-Za-z0-9_-]+$/.test(data.publicKey));
+        if (session() === key) pushConfigCache = { session: key, at: Date.now(), data };
+        return data;
+    }).finally(() => { if (pushConfigFlight?.promise === promise) pushConfigFlight = undefined; });
+    pushConfigFlight = { session: key, promise };
+    return promise;
 }
 export async function saveLuckyPushSubscription(subscription: PushSubscription): Promise<void> {
     const data = subscription.toJSON();
     if (!data.endpoint || !data.keys?.p256dh || !data.keys.auth) throw new Error('浏览器未返回完整推送订阅');
-    await luckyRequest(luckyRoutes.pushSubscribe, { endpoint: data.endpoint, keys: { p256dh: data.keys.p256dh, auth: data.keys.auth }, userAgent: navigator.userAgent }, true);
-    // Startup re-saves an existing browser subscription on every page. A task
-    // that is already ready/claimed has not changed, so keep its cached state.
-    // A newly enabled subscription must still refresh an unready task.
+    const result = claimResult(luckyRoutes.pushSubscribe, await luckyRequest(luckyRoutes.pushSubscribe, { endpoint: data.endpoint, keys: { p256dh: data.keys.p256dh, auth: data.keys.auth }, userAgent: navigator.userAgent }, true));
+    if (result.restricted) throw new Error('当前账号暂不能开启推送奖励');
+    if (result.notYet || result.pending) throw new Error('推送订阅尚未完成，请稍后重试');
+    // The subscribe endpoint awards the one-time bonus itself. Refresh a ready
+    // but unclaimed snapshot as well; never send a separate coin request.
     const tasks = record(useLuckyStore.getState().tasks);
     const pushTask = Array.isArray(tasks.once) ? tasks.once.map(record).find(task => task.key === 'push_on') : undefined;
-    if (!Array.isArray(tasks.once) || (pushTask && pushTask.ready !== true && pushTask.done !== true)) invalidateLucky();
+    if (!Array.isArray(tasks.once) || (pushTask && pushTask.done !== true)) invalidateLucky();
 }

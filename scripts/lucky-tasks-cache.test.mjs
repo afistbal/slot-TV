@@ -57,11 +57,13 @@ test('layout and welfare page share one in-flight request and fresh cache', asyn
     await s.api.getLuckyTasks(); assert.equal(s.taskCount(), 1);
 });
 
-test('startup push sync keeps an already-ready task snapshot: one tasks request', async () => {
+test('subscribing refreshes a ready task because the backend automatically awards its bonus', async () => {
     const s = setup(); await s.api.getLuckyTasks();
     await s.api.saveLuckyPushSubscription(subscription);
+    s.setResponse({ tasks: [], once: [{ key: 'push_on', ready: true, done: true }], total: 0, earned: 0, onceTotal: 30 });
     await s.api.getLuckyTasks();
-    assert.equal(s.state.revision, 0); assert.equal(s.taskCount(), 1);
+    assert.equal(s.state.revision, 1); assert.equal(s.taskCount(), 2);
+    assert.equal(s.state.tasks.once[0].done, true);
 });
 
 test('claimed push task and absent push task do not trigger redundant reloads', async () => {
@@ -85,6 +87,12 @@ test('claiming a reward still refreshes task state immediately', async () => {
     const s = setup(); await s.api.getLuckyTasks();
     await s.api.getLuckyCoins('shareOnce'); await s.api.getLuckyTasks();
     assert.equal(s.taskCount(), 2);
+});
+
+test('push tasks cannot fall back to the generic coin endpoint', async () => {
+    const s = setup();
+    await assert.rejects(s.api.claimLuckyTask({ key: 'push_on' }), /订阅接口自动发放/);
+    assert.equal(s.requests.length, 0);
 });
 
 test('task snapshots expire after 30 seconds', async () => {

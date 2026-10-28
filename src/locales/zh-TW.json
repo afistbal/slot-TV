@@ -854,6 +854,8 @@
     "lucky_newcomer_title": "新手任務",
     "lucky_newcomer_once": "只領一次，共 {coins} 幣",
     "lucky_once_push": "開啟推送通知",
+    "lucky_push_enable": "開啟",
+    "lucky_push_enabling": "開啟中…",
     "lucky_once_push_desc": "追的劇更新馬上知道",
     "lucky_once_bind_x": "綁定 X 帳號",
     "lucky_once_bind_x_desc": "綁定後可領取 X 任務獎勵",

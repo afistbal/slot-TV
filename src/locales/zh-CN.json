@@ -854,6 +854,8 @@
     "lucky_newcomer_title": "新手任务",
     "lucky_newcomer_once": "只领一次，共 {coins} 币",
     "lucky_once_push": "开启推送通知",
+    "lucky_push_enable": "开启",
+    "lucky_push_enabling": "开启中…",
     "lucky_once_push_desc": "追的剧更新马上知道",
     "lucky_once_bind_x": "绑定 X 账号",
     "lucky_once_bind_x_desc": "绑定后可领取 X 任务奖励",

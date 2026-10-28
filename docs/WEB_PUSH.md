@@ -4,7 +4,7 @@
 
 对照本地 `chunlou.tv (3)/chunlou.tv/assets/index-r2-Bf2Sd26N.js` 的 `zt()` 推送流程：检测 `serviceWorker`、`PushManager`、`Notification` → 用户点击时请求通知权限 → 等待 Service Worker → 复用已有订阅，没有才通过 VAPID 公钥创建订阅 → 保存订阅。后台同步只处理已授权用户，不弹出授权框。
 
-本站使用相同的能力检测和订阅顺序，公钥、保存接口仍使用本站后端，已有订阅不再依赖公钥接口。保留等待超时及新订阅保存失败后的回滚。
+本站使用相同的浏览器能力检测与真实订阅流程，公钥、保存接口使用本站后端。业务流程以本站约定为准：进入福利页预取 config；点击开启后调用 subscribe，奖励由 subscribe 接口自动发放，不复刻对标站的二次手动领奖。保留等待超时及新订阅保存失败后的回滚。
 
 缺少浏览器接口时，页面显示缺失的具体接口名；安卓显示 Chrome 普通标签页指引，只有 iOS 显示主屏幕指引。该检查发生在授权和后端请求之前；不能通过搬用对标代码让浏览器获得缺失的系统接口。不要将此提示当作接口报错或已确定为某个手机系统问题。
 
@@ -12,10 +12,10 @@
 
 接口统一使用 POST，携带当前用户的登录凭证。
 
-- `/api/user/push/config`：读取 `d.public_key`，前端适配为 `publicKey`。
-- `/api/user/push/subscribe`：保存浏览器生成的真实订阅，密钥必须放在 `keys` 对象中。
-- `/api/user/tasks`：保存成功后重新读取 `once` 中的 `push_on`，以 `ready` 判断是否可领取。
-- `/api/user/coin`：通过 `{ "type": "subNotice" }` 领取奖励；重复领取限制由后端执行。
+- `/api/user/push/config`：进入福利页时预取，读取 `d.public_key`，前端适配为 `publicKey`。同一会话共享请求并缓存五分钟，失败可重试，切换会话不复用配置。
+- `/api/user/push/subscribe`：点击开启后保存浏览器生成的真实订阅，密钥必须放在 `keys` 对象中；该接口自动发放一次性奖励，重复奖励限制由后端执行。
+- `/api/user/tasks`：订阅成功后重新读取 `once` 中的 `push_on`，按后端 `done` 显示已领取，不在前端伪造已领取状态。
+- 推送任务不调用 `/api/user/coin`，不发送 `subNotice`，不显示第二次“领取”按钮。`ready` 为真时也继续使用 subscribe 操作。
 
 订阅请求结构：
 
@@ -44,8 +44,8 @@ npx vite preview --mode prod --outDir .tmp/push-preview --port 5190 --strictPort
 使用 Chrome 或 Edge 打开 `http://localhost:5190/lucky`，登录测试账号，然后：
 
 1. 点击推送任务并允许浏览器通知。
-2. 确认订阅保存成功，任务刷新为可领取。
-3. 领取一次奖励，刷新页面确认不能重复领取。
+2. 确认只通过 subscribe 完成订阅和自动奖励，任务刷新为已领。
+3. 刷新页面确认不会重复发放奖励，网络请求中没有推送任务的 coin 调用。
 4. 关闭网页，让后端向这条真实订阅发送测试通知，确认收到并能点击打开对应页面。
 
 如果点击后没有授权弹窗，先看页面的处理状态：
@@ -63,6 +63,6 @@ npx vite preview --mode prod --outDir .tmp/push-preview --port 5190 --strictPort
 ## 回归检查
 
 ```powershell
-node --test scripts/lucky-push-subscription.test.mjs
+node --test scripts/lucky-push-subscription.test.mjs scripts/lucky-push-flow.test.mjs scripts/lucky-tasks-cache.test.mjs scripts/lucky-task-progress.test.mjs
 npx tsc -b
 ```

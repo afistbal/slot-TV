@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
-import { claimLuckyTask, finishLuckyExternalTask, getCachedLuckyPage, getLuckyPage, getLuckyTaskAction, type LuckyPageData, type LuckySocialActionKind, type LuckyTask } from '@/api/lucky';
+import { claimLuckyTask, finishLuckyExternalTask, getCachedLuckyPage, getLuckyPage, getLuckyPushConfig, getLuckyTaskAction, type LuckyPageData, type LuckySocialActionKind, type LuckyTask } from '@/api/lucky';
 import { LuckyAccountDialogs } from '@/components/LuckyAccountDialogs';
 import { LuckyRatingSheet } from '@/components/LuckyRatingSheet';
 import { LuckyIcon } from '@/components/LuckyIcon';
@@ -50,7 +50,7 @@ function TaskRows({ rows, busy, onAction, label }: { rows: LuckyTask[]; busy: st
     return <ul className="lucky-task-grid">{rows.map((task) => <li key={task.key} className={`lucky-task${task.done ? ' lucky-task--done' : ''}`}>
         <span className="lucky-task__icon"><LuckyIcon name={task.done ? 'check' : task.icon} size={15} /></span>
         <span className="lucky-task__copy"><strong>{label(task.title)}</strong><small><b>+{task.done ? task.earned ?? task.coins : task.coins}</b>{task.description ? ` · ${label(task.description)}` : ''}</small></span>
-        {task.xUsed ? <span /> : task.done ? <span className="lucky-task__done">{label('lucky_claimed')}</span> : <button type="button" className={`lucky-task__button${task.action === 'claim' ? ' is-claim' : ''}`} disabled={Boolean(busy)} onClick={() => onAction(task)}>{busy === task.key ? label('lucky_claiming') : label(task.action === 'claim' ? 'lucky_claim' : 'lucky_go')}</button>}
+        {task.xUsed ? <span /> : task.done ? <span className="lucky-task__done">{label('lucky_claimed')}</span> : <button type="button" className={`lucky-task__button${task.action === 'claim' ? ' is-claim' : ''}`} disabled={Boolean(busy)} onClick={() => onAction(task)}>{busy === task.key ? label(task.key === 'push_on' ? 'lucky_push_enabling' : 'lucky_claiming') : label(task.key === 'push_on' ? 'lucky_push_enable' : task.action === 'claim' ? 'lucky_claim' : 'lucky_go')}</button>}
     </li>)}</ul>;
 }
 
@@ -105,6 +105,16 @@ export default function Lucky() {
         return () => { activeRef.current = false; };
     }, [load, preview, sessionReady, revision]);
     useEffect(() => {
+        if (preview || !sessionReady) return;
+        let cancelled = false;
+        // Load config on entry, without asking for browser permission. The
+        // click path shares this request/cache and may retry a failed read.
+        void getLuckyPushConfig().catch(reason => {
+            if (!cancelled) setTaskError(reason instanceof Error ? reason.message : String(reason));
+        });
+        return () => { cancelled = true; };
+    }, [preview, sessionReady]);
+    useEffect(() => {
         async function onReturn() {
             if (document.visibilityState !== 'visible' || checkingSocialTask.current) return;
             const pending = readPendingSocialTask();
@@ -149,11 +159,11 @@ export default function Lucky() {
         busyRef.current = true; setBusy(task.key); setTaskError('');
         let popup: Window | null = null;
         try {
-            if (task.key === 'push_on' && !task.ready) {
+            if (task.key === 'push_on') {
                 await enableLuckyPushSubscription(undefined, setPushProgress);
                 setPushProgress(null);
-                toast.success(w('推送通知已开启，请领取新手奖励', '推送通知已開啟，請領取新手獎勵'));
                 await load(true, true);
+                toast.success(w('推送通知已开启', '推送通知已開啟'));
             } else if (task.action === 'claim') {
                 const result = await claimLuckyTask(task);
                 if (result.restricted) throw new Error(w('当前账号暂不能领取奖励', '目前帳號暫不能領取獎勵'));

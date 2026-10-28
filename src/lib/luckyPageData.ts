@@ -74,7 +74,7 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
         const row = once.get(key);
         if (!row || count(row.coins) <= 0) continue;
         newcomers.push({ key, icon, title, description, coins: count(row.coins), done: row.done === true,
-            ready: row.ready === true, xUsed: row.xUsed === true, action: row.ready === true ? 'claim' : action });
+            ready: row.ready === true, xUsed: row.xUsed === true, action: key !== 'push_on' && row.ready === true ? 'claim' : action });
     }
     // A task can report credited coins before the aggregate catches up. Keep
     // the summary at least as high as the actual visible task credits, without
