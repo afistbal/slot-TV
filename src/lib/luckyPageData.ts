@@ -33,7 +33,6 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
     const data = object(camelLuckyPayload(value));
     if (!Array.isArray(data.tasks) || !Array.isArray(data.once) || !isCount(data.total) || !isCount(data.earned) || !isCount(data.onceTotal)) throw new Error('POST /api/user/tasks：任务返回结构无效');
     const raw = data.tasks.map(object);
-    const removed = raw.filter(row => /comment/i.test(String(row.key)));
     const byKey = new Map(raw.map(row => [String(row.key), row]));
     const tasks: LuckyTask[] = [];
     const definitions: Array<[string, LuckyTask['icon'], string]> = [
@@ -81,11 +80,15 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
     // the summary at least as high as the actual visible task credits, without
     // counting claimable rewards or adding the aggregate a second time.
     const creditedTaskCoins = tasks.reduce((sum, task) => sum + (task.earned ?? 0), 0);
-    const summaryCoins = Math.max(0, count(data.earned) - removed.reduce((sum, row) => sum + count(row.earned), 0));
+    // The backend owns daily aggregates; hiding a task does not mean its cap
+    // or credits were included in those aggregates. Do not subtract them again.
+    const summaryCoins = count(data.earned);
     return {
         daily: { earned: Math.max(creditedTaskCoins, summaryCoins),
-            total: Math.max(0, count(data.total) - removed.reduce((sum, row) => sum + count(row.cap), 0)), restricted: data.restricted === true, tasks },
-        newcomer: { total: Math.max(0, count(data.onceTotal) - onceRows.filter(row => /comment/i.test(String(row.key)) || hiddenNewcomerTaskKeys.has(String(row.key))).reduce((sum, row) => sum + count(row.coins), 0)), tasks: newcomers },
+            total: count(data.total), restricted: data.restricted === true, tasks },
+        // once_total may be zero or include disabled social tasks. This caption
+        // describes the displayed tasks, including rewards already claimed.
+        newcomer: { total: newcomers.reduce((sum, task) => sum + task.coins, 0), tasks: newcomers },
     };
 }
 

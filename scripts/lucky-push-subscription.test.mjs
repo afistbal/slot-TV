@@ -7,7 +7,7 @@ import ts from 'typescript';
 const source = readFileSync(new URL('../src/lib/luckyPushSubscription.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 
-function setup({ saveFails = false, subscribed = true, permission = 'granted', permissionPending = false, subscribePending = false, fastTimeouts = false } = {}) {
+function setup({ saveFails = false, configFails = false, subscribed = true, permission = 'granted', permissionPending = false, subscribePending = false, fastTimeouts = false, missing = [], ios = false, secureContext = true } = {}) {
     const calls = { config: 0, save: 0, subscribe: 0, unsubscribe: 0, permission: 0 };
     let current;
     const subscription = { endpoint: 'https://push.example.test/device', unsubscribe: async () => { calls.unsubscribe++; current = null; return true; } };
@@ -17,16 +17,20 @@ function setup({ saveFails = false, subscribed = true, permission = 'granted', p
         subscribe: async () => { calls.subscribe++; if (subscribePending) return new Promise(() => {}); current = subscription; return subscription; },
     } };
     const api = {
-        getLuckyPushConfig: async () => { calls.config++; return { publicKey: 'BA' }; },
+        getLuckyPushConfig: async () => { calls.config++; if (configFails) throw new Error('config failed'); return { publicKey: 'BA' }; },
         saveLuckyPushSubscription: async () => { calls.save++; if (saveFails) throw new Error('save failed'); },
     };
     const exports = {};
     const context = {
-        exports, require: () => api, Uint8Array, atob,
-        window: { isSecureContext: true, Notification: {}, PushManager: {}, setTimeout: fastTimeouts ? callback => setTimeout(callback, 0) : setTimeout, clearTimeout },
+        exports, require: name => name === '@/lib/isIosLikeDevice' ? { isIosLikeDevice: () => ios } : api, Uint8Array, atob,
+        window: { isSecureContext: secureContext, Notification: {}, PushManager: {}, setTimeout: fastTimeouts ? callback => setTimeout(callback, 0) : setTimeout, clearTimeout },
         Notification: { permission, requestPermission: async () => { calls.permission++; return permissionPending ? new Promise(() => {}) : 'granted'; } },
         navigator: { serviceWorker: { getRegistration: async () => worker, ready: Promise.resolve(worker) } },
     };
+    for (const feature of missing) {
+        if (feature === 'ServiceWorker') delete context.navigator.serviceWorker;
+        else delete context.window[feature];
+    }
     vm.runInNewContext(compiled, context);
     return { actions: exports, calls, hasSubscription: () => Boolean(current) };
 }
@@ -70,6 +74,65 @@ test('already allowed notifications skip permission and report connection then s
     assert.deepEqual(stages, ['connection', 'saving']);
     assert.equal(state.calls.permission, 0);
     assert.equal(state.calls.save, 1);
+});
+
+test('existing subscription is saved without depending on the public key endpoint', async () => {
+    const state = setup({ configFails: true });
+    await state.actions.enableLuckyPushSubscription();
+    assert.equal(state.calls.config, 0);
+    assert.equal(state.calls.subscribe, 0);
+    assert.equal(state.calls.save, 1);
+});
+
+test('new subscription still requires our backend public key', async () => {
+    const state = setup({ subscribed: false, configFails: true });
+    await assert.rejects(state.actions.enableLuckyPushSubscription(), /config failed/);
+    assert.equal(state.calls.config, 1);
+    assert.equal(state.calls.subscribe, 0);
+    assert.equal(state.calls.save, 0);
+});
+
+for (const feature of ['ServiceWorker', 'PushManager', 'Notification']) {
+    test(`missing ${feature} reports the browser capability before requesting permission or APIs`, async () => {
+        const state = setup({ permission: 'default', missing: [feature] });
+        await assert.rejects(state.actions.enableLuckyPushSubscription(), error => {
+            assert.ok(error.message.includes(`缺少 ${feature}`));
+            assert.ok(error.message.includes('Chrome'));
+            assert.ok(!error.message.includes('iPhone'));
+            return true;
+        });
+        assert.equal(state.calls.permission, 0);
+        assert.equal(state.calls.config, 0);
+        assert.equal(state.calls.save, 0);
+        assert.equal(await state.actions.syncLuckyPushSubscription(), false);
+    });
+}
+
+test('iOS missing capabilities receive home screen guidance', async () => {
+    const state = setup({ ios: true, missing: ['PushManager'] });
+    await assert.rejects(state.actions.enableLuckyPushSubscription(), /添加到主屏幕/);
+});
+
+test('support detection matches the reference API checks without an additional context flag gate', async () => {
+    const state = setup({ secureContext: false });
+    await state.actions.enableLuckyPushSubscription();
+    assert.equal(state.calls.save, 1);
+});
+
+test('denied permissions do not request permission again or call the backend', async () => {
+    const state = setup({ permission: 'denied' });
+    await assert.rejects(state.actions.enableLuckyPushSubscription(), /通知权限已被浏览器禁止/);
+    assert.equal(state.calls.permission, 0);
+    assert.equal(state.calls.config, 0);
+    assert.equal(state.calls.save, 0);
+});
+
+test('automatic sync never prompts users who have not granted permission', async () => {
+    const state = setup({ permission: 'default' });
+    assert.equal(await state.actions.syncLuckyPushSubscription(), false);
+    assert.equal(state.calls.permission, 0);
+    assert.equal(state.calls.config, 0);
+    assert.equal(state.calls.save, 0);
 });
 
 test('subscribe adapter sends the nested browser keys required by the live backend', async () => {

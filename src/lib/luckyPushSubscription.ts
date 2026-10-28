@@ -2,6 +2,7 @@ import {
     getLuckyPushConfig,
     saveLuckyPushSubscription,
 } from '@/api/lucky';
+import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
 
 const SERVICE_WORKER_READY_TIMEOUT_MS = 10_000;
 const PUSH_OPERATION_TIMEOUT_MS = 30_000;
@@ -21,13 +22,23 @@ async function pushOperation<T>(promise: Promise<T>, message: string): Promise<T
     }
 }
 
+// Same capability checks as the reference site's supported/requestAndSubscribe.
+function missingPushFeatures(): string[] {
+    const missing: string[] = [];
+    if (!('serviceWorker' in navigator)) missing.push('ServiceWorker');
+    if (!('PushManager' in window)) missing.push('PushManager');
+    if (!('Notification' in window)) missing.push('Notification');
+    return missing;
+}
+
 function ensurePushSupport(): void {
-    if (!window.isSecureContext
-        || !('Notification' in window)
-        || !('serviceWorker' in navigator)
-        || !('PushManager' in window)) {
-        throw new Error('当前浏览器不支持推送通知；iPhone 请先添加到主屏幕后打开。');
-    }
+    const missing = missingPushFeatures();
+    if (!missing.length) return;
+
+    const guidance = isIosLikeDevice()
+        ? '请使用支持推送的 iOS 版本，并从添加到主屏幕的图标打开。'
+        : '请使用最新版 Chrome 的普通标签页打开，勿使用无痕模式。';
+    throw new Error(`当前浏览器未提供推送能力（缺少 ${missing.join('、')}）。${guidance}`);
 }
 
 function vapidKey(value: string): Uint8Array<ArrayBuffer> {
@@ -78,15 +89,18 @@ export async function enableLuckyPushSubscription(
     }
 
     onProgress?.('connection');
-    const [config, registration] = await Promise.all([
-        getLuckyPushConfig(),
-        getPushWorker(preferredRegistration),
-    ]);
+    const registration = await getPushWorker(preferredRegistration);
     const previous = await registration.pushManager.getSubscription();
-    const subscription = previous ?? await pushOperation(registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: vapidKey(config.publicKey),
-    }), '连接浏览器通知服务超时，请检查网络后重试。');
+    let subscription = previous;
+    if (!subscription) {
+        // Like the reference, reuse the browser subscription before creating one.
+        // Our VAPID key belongs to our backend, so only fetch it when subscribing.
+        const config = await getLuckyPushConfig();
+        subscription = await pushOperation(registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: vapidKey(config.publicKey),
+        }), '连接浏览器通知服务超时，请检查网络后重试。');
+    }
 
     try {
         onProgress?.('saving');
@@ -106,8 +120,7 @@ export async function enableLuckyPushSubscription(
 export async function syncLuckyPushSubscription(
     preferredRegistration?: ServiceWorkerRegistration,
 ): Promise<boolean> {
-    ensurePushSupport();
-    if (Notification.permission !== 'granted') return false;
+    if (missingPushFeatures().length || Notification.permission !== 'granted') return false;
     await enableLuckyPushSubscription(preferredRegistration);
     return true;
 }
