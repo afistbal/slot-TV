@@ -163,9 +163,9 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                     >
                         <span className="reelshort-bottom-nav__icon-wrap">
                             <Gift className="reelshort-bottom-nav__tab-icon reelshort-bottom-nav__tab-icon--vector" aria-hidden />
-                            <b className="reelshort-bottom-nav__badge" aria-label={intl.locale.startsWith('zh') ? `可领取 ${luckyBadge} 次` : `${luckyBadge} rewards available`}>
+                            {luckyBadge > 0 ? <b className="reelshort-bottom-nav__badge" aria-label={intl.locale.startsWith('zh') ? `可领取 ${luckyBadge} 次` : `${luckyBadge} rewards available`}>
                                 {luckyBadge > 9 ? '9+' : luckyBadge}
-                            </b>
+                            </b> : null}
                         </span>
                         <span className="reelshort-bottom-nav__tab-label">
                             <FormattedMessage id="nav_lucky" />

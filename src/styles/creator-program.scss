@@ -2186,6 +2186,21 @@
     margin-bottom: 24px;
 }
 
+.affiliate-reference__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.affiliate-reference__title-row > h1 {
+    min-width: 0;
+}
+
+.affiliate-reference__title-row > button {
+    flex-shrink: 0;
+}
+
 .affiliate-reference > header h1 {
     margin: 0;
     font-family: 'Noto Serif SC', 'Songti SC', serif;

@@ -14,7 +14,7 @@ import {
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
 import { useLuckyStore } from '@/stores/lucky';
-import { useTopUpStore } from '@/stores/topUp';
+import { DesktopProfileMenu } from '@/components/DesktopProfileMenu';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 import {
@@ -584,7 +584,7 @@ function TopNavHistoryEntry() {
   );
 }
 
-/** 顶栏「我的」：H5 点击进 /profile；PC 悬停展开卡片，头像点击仍进 /profile（下拉打开仅由 hover 控制） */
+/** 顶栏头像：H5 进入个人页，PC 点击展开分组菜单。 */
 function NavProfileAvatar() {
   const intl = useIntl();
   const navigate = useNavigate();
@@ -604,45 +604,8 @@ function NavProfileAvatar() {
   const userUid = getUserUidForDisplay(userStore.info ?? undefined);
   const avatarFallback = getProfileAvatarFallback(userName, userUid);
 
-  const [open, setOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const closeTimerRef = useRef<number | undefined>(undefined);
-
-  const clearCloseTimer = () => {
-    if (closeTimerRef.current) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = undefined;
-    }
-  };
-
-  const openMenu = () => {
-    clearCloseTimer();
-    setOpen(true);
-  };
-
-  const closeMenuSoon = () => {
-    clearCloseTimer();
-    closeTimerRef.current = window.setTimeout(() => {
-      setOpen(false);
-    }, 100);
-  };
-
-  useEffect(() => clearCloseTimer, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    const sync = () => setIsDesktop(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
-
+  const isDesktop = useMinWidth768();
   const profileEntryHref = '/profile';
-
-  const closeProfileMenu = () => {
-    clearCloseTimer();
-    setOpen(false);
-  };
 
   const avatarNode = hasPhoto ? (
     <img
@@ -695,116 +658,7 @@ function NavProfileAvatar() {
     }
   }
 
-  return (
-    <DropdownMenu
-      open={open}
-      modal={false}
-      onOpenChange={(next) => {
-        /* 打开仅由 hover 负责，避免点击头像时 Radix 与 Link 抢焦点；允许 false 以支持 Esc / 点外部关闭 */
-        if (!next) {
-          setOpen(false);
-        }
-      }}
-    >
-      <DropdownMenuTrigger asChild>
-        <Link
-          to={profileEntryHref}
-          className="reelshort-topnav__profile-link reelshort-topnav__profile-trigger"
-          aria-label={intl.formatMessage({ id: 'profile' })}
-          onClick={closeProfileMenu}
-          onMouseEnter={openMenu}
-          onMouseLeave={closeMenuSoon}
-        >
-          {avatarNode}
-        </Link>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        sideOffset={10}
-        className="reelshort-topnav__profile-menu reelshort-topnav__profile-menu--card"
-        onMouseEnter={openMenu}
-        onMouseLeave={closeMenuSoon}
-      >
-        <div className="reelshort-topnav__profile-card">
-          <div className="reelshort-topnav__profile-card-head">
-            <Link to={profileEntryHref} className="reelshort-topnav__profile-card-avatar-link" onClick={closeProfileMenu}>
-              {avatarNode}
-            </Link>
-            <div className="reelshort-topnav__profile-card-user">
-              <p className="reelshort-topnav__profile-card-name">
-                {isSignedUser ? userName : <FormattedMessage id="guest" />}
-              </p>
-              <p className="reelshort-topnav__profile-card-uid">
-                <span>UID {userUid || '--'}</span>
-              </p>
-            </div>
-            {isSignedUser ? (
-              <button
-                type="button"
-                className="reelshort-topnav__profile-card-logout"
-                onClick={() => {
-                  void handleLogout();
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  className="reelshort-topnav__profile-card-logout-icon"
-                  aria-hidden
-                >
-                  <path
-                    d="M6.66675 2.66663H4.66675C3.93037 2.66663 3.33341 3.26359 3.33341 3.99996V12C3.33341 12.7363 3.93037 13.3333 4.66675 13.3333H6.66675"
-                    stroke="currentColor"
-                    strokeWidth="1.33333"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M9.33325 10.6666L12 7.99996L9.33325 5.33329"
-                    stroke="currentColor"
-                    strokeWidth="1.33333"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 8H6.66675"
-                    stroke="currentColor"
-                    strokeWidth="1.33333"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <FormattedMessage id="logout" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="reelshort-topnav__profile-card-login"
-                onClick={() => {
-                  if (isDesktop) {
-                    navigate('/profile', { state: { openPcLogin: true } });
-                    return;
-                  }
-                  navigate('/page/login');
-                }}
-              >
-                <FormattedMessage id="login" />
-              </button>
-            )}
-          </div>
-          <div className="reelshort-topnav__profile-card-divider" />
-          <button
-            type="button"
-            className="reelshort-topnav__profile-card-topup"
-            onClick={() => useTopUpStore.getState().show()}
-          >
-            <FormattedMessage id="top_up" />
-          </button>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  return <DesktopProfileMenu signed={isSignedUser} onLogout={handleLogout}>{avatarNode}</DesktopProfileMenu>;
 }
 
 const HEADER_SCROLL_SOLID_THRESHOLD = 4;

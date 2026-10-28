@@ -2064,139 +2064,59 @@ span.reelshort-topnav__profile-avatar--placeholder {
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     }
 
-    .reelshort-topnav__profile-menu--card {
-        width: 320px;
-        padding: 16px;
-    }
-
-    .reelshort-topnav__profile-menu--card::before {
-        content: "";
-        position: absolute;
-        top: -6px;
-        right: 20px;
-        width: 12px;
-        height: 12px;
-        background: rgba(14, 14, 14, 0.98);
-        border-left: 1px solid rgba(255, 255, 255, 0.12);
-        border-top: 1px solid rgba(255, 255, 255, 0.12);
-        transform: rotate(45deg);
+    .reelshort-topnav__profile-menu--list {
+        width: 210px;
+        border-radius: 14px;
+        border-color: #292c30;
+        background: #141618;
+        padding: 6px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
     }
 
     .reelshort-topnav__profile-menu-item {
-        border-radius: 8px;
-        font-size: 14px;
-        line-height: 1.3;
-        cursor: pointer;
-    }
-
-    .reelshort-topnav__profile-menu-item:focus,
-    .reelshort-topnav__profile-menu-item:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-    }
-
-    .reelshort-topnav__profile-card-head {
         display: flex;
         align-items: center;
+        min-height: 34px;
         gap: 10px;
-    }
-
-    .reelshort-topnav__profile-card-avatar-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 48px;
-        height: 48px;
-        border-radius: 9999px;
-        overflow: hidden;
-        flex-shrink: 0;
-        background: rgba(255, 255, 255, 0.08);
-    }
-
-    .reelshort-topnav__profile-card-user {
-        min-width: 0;
-        flex: 1;
-    }
-
-    .reelshort-topnav__profile-card-name {
-        margin: 0;
-        color: rgba(255, 255, 255, 0.92);
-        font-size: 14px;
-        font-weight: 600;
-        line-height: 1.25;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .reelshort-topnav__profile-card-uid {
-        margin: 4px 0 0;
-        color: rgba(255, 255, 255, 0.55);
+        padding: 8px 12px;
+        border-radius: 10px;
+        color: #d9dde2;
         font-size: 12px;
-        line-height: 1.2;
-    }
-
-    .reelshort-topnav__profile-card-logout {
-        border: 0;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.75);
-        font-size: 13px;
-        line-height: 1;
-        cursor: pointer;
-        padding: 0;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .reelshort-topnav__profile-card-logout:hover {
-        color: #fff;
-    }
-
-    .reelshort-topnav__profile-card-login {
-        height: 30px;
-        min-width: 58px;
-        border: 1px solid rgba(255, 255, 255, 0.38);
-        border-radius: 4px;
-        background: transparent;
-        color: #fff;
-        font-size: 16px;
-        line-height: 1;
-        padding: 0 10px;
+        font-weight: 600;
+        line-height: 1.4;
+        text-decoration: none;
         cursor: pointer;
     }
 
-    .reelshort-topnav__profile-card-login:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    .reelshort-topnav__profile-card-logout-icon {
-        width: 16px;
-        height: 16px;
+    .reelshort-topnav__profile-menu-item > svg {
+        width: 14px;
+        height: 14px;
         flex-shrink: 0;
+        color: #89929d;
+        stroke-width: 1.7;
     }
 
-    .reelshort-topnav__profile-card-divider {
+    .reelshort-topnav__profile-menu-item:hover,
+    .reelshort-topnav__profile-menu-item[data-highlighted],
+    .reelshort-topnav__profile-menu-item[aria-current="page"] {
+        background: #1b1e21;
+        color: #fff;
+        outline: none;
+    }
+
+    .reelshort-topnav__profile-menu-item[data-disabled] {
+        opacity: 0.45;
+        cursor: default;
+    }
+
+    .reelshort-topnav__profile-menu-separator {
         height: 1px;
-        background: rgba(255, 255, 255, 0.1);
-        margin: 14px 0 12px;
+        margin: 8px 0;
+        background: #292c30;
     }
 
-    .reelshort-topnav__profile-card-topup {
-        width: 100%;
-        height: 36px;
-        border: 0;
-        border-radius: 4px;
-        background: var(--rs-brand);
-        color: var(--rs-brand-foreground);
-        font-size: 14px;
-        font-weight: 700;
-        line-height: 1;
-        cursor: pointer;
-    }
-
-    .reelshort-topnav__profile-card-topup:hover {
-        background: var(--rs-brand-hover);
+    .reelshort-topnav__profile-menu-session {
+        color: #89929d;
     }
 
     button.reelshort-topnav__menu-btn {

@@ -237,3 +237,12 @@
         padding: 1rem;
     }
 }
+
+/* 与反馈页 Page constrained 使用相同的自适应宽度。 */
+@media (min-width: 768px) {
+    .rs-my-list-page:not(.rs-my-list-page--h5) {
+        width: 100%;
+        max-width: 760px;
+        margin-inline: auto;
+    }
+}

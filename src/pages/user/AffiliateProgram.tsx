@@ -1,6 +1,7 @@
 import { openSharePoster } from '@/stores/sharePoster';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
+import { useSearchParams } from 'react-router';
 import { AffiliateDashboard } from '@/components/AffiliateDashboard';
 import { ProgramIcon } from '@/components/ProgramIcon';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
@@ -175,10 +176,20 @@ export default function AffiliateProgram() {
     const sessionBootstrapReady = useRootStore((store) => store.sessionBootstrapReady);
     const uid = useUserStore((store) => getUserUidForDisplay(store.info));
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
     const [eligibility, setEligibility] = useState<AffiliateEligibility>(() => readAffiliateEligibilityCache(uid) ?? emptyAffiliateEligibility(uid));
     const [requestState, setRequestState] = useState<'loading' | 'ready' | 'error'>('loading');
     const [requestError, setRequestError] = useState('');
     const state = eligibility.state;
+    const dashboardOpen = searchParams.get('view') === 'dashboard';
+
+    function toggleDashboard() {
+        const nextParams = new URLSearchParams(searchParams);
+        if (dashboardOpen) nextParams.delete('view');
+        else nextParams.set('view', 'dashboard');
+        setSearchParams(nextParams);
+        scrollRef.current?.scrollTo({ top: 0 });
+    }
 
     const loadAffiliate = useCallback(async () => {
         setRequestState('loading');
@@ -208,11 +219,19 @@ export default function AffiliateProgram() {
             <div ref={scrollRef} className="creator-program-page__scroll">
                 <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
                 <main className="affiliate-reference">
-                    <header><h1>{t('affiliate_title')}</h1><p>{t('affiliate_subtitle')}</p></header>
+                    <header>
+                        <div className="affiliate-reference__title-row">
+                            <h1>{t('affiliate_title')}</h1>
+                            <button type="button" className="creator-program__button" onClick={toggleDashboard}>
+                                {t(dashboardOpen ? 'affiliate_back_to_program' : 'affiliate_preview_active')}
+                            </button>
+                        </div>
+                        <p>{t('affiliate_subtitle')}</p>
+                    </header>
                     {requestState === 'error' ? <div className="affiliate-reference__refresh-note" role="status"><span>数据刷新失败，当前展示上次数据</span><button type="button" onClick={() => void loadAffiliate()}>重试</button><small>{requestError}</small></div> : null}
-                    {state === 'in_progress' ? <AffiliateProgress eligibility={eligibility} /> : null}
-                    {state === 'active' ? <AffiliateDashboard sessionReady={sessionBootstrapReady} /> : null}
-                    <AffiliateExplainer />
+                    {!dashboardOpen && state === 'in_progress' ? <AffiliateProgress eligibility={eligibility} /> : null}
+                    {dashboardOpen || state === 'active' ? <AffiliateDashboard sessionReady={sessionBootstrapReady} isActive={state === 'active'} /> : null}
+                    {!dashboardOpen ? <AffiliateExplainer /> : null}
                 </main>
             </div>
         </div>

@@ -70,7 +70,7 @@ function writeDashboardCache(uid: string, summary: AffiliateSummary, funnel: Aff
     }
 }
 
-export function AffiliateDashboard({ sessionReady }: { sessionReady: boolean }) {
+export function AffiliateDashboard({ sessionReady, isActive }: { sessionReady: boolean; isActive: boolean }) {
     const intl = useIntl();
     const t = (id: string) => intl.formatMessage({ id });
     const w = (cn: string, tw = cn) => intl.locale === 'zh-TW' ? tw : cn;
@@ -115,7 +115,7 @@ export function AffiliateDashboard({ sessionReady }: { sessionReady: boolean }) 
     return <section className="affiliate-inline-dashboard" aria-label={t('affiliate_dashboard_title')} aria-busy={loading}>
         <header className="affiliate-inline-dashboard__heading">
             <div><h2>{t('affiliate_dashboard_title')}</h2><p>{t('affiliate_dashboard_desc')}</p></div>
-            <span className="creator-program__status-badge creator-program__status-badge--approved"><ProgramIcon name="checkCircle" />{t('affiliate_active_title')}</span>
+            <span className={`creator-program__status-badge${isActive ? ' creator-program__status-badge--approved' : ''}`}><ProgramIcon name={isActive ? 'checkCircle' : 'clock'} />{t(isActive ? 'affiliate_active_title' : 'affiliate_progress_badge')}</span>
         </header>
         {errors.length ? <div className="affiliate-reference__refresh-note" role="status">
             <span>{w('数据刷新失败，当前展示上次数据', '資料重新整理失敗，目前顯示上次資料')}</span>

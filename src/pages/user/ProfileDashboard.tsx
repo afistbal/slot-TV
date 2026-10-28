@@ -179,7 +179,7 @@ export default function ProfileDashboard() {
                         </Card>
                         <nav className="me-quick me-dashboard__wide" aria-label={text('快捷入口', 'Quick links')}>
                             {quickEntries.map(({ name: entryName, Icon, to, tone, count }) => {
-                                const content = <><span className={`me-quick__icon ${tone ? `me-quick__icon--${tone}` : ''}`}><Icon size={20} />{count !== undefined ? <b className="me-quick__badge">{num(count)}</b> : null}</span><span>{entryName}</span></>;
+                                const content = <><span className={`me-quick__icon ${tone ? `me-quick__icon--${tone}` : ''}`}><Icon size={20} />{count !== undefined && count > 0 ? <b className="me-quick__badge">{num(count)}</b> : null}</span><span>{entryName}</span></>;
                                 return <Link key={entryName} to={to} onClick={event => { if (to === '/creator' && !requireAccount()) event.preventDefault(); }}>{content}</Link>;
                             })}
                         </nav>
