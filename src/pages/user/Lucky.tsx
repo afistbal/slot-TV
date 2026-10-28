@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
-import { claimLuckyTask, finishLuckyExternalTask, getCachedLuckyPage, getLuckyPage, getLuckyTaskAction, getLuckyTasks, type LuckyPageData, type LuckySocialActionKind, type LuckyTask } from '@/api/lucky';
+import { claimLuckyTask, finishLuckyExternalTask, getCachedLuckyPage, getLuckyPage, getLuckyTaskAction, type LuckyPageData, type LuckySocialActionKind, type LuckyTask } from '@/api/lucky';
 import { LuckyAccountDialogs } from '@/components/LuckyAccountDialogs';
 import { LuckyRatingSheet } from '@/components/LuckyRatingSheet';
 import { LuckyIcon } from '@/components/LuckyIcon';
@@ -67,6 +67,7 @@ export default function Lucky() {
     const busyRef = useRef(false);
     const checkingSocialTask = useRef(false);
     const activeRef = useRef(true);
+    const loadSequenceRef = useRef(0);
     const initialResultRef = useRef(preview ? undefined : getCachedLuckyPage(intl.locale));
     const initialResult = initialResultRef.current;
     const initialData = preview ? createLuckyDemoData() : initialResult?.data ?? null;
@@ -84,10 +85,12 @@ export default function Lucky() {
     const w = useCallback((cn: string, tw = cn) => intl.locale === 'zh-TW' ? tw : cn, [intl.locale]);
 
     const load = useCallback(async (silent = false, force = false) => {
+        const loadSequence = ++loadSequenceRef.current;
+        const sessionToken = localStorage.getItem('token');
         if (preview) { const next = createLuckyDemoData(); dataRef.current = next; setData(next); setDemo(true); setLoading(false); return; }
         if (!silent && !dataRef.current) setLoading(true);
         const result = await getLuckyPage(createLuckyDemoData, intl.locale, force);
-        if (!activeRef.current) return;
+        if (!activeRef.current || loadSequence !== loadSequenceRef.current || sessionToken !== localStorage.getItem('token')) return;
         dataRef.current = result.data; setData(result.data); setDemo(result.demo); setLoading(false);
     }, [preview, intl.locale]);
 
@@ -95,11 +98,9 @@ export default function Lucky() {
         activeRef.current = true;
         if (preview) void load(Boolean(dataRef.current));
         else if (sessionReady) {
-            // Render the store snapshot immediately, then refresh tasks in the background on every welfare entry.
-            void (async () => {
-                await getLuckyTasks(true).catch(() => undefined);
-                await load(Boolean(dataRef.current));
-            })();
+            // Share the layout's in-flight request / fresh snapshot. Claims and
+            // other task changes invalidate the cache or explicitly force load.
+            void load(Boolean(dataRef.current));
         }
         return () => { activeRef.current = false; };
     }, [load, preview, sessionReady, revision]);

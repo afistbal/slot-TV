@@ -2,6 +2,7 @@ import { api, type IPagination, type TData } from '@/api';
 import { VideoPosterLazyCover } from '@/components/VideoPosterLazyCover';
 import NoContent from '@/components/NoContent';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
+import { SearchDiscovery } from '@/components/SearchDiscovery';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -23,7 +24,7 @@ import { useRootStore } from '@/stores/root';
 import { Button } from '@/components/ui/button';
 import { ScrollTopArrowUp } from '@/components/icons/ScrollTopArrowUp';
 import { scrollElementToTop } from '@/lib/scrollToTop';
-import { ChevronLeft, ChevronRight, LoaderCircle, MoreHorizontal, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LoaderCircle, MoreHorizontal, Sparkles, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { InView } from 'react-intersection-observer';
 import { isOpaqueTagId } from '@/lib/isOpaqueTagId';
@@ -468,27 +469,6 @@ function SearchPcBookItem({ item }: { item: SearchRowItem }) {
     );
 }
 
-function SearchIcon16({ className }: { className?: string }) {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="1em"
-            height="1em"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            className={className}
-            aria-hidden
-        >
-            <path
-                fill="currentColor"
-                fillRule="evenodd"
-                d="M6.5 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9M1 6.5a5.5 5.5 0 1 1 9.727 3.52l3.127 3.126-.708.708-3.126-3.127A5.5 5.5 0 0 1 1 6.5"
-                clipRule="evenodd"
-            />
-        </svg>
-    );
-}
-
 export default function Component() {
     const { pathname } = useLocation();
     return <SearchPage type={resolveSearchPageType(pathname)} />;
@@ -500,13 +480,16 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     const navigate = useNavigate();
     const isCategoriesPage = type === 'categories';
     const isTagSearchPage = type === 'tagSearch';
-    const showH5SearchBar = type !== 'categories' && !isTagSearchPage;
+    const isSearchPage = type === 'search';
+    const showSearchBar = type === 'search';
     const showH5LegacyTagRow = type !== 'categories' && type !== 'search' && !isTagSearchPage;
     const configStore = useConfigStore();
     const sessionBootstrapReady = useRootStore((s) => s.sessionBootstrapReady);
     const timer = useRef(0);
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const requesting = useRef(false);
     const searchStore = useSearchStore();
+    const showRecommendations = isSearchPage && !searchStore.keyword.trim() && !searchStore.tag;
     const scrollRef = useRef<HTMLDivElement>(null);
     const pcTagsRef = useRef<HTMLDivElement>(null);
     const pcShelfHeadingRef = useRef<HTMLDivElement>(null);
@@ -563,6 +546,8 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     const scrollTopFabPrevScrollRef = useRef(0);
     const scrollTopFabHideTimerRef = useRef(0);
     const scrollTopForFab = useSearchStore((s) => s.scrollTop);
+
+    useEffect(() => () => window.clearTimeout(timer.current), []);
 
     useEffect(() => {
         return () => {
@@ -704,9 +689,28 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     }
 
     function handleClearKeyword() {
+        window.clearTimeout(timer.current);
         searchStore.setKeyword('');
+        submitKeywordSearch();
+        searchInputRef.current?.focus();
+    }
+
+    function submitKeywordSearch() {
+        window.clearTimeout(timer.current);
+        const keyword = useSearchStore.getState().keyword.trim();
+        searchStore.setKeyword(keyword);
+        searchStore.setTag('');
         searchStore.setPage(1);
-        loadData();
+        const query = new URLSearchParams(location.search);
+        if (keyword) query.set('q', keyword);
+        else query.delete('q');
+        const queryString = query.toString();
+        const nextSearch = queryString ? `?${queryString}` : '';
+        if (nextSearch !== location.search) {
+            navigate({ pathname: location.pathname, search: nextSearch }, { replace: true });
+        } else {
+            void loadData();
+        }
     }
 
     function handleScrollEnd(e: React.UIEvent<HTMLDivElement>) {
@@ -870,6 +874,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
     }
 
     function handleMoreChange(visible: boolean) {
+        if (showRecommendations) return;
         if (requesting.current) {
             return;
         }
@@ -1066,7 +1071,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                     state.list.length > 0 &&
                     searchUrlMatchesStore(location.search) &&
                     state.listScopeKey === buildSearchListScopeKey(state, false);
-                const tagsRequest = ensureMovieTags();
+                const tagsRequest = isSearchPage ? Promise.resolve() : ensureMovieTags();
                 if (canReuseList) {
                     await tagsRequest;
                     if (cancelled) return;
@@ -1105,7 +1110,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         return () => {
             cancelled = true;
         };
-    }, [sessionBootstrapReady, location.pathname, location.search]);
+    }, [sessionBootstrapReady, location.pathname, location.search, isSearchPage]);
 
     /** PC：三行高度上限 + 離屏二分測量，决定折疊時展示多少個 tag（展開鈕跟在末尾 tag 後） */
     useLayoutEffect(() => {
@@ -1212,7 +1217,19 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         return () => ro.disconnect();
     }, [isPc, isCategoriesPage, searchStore.tags]);
 
-    const searchPlaceholder = intl.formatMessage({ id: 'search_placeholder' });
+    const traditional = intl.locale === 'zh-TW';
+    const searchPlaceholder = traditional ? '女主隱忍多年，最後當眾反殺…' : '女主隐忍多年，最后当众反杀…';
+    const recommendationTitle = traditional ? '猜你喜歡' : '猜你喜欢';
+
+    async function exploreSearch(keyword: string, aliases: readonly string[]) {
+        await ensureMovieTags();
+        const tag = useSearchStore.getState().tags.find(row => {
+            const text = `${row.name ?? ''} ${row.unique_id ?? ''} ${row.local_label ?? ''}`.toLowerCase();
+            return aliases.some(alias => text.includes(alias.toLowerCase()));
+        });
+        if (tag) handleTagClick(String(tag.name ?? tag.unique_id));
+        else { searchStore.setKeyword(keyword); submitKeywordSearch(); }
+    }
 
     const pcTagsForRender =
         isPc &&
@@ -1245,13 +1262,16 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         : searchStore.more;
     const showPcPagination =
         isPc &&
+        !showRecommendations &&
         searchStore.list.length > 0 &&
         (totalKnown ? totalPages > 1 : searchStore.more || searchStore.page > 1);
 
-    const pcGridCols = usePcSearchGridColumns(isPc);
+    const standardPcGridCols = usePcSearchGridColumns(isPc);
+    const pcGridCols = isSearchPage ? Math.min(6, standardPcGridCols) : standardPcGridCols;
     /** PC：尚有下一页时裁掉末行未满格（对齐首页 Latest Updates `pcHideIncompleteRow`） */
     const pcSearchListForRender = useMemo(() => {
         const rows = searchStore.list;
+        if (showRecommendations) return rows.slice(0, pcGridCols);
         if (!isPc || !canNextPc || rows.length === 0) {
             return rows;
         }
@@ -1261,12 +1281,15 @@ export function SearchPage({ type }: { type: SearchPageType }) {
         }
         const kept = rows.length - remainder;
         return kept <= 0 ? rows : rows.slice(0, kept);
-    }, [isPc, canNextPc, searchStore.list, pcGridCols]);
+    }, [isPc, canNextPc, searchStore.list, pcGridCols, showRecommendations]);
+    const h5SearchListForRender = showRecommendations ? searchStore.list.slice(0, 9) : searchStore.list;
 
     return (
         <div
             className={cn(
                 'rs-search-page',
+                isSearchPage && 'rs-search-page--search',
+                showRecommendations && 'rs-search-page--recommendations',
                 isCategoriesPage && 'rs-search-page--categories',
                 isH5SearchPage && 'rs-search-page--h5Search',
                 isH5TagSearchPage && 'rs-search-page--h5TagSearch',
@@ -1283,21 +1306,28 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                     showPrimaryNav={isCategoriesPage}
                     leftAction={isH5InnerNavPage ? 'back' : 'menu'}
                     showRightActions={!isH5InnerNavPage}
-                    showSearch={isCategoriesPage}
+                    showSearch
                     showProfile={!isH5InnerNavPage}
                     showLanguage={!isH5InnerNavPage}
                     showHistory={!isH5InnerNavPage}
                 />
 
-                {showH5SearchBar ? (
-                <div className="rs-search-page__barPad md:hidden">
-                    <div role="search-bar" className="rs-search-page__bar">
+                {showSearchBar ? (
+                <div className="rs-search-page__barPad">
+                    <form role="search" className="rs-search-page__bar" onSubmit={(event) => {
+                        event.preventDefault();
+                        submitKeywordSearch();
+                    }}>
                         <div className="rs-search-page__barInner">
-                            <SearchIcon16 className="rs-search-page__barIcon" />
+                            <Sparkles className="rs-search-page__barIcon" aria-hidden />
                             <input
+                                ref={searchInputRef}
                                 value={searchStore.keyword}
-                                autoFocus
+                                autoFocus={isPc}
                                 onChange={handleKeywordChange}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' && event.nativeEvent.isComposing) event.preventDefault();
+                                }}
                                 type="search"
                                 enterKeyHint="search"
                                 maxLength={32}
@@ -1305,40 +1335,34 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                 name="search"
                                 className="rs-search-input rs-search-page__input"
                                 placeholder={searchPlaceholder}
+                                aria-label={searchPlaceholder}
                             />
                             <div className="rs-search-page__clearWrap">
                                 {searchStore.keyword.trim().length > 0 ? (
-                                    <span
-                                        role="img"
-                                        aria-label="close-circle"
-                                        tabIndex={-1}
-                                        className="rs-search-page__clear rs-search-clear anticon anticon-close-circle"
+                                    <button
+                                        type="button"
+                                        aria-label={intl.formatMessage({ id: 'search_clear_input', defaultMessage: '清空搜索' })}
+                                        className="rs-search-page__clear"
                                         onClick={handleClearKeyword}
                                     >
-                                        <svg
-                                            fillRule="evenodd"
-                                            viewBox="64 64 896 896"
-                                            focusable="false"
-                                            data-icon="close-circle"
-                                            width="1em"
-                                            height="1em"
-                                            fill="currentColor"
-                                            aria-hidden="true"
-                                        >
-                                            <path d="M512 64c247.4 0 448 200.6 448 448S759.4 960 512 960 64 759.4 64 512 264.6 64 512 64zm127.98 274.82h-.04l-.08.06L512 466.75 384.14 338.88c-.04-.05-.06-.06-.08-.06a.12.12 0 00-.07 0c-.03 0-.05.01-.09.05l-45.02 45.02a.2.2 0 00-.05.09.12.12 0 000 .07v.02a.27.27 0 00.06.06L466.75 512 338.88 639.86c-.05.04-.06.06-.06.08a.12.12 0 000 .07c0 .03.01.05.05.09l45.02 45.02a.2.2 0 00.09.05.12.12 0 00.07 0c.02 0 .04-.01.08-.05L512 557.25l127.86 127.87c.04.04.06.05.08.05a.12.12 0 00.07 0c.03 0 .05-.01.09-.05l45.02-45.02a.2.2 0 00.05-.09.12.12 0 000-.07v-.02a.27.27 0 00-.05-.06L557.25 512l127.87-127.86c.04-.04.05-.06.05-.08a.12.12 0 000-.07c0-.03-.01-.05-.05-.09l-45.02-45.02a.2.2 0 00-.09-.05.12.12 0 00-.07 0z" />
-                                        </svg>
-                                    </span>
+                                        <X aria-hidden />
+                                    </button>
                                 ) : null}
                             </div>
+                            <button type="submit" disabled={!searchStore.keyword.trim()} className="rs-search-page__submit" aria-label={intl.formatMessage({ id: 'search', defaultMessage: '搜索' })}>
+                                <ChevronRight aria-hidden />
+                            </button>
                         </div>
-                    </div>
+                    </form>
                 </div>
                 ) : null}
+
+                {showRecommendations ? <SearchDiscovery onExplore={(keyword, aliases) => void exploreSearch(keyword, aliases)} /> : null}
 
                 <div className="rs-search-page__body">
                     {isH5SearchPage ? (
                         <h2 className="rs-search-page__popularHeading">
-                            <FormattedMessage id="search_popular_now" defaultMessage="Popular Now" />
+                            {showRecommendations ? recommendationTitle : pageHeading()}
                         </h2>
                     ) : null}
                     {isH5TagSearchPage && activeTagKey && pcTagSearchTitle ? (
@@ -1591,7 +1615,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 />
                                             </p>
                                         </header>
-                                    ) : !isCategoriesPage ? (
+                                    ) : !isCategoriesPage && !isSearchPage ? (
                                         <div className="rs-shelf__breadcrumbWrap">
                                             <nav aria-label="Breadcrumb" className="rs-shelf__breadcrumb">
                                                 <Link to="/">
@@ -1605,7 +1629,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                         </div>
                                     ) : null}
 
-                                    {(showCategoriesSelector || searchStore.tags.length > 0) && !isTagSearchPage ? (
+                                    {(showCategoriesSelector || searchStore.tags.length > 0) && isCategoriesPage ? (
                                         <div className="rs-search-page__pcTagPanel">
                                             {showCategoriesSelector ? (
                                                 <div className="rs-search-page__pcCategoryTabs">
@@ -1684,7 +1708,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                     {!isPcTagSearchPage ? (
                                         <div className="rs-shelf__heading" ref={pcShelfHeadingRef}>
                                             <div className="rs-shelf__headingRow">
-                                                <h1 className="rs-shelf__title">{pageHeading()}</h1>
+                                                <h1 className="rs-shelf__title">{showRecommendations ? recommendationTitle : pageHeading()}</h1>
                                             </div>
                                             <div className="rs-shelf__subRow" />
                                         </div>
@@ -1820,7 +1844,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                 ) : (
                                     <>
                                         <div className="rs-search-page__grid">
-                                            {searchStore.list.map((v) => {
+                                            {h5SearchListForRender.map((v) => {
                                                 const item = toSearchRowItem(v);
                                                 if (!item) {
                                                     return null;
@@ -1849,7 +1873,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                 );
                                             })}
                                         </div>
-                                        <InView
+                                        {!showRecommendations ? <InView
                                             as="div"
                                             onChange={handleMoreChange}
                                             className="rs-search-page__inview"
@@ -1861,7 +1885,7 @@ export function SearchPage({ type }: { type: SearchPageType }) {
                                                     <FormattedMessage id="no_more" />
                                                 </div>
                                             )}
-                                        </InView>
+                                        </InView> : null}
                                     </>
                                 )}
                             </div>

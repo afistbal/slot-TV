@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
     Bookmark,
-    Check,
     ChevronRight,
     Clock3,
     Eye,
@@ -359,10 +358,10 @@ export default function DramaDetail() {
                                         key={episode.id}
                                         className={cn('drama-detail__episode', !locked && 'is-open')}
                                         to={buildVDemoPath(data.info.id, episode.episode)}
-                                        aria-label={`第 ${episode.episode} 集`}
+                                        aria-label={`第 ${episode.episode} 集${locked ? '，需解锁' : ''}`}
                                     >
                                         <strong>{episode.episode}</strong>
-                                        {locked ? <LockKeyhole aria-hidden /> : vip ? <span className="drama-detail__vip">VIP</span> : <Check aria-hidden />}
+                                        {locked ? <LockKeyhole aria-hidden /> : vip ? <span className="drama-detail__vip">VIP</span> : null}
                                     </Link>
                                 );
                             })}

@@ -27,7 +27,7 @@
 <body>
   <script>
     (function () {
-      location.replace(location.origin + '/video/{{$id}}/{{$episode}}');
+      location.replace(location.origin + '/drama/{{$id}}' + location.search);
     })();
   </script>
 </body>

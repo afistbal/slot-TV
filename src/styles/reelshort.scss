@@ -2430,10 +2430,4 @@ a.reelshort-topnav__primary-link.is-active {
     padding: 0 7px;
 }
 .reelshort-topnav .reelshort-topnav__mobile-wallet span { display: inline; }
-@media (min-width: 768px) and (max-width: 1023px) {
-    .reelshort-topnav__benchmark-nav-item--secondary { display: none; }
-}
-@media (min-width: 1024px) and (max-width: 1279px) {
-    .reelshort-topnav__benchmark-nav-item--secondary span { display: none; }
-}
 .reelshort-lucky-badge { position:absolute; top:0; right:-10px; display:grid; min-width:16px; height:16px; padding:0 3px; place-items:center; border-radius:999px; background:var(--rs-brand); color:var(--rs-brand-foreground); font:700 10px/1 system-ui,sans-serif; }

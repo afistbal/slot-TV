@@ -48,7 +48,14 @@ async function luckyRequest<T>(path: string, data: Record<string, unknown> = {},
     return camelLuckyPayload(result.d) as T;
 }
 const pause = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
-function invalidateLucky() { taskCache = undefined; pageCache = undefined; useLuckyStore.getState().invalidate(); }
+let taskGeneration = 0;
+function invalidateLucky() {
+    taskGeneration++;
+    taskCache = undefined;
+    taskFlight = undefined;
+    pageCache = undefined;
+    useLuckyStore.getState().invalidate();
+}
 export function withoutLuckyComments(data: LuckyPageData): LuckyPageData {
     const comment = (row: { key: string }) => /comment/i.test(row.key);
     const removed = data.daily.tasks.filter(comment);
@@ -66,6 +73,7 @@ let pageCache: { session: string; locale: string; result: LuckyPageResult } | un
 const session = () => typeof localStorage === 'undefined' ? '' : localStorage.getItem('token') ?? '';
 export function getLuckyTasks(force = false): Promise<unknown> {
     const key = session();
+    const generation = taskGeneration;
     const luckyStore = useLuckyStore.getState();
     if (taskCache?.session !== key) taskCache = undefined;
     if (luckyStore.tasksSession !== key) luckyStore.clearTasks();
@@ -75,10 +83,16 @@ export function getLuckyTasks(force = false): Promise<unknown> {
     if (taskFlight?.session === key) return taskFlight.promise;
     const promise = luckyRequest<unknown>(luckyRoutes.tasks, {}, true).then(data => {
         if (key === session()) {
+            // A successful claim invalidates both completed and in-flight reads.
+            // Join the new read instead of publishing a pre-claim snapshot.
+            if (generation !== taskGeneration) return getLuckyTasks();
             taskCache = { session: key, at: Date.now(), data };
             useLuckyStore.getState().setTasks(data, key, luckyClaimableBadge(data));
         }
         return data;
+    }).catch(error => {
+        if (key === session() && generation !== taskGeneration) return getLuckyTasks();
+        throw error;
     }).finally(() => { if (taskFlight?.promise === promise) taskFlight = undefined; });
     taskFlight = { session: key, promise };
     return promise;
@@ -128,6 +142,7 @@ export async function getLuckyLevel(): Promise<LuckyLevel> {
 }
 export async function getLuckyPage(createDemo: () => LuckyPageData, locale = 'zh-CN', force = false): Promise<LuckyPageResult> {
     const key = session();
+    const generation = taskGeneration;
     const tasksPromise = Promise.resolve().then(() => getLuckyTasks(force));
     const rewardsPromise = Promise.resolve().then(() => getLuckyRewards(force));
     const tasks = await tasksPromise.then(
@@ -156,7 +171,7 @@ export async function getLuckyPage(createDemo: () => LuckyPageData, locale = 'zh
         const data: LuckyPageData = { ...decodeLuckyTasks(tasks.value, locale), ...decodeLuckyCatalog(rawResponses.rewards, locale) };
         const result = { data, demo: false, error: errors.join('\n') || undefined, rawResponses,
             notice: !rewards.pending && rawResponses.rewards == null ? '奖励配置暂未返回，任务进度已按真实数据展示。' : undefined };
-        pageCache = { session: key, locale, result };
+        if (key === session() && generation === taskGeneration) pageCache = { session: key, locale, result };
         return result;
     } catch (reason) {
         const message = reason instanceof Error ? reason.message : String(reason);
@@ -298,5 +313,10 @@ export async function saveLuckyPushSubscription(subscription: PushSubscription):
     const data = subscription.toJSON();
     if (!data.endpoint || !data.keys?.p256dh || !data.keys.auth) throw new Error('浏览器未返回完整推送订阅');
     await luckyRequest(luckyRoutes.pushSubscribe, { endpoint: data.endpoint, keys: { p256dh: data.keys.p256dh, auth: data.keys.auth }, userAgent: navigator.userAgent }, true);
-    invalidateLucky();
+    // Startup re-saves an existing browser subscription on every page. A task
+    // that is already ready/claimed has not changed, so keep its cached state.
+    // A newly enabled subscription must still refresh an unready task.
+    const tasks = record(useLuckyStore.getState().tasks);
+    const pushTask = Array.isArray(tasks.once) ? tasks.once.map(record).find(task => task.key === 'push_on') : undefined;
+    if (!Array.isArray(tasks.once) || (pushTask && pushTask.ready !== true && pushTask.done !== true)) invalidateLucky();
 }

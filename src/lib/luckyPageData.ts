@@ -77,8 +77,13 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
         newcomers.push({ key, icon, title, description, coins: count(row.coins), done: row.done === true,
             ready: row.ready === true, xUsed: row.xUsed === true, action: row.ready === true ? 'claim' : action });
     }
+    // A task can report credited coins before the aggregate catches up. Keep
+    // the summary at least as high as the actual visible task credits, without
+    // counting claimable rewards or adding the aggregate a second time.
+    const creditedTaskCoins = tasks.reduce((sum, task) => sum + (task.earned ?? 0), 0);
+    const summaryCoins = Math.max(0, count(data.earned) - removed.reduce((sum, row) => sum + count(row.earned), 0));
     return {
-        daily: { earned: Math.max(0, count(data.earned) - removed.reduce((sum, row) => sum + count(row.earned), 0)),
+        daily: { earned: Math.max(creditedTaskCoins, summaryCoins),
             total: Math.max(0, count(data.total) - removed.reduce((sum, row) => sum + count(row.cap), 0)), restricted: data.restricted === true, tasks },
         newcomer: { total: Math.max(0, count(data.onceTotal) - onceRows.filter(row => /comment/i.test(String(row.key)) || hiddenNewcomerTaskKeys.has(String(row.key))).reduce((sum, row) => sum + count(row.coins), 0)), tasks: newcomers },
     };

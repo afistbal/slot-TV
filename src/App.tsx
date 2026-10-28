@@ -15,9 +15,8 @@ import { LoaderCircle } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from "./components/ui/dialog";
 import { api, report, type TData } from "./api";
-import { loginAnonymous } from "./lib/anonymousLogin";
+import { bootstrapSession } from "./lib/bootstrapSession";
 import { getOrCreateDeviceUuid } from "./lib/browserFingerprint";
-import { refreshSessionFromStoredToken } from "./lib/refreshSessionFromStoredToken";
 import { useUserStore } from "./stores/user";
 import { useConfigStore } from "./stores/config";
 import { useRootStore } from "./stores/root";
@@ -25,7 +24,7 @@ import { cn } from "./lib/utils";
 import { Button } from "./components/ui/button";
 import { useConfirmStore } from "./stores/confirm";
 import { toast } from "sonner";
-import { init as initPixel, trackAnonymousCompleteRegistration } from './hooks/usePixel';
+import { init as initPixel } from './hooks/usePixel';
 import usePixel from './hooks/usePixel';
 import { syncAdAttributionCache } from './lib/adAttribution';
 import { syncFbAttributionCache } from './lib/fbAttribution';
@@ -509,6 +508,8 @@ function AppContent() {
     const confirmStore = useConfirmStore();
     const installPrompt = useRef<BeforeInstallPromptEvent | null>(null);
     const [checked, setChecked] = useState(false);
+    const [sessionError, setSessionError] = useState('');
+    const [sessionRetry, setSessionRetry] = useState(0);
     const [install, setInstall] = useState(0);
     const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
     const downloadTrackedRef = useRef(false);
@@ -539,6 +540,19 @@ function AppContent() {
             window.removeEventListener('online', syncPush);
         };
     }, [checked, sessionBootstrapReady]);
+
+    useEffect(() => {
+        let active = true;
+        setSessionError('');
+        useRootStore.getState().setSessionBootstrapReady(false);
+        // Main initialization applies query attribution/token synchronously first.
+        void Promise.resolve().then(() => bootstrapSession(() => active)).then(() => {
+            if (active) useRootStore.getState().setSessionBootstrapReady(true);
+        }).catch(error => {
+            if (active) setSessionError(error instanceof Error ? error.message : String(error));
+        });
+        return () => { active = false; };
+    }, [sessionRetry]);
 
     const trackDownloadOnce = useCallback(() => {
         if (downloadTrackedRef.current) return;
@@ -571,51 +585,6 @@ function AppContent() {
         if (tokenFromQuery) {
             localStorage.setItem('token', tokenFromQuery);
         }
-        const token = tokenFromQuery || localStorage.getItem('token');
-
-        /** 与会话接口不依赖 `config` 响应体，与 `config` 并行可显著缩短首屏可交互前总等待 */
-        void (async () => {
-            try {
-                if (token) {
-                    const ok = await refreshSessionFromStoredToken();
-                    if (loadGen !== loadDataGenerationRef.current) {
-                        return;
-                    }
-                    if (ok) {
-                        useRootStore.getState().setSessionBootstrapReady(true);
-                        return;
-                    }
-                    localStorage.removeItem('token');
-                    const anon = await loginAnonymous({ toastOnError: false });
-                    if (loadGen !== loadDataGenerationRef.current) {
-                        return;
-                    }
-                    if (anon.c !== 0) {
-                        return;
-                    }
-                    localStorage.setItem('token', anon.d['token'] as string);
-                    useUserStore.getState().signin(anon.d['info'] as TData);
-                    useRootStore.getState().setSessionBootstrapReady(true);
-                    trackAnonymousCompleteRegistration();
-                    return;
-                }
-                localStorage.removeItem('token');
-                const anon = await loginAnonymous({ toastOnError: false });
-                if (loadGen !== loadDataGenerationRef.current) {
-                    return;
-                }
-                if (anon.c !== 0) {
-                    return;
-                }
-                localStorage.setItem('token', anon.d['token'] as string);
-                useUserStore.getState().signin(anon.d['info'] as TData);
-                useRootStore.getState().setSessionBootstrapReady(true);
-                trackAnonymousCompleteRegistration();
-            } catch {
-                /* 会话失败时保持 sessionBootstrapReady=false */
-            }
-        })();
-
         const config = await api<TData>('config', {
             loading: false,
         });
@@ -901,6 +870,11 @@ function AppContent() {
             ) : null}
             <YogoGroupIframe enabled={showYogoGroupIframe} />
             {checked ? <RouterProvider router={router} /> : <InitialBootPlaceholder />}
+            {checked && sessionError ? <div role="alert" className="fixed bottom-6 left-1/2 z-[190] w-[calc(100%-32px)] max-w-lg -translate-x-1/2 rounded-xl border border-white/15 bg-[#1b1e22] p-4 text-sm text-white shadow-xl">
+                <p className="font-semibold">{rootStore.locale === 'zh-TW' ? '登入連線失敗，部分內容暫時無法載入' : '登录连接失败，部分内容暂时无法加载'}</p>
+                <p className="mt-1 break-words text-xs text-white/60">{sessionError}</p>
+                <Button className="mt-3" onClick={() => setSessionRetry(value => value + 1)}>{rootStore.locale === 'zh-TW' ? '重新連線' : '重新连接'}</Button>
+            </div> : null}
         </div>
         <Dialog
             open={loadingStore.status}

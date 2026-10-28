@@ -26,11 +26,7 @@ export function setIsAnonymousFromInfo(info: { [key: string]: unknown } | undefi
     }
 }
 
-/** login/token：仅 localStorage 还没有 isAnonymous 时写入 */
+/** 会话恢复以服务端状态为准，覆盖旧账号遗留的本地标记。 */
 export function initIsAnonymousFromInfo(info: { [key: string]: unknown } | undefined): void {
-    if (getClientIsAnonymous() !== null) return;
-    const v = fromInfo(info);
-    if (v !== null) {
-        setClientIsAnonymous(v);
-    }
+    setIsAnonymousFromInfo(info);
 }

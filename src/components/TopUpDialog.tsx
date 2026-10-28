@@ -182,7 +182,7 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
                             {periods.map(value => <button key={value} type="button" aria-pressed={activePeriod === value} onClick={() => setPeriod(value)}>{periodLabel(value)}{value === 'annual' ? <small className="top-up-dialog__saving">{label('省', 'Save ')}{number(annualSavings)}%</small> : null}</button>)}
                         </div>
                     </> : null}
-                    {rows.length === 0 ? <p className="top-up-dialog__empty">{label('暂无可购买套餐', 'No packages available yet')}</p> : null}
+                    {rows.length === 0 ? <p className="top-up-dialog__empty">{!ready ? label('正在连接，请稍候…', 'Connecting, please wait…') : label('暂无可购买套餐', 'No packages available yet')}</p> : null}
                     {rows.map((product, index) => {
                         const baseCoins = Number(product.coin) || 0;
                         const bonus = Math.max(0, Math.round(baseCoins * (Number.parseFloat(product.bouns ?? '0') || 0)));
