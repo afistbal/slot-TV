@@ -7,9 +7,8 @@ import ts from 'typescript';
 const source = readFileSync(new URL('../src/lib/luckyPushSubscription.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 
-function setup({ saveFails = false, removeFails = false, subscribed = true, permission = 'granted', permissionPending = false, subscribePending = false, fastTimeouts = false } = {}) {
-    const storage = new Map();
-    const calls = { config: 0, save: 0, remove: 0, subscribe: 0, unsubscribe: 0, permission: 0 };
+function setup({ saveFails = false, subscribed = true, permission = 'granted', permissionPending = false, subscribePending = false, fastTimeouts = false } = {}) {
+    const calls = { config: 0, save: 0, subscribe: 0, unsubscribe: 0, permission: 0 };
     let current;
     const subscription = { endpoint: 'https://push.example.test/device', unsubscribe: async () => { calls.unsubscribe++; current = null; return true; } };
     current = subscribed ? subscription : null;
@@ -20,7 +19,6 @@ function setup({ saveFails = false, removeFails = false, subscribed = true, perm
     const api = {
         getLuckyPushConfig: async () => { calls.config++; return { publicKey: 'BA' }; },
         saveLuckyPushSubscription: async () => { calls.save++; if (saveFails) throw new Error('save failed'); },
-        removeLuckyPushSubscription: async () => { calls.remove++; if (removeFails) throw new Error('remove failed'); },
     };
     const exports = {};
     const context = {
@@ -28,59 +26,18 @@ function setup({ saveFails = false, removeFails = false, subscribed = true, perm
         window: { isSecureContext: true, Notification: {}, PushManager: {}, setTimeout: fastTimeouts ? callback => setTimeout(callback, 0) : setTimeout, clearTimeout },
         Notification: { permission, requestPermission: async () => { calls.permission++; return permissionPending ? new Promise(() => {}) : 'granted'; } },
         navigator: { serviceWorker: { getRegistration: async () => worker, ready: Promise.resolve(worker) } },
-        localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) },
     };
     vm.runInNewContext(compiled, context);
-    return { actions: exports, calls, storage, hasSubscription: () => Boolean(current) };
+    return { actions: exports, calls, hasSubscription: () => Boolean(current) };
 }
 
-test('closing notifications stays closed after startup and online synchronization', async () => {
-    const state = setup();
-    await state.actions.disableLuckyPushSubscription();
-    assert.equal(await state.actions.syncLuckyPushSubscription(), false);
-    assert.equal(await state.actions.syncLuckyPushSubscription(), false);
-    assert.equal(state.hasSubscription(), false);
-    assert.equal(state.calls.remove, 1);
-    assert.equal(state.calls.unsubscribe, 1);
-    assert.equal(state.calls.save, 0);
-    assert.equal(state.calls.subscribe, 0);
-});
-
-test('explicit re-enable restores subscription and clears device opt-out after saving', async () => {
-    const state = setup();
-    await state.actions.disableLuckyPushSubscription();
-    await state.actions.enableLuckyPushSubscription();
-    assert.equal(state.hasSubscription(), true);
-    assert.equal(state.storage.has('yogo:push-disabled'), false);
-    assert.equal(await state.actions.syncLuckyPushSubscription(), true);
-    assert.equal(state.calls.subscribe, 1);
-    assert.equal(state.calls.permission, 0);
-});
-
-test('failed save rolls back a new subscription and preserves opt-out', async () => {
+test('failed save rolls back a new browser subscription', async () => {
     const state = setup({ saveFails: true, subscribed: false });
-    state.storage.set('yogo:push-disabled', '1');
     await assert.rejects(state.actions.enableLuckyPushSubscription(), /save failed/);
     assert.equal(state.hasSubscription(), false);
-    assert.equal(state.storage.get('yogo:push-disabled'), '1');
 });
 
-test('failed server deletion keeps the endpoint available for retry without auto-enabling', async () => {
-    const state = setup({ removeFails: true });
-    await assert.rejects(state.actions.disableLuckyPushSubscription(), /remove failed/);
-    assert.equal(state.hasSubscription(), true);
-    assert.equal(await state.actions.syncLuckyPushSubscription(), false);
-    assert.equal(state.calls.unsubscribe, 0);
-});
-
-test('a device without a local subscription can opt out before later startup', async () => {
-    const state = setup({ subscribed: false });
-    await state.actions.disableLuckyPushSubscription();
-    assert.equal(await state.actions.syncLuckyPushSubscription(), false);
-    assert.equal(state.calls.save, 0);
-});
-
-test('expired subscription still repairs automatically for a device that has not opted out', async () => {
+test('expired subscription repairs automatically when browser permission is granted', async () => {
     const state = setup({ subscribed: false });
     assert.equal(await state.actions.syncLuckyPushSubscription(), true);
     assert.equal(state.hasSubscription(), true);

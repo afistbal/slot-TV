@@ -1,0 +1,85 @@
+.top-up-dialog__overlay {
+    background: rgba(8, 9, 10, .72);
+    backdrop-filter: blur(16px);
+}
+
+.top-up-dialog-shell {
+    width: 420px;
+    max-width: calc(100% - 32px);
+    .top-up-dialog { width: 100%; max-width: none; }
+}
+
+.top-up-dialog {
+    box-sizing: border-box;
+    width: 420px;
+    max-width: calc(100% - 32px);
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 24px;
+    border: 1px solid #ffffff12;
+    border-radius: 20px;
+    background: #141619;
+    color: #eceff1;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .55);
+    font-size: 13px;
+    line-height: 1.5;
+    scrollbar-width: thin;
+
+    &--embedded {
+        grid-column: 1 / -1;
+        width: 100%;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+        box-shadow: none;
+    }
+    &--embedded &__title { font-size: 18px; line-height: 28px; }
+    &--embedded &__balance { margin-top: 2px; }
+    &--embedded &__footer { margin-top: 16px; }
+
+    button { cursor: pointer; font: inherit; }
+    button:focus-visible { outline: 2px solid var(--rs-brand, #e8c268); outline-offset: 3px; }
+    &__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    &__title { margin: 0; font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif; font-size: 18px; line-height: 28px; font-weight: 700; }
+    &__balance { display: flex; align-items: center; gap: 4px; margin: 2px 0 0; color: var(--rs-brand, #e8c268); font-size: 12px; font-variant-numeric: tabular-nums; }
+    &__close { display: grid; width: 44px; height: 44px; margin: -8px; padding: 8px; place-items: center; background: transparent; border: 0; color: #8b949e; }
+    &__close:hover { color: #eceff1; }
+    &__tabs { display: flex; gap: 4px; margin-bottom: 16px; padding: 4px; border: 1px solid #ffffff12; border-radius: 12px; background: rgba(27, 30, 34, .5); }
+    &__tabs button { flex: 1; min-width: 0; padding: 8px 4px; border: 0; border-radius: 8px; background: transparent; color: #8b949e; font-size: 13px; font-weight: 600; transition: background .15s, color .15s; }
+    &__tabs button[aria-selected='true'], &__tabs button[aria-pressed='true'] { background: #1b1e22; color: #eceff1; }
+    &__list { display: flex; flex-direction: column; gap: 10px; }
+    &__empty { padding: 24px 0; color: #8b949e; text-align: center; font-size: 12px; }
+    &__banner { padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--rs-brand, #e8c268) 40%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--rs-brand, #e8c268) 8%, transparent); color: var(--rs-brand, #e8c268); text-align: center; font-size: 12px; font-weight: 700; }
+    &__period { margin: 0; }
+    &__period button { min-height: 44px; padding-block: 10px; font-size: 12px; }
+    &__product { position: relative; display: block; width: 100%; padding: 12px 16px; border: 1px solid #ffffff12; border-radius: 12px; background: rgba(27, 30, 34, .4); color: #eceff1; text-align: start; transition: background .15s, border-color .15s; }
+    &__product:hover { border-color: color-mix(in srgb, var(--rs-brand, #e8c268) 50%, transparent); background: #1b1e22; }
+    &__product:disabled { cursor: not-allowed; }
+    &__product:disabled:hover { background: rgba(27, 30, 34, .4); }
+    &__product--membership:disabled { opacity: 1; }
+    &__saving { margin-inline-start: 4px; color: #2ee59d; font-size: 10px; font-weight: 700; }
+    &__product--featured { border-color: color-mix(in srgb, var(--rs-brand, #e8c268) 70%, transparent); box-shadow: 0 0 16px color-mix(in srgb, var(--rs-brand, #e8c268) 18%, transparent); }
+    &__productRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    &__amount { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 2px 8px; color: var(--rs-brand, #e8c268); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    &__amount svg { flex-shrink: 0; }
+    &__amount small { color: var(--rs-brand, #e8c268); font-size: 11px; font-weight: 600; }
+    &__price { display: flex; flex-shrink: 0; flex-direction: column; align-items: flex-end; gap: 4px; margin-inline-start: 8px; }
+    &__price strong { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    &__price strong small { margin-inline-start: 3px; color: #8b949e; font-size: 11px; font-weight: 400; }
+    &__tag { padding: 2px 8px; border: 1px solid color-mix(in srgb, var(--rs-brand, #e8c268) 45%, transparent); border-radius: 6px; background: color-mix(in srgb, var(--rs-brand, #e8c268) 15%, transparent); color: var(--rs-brand, #e8c268); font-size: 11px; line-height: 16px; font-weight: 700; white-space: nowrap; }
+    &__tag--vip { border-color: var(--rs-brand, #e8c268); background: var(--rs-brand, #e8c268); color: var(--rs-brand-foreground, #2b1e00); }
+    &__badge { position: absolute; top: -8px; left: 12px; padding: 2px 8px; border-radius: 99px; background: var(--rs-brand, #e8c268); color: #000; font-size: 10px; font-weight: 700; }
+    &__perk { display: block; margin-top: 6px; color: var(--rs-brand, #e8c268); font-size: 12px; font-weight: 600; }
+    &__perk--membership { color: #2ee59d; }
+    &__note { display: block; color: #8b949e; font-size: 11px; }
+    &__footer { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 16px 0 0; color: #8b949e; font-size: 10px; text-align: center; }
+    &__footer svg { flex-shrink: 0; }
+    &__availability { margin: 12px 0 0; color: #8b949e; font-size: 11px; text-align: center; }
+    &__back { display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #8b949e; }
+    &__summary { margin: 12px 0; color: var(--rs-brand, #e8c268); font-size: 16px; font-weight: 800; }
+    &__checkout.rs-shopping { height: auto; min-height: 0; background: transparent; }
+    &__status { display: grid; justify-items: center; gap: 12px; padding: 30px 0; color: var(--rs-brand, #e8c268); }
+    &__status button { padding: 8px 24px; border: 1px solid var(--rs-brand, #e8c268); border-radius: 8px; background: transparent; color: inherit; }
+}

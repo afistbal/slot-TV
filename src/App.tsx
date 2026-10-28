@@ -128,7 +128,7 @@ const UserSearch = lazy(() => import('./pages/user/Search'));
 const UserMyBalance = lazy(() => import('./pages/user/MyBanlance'));
 const UserWallet = lazy(() => import('./pages/user/Wallet'));
 const UserDetail = lazy(() => import('./pages/user/UserDetail'));
-const UserRadixRc = lazy(() => import('./pages/user/RadixRc'));
+const UserTopUpRoute = lazy(() => import('./components/TopUpRoute'));
 const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
 const CreatorProgram = lazy(() => import('./pages/user/CreatorProgram'));
 const AffiliateProgram = lazy(() => import('./pages/user/AffiliateProgram'));
@@ -342,11 +342,11 @@ const router = createBrowserRouter([
             },
             {
                 path: 'shopping',
-                element: <RequireAccountRoute>{lazyRoute(UserRadixRc)}</RequireAccountRoute>,
+                element: lazyRoute(UserTopUpRoute),
             },
             {
                 path: ':locale/shopping',
-                element: <RequireAccountRoute>{lazyRoute(UserRadixRc)}</RequireAccountRoute>,
+                element: lazyRoute(UserTopUpRoute),
             },
             {
                 path: 'my-list',

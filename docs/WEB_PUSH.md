@@ -6,7 +6,6 @@
 
 - `/api/user/push/config`：读取 `d.public_key`，前端适配为 `publicKey`。
 - `/api/user/push/subscribe`：保存浏览器生成的真实订阅，密钥必须放在 `keys` 对象中。
-- `/api/user/push/unsubscribe`：传入当前设备的 `endpoint`。
 - `/api/user/tasks`：保存成功后重新读取 `once` 中的 `push_on`，以 `ready` 判断是否可领取。
 - `/api/user/coin`：通过 `{ "type": "subNotice" }` 领取奖励；重复领取限制由后端执行。
 
@@ -40,7 +39,6 @@ npx vite preview --mode prod --outDir .tmp/push-preview --port 5190 --strictPort
 2. 确认订阅保存成功，任务刷新为可领取。
 3. 领取一次奖励，刷新页面确认不能重复领取。
 4. 关闭网页，让后端向这条真实订阅发送测试通知，确认收到并能点击打开对应页面。
-5. 在通知设置中关闭本设备通知，重新打开页面后确认不会自动恢复订阅。
 
 如果点击后没有授权弹窗，先看页面的处理状态：
 
@@ -52,9 +50,7 @@ npx vite preview --mode prod --outDir .tmp/push-preview --port 5190 --strictPort
 
 测试时保留浏览器进程运行。`localhost` 可以用于桌面本机测试；手机通过局域网 HTTP 地址访问不能替代 HTTPS 真机验收。iPhone/iPad 使用 HTTPS 网站添加到主屏幕后再测试通知。
 
-本地端口与正式域名属于不同来源，正式域名下需要重新订阅。正式验收还需分别触发追剧更新、连续观看中断提醒、客服回复；三个订阅管理接口可用，不代表这些后端发送流程已完成。
-
-关闭本设备通知的选择保存在当前来源的浏览器本地存储中，手动重新开启并保存成功后清除。清除网站数据会同时清除这一选择。
+本地端口与正式域名属于不同来源，正式域名下需要重新订阅。正式验收还需分别触发追剧更新、连续观看中断提醒、客服回复；公钥和订阅保存接口可用，不代表这些后端发送流程已完成。
 
 ## 回归检查
 

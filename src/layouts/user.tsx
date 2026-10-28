@@ -19,9 +19,12 @@ import { useLuckyStore } from '@/stores/lucky';
 import { AccountLoginDialog } from '@/components/AccountLoginDialog';
 import { useAuthPromptStore } from '@/stores/authPrompt';
 import { isAccountProtectedUrl } from '@/lib/accountAccess';
+import { isTopUpUrl, useTopUpStore } from '@/stores/topUp';
+import { api } from '@/api';
 
 const UserHome = lazy(() => import("@/pages/user/Home"));
 const UserSearch = lazy(() => import("@/pages/user/Search"));
+const TopUpDialog = lazy(() => import('@/components/TopUpDialog'));
 
 /** 与 App 中 `/`、`/search`、`/:locale/search` 占位路由一致；仅这两页做 DOM 级 keep-alive，避免反复卸载导致图片/LazyLoad 重跑 */
 function usePrimaryTabKeepAlive() {
@@ -53,6 +56,44 @@ export default function Component() {
     const userAnonymous = useUserStore(store => store.isAnonymous());
     const requestLogin = useAuthPromptStore(store => store.requestLogin);
     const luckyRevision = useLuckyStore(store => store.revision);
+    const topUpOpen = useTopUpStore(store => store.open);
+
+    useEffect(() => {
+        if (!sessionReady || !userSigned) return;
+        let active = true;
+        const sessionToken = localStorage.getItem('token');
+        const refreshBalance = () => {
+            if (document.visibilityState !== 'visible') return;
+            void api<number>('user/balance', { loading: false, toastOnError: false }).then(result => {
+                if (active && sessionToken === localStorage.getItem('token') && result.c === 0) useUserStore.getState().setBalance(result.d);
+            });
+        };
+        refreshBalance();
+        document.addEventListener('visibilitychange', refreshBalance);
+        window.addEventListener('focus', refreshBalance);
+        return () => {
+            active = false;
+            document.removeEventListener('visibilitychange', refreshBalance);
+            window.removeEventListener('focus', refreshBalance);
+        };
+    }, [sessionReady, userSigned, userId, userAnonymous]);
+
+    useEffect(() => {
+        const openRecharge = (event: MouseEvent) => {
+            if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            const anchor = target.closest<HTMLAnchorElement>('a[href]');
+            if (!anchor || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+            const url = new URL(anchor.href, window.location.href);
+            if (url.origin !== window.location.origin || !isTopUpUrl(url)) return;
+            event.preventDefault();
+            event.stopPropagation();
+            useTopUpStore.getState().show();
+        };
+        document.addEventListener('click', openRecharge, true);
+        return () => document.removeEventListener('click', openRecharge, true);
+    }, []);
 
     useEffect(() => {
         if (!sessionReady) return;
@@ -182,6 +223,7 @@ export default function Component() {
         </div>
         <ReelShortBottomNav hidden={hideBottomNav} />
         <AccountLoginDialog />
+        <Suspense fallback={null}>{topUpOpen ? <TopUpDialog /> : null}</Suspense>
     </div>;
 }
 
@@ -192,6 +234,7 @@ export function Page({
     children,
     action,
     showBack = true,
+    constrained = false,
 }: {
     title: string;
     titleClassName?: string;
@@ -201,6 +244,8 @@ export function Page({
     action?: React.ReactNode;
     /** 是否展示返回按钮；协议等独立页可设为 false */
     showBack?: boolean;
+    /** PC 表单页限宽居中，移动端保持原布局。 */
+    constrained?: boolean;
 }) {
     const navigate = useNavigate();
 
@@ -211,7 +256,7 @@ export function Page({
     const canBack =
         showBack && typeof window !== 'undefined' && window.history.length > 1;
 
-    return <div className="flex flex-col h-full">
+    return <div className={cn('flex flex-col h-full w-full', constrained && 'md:mx-auto md:max-w-[760px]')}>
         {/** @ts-expect-error - injected by Flutter InAppWebView */}
         {!window.flutter_inappwebview && (
             <div

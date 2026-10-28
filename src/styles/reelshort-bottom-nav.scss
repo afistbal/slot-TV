@@ -36,7 +36,7 @@ html.has-rs-bottom-nav .root {
     align-items: stretch;
     min-height: var(--rs-bottom-tab-inner-height);
     padding-bottom: var(--rs-bottom-tab-safe);
-    background: #000;
+    background: #0c0d0f;
     border-top: 1px solid hsla(0, 0%, 100%, 0.122);
 }
 
@@ -70,6 +70,26 @@ html.has-rs-bottom-nav .root {
     fill: none;
     stroke: currentColor;
     filter: none !important;
+}
+
+.reelshort-bottom-nav__icon-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.reelshort-bottom-nav__badge {
+    position: absolute;
+    top: -2px;
+    right: -6px;
+    display: grid;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 4px;
+    place-items: center;
+    border-radius: 99px;
+    background: #ef4444;
+    color: #fff;
+    font: 700 9px/1 system-ui, sans-serif;
 }
 
 .reelshort-bottom-nav__tab-label {

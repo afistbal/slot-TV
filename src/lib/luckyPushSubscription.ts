@@ -1,12 +1,10 @@
 import {
     getLuckyPushConfig,
-    removeLuckyPushSubscription,
     saveLuckyPushSubscription,
 } from '@/api/lucky';
 
 const SERVICE_WORKER_READY_TIMEOUT_MS = 10_000;
 const PUSH_OPERATION_TIMEOUT_MS = 30_000;
-const PUSH_DISABLED_KEY = 'yogo:push-disabled';
 export type LuckyPushProgress = 'permission' | 'connection' | 'saving';
 
 async function pushOperation<T>(promise: Promise<T>, message: string): Promise<T> {
@@ -60,18 +58,8 @@ async function getPushWorker(
     }
 }
 
-export async function inspectLuckyPushSubscription(): Promise<{ subscribed: boolean }> {
-    ensurePushSupport();
-    const [, registration] = await Promise.all([
-        getLuckyPushConfig(),
-        getPushWorker(),
-    ]);
-    return { subscribed: Boolean(await registration.pushManager.getSubscription()) };
-}
-
-async function subscribeLuckyPushSubscription(
+export async function enableLuckyPushSubscription(
     preferredRegistration?: ServiceWorkerRegistration,
-    automatic = false,
     onProgress?: (stage: LuckyPushProgress) => void,
 ): Promise<PushSubscription> {
     ensurePushSupport();
@@ -94,9 +82,6 @@ async function subscribeLuckyPushSubscription(
         getLuckyPushConfig(),
         getPushWorker(preferredRegistration),
     ]);
-    if (automatic && localStorage.getItem(PUSH_DISABLED_KEY) === '1') {
-        throw new Error('本设备已关闭推送通知。');
-    }
     const previous = await registration.pushManager.getSubscription();
     const subscription = previous ?? await pushOperation(registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -106,33 +91,10 @@ async function subscribeLuckyPushSubscription(
     try {
         onProgress?.('saving');
         await saveLuckyPushSubscription(subscription);
-        if (!automatic) localStorage.removeItem(PUSH_DISABLED_KEY);
         return subscription;
     } catch (reason) {
         if (!previous) await subscription.unsubscribe().catch(() => false);
         throw reason;
-    }
-}
-
-export async function enableLuckyPushSubscription(
-    preferredRegistration?: ServiceWorkerRegistration,
-    onProgress?: (stage: LuckyPushProgress) => void,
-): Promise<PushSubscription> {
-    return subscribeLuckyPushSubscription(preferredRegistration, false, onProgress);
-}
-
-export async function disableLuckyPushSubscription(): Promise<void> {
-    ensurePushSupport();
-    // Browser notification permission stays granted after unsubscribe. Remember
-    // the user's choice so startup/online synchronization does not undo it.
-    localStorage.setItem(PUSH_DISABLED_KEY, '1');
-    const registration = await getPushWorker();
-    const subscription = await registration.pushManager.getSubscription();
-    if (!subscription) return;
-
-    await removeLuckyPushSubscription(subscription.endpoint);
-    if (!await subscription.unsubscribe()) {
-        throw new Error('浏览器未能取消订阅，请重试。');
     }
 }
 
@@ -145,7 +107,7 @@ export async function syncLuckyPushSubscription(
     preferredRegistration?: ServiceWorkerRegistration,
 ): Promise<boolean> {
     ensurePushSupport();
-    if (Notification.permission !== 'granted' || localStorage.getItem(PUSH_DISABLED_KEY) === '1') return false;
-    await subscribeLuckyPushSubscription(preferredRegistration, true);
+    if (Notification.permission !== 'granted') return false;
+    await enableLuckyPushSubscription(preferredRegistration);
     return true;
 }

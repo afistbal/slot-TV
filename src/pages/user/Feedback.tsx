@@ -110,5 +110,5 @@ export default function Component({ embedded = false }: { embedded?: boolean }) 
         return body;
     }
 
-    return <Page title="feedback_help">{body}</Page>;
+    return <Page title="feedback_help" constrained>{body}</Page>;
 }

@@ -19,6 +19,7 @@ import { isApplePlatform } from '@/lib/isApplePlatform';
 import { buildProductPixelPayload, trackFbAddToCart, trackFbInitiateCheckout, trackFbPurchase } from '@/hooks/usePixel';
 import { buildPayCreateData, reportPayCreateSessionLog } from '@/lib/payCreateData';
 import { reportPayLog, type PayLogStatus } from '@/lib/payLog';
+import { toast } from 'sonner';
 
 /** 购物/收银默认 `payment`：Apple 平台默认 Apple Pay(1)，其余默认 Google Pay(2) */
 function defaultPayMethodFromUa(): 1 | 2 {
@@ -78,6 +79,8 @@ function dismissSoftKeyboard() {
 }
 
 export type RadixRcShoppingPaySectionProps = {
+    /** A CNY storefront must not silently charge a USD payment intent. */
+    expectedCurrency?: string;
     /** 当前选中套餐；用于钱包 pay/create 与挂载 */
     walletProductId: number | null;
     /** Top-up / 直跳收银台时的商品 id（含「无选中时用首档」等兜底） */
@@ -356,6 +359,7 @@ export default function RadixRcShoppingPaySection({
     paySessionSeed = 0,
     initialCheckoutPayment,
     payCreateDiscountType,
+    expectedCurrency,
     onPayStateChange,
 }: RadixRcShoppingPaySectionProps) {
     const intl = useIntl();
@@ -469,6 +473,11 @@ export default function RadixRcShoppingPaySection({
                 onPayStateChange?.('failed');
                 return;
             }
+            if (expectedCurrency && payCreate.d.currency?.toUpperCase() !== expectedCurrency.toUpperCase()) {
+                toast.error(intl.locale.startsWith('zh') ? '支付币种与人民币标价不一致，请稍后重试' : 'Payment currency does not match the CNY price. Please try again later.');
+                onPayStateChange?.('failed');
+                return;
+            }
 
             const initEnv = (payCreate.d.env as 'prod' | 'demo' | undefined) ?? 'demo';
             try {
@@ -519,7 +528,7 @@ export default function RadixRcShoppingPaySection({
         return () => {
             alive = false;
         };
-    }, [paySessionSeed, onPayStateChange, payCreateDiscountType]);
+    }, [paySessionSeed, onPayStateChange, payCreateDiscountType, expectedCurrency]);
 
     useEffect(() => {
         let cancelled = false;

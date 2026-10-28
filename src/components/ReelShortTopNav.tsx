@@ -14,6 +14,7 @@ import {
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
 import { useLuckyStore } from '@/stores/lucky';
+import { useTopUpStore } from '@/stores/topUp';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 import {
@@ -37,7 +38,7 @@ import { prefetchLuckyRouteChunk, prefetchSearchRouteChunk } from '@/lib/prefetc
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
 
-import { Bell, ChevronLeft, ChevronRight, Coins, Crown, Gift, Search } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, Coins, Gift, Search, Sparkles } from 'lucide-react';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -636,7 +637,12 @@ function NavProfileAvatar() {
     return () => mq.removeEventListener('change', sync);
   }, []);
 
-  const profileEntryHref = isDesktop ? '/profile?tab=topup' : '/profile';
+  const profileEntryHref = '/profile';
+
+  const closeProfileMenu = () => {
+    clearCloseTimer();
+    setOpen(false);
+  };
 
   const avatarNode = hasPhoto ? (
     <img
@@ -705,6 +711,7 @@ function NavProfileAvatar() {
           to={profileEntryHref}
           className="reelshort-topnav__profile-link reelshort-topnav__profile-trigger"
           aria-label={intl.formatMessage({ id: 'profile' })}
+          onClick={closeProfileMenu}
           onMouseEnter={openMenu}
           onMouseLeave={closeMenuSoon}
         >
@@ -720,7 +727,7 @@ function NavProfileAvatar() {
       >
         <div className="reelshort-topnav__profile-card">
           <div className="reelshort-topnav__profile-card-head">
-            <Link to={profileEntryHref} className="reelshort-topnav__profile-card-avatar-link">
+            <Link to={profileEntryHref} className="reelshort-topnav__profile-card-avatar-link" onClick={closeProfileMenu}>
               {avatarNode}
             </Link>
             <div className="reelshort-topnav__profile-card-user">
@@ -790,7 +797,7 @@ function NavProfileAvatar() {
           <button
             type="button"
             className="reelshort-topnav__profile-card-topup"
-            onClick={() => navigate('/profile?tab=topup')}
+            onClick={() => useTopUpStore.getState().show()}
           >
             <FormattedMessage id="top_up" />
           </button>
@@ -870,7 +877,7 @@ export function ReelShortTopNav({
   const feedLabel = isChinese ? (isTraditionalChinese ? '刷劇' : '刷剧') : intl.formatMessage({ id: 'for_you', defaultMessage: 'For You' });
   const browseLabel = isChinese ? (isTraditionalChinese ? '劇庫' : '剧库') : intl.formatMessage({ id: 'nav_categories', defaultMessage: 'Browse' });
   const searchLabel = isChinese ? (isTraditionalChinese ? '尋劇' : '寻剧') : intl.formatMessage({ id: 'nav_search_label', defaultMessage: 'Search' });
-  const coinBalance = Math.max(0, Number(userStore.info?.['balance'] ?? userStore.info?.['coin'] ?? 0) || 0);
+  const coinBalance = userStore.signed ? Math.max(0, userStore.balance) : 0;
   const feedActive = location.pathname.startsWith(FORYOU_PATH) || location.pathname.startsWith('/video/');
   const browseActive = location.pathname === '/' || location.pathname.startsWith('/categories') || location.pathname.startsWith('/drama/');
 
@@ -988,6 +995,9 @@ export function ReelShortTopNav({
 
         <div className="reelshort-topnav__right">
           <div className="reelshort-topnav__actions">
+            {showRightActions ? <Link to="/profile?tab=topup" className="reelshort-topnav__benchmark-wallet reelshort-topnav__mobile-wallet" aria-label={intl.formatMessage({ id: 'top_up' })}>
+              <Coins aria-hidden /><span>{intl.formatNumber(coinBalance)}</span>
+            </Link> : null}
             {showRightActions && showSearch ? <div className="reelshort-topnav__search"><TopNavSearchEntry /></div> : null}
             {showRightActions ? <TopNavInstallEntry /> : null}
             {showRightActions && showProfile ? <NavProfileAvatar /> : null}
@@ -1085,11 +1095,11 @@ export function ReelShortTopNav({
                 onClick={(event) => {
                   if (!requireAccount()) event.preventDefault();
                 }}
-                className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item', isActive && 'is-active')}
+                className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--secondary', isActive && 'is-active')}
               >
-                <Crown aria-hidden /><span><FormattedMessage id="nav_join_creator" /></span>
+                <Sparkles aria-hidden /><span><FormattedMessage id="nav_join_creator" /></span>
               </NavLink>
-              <NavLink to="/affiliate" className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item', isActive && 'is-active')}>
+              <NavLink to="/affiliate" className={({ isActive }) => cn('reelshort-topnav__benchmark-nav-item reelshort-topnav__benchmark-nav-item--secondary', isActive && 'is-active')}>
                 <Coins aria-hidden /><span><FormattedMessage id="nav_affiliate" /></span>
               </NavLink>
             </nav>

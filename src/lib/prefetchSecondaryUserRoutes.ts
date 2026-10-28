@@ -120,7 +120,7 @@ export function prefetchUserRouteForPathname(pathname: string): void {
     if (path.startsWith('/shelf/')) return prefetchIntentModule('shelf', () => import('../pages/user/Shelf'));
     if (path.startsWith('/drama/')) return prefetchIntentModule('drama', () => import('../pages/user/DramaDetail'));
     if (path.startsWith('/episodes/')) return prefetchIntentModule('episodes', () => import('../pages/user/Episodes'));
-    if (path === '/shopping' || path === '/radix-rc') return prefetchIntentModule('shopping', () => import('../pages/user/RadixRc'));
+    if (path === '/shopping' || path === '/radix-rc') return prefetchIntentModule('shopping', () => import('../components/TopUpDialog'));
     if (path === '/creator') return prefetchIntentModule('creator', () => import('../pages/user/CreatorProgram'));
     if (path === '/wallet') return prefetchIntentModule('wallet', () => import('../pages/user/Wallet'));
     if (path === '/user/detail') return prefetchIntentModule('user-detail', () => import('../pages/user/UserDetail'));

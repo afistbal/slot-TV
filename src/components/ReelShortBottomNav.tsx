@@ -1,6 +1,6 @@
 import { Fragment, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { NavLink, useLocation, useNavigate } from 'react-router';
 import { Gift, HandCoins } from 'lucide-react';
 import '@/styles/reelshort-bottom-nav.scss';
@@ -11,6 +11,7 @@ import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { useRootStore } from '@/stores/root';
+import { useLuckyStore } from '@/stores/lucky';
 import usePixel from '@/hooks/usePixel';
 import { showBottomTabBar } from '@/env';
 import {
@@ -70,6 +71,8 @@ function BottomNavAddDesktopH5({
 
 /** H5 底部四栏导航。 */
 export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) {
+    const intl = useIntl();
+    const luckyBadge = Math.max(0, useLuckyStore(state => state.badge) ?? 0);
     const isDesktop = useMinWidth768();
     const location = useLocation();
     const showInstallPrompt = useRootStore((state) => state.showInstallPrompt);
@@ -158,7 +161,12 @@ export function ReelShortBottomNav({ hidden = false }: ReelShortBottomNavProps) 
                             )
                         }
                     >
-                        <Gift className="reelshort-bottom-nav__tab-icon reelshort-bottom-nav__tab-icon--vector" aria-hidden />
+                        <span className="reelshort-bottom-nav__icon-wrap">
+                            <Gift className="reelshort-bottom-nav__tab-icon reelshort-bottom-nav__tab-icon--vector" aria-hidden />
+                            <b className="reelshort-bottom-nav__badge" aria-label={intl.locale.startsWith('zh') ? `可领取 ${luckyBadge} 次` : `${luckyBadge} rewards available`}>
+                                {luckyBadge > 9 ? '9+' : luckyBadge}
+                            </b>
+                        </span>
                         <span className="reelshort-bottom-nav__tab-label">
                             <FormattedMessage id="nav_lucky" />
                         </span>

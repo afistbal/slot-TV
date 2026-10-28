@@ -40,7 +40,7 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
         <FormattedMessage id="login" />
       </div>
     );
-    return embedded ? guestContent : <Page title="account_infomation">{guestContent}</Page>;
+    return embedded ? guestContent : <Page title="account_infomation" constrained>{guestContent}</Page>;
   }
 
   const detailContent = (
@@ -78,6 +78,6 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
     </>
   );
 
-  return embedded ? detailContent : <Page title="account_infomation">{detailContent}</Page>;
+  return embedded ? detailContent : <Page title="account_infomation" constrained>{detailContent}</Page>;
 }
 

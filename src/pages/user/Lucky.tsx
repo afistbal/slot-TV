@@ -73,7 +73,7 @@ export default function Lucky() {
     const dataRef = useRef<LuckyPageData | null>(initialData);
     const [data, setData] = useState<LuckyPageData | null>(initialData);
     const [loading, setLoading] = useState(!preview && !initialResult);
-    const [accountDialog, setAccountDialog] = useState<'push' | 'level' | null>(null);
+    const [accountDialog, setAccountDialog] = useState<'level' | null>(null);
     const revision = useLuckyStore(store => store.revision);
     const progressError = useLuckyStore(store => store.progressError);
     const [taskError, setTaskError] = useState('');
@@ -210,7 +210,7 @@ export default function Lucky() {
                     {closed && data.promo.nextOpenAt ? <small>{w('下次开启：', '下次開啟：')}{new Date(data.promo.nextOpenAt).toLocaleString(intl.locale)}</small> : null}
                 </section>
                 <section id="daily" ref={dailyRef} className="lucky-daily lucky-panel">
-                    <div className="lucky-daily__heading"><h2 className="lucky-section-title"><LuckyIcon name="gift" size={18} />{label('lucky_daily_title')}</h2><button type="button" className="lucky-task__button" disabled={Boolean(busy) || demo} onClick={() => setAccountDialog('push')}>{w('通知设置', '通知設定')}</button></div>
+                    <h2 className="lucky-section-title"><LuckyIcon name="gift" size={18} />{label('lucky_daily_title')}</h2>
                     {taskError ? <p className="lucky-task-error" role="alert">{taskError}</p> : null}
                     {pushProgress ? <p role="status">{pushProgress === 'permission' ? w('请在浏览器提示中允许通知', '請在瀏覽器提示中允許通知') : pushProgress === 'connection' ? w('正在连接通知服务…', '正在連接通知服務…') : w('正在保存通知设置…', '正在儲存通知設定…')}</p> : null}
                     {progressError ? <p className="lucky-task-error" role="alert">{progressError}</p> : null}

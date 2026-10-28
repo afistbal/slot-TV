@@ -18,7 +18,6 @@ import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import { profileH5Assets, profilePcMenuAssets } from '@/constants/profileAssets';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import Vip from '@/widgets/Vip';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useUserStore } from '@/stores/user';
 import { useRootStore } from '@/stores/root';
@@ -27,25 +26,22 @@ import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { api, type TData } from '@/api';
 import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
-import {
-    clearProfileMembershipRenewalAt,
-    getProfileMembershipRenewalAt,
-    setProfileMembershipRenewalAt,
-} from '@/lib/profileMembershipCache';
+import { clearProfileMembershipRenewalAt } from '@/lib/profileMembershipCache';
+import { useTopUpStore } from '@/stores/topUp';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
-import RadixRc from '@/pages/user/RadixRc';
 import FeedbackPanel from '@/pages/user/Feedback';
 import UserDetailPanel from '@/pages/user/UserDetail';
 import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/ProfilePcMyListPane';
 import { PcLoginDialog } from '@/pages/user/Login';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
+import ProfileDashboard from '@/pages/user/ProfileDashboard';
 import '@/styles/profile-reelshort.scss';
 import '@/styles/reelshort-dashboard-pc-mirror.scss';
 import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
 import '@/styles/my-list-reelshort.scss';
-type ProfilePcTab = 'topup' | 'wallet' | 'profile' | 'mylist' | 'feedback';
+type ProfilePcTab = 'wallet' | 'profile' | 'mylist' | 'feedback';
 
 /** PC 侧栏 webp 图标：mask + currentColor，active/hover 时与菜单文字同色 */
 function PcMenuIcon({ src }: { src: string }) {
@@ -59,6 +55,15 @@ function PcMenuIcon({ src }: { src: string }) {
 }
 
 export default function Component() {
+    const [params] = useSearchParams();
+    const isPc = useMinWidth768();
+    const tab = params.get('tab')?.toLowerCase();
+    return !isPc || tab && ['wallet', 'profile', 'mylist', 'favorite', 'history', 'feedback', 'help'].includes(tab)
+        ? <LegacyProfilePanel />
+        : <ProfileDashboard />;
+}
+
+function LegacyProfilePanel() {
     const intl = useIntl();
     const userStore = useUserStore();
     const requireAccount = useRequireAccount();
@@ -67,17 +72,11 @@ export default function Component() {
     const [searchParams, setSearchParams] = useSearchParams();
     const location = useLocation();
     const sourceform = `${location.pathname}${location.search}`;
-    const [vip, setVip] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPc = useMinWidth768();
     const [pcLoginOpen, setPcLoginOpen] = useState(false);
-    const [pcTab, setPcTab] = useState<ProfilePcTab>('topup');
+    const [pcTab, setPcTab] = useState<ProfilePcTab>('wallet');
     const [profileMyListSubTab, setProfileMyListSubTab] = useState<ProfileMyListSubTab>('favorite');
-    const [membershipRenewalAt, setMembershipRenewalAt] = useState<string | null>(
-        () => getProfileMembershipRenewalAt(),
-    );
-    const isVipProfile = userStore.isVIP();
-
     /** PC?? ReelShort `?tab=mylist` / `history` ????????????????????? */
     function setProfileTabQuery(
         tab: 'topup' | 'wallet' | 'profile' | 'mylist' | 'history' | 'feedback',
@@ -92,16 +91,8 @@ export default function Component() {
         );
     }
 
-    function handleToggleVip() {
-        setVip(!vip);
-    }
-
-    function handleVipCardClick() {
-        if (isPc) {
-            setProfileTabQuery('topup');
-        } else {
-            navigate('/shopping');
-        }
+    function handleTopUpClick() {
+        useTopUpStore.getState().show();
     }
 
     /** H5?????? `/my-list/history`???? `/wallet`??? `?tab=` ? PC ?? */
@@ -125,6 +116,7 @@ export default function Component() {
             return;
         }
         if (tab === 'topup') {
+            useTopUpStore.getState().show();
             const next = new URLSearchParams(searchParams);
             next.delete('tab');
             const q = next.toString();
@@ -138,8 +130,14 @@ export default function Component() {
             return;
         }
         const tab = searchParams.get('tab')?.toLowerCase();
-        if (!tab || tab === 'topup') {
-            setPcTab('topup');
+        if (tab === 'topup') {
+            useTopUpStore.getState().show();
+            setProfileTabQuery('wallet');
+            setPcTab('wallet');
+            return;
+        }
+        if (!tab) {
+            setPcTab('wallet');
             return;
         }
         if (tab === 'wallet') {
@@ -148,7 +146,7 @@ export default function Component() {
         }
         if (tab === 'profile') {
             if (userStore.isAnonymous()) {
-                setPcTab('topup');
+                setPcTab('wallet');
                 return;
             }
             setPcTab('profile');
@@ -168,7 +166,7 @@ export default function Component() {
             setPcTab('feedback');
             return;
         }
-        setPcTab('topup');
+        setPcTab('wallet');
     }, [isPc, location.search, userStore]);
 
     /** PC ???? `navigate('/profile', { state: { openPcLogin: true } })` ????? URL ???? */
@@ -217,48 +215,12 @@ export default function Component() {
         });
     }, [sessionBootstrapReady]);
 
-    /** H5 /profile??VIP ??? renewal_at?????????????????? */
-    useEffect(() => {
-        if (isPc || !isVipProfile || !sessionBootstrapReady) {
-            if (!isVipProfile) {
-                setMembershipRenewalAt(null);
-                clearProfileMembershipRenewalAt();
-            }
-            return;
-        }
-
-        const cached = getProfileMembershipRenewalAt();
-        if (cached) {
-            setMembershipRenewalAt(cached);
-            return;
-        }
-
-        let cancelled = false;
-        api<TData>('user/membership', { loading: false, toastOnError: false })
-            .then((res) => {
-                if (cancelled || res.c !== 0) {
-                    return;
-                }
-                const raw = res.d['renewal_at'];
-                if (typeof raw === 'string' && raw.trim()) {
-                    const value = raw.trim();
-                    setProfileMembershipRenewalAt(value);
-                    setMembershipRenewalAt(value);
-                }
-            })
-            .catch(() => {});
-        return () => {
-            cancelled = true;
-        };
-    }, [isPc, isVipProfile, sessionBootstrapReady]);
-
     async function handleLogout() {
         const ok = await logoutToAnonymousSession();
         if (!ok) {
             return;
         }
         clearProfileMembershipRenewalAt();
-        setMembershipRenewalAt(null);
         if (isPc) {
             setPcLoginOpen(true);
         }
@@ -345,62 +307,6 @@ export default function Component() {
             </div>
         </section>
     );
-
-    const h5VipRenewalDateLabel = useMemo(() => {
-        if (!membershipRenewalAt) {
-            return null;
-        }
-        const datePart = membershipRenewalAt.slice(0, 10);
-        if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-            return datePart;
-        }
-        const parsed = new Date(membershipRenewalAt.replace(' ', 'T'));
-        if (Number.isNaN(parsed.getTime())) {
-            return null;
-        }
-        return intl.formatDate(parsed, { year: 'numeric', month: '2-digit', day: '2-digit' });
-    }, [membershipRenewalAt, intl]);
-
-    const h5VipSubscribedCard = (
-        <div
-            className="rs-profile__h5Vip rs-profile__h5Vip--active"
-            onClick={handleVipCardClick}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleVipCardClick();
-                }
-            }}
-        >
-            <div className="rs-profile__h5VipActiveBody">
-                <div className="rs-profile__h5VipActiveLeft">
-                    <div className="rs-profile__h5VipActiveMain">
-                        <img
-                            src={profileH5Assets.vipCardDecor}
-                            alt=""
-                            className="rs-profile__h5VipActiveIcon"
-                            aria-hidden
-                        />
-                        <div className="rs-profile__h5VipActiveTitle">
-                            <FormattedMessage id="vip" />
-                        </div>
-                    </div>
-                    <div className="rs-profile__h5VipActiveValid">
-                        <FormattedMessage
-                            id="profile_h5_vip_valid_until"
-                            values={{ date: h5VipRenewalDateLabel ?? '--' }}
-                        />
-                    </div>
-                </div>
-                <span className="rs-profile__h5VipActiveBadge">
-                    <FormattedMessage id="profile_h5_subscribed" />
-                </span>
-            </div>
-        </div>
-    );
-
 
     const h5QuickGrid = (
         <nav className="rs-profile__h5QuickGrid" aria-label={intl.formatMessage({ id: 'profile_h5_quick_entries' })}>
@@ -489,60 +395,10 @@ export default function Component() {
     }, [userStore.signed, userStore.balance]);
 
     function formatPcWalletStat(n: number, pending: boolean) {
-        if (pending) return '\u00b7\u00b7\u00b7';
-        return intl.formatNumber(n);
+        return intl.formatNumber(pending ? 0 : n);
     }
 
-    /** H5 ? VIP?ReelShort DashboardPage_amount??? + ??? */
-    const h5VipUpgradeCard = (
-        <div
-            className="rs-profile__h5Vip"
-            onClick={handleVipCardClick}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleVipCardClick();
-                }
-            }}
-        >
-            <p className="rs-profile__h5VipTitle">
-                <FormattedMessage id="profile_h5_upgrade_vip" />
-            </p>
-            <div className="rs-profile__h5VipBenefits">
-                <div className="rs-profile__h5VipBenefit">
-                    <img src={profileH5Assets.benefitShort} alt="" className="rs-profile__h5VipBenefitIcon" />
-                    <span>
-                        <FormattedMessage id="shopping_benefit_unlimited_viewing" />
-                    </span>
-                </div>
-                <div className="rs-profile__h5VipBenefit">
-                    <img src={profileH5Assets.benefitHd} alt="" className="rs-profile__h5VipBenefitIcon" />
-                    <span>
-                        <FormattedMessage id="shopping_benefit_hd" />
-                    </span>
-                </div>
-                <div className="rs-profile__h5VipBenefit">
-                    <img src={profileH5Assets.benefitMore} alt="" className="rs-profile__h5VipBenefitIcon" />
-                    <span>
-                        <FormattedMessage id="shopping_benefit_more" />
-                    </span>
-                </div>
-            </div>
-            <button
-                type="button"
-                className="rs-profile__h5VipSubscribe"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    handleVipCardClick();
-                }}
-            >
-                <FormattedMessage id="profile_subscribe" />
-            </button>
-        </div>
-    );
-
+    /** H5 account balance and the shared in-place recharge entry. */
     const h5MyAccountCard = (
         <div className="rs-profile__h5Account">
             <div className="rs-profile__h5AccountHead">
@@ -570,7 +426,7 @@ export default function Component() {
                 <button
                     type="button"
                     className="rs-profile__h5AccountTopUp"
-                    onClick={handleVipCardClick}
+                    onClick={handleTopUpClick}
                 >
                     <FormattedMessage id="top_up" />
                 </button>
@@ -827,14 +683,6 @@ export default function Component() {
                                         pcTab === 'mylist' && 'rs-profile__pc-main-scroll--mylist',
                                     )}
                                 >
-                                    {pcTab === 'topup' ? (
-                                        <RadixRc
-                                            layout="embed"
-                                            embedPresentation="plain"
-                                            productFrom="shopping"
-                                            checkoutFrom="shopping"
-                                        />
-                                    ) : null}
                                     {pcTab === 'wallet' ? (
                                         <div className="rs-profile__pc-wallet">
                                             <WalletTransactionHistory variant="pc" />
@@ -865,7 +713,6 @@ export default function Component() {
                         {userStore.signed && !userStore.isAnonymous()
                             ? loginCardSigned
                             : loginCardGuest}
-                        {isVipProfile ? h5VipSubscribedCard : h5VipUpgradeCard}
                         {h5MyAccountCard}
                         {h5QuickGrid}
                         <ReelShortFooter
@@ -874,7 +721,6 @@ export default function Component() {
                         />
                     </div>
                 )}
-                <Vip open={vip} from="profile" onOpenChange={handleToggleVip} />
                 {isPc ? <PcLoginDialog open={pcLoginOpen} onOpenChange={setPcLoginOpen} /> : null}
             </div>
         </div>

@@ -52,12 +52,13 @@
 
 /* Chunlou 对标桌面顶栏；H5 首页继续使用历史版本的透明叠图导航。 */
 @media (min-width: 768px) {
+    .reelshort-topnav__benchmark-row { height: 55px; }
     .reelshort-topnav {
         min-height: 56px;
-        border-bottom: 0;
-        background: #050505 !important;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
+        border-bottom: 1px solid #ffffff12;
+        background: rgba(12, 13, 15, .82) !important;
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
     }
 }
 
@@ -162,7 +163,7 @@ button.reelshort-topnav__benchmark-logo:hover {
     padding: 2px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.045);
+    background: #141619;
     scrollbar-width: none;
 }
 
@@ -175,13 +176,13 @@ button.reelshort-topnav__benchmark-logo:hover {
     display: inline-flex;
     flex: 0 0 auto;
     min-width: 36px;
-    min-height: 38px;
+    min-height: 34px;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 7px 8px;
     border-radius: 9px;
-    color: rgba(255, 255, 255, 0.48);
+    color: #8b949e;
     font-size: 13px;
     font-weight: 600;
     line-height: 20px;
@@ -197,8 +198,8 @@ button.reelshort-topnav__benchmark-logo:hover {
 }
 
 .reelshort-topnav__benchmark-nav-item.is-active {
-    background: rgba(255, 255, 255, 0.065);
-    color: #f5f5f5;
+    background: #1b1e22;
+    color: #eceff1;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
@@ -220,8 +221,8 @@ button.reelshort-topnav__benchmark-logo:hover {
 
 .reelshort-topnav__benchmark-badge {
     position: absolute;
-    top: 2px;
-    right: -4px;
+    top: -2px;
+    right: -2px;
     box-sizing: border-box;
     pointer-events: none;
     display: flex;
@@ -229,7 +230,7 @@ button.reelshort-topnav__benchmark-logo:hover {
     height: 15px;
     align-items: center;
     justify-content: center;
-    padding: 0 3px;
+    padding: 0 4px;
     border-radius: 999px;
     background: #ef4444;
     color: #fff;
@@ -2422,4 +2423,17 @@ a.reelshort-topnav__primary-link.is-active {
     }
 }
 .reelshort-topnav a:has(> .reelshort-lucky-badge) { position: relative; }
+.reelshort-topnav .reelshort-topnav__mobile-wallet {
+    display: inline-flex;
+    height: 32px;
+    min-width: 46px;
+    padding: 0 7px;
+}
+.reelshort-topnav .reelshort-topnav__mobile-wallet span { display: inline; }
+@media (min-width: 768px) and (max-width: 1023px) {
+    .reelshort-topnav__benchmark-nav-item--secondary { display: none; }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+    .reelshort-topnav__benchmark-nav-item--secondary span { display: none; }
+}
 .reelshort-lucky-badge { position:absolute; top:0; right:-10px; display:grid; min-width:16px; height:16px; padding:0 3px; place-items:center; border-radius:999px; background:var(--rs-brand); color:var(--rs-brand-foreground); font:700 10px/1 system-ui,sans-serif; }

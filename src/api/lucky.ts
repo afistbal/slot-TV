@@ -31,7 +31,7 @@ export const luckyRoutes = {
     tasks: 'user/tasks', rewards: 'user/rewards', coin: 'user/coin', checkin: 'user/checkin', signin: 'user/signin',
     watchStreak: 'user/watch/streak', ratingQuota: 'user/rating/quota',
     ratingCandidates: 'movie/history', rate: 'user/rate', like: 'user/like', pushConfig: 'user/push/config',
-    pushSubscribe: 'user/push/subscribe', pushUnsubscribe: 'user/push/unsubscribe', socialConfig: 'user/social/config',
+    pushSubscribe: 'user/push/subscribe', socialConfig: 'user/social/config',
     bindX: 'user/social/x/bind', checkX: 'user/social/x/check', bindTelegram: 'user/social/telegram/bind', level: 'user/level',
 } as const;
 
@@ -224,7 +224,7 @@ function luckySocialReturnUrl(value?: string): string {
     return url.href;
 }
 export async function getLuckyTaskAction(task: Pick<LuckyTask, 'key'>, returnUrl?: string): Promise<LuckyTaskAction> {
-    if (task.key === 'push_on') throw new Error('请在福利页“通知设置”中开启真实推送订阅');
+    if (task.key === 'push_on') throw new Error('请在福利页完成“开启推送通知”任务');
     if (task.key === 'bind_x') {
         const value = await luckyRequest<{ url: string }>(luckyRoutes.bindX, { redirectTo: luckySocialReturnUrl(returnUrl) });
         return { url: luckyHttpsUrl(value.url, 'X 授权地址'), kind: 'x-oauth' };
@@ -298,9 +298,5 @@ export async function saveLuckyPushSubscription(subscription: PushSubscription):
     const data = subscription.toJSON();
     if (!data.endpoint || !data.keys?.p256dh || !data.keys.auth) throw new Error('浏览器未返回完整推送订阅');
     await luckyRequest(luckyRoutes.pushSubscribe, { endpoint: data.endpoint, keys: { p256dh: data.keys.p256dh, auth: data.keys.auth }, userAgent: navigator.userAgent }, true);
-    invalidateLucky();
-}
-export async function removeLuckyPushSubscription(endpoint: string): Promise<void> {
-    await luckyRequest(luckyRoutes.pushUnsubscribe, { endpoint }, true);
     invalidateLucky();
 }
