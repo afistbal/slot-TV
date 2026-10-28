@@ -10,7 +10,6 @@ import {
 import type { ShareAction } from './videoPlayerConstants';
 import { VideoPlayerH5CommerceDrawers } from '@/components/video-player/VideoPlayerH5CommerceDrawers';
 import { VideoPlayerPcCommerceDialogs } from '@/components/video-player/VideoPlayerPcCommerceDialogs';
-import { useVideoRetentionCommerce } from '@/components/video-retention-promo/VideoRetentionPromo';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 
 export type VideoPlayerVipCommerceHandle = {
@@ -75,13 +74,6 @@ export const VideoPlayerVipCommerce = forwardRef<
 ) {
     const [vip, setVip] = useState(false);
 
-    const retention = useVideoRetentionCommerce({
-        variant,
-        viewerIsVip,
-        vip,
-        onVipOpenChange: setVip,
-        episodeRowId,
-    });
 
     const openVip = useCallback(() => {
         setVip(true);
@@ -113,17 +105,14 @@ export const VideoPlayerVipCommerce = forwardRef<
         setVip(false);
     }, [episodeRowId]);
 
-    /** 非 VIP 且 locked 时自动弹出 rs-shopping；VIP 或解锁后关闭；挽留进行中不抢弹 */
+    /** 非 VIP 且 locked 时自动弹出 rs-shopping；VIP 或解锁后关闭；关闭购买面板时直接退出 */
     useEffect(() => {
         if (viewerIsVip) {
             setVip(false);
             return;
         }
-        if (retention.promoActive) {
-            return;
-        }
         setVip(locked);
-    }, [locked, episodeRowId, viewerIsVip, retention.promoActive]);
+    }, [locked, episodeRowId, viewerIsVip]);
 
     const handlePaySuccess = useCallback(
         (detail: IPlayerEpisode) => {
@@ -141,7 +130,6 @@ export const VideoPlayerVipCommerce = forwardRef<
                     vip={vip}
                     onVipOpenChange={setVip}
                     onVipEmbedClose={closeVip}
-                    retention={retention}
                     embedVideoEpisodeRowId={episodeRowId}
                     onEmbedPaySuccessEpisodeDetail={handlePaySuccess}
                     vipHeaderEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
@@ -166,7 +154,6 @@ export const VideoPlayerVipCommerce = forwardRef<
                 vip={vip}
                 onVipOpenChange={setVip}
                 onVipEmbedClose={closeVip}
-                retention={retention}
                 embedVideoEpisodeRowId={episodeRowId}
                 onEmbedPaySuccessEpisodeDetail={handlePaySuccess}
                 vipHeaderEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}

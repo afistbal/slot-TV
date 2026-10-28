@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useIntl } from 'react-intl';
-import { ChevronDown, ChevronRight, Coins, Crown, Gift, Globe2, Heart, HelpCircle, History, LockKeyhole, LogIn, LogOut, Plus, Search, Settings, Share2, Sparkles, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Coins, Crown, Gift, Globe2, Heart, HelpCircle, History, LockKeyhole, LogIn, LogOut, Plus, Search, Settings, Share2, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { TopUpPanel } from '@/components/TopUpDialog';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
@@ -19,6 +19,8 @@ import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
 import { buildAffiliateShareUrl } from '@/lib/shareUrls';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
+import { LanguageDialog } from '@/components/LanguageDialog';
+import { submitLuckyRating } from '@/api/lucky';
 import type { TData } from '@/api';
 import { FORYOU_PATH } from '@/constants/foryouRoute';
 import '@/styles/profile-dashboard.scss';
@@ -28,6 +30,34 @@ const libraryNames: Record<LibraryTab, [string, string]> = { history: ['观看�
 
 function Card({ children, className = '', id }: { children: ReactNode; className?: string; id?: string }) {
     return <section className={`me-card ${className}`} id={id}>{children}</section>;
+}
+
+function positiveNumber(value: unknown): number | null {
+    if (typeof value !== 'number' && typeof value !== 'string') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function HistoryRating({ row }: { row: TData }) {
+    const intl = useIntl();
+    const zh = intl.locale.startsWith('zh');
+    const [saved, setSaved] = useState<number>();
+    const [busy, setBusy] = useState(false);
+    const fromApi = positiveNumber(row.my_rating ?? row.myRating ?? row.rating ?? row.score);
+    const score = saved ?? (fromApi && Number.isInteger(fromApi) && fromApi <= 5 ? fromApi : 0);
+    const dramaId = String(row.movie_id ?? row.movieId ?? '').trim();
+    if (!dramaId) return null;
+    async function rate(value: number) {
+        if (busy || score > 0) return;
+        setBusy(true);
+        try {
+            await submitLuckyRating(dramaId, value);
+            setSaved(value);
+            toast.success(zh ? '评分成功' : 'Rating submitted');
+        } catch (reason) { toast.error(reason instanceof Error ? reason.message : String(reason)); }
+        finally { setBusy(false); }
+    }
+    return <div className="me-library-rating" aria-label={zh ? '评分' : 'Rating'}><span>{zh ? '评分' : 'Rating'}</span>{[1, 2, 3, 4, 5].map(value => <button key={value} type="button" aria-label={zh ? `${value} 星` : `${value} stars`} disabled={busy || score > 0} onClick={() => void rate(value)}><Star size={14} fill={score >= value ? 'currentColor' : 'none'} className={score >= value ? 'me-gold' : ''} /></button>)}</div>;
 }
 
 export default function ProfileDashboard() {
@@ -44,6 +74,7 @@ export default function ProfileDashboard() {
     const staticBase = useConfigStore(state => state.config.static as string | undefined);
     const [params, setParams] = useSearchParams();
     const location = useLocation();
+    const [languageOpen, setLanguageOpen] = useState(Boolean((location.state as { openLanguage?: boolean } | null)?.openLanguage));
     const navigate = useNavigate();
     const scrollRef = useRef<HTMLDivElement>(null);
     const libraryRef = useRef<HTMLDivElement>(null);
@@ -63,7 +94,7 @@ export default function ProfileDashboard() {
     const unlocked = data.logs.filter(row => row.change < 0 && row.movie_id);
     const title = (row: TData) => String(row.title ?? row.movie_name ?? row.movie_title ?? '');
     const movieId = (row: TData) => String(row.movie_id ?? row.id ?? '');
-    const episode = (row: TData) => Math.max(0, Number(row.current_episode ?? row.episode ?? row.ep ?? row.last_episode ?? 0) || 0);
+    const episode = (row: TData) => positiveNumber(row.current_episode ?? row.currentEpisode ?? row.episode ?? row.ep ?? row.last_episode);
     const poster = (row: TData) => movieCoverUrl(row, staticBase) ?? undefined;
     const libraryRows = (libraryTab === 'favorites' ? data.favorites : libraryTab === 'unlocked' ? [] : history)
         .filter(row => title(row).toLowerCase().includes(query.toLowerCase()));
@@ -78,6 +109,14 @@ export default function ProfileDashboard() {
             setParams(previous => { const next = new URLSearchParams(previous); next.delete('login'); return next; }, { replace: true });
         }
     }, [params, setParams, requestLogin]);
+
+    useEffect(() => {
+        if (!(location.state as { openLanguage?: boolean } | null)?.openLanguage) return;
+        setLanguageOpen(true);
+        const state = { ...location.state };
+        delete state.openLanguage;
+        navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state });
+    }, [location.state, location.pathname, location.search, location.hash, navigate]);
 
     useEffect(() => {
         if (!(location.state as { openPcLogin?: boolean } | null)?.openPcLogin) return;
@@ -99,7 +138,7 @@ export default function ProfileDashboard() {
         { name: text('福利', 'Rewards'), Icon: Gift, to: '/lucky', tone: 'gold', count: badge },
         { name: text('推广赚现金', 'Affiliate'), Icon: Coins, to: '/affiliate', tone: 'green' },
         { name: text('创作者中心', 'Creator'), Icon: Sparkles, to: '/creator' },
-        { name: text('联系客服', 'Support'), Icon: HelpCircle, to: '/page/feedback' },
+        { name: intl.formatMessage({ id: 'feedback_help' }), Icon: HelpCircle, to: '/page/feedback' },
     ];
 
     return <div className="me-page-shell">
@@ -118,7 +157,7 @@ export default function ProfileDashboard() {
                             </div>
                             <div className="me-user__actions">
                                 <Link to="/user/detail" onClick={event => { if (!requireAccount()) event.preventDefault(); }}><Settings size={15} /><span>{text('设置', 'Settings')}</span></Link>
-                                <Link to="/page/language"><Globe2 size={15} /><span>{APP_LANGUAGES.find(language => language.code === intl.locale)?.label ?? 'Language'}</span></Link>
+                                <button type="button" onClick={() => setLanguageOpen(true)} aria-haspopup="dialog"><Globe2 size={15} /><span>{APP_LANGUAGES.find(language => language.code === intl.locale)?.label ?? 'Language'}</span></button>
                                 <button type="button" onClick={() => { if (signed) void logoutToAnonymousSession(); else requestLogin(); }}>{signed ? <LogOut size={15} /> : <LogIn size={15} />}<span>{signed ? text('退出登录', 'Log out') : text('登录', 'Log in')}</span></button>
                             </div>
                         </Card>
@@ -136,7 +175,7 @@ export default function ProfileDashboard() {
                             <Link className="me-disclosure" to="/affiliate">{text('推广详情', 'Affiliate details')}<ChevronRight size={14} /></Link>
                         </Card>
                         <Card className="me-vip">
-                            <span className="me-vip__crown"><Crown size={22} /></span><div><h2>{user.isVIP() ? text('VIP 会员', 'VIP member') : text('升级会员，畅享更多', 'Enjoy more with VIP')}</h2><p className="me-subtle">{text('专属会员权益', 'Exclusive member benefits')}</p></div><button type="button" className="me-btn me-btn--gold" onClick={topUp}>{text('查看', 'View')}</button>
+                            <span className="me-vip__crown"><Crown size={22} /></span><div><h2>{user.isVIP() ? text('VIP 会员', 'VIP member') : text('升级会员，畅享更多', 'Enjoy more with VIP')}</h2><p className="me-subtle">{text('专属会员权益', 'Exclusive member benefits')}</p></div><button type="button" className="me-btn me-btn--gold" onClick={() => useTopUpStore.getState().show('vip')}>{text('查看', 'View')}</button>
                         </Card>
                         <nav className="me-quick me-dashboard__wide" aria-label={text('快捷入口', 'Quick links')}>
                             {quickEntries.map(({ name: entryName, Icon, to, tone, count }) => {
@@ -152,7 +191,7 @@ export default function ProfileDashboard() {
                                 <div className="me-library-tabs" role="tablist" aria-label={text('我的片库', 'My library')}>{(Object.keys(libraryNames) as LibraryTab[]).map(tab => <button key={tab} type="button" role="tab" id={`me-library-${tab}`} aria-controls="me-library-panel" aria-selected={libraryTab === tab} onClick={() => { setLibraryTab(tab); setQuery(''); }}>{text(...libraryNames[tab])}<small>{num(tab === 'history' ? history.length : tab === 'unlocked' ? unlocked.length : data.favorites.length)}</small></button>)}</div>
                                 <div id="me-library-panel" role="tabpanel" aria-labelledby={`me-library-${libraryTab}`}>
                                     <label className="me-search"><Search size={15} /><input aria-label={text('搜索片库', 'Search library')} placeholder={text('搜索剧名', 'Search dramas')} value={query} onChange={event => setQuery(event.target.value)} />{query ? <button type="button" aria-label={text('清空', 'Clear')} onClick={() => setQuery('')}><X size={14} /></button> : null}</label>
-                                    {libraryRows.length ? <div className={`me-library-list ${libraryTab === 'favorites' ? 'me-library-list--posters' : ''}`}>{libraryRows.slice(0, 12).map((row, index) => <Link className="me-library-item" key={String(row.id ?? index)} to={`/drama/${movieId(row)}`}><img src={poster(row)} alt="" /><span><strong>{title(row)}</strong><small>{text('第 ', 'Episode ')}{num(episode(row))}{text(' 集', '')}</small></span><ChevronRight size={14} /></Link>)}</div> : libraryTab === 'unlocked' && unlocked.length ? <div className="me-library-list">{unlocked.slice(0, 12).map((row, index) => <Link key={index} className="me-library-item" to={`/drama/${row.movie_id}`}><LockKeyhole size={18} /><span><strong>{row.movie_name ?? row.movie_title ?? text('已解锁剧集', 'Unlocked episode')}</strong><small>{text('第 ', 'Episode ')}{num(row.episode_index)}{text(' 集', '')}</small></span><ChevronRight size={14} /></Link>)}</div> : <div className="me-empty"><span>{libraryTab === 'favorites' ? <Heart size={20} /> : libraryTab === 'unlocked' ? <LockKeyhole size={20} /> : <History size={20} />}</span><strong>{text('暂无内容', 'No content yet')}</strong><p>{text('喜欢的好剧，都会留在这里', 'Your dramas will appear here')}</p><Link className="me-btn" to={FORYOU_PATH}>{text('发现好剧', 'Discover dramas')}</Link></div>}
+                                    {libraryRows.length ? <div className={`me-library-list ${libraryTab === 'favorites' ? 'me-library-list--posters' : ''}`}>{libraryRows.slice(0, 12).map((row, index) => <div className="me-library-item" key={String(row.id ?? index)}><Link to={`/drama/${movieId(row)}`}><img src={poster(row)} alt="" /></Link><div className="me-library-item__info"><Link to={`/drama/${movieId(row)}`}><strong>{title(row)}</strong></Link>{episode(row) !== null ? <small>{text('第 ', 'Episode ')}{num(episode(row))}{text(' 集', '')}</small> : null}{libraryTab === 'history' ? <HistoryRating row={row} /> : positiveNumber(row.rating ?? row.score) !== null ? <small>{text('评分 ', 'Rating ')}{num(row.rating ?? row.score)}</small> : null}</div><Link to={`/drama/${movieId(row)}`} aria-label={title(row)}><ChevronRight size={14} /></Link></div>)}</div> : libraryTab === 'unlocked' && unlocked.length ? <div className="me-library-list">{unlocked.slice(0, 12).map((row, index) => <Link key={index} className="me-library-item" to={`/drama/${row.movie_id}`}><LockKeyhole size={18} /><span><strong>{row.movie_name ?? row.movie_title ?? text('已解锁剧集', 'Unlocked episode')}</strong>{positiveNumber(row.episode_index) !== null ? <small>{text('第 ', 'Episode ')}{num(row.episode_index)}{text(' 集', '')}</small> : null}</span><ChevronRight size={14} /></Link>)}</div> : <div className="me-empty"><span>{libraryTab === 'favorites' ? <Heart size={20} /> : libraryTab === 'unlocked' ? <LockKeyhole size={20} /> : <History size={20} />}</span><strong>{text('暂无内容', 'No content yet')}</strong><p>{text('喜欢的好剧，都会留在这里', 'Your dramas will appear here')}</p><Link className="me-btn" to={FORYOU_PATH}>{text('发现好剧', 'Discover dramas')}</Link></div>}
                                 </div>
                             </Card>
                         </div>
@@ -163,5 +202,6 @@ export default function ProfileDashboard() {
                 </div>
             </main>
         </div>
+        <LanguageDialog open={isPc && languageOpen} onOpenChange={setLanguageOpen} />
     </div>;
 }

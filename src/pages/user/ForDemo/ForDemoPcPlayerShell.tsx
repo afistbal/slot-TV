@@ -39,7 +39,6 @@ import {
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
-import { useVideoRetentionCommerce } from '@/components/video-retention-promo/VideoRetentionPromo';
 import { FORYOU_MAX_VISIBLE_TAGS } from '@/components/foryou-feed/foryouConstants';
 import { measurePcStageShiftPx } from '@/components/video-player/videoPlayerPcDrawerStageShift';
 import {
@@ -101,12 +100,6 @@ export function ForDemoPcPlayerShell({
         resolveVideoFavorite(data.info.id, data.info.is_favorite === 1),
     );
     const [vip, setVip] = useState(false);
-    const retention = useVideoRetentionCommerce({
-        variant: 'pc',
-        vip,
-        onVipOpenChange: setVip,
-        viewerIsVip: userStore.isVIP(),
-    });
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
@@ -419,7 +412,6 @@ export function ForDemoPcPlayerShell({
                 vip={vip}
                 onVipOpenChange={setVip}
                 onVipEmbedClose={() => setVip(false)}
-                retention={retention}
                 shareOpen={shareOpen}
                 onShareOpenChange={setShareOpen}
                 shareEmbedCode={shareEmbedCode}

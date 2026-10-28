@@ -5,20 +5,15 @@ import shareFacebookIcon from '@/assets/video/share_icon_facebook@2x.webp';
 import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
-import {
-    RetentionCheckoutRadixRc,
-    type RetentionCommerceWire,
-} from '@/components/video-retention-promo/VideoRetentionPromo';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 
-const RadixRc = lazy(() => import('@/pages/user/RadixRc'));
+const TopUpModal = lazy(() => import('@/components/TopUpDialog').then(module => ({ default: module.TopUpModal })));
 
 export type ForYouPlayerH5CommerceDrawersProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
-    retention?: RetentionCommerceWire;
     vipHeaderEpisodeUnlockCoins?: number;
     shareOpen: boolean;
     onShareOpenChange: (open: boolean) => void;
@@ -36,9 +31,6 @@ export type ForYouPlayerH5CommerceDrawersProps = {
 export function ForYouPlayerH5CommerceDrawers({
     vip,
     onVipOpenChange,
-    onVipEmbedClose,
-    retention,
-    vipHeaderEpisodeUnlockCoins,
     shareOpen,
     onShareOpenChange,
     shareEmbedCode,
@@ -51,39 +43,10 @@ export function ForYouPlayerH5CommerceDrawers({
     onCopyEmbedCode,
 }: ForYouPlayerH5CommerceDrawersProps) {
     const intl = useIntl();
-    const vipOpenChange = retention?.onVipOpenChange ?? onVipOpenChange;
-    const vipEmbedClose = retention?.onVipEmbedClose ?? onVipEmbedClose;
 
     return (
         <>
-            <Drawer open={vip} onOpenChange={vipOpenChange} disablePreventScroll>
-                <DrawerContent
-                    overlayClassName="rs-shopping-checkout-drawer__overlay"
-                    className="rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 flex-col overflow-hidden border-t border-white/10 p-0 text-white max-h-[min(88vh,1040px)]"
-                >
-                    <DrawerTitle className="sr-only">
-                        {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
-                    </DrawerTitle>
-                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
-                        {vip ? (
-                            <Suspense fallback={null}>
-                                <RadixRc
-                                    layout="embed"
-                                    productFrom="video"
-                                    checkoutFrom="video"
-                                    onEmbedClose={vipEmbedClose}
-                                    headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-                                />
-                            </Suspense>
-                        ) : null}
-                    </div>
-                </DrawerContent>
-            </Drawer>
-            <RetentionCheckoutRadixRc
-                retention={retention}
-                vipHeaderEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-            />
-            {retention?.layer}
+            {vip ? <Suspense fallback={null}><TopUpModal open={vip} onOpenChange={onVipOpenChange} initialTab="vip" productFrom="video" /></Suspense> : null}
             <Drawer open={shareOpen} onOpenChange={onShareOpenChange}>
                 <DrawerContent className="video-share-mobile-drawer border-0 p-0 text-white">
                     <DrawerTitle className="sr-only">

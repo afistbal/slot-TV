@@ -19,7 +19,7 @@ import { useLuckyStore } from '@/stores/lucky';
 import { AccountLoginDialog } from '@/components/AccountLoginDialog';
 import { useAuthPromptStore } from '@/stores/authPrompt';
 import { isAccountProtectedUrl } from '@/lib/accountAccess';
-import { isTopUpUrl, useTopUpStore } from '@/stores/topUp';
+import { isTopUpUrl, topUpTabForUrl, useTopUpStore } from '@/stores/topUp';
 import { api } from '@/api';
 
 const UserHome = lazy(() => import("@/pages/user/Home"));
@@ -89,7 +89,7 @@ export default function Component() {
             if (url.origin !== window.location.origin || !isTopUpUrl(url)) return;
             event.preventDefault();
             event.stopPropagation();
-            useTopUpStore.getState().show();
+            useTopUpStore.getState().show(topUpTabForUrl(url));
         };
         document.addEventListener('click', openRecharge, true);
         return () => document.removeEventListener('click', openRecharge, true);

@@ -24,34 +24,42 @@ const emptyCoinPacks: TopUpDisplayProduct[] = Array.from({ length: 4 }, (_, inde
     renewal_price: '0', coin: 0, bouns: '0', preview: true,
 }));
 
-const emptyMemberships: TopUpDisplayProduct[] = ['basic', 'standard', 'premium'].map((name, index) => ({
-    name, id: -100 - index, type: 1, price: '0', coin: 0, freeExtra: 0,
-    renewal_price: '0', preview: true, days: 0,
-}));
-
 export function membershipPeriod(product: TopUpDisplayProduct): 'monthly' | 'annual' {
-    return product.period ?? (resolveSubscriptionPeriod(product.name) === 'yearly' ? 'annual' : 'monthly');
+    return product.period ?? (actualMembershipPeriod(product) === 'annual' ? 'annual' : 'monthly');
 }
 
 export function displayTopUpProducts(products: TopUpProduct[], type: number, period = 'monthly'): TopUpDisplayProduct[] {
-    const live = products.filter((product) => product.type === type && product.id > 0)
-        .filter((product) => type !== 1 || membershipPeriod(product) === period);
-    if (live.length) {
-        if (type === 2 || live.length >= 3) return live;
-        // Keep all three membership rows visible; missing tiers show zero.
-        return [...live, ...emptyMemberships.slice(live.length).map((product) => ({ ...product, period: period === 'annual' ? 'annual' as const : 'monthly' as const }))];
-    }
-    return type === 2 ? emptyCoinPacks : emptyMemberships.map((product) => ({ ...product, period: period === 'annual' ? 'annual' : 'monthly' }));
+    if (type === 1) return membershipDisplayRows(products, period as MembershipBillingPeriod);
+    const live = products.filter(product => product.type === type && product.id > 0);
+    return live.length ? live : type === 2 ? emptyCoinPacks : [];
 }
 
-/** Reference tiers have no equivalent in a weekly plan; only match the exact tier. */
-export function referenceMembershipProducts(products: TopUpProduct[], period: 'monthly' | 'annual'): TopUpDisplayProduct[] {
-    return ['basic', 'standard', 'premium'].map((tier, index) => {
+export type MembershipBillingPeriod = 'daily' | 'weekly' | 'monthly' | 'annual' | 'other';
+
+export function actualMembershipPeriod(product: TopUpProduct): MembershipBillingPeriod {
+    if (product.name.endsWith('_annual')) return 'annual';
+    if (/^(basic|standard|premium)$/.test(product.name)) return 'monthly';
+    const period = resolveSubscriptionPeriod(product.name);
+    if (period === 'yearly') return 'annual';
+    if (period === 'daily' || period === 'weekly' || period === 'monthly') return period;
+    return 'other';
+}
+
+/** Weekly subscriptions have been retired from the storefront. */
+export function actualMembershipProducts(products: TopUpProduct[]): TopUpProduct[] {
+    return products.filter(product => product.type === 1 && product.id > 0 && actualMembershipPeriod(product) !== 'weekly');
+}
+
+/** Fill each missing tier independently; placeholders are never purchasable. */
+export function membershipDisplayRows(products: TopUpProduct[], period: MembershipBillingPeriod): TopUpDisplayProduct[] {
+    const live = actualMembershipProducts(products).filter(product => actualMembershipPeriod(product) === period);
+    if (period !== 'monthly' && period !== 'annual') return live;
+    const slots = ['basic', 'standard', 'premium'].map((tier, index): TopUpDisplayProduct => {
         const name = period === 'annual' ? `${tier}_annual` : tier;
-        const live = products.find(product => product.type === 1 && product.id > 0 && product.name === name);
-        return live ? { ...live, period } : {
-            id: -200 - index - (period === 'annual' ? 3 : 0),
-            type: 1, name, period, price: '0', renewal_price: '0', coin: 0, days: 0, preview: true,
+        return live.find(product => product.name === name) ?? {
+            id: -200 - index - (period === 'annual' ? 3 : 0), type: 1, name, period,
+            price: '0', renewal_price: '0', coin: 0, days: 0, freeExtra: 0, preview: true,
         };
     });
+    return [...slots, ...live.filter(product => !slots.some(slot => slot.id === product.id))];
 }

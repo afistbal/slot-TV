@@ -5,21 +5,16 @@ import shareFacebookIcon from '@/assets/video/share_icon_facebook@2x.webp';
 import shareLinkIcon from '@/assets/video/share_icon_link@2x.webp';
 import shareTwitterIcon from '@/assets/video/share_icon_xcorp@2x.webp';
 import { cn } from '@/lib/utils';
-import {
-    RetentionCheckoutRadixRc,
-    type RetentionCommerceWire,
-} from '@/components/video-retention-promo/VideoRetentionPromo';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { ShareAction } from '@/components/video-player/videoPlayerConstants';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 
-const RadixRc = lazy(() => import('@/pages/user/RadixRc'));
+const TopUpModal = lazy(() => import('@/components/TopUpDialog').then(module => ({ default: module.TopUpModal })));
 
 export type VideoPlayerPcCommerceDialogsProps = {
     vip: boolean;
     onVipOpenChange: (open: boolean) => void;
     onVipEmbedClose: () => void;
-    retention?: RetentionCommerceWire;
     embedVideoEpisodeRowId: number;
     onEmbedPaySuccessEpisodeDetail: (episode: IPlayerEpisode) => void;
     vipHeaderEpisodeUnlockCoins?: number;
@@ -39,11 +34,8 @@ export type VideoPlayerPcCommerceDialogsProps = {
 export function VideoPlayerPcCommerceDialogs({
     vip,
     onVipOpenChange,
-    onVipEmbedClose,
-    retention,
     embedVideoEpisodeRowId,
     onEmbedPaySuccessEpisodeDetail,
-    vipHeaderEpisodeUnlockCoins,
     shareOpen,
     onShareOpenChange,
     shareEmbedCode,
@@ -56,44 +48,10 @@ export function VideoPlayerPcCommerceDialogs({
     onCopyEmbedCode,
 }: VideoPlayerPcCommerceDialogsProps) {
     const intl = useIntl();
-    const vipOpenChange = retention?.onVipOpenChange ?? onVipOpenChange;
-    const vipEmbedClose = retention?.onVipEmbedClose ?? onVipEmbedClose;
 
     return (
         <>
-            <Dialog open={vip} onOpenChange={vipOpenChange}>
-                <DialogContent
-                    contentPreset="plain"
-                    hideCloseButton
-                    className="video-vip-dialog rs-shopping-checkout-drawer rs-shopping-checkout-drawer--vipNoScroll rs-shopping-drawer-bg flex min-h-0 w-[min(518px,calc(100vw-32px))] h-[min(80vh,840px)] flex-col overflow-hidden rounded-[16px] border border-white/10 p-0 text-white"
-                >
-                    <DialogTitle className="sr-only" unsetTypography>
-                        {intl.formatMessage({ id: 'shopping_vip_drawer_title' })}
-                    </DialogTitle>
-                    <div className="rs-shopping-checkout-drawer__scroll rs-shopping-checkout-drawer__scroll--reelshort flex min-h-0 flex-1 flex-col">
-                        {vip ? (
-                            <Suspense fallback={null}>
-                                <RadixRc
-                                    layout="embed"
-                                    productFrom="video"
-                                    checkoutFrom="video"
-                                    onEmbedClose={vipEmbedClose}
-                                    headerEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-                                    embedVideoEpisodeRowId={embedVideoEpisodeRowId}
-                                    onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
-                                />
-                            </Suspense>
-                        ) : null}
-                    </div>
-                </DialogContent>
-            </Dialog>
-            <RetentionCheckoutRadixRc
-                retention={retention}
-                embedVideoEpisodeRowId={embedVideoEpisodeRowId}
-                onEmbedPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail}
-                vipHeaderEpisodeUnlockCoins={vipHeaderEpisodeUnlockCoins}
-            />
-            {retention?.layer}
+            {vip ? <Suspense fallback={null}><TopUpModal open={vip} onOpenChange={onVipOpenChange} initialTab="vip" productFrom="video" episodeRowId={embedVideoEpisodeRowId} onPaySuccessEpisodeDetail={onEmbedPaySuccessEpisodeDetail} /></Suspense> : null}
             <Dialog open={shareOpen} onOpenChange={onShareOpenChange}>
                 <DialogContent
                     contentPreset="plain"

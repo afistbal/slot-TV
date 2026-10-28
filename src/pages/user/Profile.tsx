@@ -37,6 +37,7 @@ import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/Prof
 import { PcLoginDialog } from '@/pages/user/Login';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
 import ProfileDashboard from '@/pages/user/ProfileDashboard';
+import { LanguageDialog } from '@/components/LanguageDialog';
 import '@/styles/profile-reelshort.scss';
 import '@/styles/reelshort-dashboard-pc-mirror.scss';
 import '@/styles/reelshort-dashboard-cabinet-mylist.scss';
@@ -71,6 +72,15 @@ function LegacyProfilePanel() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const location = useLocation();
+    const [languageOpen, setLanguageOpen] = useState(Boolean((location.state as { openLanguage?: boolean } | null)?.openLanguage));
+
+    useEffect(() => {
+        if (!(location.state as { openLanguage?: boolean } | null)?.openLanguage) return;
+        setLanguageOpen(true);
+        const state = { ...location.state };
+        delete state.openLanguage;
+        navigate({ pathname: location.pathname, search: location.search, hash: location.hash }, { replace: true, state });
+    }, [location.state, location.pathname, location.search, location.hash, navigate]);
     const sourceform = `${location.pathname}${location.search}`;
     const scrollRef = useRef<HTMLDivElement>(null);
     const isPc = useMinWidth768();
@@ -280,7 +290,7 @@ function LegacyProfilePanel() {
             </div>
             <div className="rs-profile__h5ProfileActions">
                 <Link to="/user/detail"><UserRound aria-hidden /><span><FormattedMessage id="user_detail" /></span></Link>
-                <Link to="/page/language"><Globe2 aria-hidden /><span><FormattedMessage id="language" /></span></Link>
+                <button type="button" aria-haspopup="dialog" onClick={() => setLanguageOpen(true)}><Globe2 aria-hidden /><span><FormattedMessage id="language" /></span></button>
                 <button type="button" onClick={() => void handleLogout()}><LogOut aria-hidden /><span><FormattedMessage id="logout" /></span></button>
             </div>
         </section>
@@ -302,8 +312,8 @@ function LegacyProfilePanel() {
             </div>
             <div className="rs-profile__h5ProfileActions">
                 <Link to="/page/login"><LogIn aria-hidden /><span><FormattedMessage id="login" /></span></Link>
-                <Link to="/page/language"><Globe2 aria-hidden /><span><FormattedMessage id="language" /></span></Link>
-                <Link to="/page/feedback"><CircleHelp aria-hidden /><span><FormattedMessage id="feedback_help" /></span></Link>
+                <button type="button" aria-haspopup="dialog" onClick={() => setLanguageOpen(true)}><Globe2 aria-hidden /><span><FormattedMessage id="language" /></span></button>
+                <Link to="/page/feedback"><CircleHelp aria-hidden /><span><FormattedMessage id="feedback_short" /></span></Link>
             </div>
         </section>
     );
@@ -338,7 +348,7 @@ function LegacyProfilePanel() {
             </Link>
             <Link to="/page/feedback">
                 <span className="rs-profile__h5QuickIcon"><CircleHelp aria-hidden /></span>
-                <span><FormattedMessage id="feedback_help" /></span>
+                <span><FormattedMessage id="feedback_short" /></span>
             </Link>
             <Link to="/page/about">
                 <span className="rs-profile__h5QuickIcon"><Info aria-hidden /></span>
@@ -723,6 +733,7 @@ function LegacyProfilePanel() {
                 )}
                 {isPc ? <PcLoginDialog open={pcLoginOpen} onOpenChange={setPcLoginOpen} /> : null}
             </div>
+            <LanguageDialog open={languageOpen} onOpenChange={setLanguageOpen} />
         </div>
     );
 }
