@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useIntl } from 'react-intl';
-import { ChevronDown, ChevronRight, Coins, Crown, Gift, Globe2, Heart, HelpCircle, History, LockKeyhole, LogIn, LogOut, Plus, Search, Settings, Share2, Sparkles, Star, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Coins, Crown, Gift, Globe2, Heart, HelpCircle, History, LockKeyhole, LogIn, LogOut, Plus, Search, Settings, Sparkles, Star, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { TopUpPanel } from '@/components/TopUpDialog';
+import { InviteCard } from '@/components/InviteCard';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { useUserStore } from '@/stores/user';
 import { useLuckyStore } from '@/stores/lucky';
@@ -16,7 +17,6 @@ import { useProfileDashboardData } from '@/hooks/useProfileDashboardData';
 import { getUserAvatarDisplayUrl } from '@/lib/userAvatar';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { logoutToAnonymousSession } from '@/lib/logoutToAnonymousSession';
-import { buildAffiliateShareUrl } from '@/lib/shareUrls';
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import { APP_LANGUAGES } from '@/constants/appLanguages';
 import { LanguageDialog } from '@/components/LanguageDialog';
@@ -85,7 +85,6 @@ export default function ProfileDashboard() {
     const signed = user.signed && !user.isAnonymous();
     const name = signed ? String(user.info?.name || user.info?.nickname || user.info?.username || user.info?.email || text('用户', 'User')) : text('游客', 'Guest');
     const uid = getUserUidForDisplay(user.info);
-    const referralUrl = buildAffiliateShareUrl(uid);
     const photo = signed ? getUserAvatarDisplayUrl(user.info) : undefined;
     const balance = user.signed ? Math.max(0, user.balance) : 0;
     const num = (value: unknown) => intl.formatNumber(Number.isFinite(Number(value)) ? Number(value) : 0);
@@ -128,12 +127,6 @@ export default function ProfileDashboard() {
         setLibraryTab(tab);
         libraryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    async function copyInvite() {
-        if (!referralUrl) { requestLogin(); return; }
-        try { await navigator.clipboard.writeText(referralUrl); toast.success(text('已复制', 'Copied')); }
-        catch { toast.error(text('复制失败，请手动复制', 'Please copy the link manually')); }
-    }
-
     const quickEntries = [
         { name: text('福利', 'Rewards'), Icon: Gift, to: '/lucky', tone: 'gold', count: badge },
         { name: text('推广赚现金', 'Affiliate'), Icon: Coins, to: '/affiliate', tone: 'green' },
@@ -168,12 +161,7 @@ export default function ProfileDashboard() {
                                 <button type="button" onClick={() => coinlogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><span>{text('金币明细', 'Coin history')}<strong className="me-green">{data.logs[0]?.change > 0 ? '+' : ''}{num(data.logs[0]?.change)}</strong></span><ChevronRight size={14} /></button>
                             </div>
                         </Card>
-                        <Card className="me-invite me-dashboard__wide" id="invite">
-                            <h2><Share2 size={15} className="me-green" />{text('邀请好友', 'Invite friends')}</h2>
-                            <div className="me-invite__copy"><input readOnly aria-label={text('邀请链接', 'Invitation link')} value={referralUrl} placeholder={text('正在获取邀请链接…', 'Loading invitation link…')} /><button type="button" className="me-btn" onClick={() => void copyInvite()}>{text('复制链接', 'Copy link')}</button></div>
-                            <div className="me-invite__stats"><span><b className="me-green">{num(data.invite?.invitedCount)}</b>{text('已邀请', 'invited')}</span></div>
-                            <Link className="me-disclosure" to="/affiliate">{text('推广详情', 'Affiliate details')}<ChevronRight size={14} /></Link>
-                        </Card>
+                        <InviteCard className="me-dashboard__wide" />
                         <Card className="me-vip">
                             <span className="me-vip__crown"><Crown size={22} /></span><div><h2>{user.isVIP() ? text('VIP 会员', 'VIP member') : text('升级会员，畅享更多', 'Enjoy more with VIP')}</h2><p className="me-subtle">{text('专属会员权益', 'Exclusive member benefits')}</p></div><button type="button" className="me-btn me-btn--gold" onClick={() => useTopUpStore.getState().show('vip')}>{text('查看', 'View')}</button>
                         </Card>

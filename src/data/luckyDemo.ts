@@ -1,7 +1,7 @@
 import type { LuckyPageData } from '@/api/lucky';
 
 // Reference: downloaded rewards_catalog / my_daily_tasks / promo_status responses.
-// Demonstration only; no wheel, comments, foreign social handles or reward mutations.
+// Demonstration only; no comments, foreign social handles or reward mutations.
 export function createLuckyDemoData(): LuckyPageData {
     return {
         coins: 45,
@@ -25,7 +25,6 @@ export function createLuckyDemoData(): LuckyPageData {
             { key: 'invite', icon: 'user', title: 'lucky_center_invite', description: 'lucky_center_invite_desc', to: '/affiliate' },
             { key: 'share', icon: 'share', title: 'lucky_center_share', description: 'lucky_center_share_desc', to: '/foryou' },
             { key: 'rating', icon: 'star', title: 'lucky_center_rating', description: 'lucky_center_rating_desc', to: '/lucky?rate=1' },
-            { key: 'level', icon: 'trending', title: 'lucky_center_level', description: 'lucky_center_level_desc', to: '/profile' },
         ],
     };
 }

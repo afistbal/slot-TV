@@ -56,17 +56,20 @@ export default function Component() {
     const userAnonymous = useUserStore(store => store.isAnonymous());
     const requestLogin = useAuthPromptStore(store => store.requestLogin);
     const luckyRevision = useLuckyStore(store => store.revision);
+    const tasksUpdatedAt = useLuckyStore(store => store.tasksUpdatedAt);
+    const sessionToken = localStorage.getItem('token');
     const topUpOpen = useTopUpStore(store => store.open);
 
     useEffect(() => {
         if (!sessionReady || !userSigned) return;
         let active = true;
-        const sessionToken = localStorage.getItem('token');
+        let requestSequence = 0;
         const refreshBalance = () => {
             if (document.visibilityState !== 'visible') return;
+            const sequence = ++requestSequence;
             void api<number>('user/balance', { loading: false, toastOnError: false }).then(result => {
-                if (active && sessionToken === localStorage.getItem('token') && result.c === 0) useUserStore.getState().setBalance(result.d);
-            });
+                if (active && sequence === requestSequence && sessionToken === localStorage.getItem('token') && result.c === 0) useUserStore.getState().setBalance(result.d);
+            }).catch(() => undefined);
         };
         refreshBalance();
         document.addEventListener('visibilitychange', refreshBalance);
@@ -76,7 +79,7 @@ export default function Component() {
             document.removeEventListener('visibilitychange', refreshBalance);
             window.removeEventListener('focus', refreshBalance);
         };
-    }, [sessionReady, userSigned, userId, userAnonymous]);
+    }, [sessionReady, userSigned, userId, userAnonymous, luckyRevision, tasksUpdatedAt, sessionToken, location.pathname]);
 
     useEffect(() => {
         const openRecharge = (event: MouseEvent) => {

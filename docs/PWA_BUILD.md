@@ -21,6 +21,8 @@ npm run preview
 - Service Workers 中已注册 `/sw.js`。
 - Cache Storage 中存在 Workbox 预缓存。
 - 桌面 Chromium 出现“添加桌面”入口；iPhone/iPad Safari 显示手动添加引导。
+- Android H5 即使未收到 `beforeinstallprompt`（例如部分 Via/系统 WebView 浏览器），仍显示“添加桌面”；有可用事件时调起原生安装，否则进入 `/page/android-add-home` 手动引导。菜单中的添加入口同样按设备分流，安卓不再进入 Safari 教程。
+- 从 standalone 启动、当前会话已接受安装或收到 `appinstalled` 后，底部安装入口隐藏；Flutter 壳、TikTok、收银台和沉浸播放页不展示该入口。拒绝安装后不会重复使用已消费事件，安卓可继续查看手动引导。
 
 ## 构建命令
 

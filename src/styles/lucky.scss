@@ -73,11 +73,10 @@
 .lucky-center__grid p { flex: 1; margin: 4px 0 0; color: var(--lucky-muted); font-size: 11px; line-height: 15px; }
 .lucky-center__grid em { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; color: var(--lucky-accent); font-size: 11px; font-style: normal; font-weight: 600; line-height: 16px; }
 .lucky-loading { display: grid; gap: 20px; padding-top: 24px; }
-.lucky-loading > span { height: 64px; border-radius: 16px; background: #ffffff08; animation: lucky-pulse 1.5s infinite alternate; }
+.lucky-loading > span { height: 64px; border-radius: 16px; background: #ffffff08; }
 .lucky-loading > span:first-child { width: 220px; height: 220px; margin: 0 auto; border-radius: 50%; }
 .lucky-restricted { margin: 12px 0 0; border: 1px solid var(--lucky-line); border-radius: 12px; background: var(--lucky-sf2); padding: 10px 12px; color: var(--lucky-muted); font-size: 13px; }
 .lucky-task-error { margin: 12px 0 0; border: 1px solid var(--lucky-accent-line); border-radius: 12px; padding: 10px 12px; color: #ff8799; font-size: 12px; overflow-wrap: anywhere; }
-@keyframes lucky-pulse { to { opacity: .4; } }
 @media (min-width: 640px) { .lucky-page__main { max-width: 576px; } }
 @media (min-width: 768px) {
     .lucky-page__main { max-width: 768px; padding-top: 16px; }

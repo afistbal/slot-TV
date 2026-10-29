@@ -1,0 +1,58 @@
+.lucky-wheel-layout { display: grid; gap: 16px; margin: 16px 0; min-width: 0; }
+.lucky-wheel-panel { min-width: 0; padding: 20px 16px; text-align: center; overflow: hidden; }
+.lucky-wheel-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
+.lucky-wheel-panel > header h2 { display: flex; align-items: center; gap: 6px; margin: 3px 0 0; color: var(--lucky-accent); font-size: 20px; font-family: 'Lucky Noto Serif SC', serif; }
+.lucky-wheel-panel > header > span, .lucky-wheel-panel__eyebrow { color: var(--lucky-muted); font-size: 11px; }
+.lucky-wheel-panel > header b { color: var(--lucky-accent); font-size: 17px; }
+.lucky-wheel-stage { --wheel-size: min(74vw, 340px); position: relative; width: var(--wheel-size); height: var(--wheel-size); margin: 30px auto 18px; }
+.lucky-wheel-disc { box-sizing: border-box; position: absolute; inset: 0; border: 8px solid #7a5f22; border-radius: 50%; box-shadow: 0 0 0 2px #2a2410, inset 0 0 8px #0003, 0 14px 40px #0005; transition: transform 2.2s cubic-bezier(.12,.7,.15,1); }
+.lucky-wheel-slot { position: absolute; top: 50%; left: 50%; display: flex; width: 68px; flex-direction: column; align-items: center; gap: 3px; transform: translate(-50%,-50%) rotate(var(--slot-angle)) translateY(calc(var(--wheel-size) * -.34)) rotate(calc(-1 * var(--slot-angle))); color: #f1d494; font-size: 10px; line-height: 1.25; }
+.lucky-wheel-slot b { max-width: 66px; font-weight: 600; overflow-wrap: anywhere; }
+.lucky-wheel-pointer { position: absolute; z-index: 3; top: -13px; left: 50%; width: 26px; height: 33px; transform: translateX(-50%); background: linear-gradient(90deg,#c29135,#ffdf8e,#b78b39); clip-path: polygon(0 0,100% 0,50% 100%); filter: drop-shadow(0 2px 3px #0008); }
+.lucky-wheel-hub { position: absolute; z-index: 2; top: 50%; left: 50%; display: flex; width: 27%; aspect-ratio: 1; transform: translate(-50%,-50%); flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 3px; border: 2px solid #e8c268; border-radius: 50%; background: radial-gradient(circle at 38% 30%,#fff6d8 0%,#f0cf7c 30%,#d9a940 70%,#9c7424 100%); color: #2b1e00; box-shadow: 0 0 0 5px #e8c2682e,0 0 0 9px #0c0d0fe6,0 14px 34px #0009,inset 0 -4px 10px #78500a59,inset 0 3px 6px #fff9; cursor: pointer; }
+.lucky-wheel-hub strong { font-size: 12px; }.lucky-wheel-hub small { font-size: 9px; }
+.lucky-wheel-hub:disabled { cursor: default; }
+.lucky-wheel-meta { color: var(--lucky-muted); font-size: 11px; }
+.lucky-wheel-bets { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 16px 0 12px; }
+.lucky-wheel-bets button, .lucky-wheel-actions button { min-height: 40px; padding: 8px 14px; border: 1px solid var(--lucky-accent-line); border-radius: 12px; background: var(--lucky-accent-soft); color: var(--lucky-accent); font: inherit; font-size: 12px; cursor: pointer; }
+.lucky-wheel-bets button[aria-pressed=true] { background: var(--lucky-accent); color: var(--lucky-on-accent); }
+.lucky-wheel-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.lucky-wheel-actions small { display: block; font-size: 10px; opacity: .7; }
+.lucky-wheel-actions button:disabled, .lucky-wheel-bets button:disabled { opacity: .4; cursor: default; }
+.lucky-wheel-pool { margin-top: 18px; border-top: 1px solid var(--lucky-line); padding-top: 12px; color: var(--lucky-muted); font-size: 12px; text-align: left; }
+.lucky-wheel-pool summary { min-height: 32px; cursor: pointer; }
+.lucky-wheel-pool ul, .lucky-wheel-result ul { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+.lucky-wheel-pool li { display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 10px; background: var(--lucky-sf2); color: var(--lucky-accent); }
+.lucky-spin-guide { align-self: start; padding: 16px; }
+.lucky-spin-guide h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 12px; font-size: 13px; }
+.lucky-spin-guide h3 svg { color: var(--lucky-accent); }
+.lucky-spin-guide ol { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.lucky-spin-guide li { display: grid; grid-template-columns: 32px minmax(0,1fr); align-items: center; gap: 10px; padding: 12px; border-radius: 14px; background: var(--lucky-sf2); }
+.lucky-spin-guide li > span { position: relative; display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--lucky-accent-line); border-radius: 50%; color: var(--lucky-accent); background: var(--lucky-accent-soft); }
+.lucky-spin-guide i { position: absolute; top: -8px; right: -4px; display: grid; width: 16px; height: 16px; place-items: center; border-radius: 50%; background: var(--lucky-accent); color: var(--lucky-on-accent); font-size: 10px; font-style: normal; }
+.lucky-spin-guide strong { font-size: 12px; }.lucky-spin-guide p { margin: 3px 0 0; color: var(--lucky-muted); font-size: 11px; line-height: 1.5; }
+.lucky-wheel-result { margin-top: 16px; padding: 14px; border: 1px solid var(--lucky-accent-line); border-radius: 14px; background: var(--lucky-accent-soft); }
+.lucky-wheel-result h3 { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--lucky-accent); }
+.lucky-wheel-result li { color: var(--lucky-accent); font-size: 13px; }.lucky-wheel-result button { margin-top: 12px; border: 0; border-radius: 9px; background: var(--lucky-accent); color: var(--lucky-on-accent); padding: 7px 20px; cursor: pointer; }
+.lucky-wheel-loader { animation: lucky-wheel-spin 1s linear infinite; }@keyframes lucky-wheel-spin { to { transform: rotate(360deg); } }
+.lucky-wheel-header-actions { display: flex; align-items: center; gap: 12px; color: var(--lucky-muted); font-size: 11px; }
+.lucky-wheel-header-actions button { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--lucky-line); border-radius: 50%; color: var(--lucky-muted); background: transparent; cursor: pointer; }
+.lucky-wheel-countdown { display: flex; align-items: center; gap: 6px; width: fit-content; border: 1px solid var(--lucky-accent-line); border-radius: 99px; padding: 5px 10px; color: var(--lucky-accent); font-size: 11px; }
+.lucky-wheel-bulb { position: absolute; top: 50%; left: 50%; z-index: 1; width: 4px; height: 4px; border-radius: 50%; background: #e8c268; box-shadow: 0 0 5px #e8c268; transform: translate(-50%,-50%) rotate(var(--bulb-angle)) translateY(calc(var(--wheel-size) * -.486)); }
+.lucky-wheel-bulb:nth-of-type(odd) { background: #5a4a1e; box-shadow: none; }
+.lucky-wheel-free-progress { display: flex; justify-content: center; gap: 8px; margin-top: 28px; }.lucky-wheel-free-progress i { width: 30px; height: 5px; border: 1px solid var(--lucky-line); border-radius: 5px; }.lucky-wheel-free-progress .is-left { background: var(--lucky-accent); }
+.lucky-wheel-coupon { display: grid; gap: 6px; padding: 12px; margin: 8px 0; border: 1px solid var(--lucky-accent-line); border-radius: 12px; }.lucky-wheel-coupon strong { color: var(--lucky-accent); }.lucky-wheel-coupon button { width: fit-content; padding: 5px 14px; background: var(--lucky-accent); color: var(--lucky-on-accent); border: 0; border-radius: 8px; }.lucky-wheel-coupon button:disabled { opacity: .4; }.lucky-wheel-pool li small { display: block; color: var(--lucky-muted); font-size: 10px; }
+.lucky-wheel-extras { display: grid; align-self: start; gap: 16px; min-width: 0; }.lucky-wheel-extras section { padding: 16px; }.lucky-wheel-extras h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 15px; font-family: 'Lucky Noto Serif SC', serif; }.lucky-wheel-extras h3 svg { color: var(--lucky-accent); }.lucky-wheel-extras p { color: var(--lucky-muted); font-size: 11px; line-height: 1.6; }.lucky-wheel-extras p b { color: var(--lucky-accent); }
+.lucky-wheel-pool-panel ul { list-style: none; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 0; margin: 12px 0 0; }.lucky-wheel-pool-panel li { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 72px; border: 1px solid var(--lucky-line); border-radius: 12px; background: var(--lucky-sf2); font-size: 12px; }.lucky-wheel-pool-panel li svg { color: var(--lucky-accent); }
+.lucky-wheel-empty { margin: 12px 0; padding: 18px 12px; border: 1px dashed var(--lucky-line); border-radius: 12px; text-align: center; }.lucky-wheel-fine-print { font-size: 10px !important; }.lucky-wheel-mine-stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; border-top: 1px solid var(--lucky-line); padding-top: 14px; }.lucky-wheel-mine-stats > div { display: flex; flex-direction: column; gap: 4px; }.lucky-wheel-mine-stats strong { font-size: 20px; color: var(--lucky-accent); }.lucky-wheel-mine-stats span { display: flex; align-items: center; gap: 4px; color: var(--lucky-muted); font-size: 11px; }.lucky-wheel-records details { margin-top: 14px; color: var(--lucky-muted); font-size: 12px; }.lucky-wheel-records summary { cursor: pointer; }.lucky-wheel-records ul { list-style: none; padding: 0; max-height: 250px; overflow: auto; }.lucky-wheel-records li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--lucky-line); }.lucky-wheel-records time { font-size: 10px; }
+@media(min-width:1024px) {
+    .lucky-wheel-layout { grid-template-columns: minmax(0,1.25fr) minmax(250px,.8fr); align-items: start; grid-template-areas: 'hero extras' 'guide guide'; }
+    .lucky-wheel-layout--with-tasks { grid-template-areas: 'hero extras' 'daily daily' 'guide guide' 'rewards rewards'; }
+    .lucky-wheel-panel { grid-area: hero; }
+    .lucky-wheel-layout > .lucky-daily { grid-area: daily; }
+    .lucky-wheel-extras { grid-area: extras; }
+    .lucky-wheel-layout > .lucky-center { grid-area: rewards; }
+    .lucky-spin-guide { padding: 20px; grid-area: guide; }
+    .lucky-spin-guide ol { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media(prefers-reduced-motion:reduce) { .lucky-wheel-disc { transition: none; }.lucky-wheel-loader { animation: none; } }

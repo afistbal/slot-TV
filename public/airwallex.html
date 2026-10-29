@@ -110,6 +110,12 @@
                 if (!search.get('customer_id')) {
                     break;
                 }
+                if (search.get('currency')?.trim().toUpperCase() !== 'USD') {
+                    result.style.display = 'flex';
+                    resultFailed.style.display = '';
+                    message.innerText = '支付订单币种必须为美元（USD），请重新下单。';
+                    break;
+                }
                 AirwallexComponentsSDK.init({
                     env: search.get('env') ?? 'prod',
                     enabledElements: ['payments'],
@@ -123,7 +129,7 @@
                         },
                         customer_id: search.get('customer_id'),
                         client_secret: search.get('client_secret'),
-                        currency: search.get('currency'),
+                        currency: 'USD',
                         successUrl: search.get('success_url'),
                         failUrl: search.get('fail_url'),
                         methods: ['card', 'googlepay', 'applepay'],

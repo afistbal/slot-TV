@@ -17,7 +17,7 @@
 <body>
 <main>
   <h1>YogoShort 福利 / 推广奖金 API</h1>
-  <p class="sub">全部使用 POST；调用状态与后端接通状态分开标注；请求和响应字段统一使用 CamelCase（复用旧接口保留兼容字段）</p>
+  <p class="sub">全部使用 POST；调用状态与后端接通状态分开标注；请求和响应按各接口契约使用；邀请配置保留对标原始 snake_case 字段名</p>
   <div class="tabs"><button class="tab active" data-tab="welfare">福利 · 19</button><button class="tab" data-tab="affiliate">推广奖金 · 3</button><button class="tab" data-tab="creator" hidden>加入创作者 · 28</button></div>
   <section id="welfare" class="panel active">
     <div class="module-head"><h2>福利</h2><span>19 个接口 · 3 个已通 · 17 个待新增 · 1 个待联调 · 2 个复用</span></div>
@@ -116,8 +116,8 @@ const welfare=[
     "p": "/api/user/tasks",
     "rpc": "my_daily_tasks",
     "caller": "getLuckyTasks",
-    "front": "进入福利页、领奖后刷新；导航读取签到待领数。",
-    "use": "查询每日和新手任务的真实进度。",
+    "front": "进入福利页，领奖后刷新任务和福利卡片。转盘另用独立状态接口。",
+    "use": "查询每日/新手任务及福利卡片文案。",
     "req": {},
     "res": {
       "c": 0,
@@ -204,7 +204,29 @@ const welfare=[
         "earned": 0,
         "onceTotal": 90,
         "restricted": false,
-        "onceEarned": 0
+        "onceEarned": 0,
+        "rewards": {
+          "tickets": {
+            "daily_cap": 0
+          },
+          "checkin": {
+            "rewards": [],
+            "milestones": {}
+          },
+          "watch_streak": {
+            "daily_base": 0,
+            "rewards": {}
+          },
+          "referral": {
+            "signup_inviter": 0,
+            "purchase_pct": 0,
+            "daily_share": 0
+          },
+          "rating": {
+            "reward": 0,
+            "daily_cap": 0
+          }
+        }
       }
     },
     "fields": [
@@ -332,26 +354,363 @@ const welfare=[
         "key": "d.restricted",
         "type": "boolean",
         "meaning": "当前账号暂不参与奖励。"
+      },
+      {
+        "key": "d.rewards.checkin.rewards",
+        "type": "integer[]",
+        "meaning": "签到周期每日奖励。"
+      },
+      {
+        "key": "d.rewards.checkin.milestones",
+        "type": "map<string, integer>",
+        "meaning": "连续天数 → 额外金币。"
+      },
+      {
+        "key": "d.rewards.checkin.multiplier",
+        "type": "number[]",
+        "meaning": "签到倍率档位。"
+      },
+      {
+        "key": "d.rewards.watch_streak.enabled",
+        "type": "boolean",
+        "meaning": "是否启用连续追剧。"
+      },
+      {
+        "key": "d.rewards.watch_streak.daily_base",
+        "type": "integer",
+        "meaning": "追剧基础金币。"
+      },
+      {
+        "key": "d.rewards.watch_streak.rewards",
+        "type": "map<string, integer>",
+        "meaning": "连续天数 → 额外金币。"
+      },
+      {
+        "key": "d.rewards.referral.enabled",
+        "type": "boolean",
+        "meaning": "是否启用邀请奖励。"
+      },
+      {
+        "key": "d.rewards.referral.daily_share",
+        "type": "integer",
+        "meaning": "每日分享金币。"
+      },
+      {
+        "key": "d.rewards.referral.signup_inviter",
+        "type": "integer",
+        "meaning": "好友注册时邀请人所得金币。"
+      },
+      {
+        "key": "d.rewards.referral.purchase_pct",
+        "type": "number",
+        "meaning": "邀请充值奖励百分数，15 表示 15%。"
+      },
+      {
+        "key": "d.rewards.rating.reward",
+        "type": "integer",
+        "meaning": "单剧评分金币。"
+      },
+      {
+        "key": "d.rewards.rating.daily_cap",
+        "type": "integer",
+        "meaning": "每日可奖励作品数。"
+      },
+      {
+        "key": "d.rewards.tickets.daily_cap",
+        "type": "integer",
+        "meaning": "每天最多掉落抽奖券数量"
       }
     ],
     "rules": [
-      "后端状态：已通。",
-      "已通，示例按 CamelCase 展示；当前实际返回的 x_used、needs_watch、min_sec、once_total、once_earned 已由前端递归兼容。",
-      "当前每日显示 0 / 48：53 减评论 5；若评论已有收益，也从 earned 中扣除。",
-      "福利导航红点仅由真实未签到任务产生，本期不含转盘和消息铃铛红点。"
+      "福利文案统一从 task 的 d.rewards 读取；转盘按对标使用独立 promo_status 适配，不放入 task。",
+      "当前临时保留转盘预览，不做提示卡/转盘互斥，未开放不可抽。",
+      "转盘页面已撤去技术接口说明，完整独立 HTML：docs/lucky-wheel-api.html。",
+      "默认数值 0，文案保留；不显示评论、升级奖励。"
     ],
-    "backend": "已通",
+    "backend": "原任务已通；d.rewards 待后端补充",
     "called": true,
     "callSite": "src/pages/user/Lucky.tsx → getLuckyTasks → src/api/lucky.ts",
-    "usage": "福利页 · 每日/新手任务、导航待领红点"
+    "usage": "福利任务、福利中心卡片"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/promo/status",
+    "rpc": "promo_status",
+    "caller": "getLuckyPromo",
+    "req": {},
+    "called": true,
+    "backend": "待后端新增",
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "enabled": false,
+        "eligible": false,
+        "reason": "no_week",
+        "peak": false,
+        "peak_ends_at": null,
+        "ends_at": null,
+        "next_open_at": null,
+        "free_max": 0,
+        "free_left": 0,
+        "free_needs_watch": false,
+        "gift_spins": 0,
+        "gift_spins_per_topup": 0,
+        "luck_per_topup": 0,
+        "free_guarantee_coupon": false,
+        "tickets": 0,
+        "paid_max": 0,
+        "paid_used": 0,
+        "ten_max": 0,
+        "ten_used": 0,
+        "ten_price_mult": 0,
+        "coins": 0,
+        "bets": [],
+        "face_free": [],
+        "face_ticket": [],
+        "face_paid": {},
+        "cap_coins": 0,
+        "winners_coupon": 0,
+        "luck_level": 0,
+        "coupons": [],
+        "prizes": []
+      }
+    },
+    "front": "进入福利页、重试、抽奖后刷新。",
+    "use": "独立查询活动时间、账号资格、次数、奖池、充值券、好运和最近中奖记录。",
+    "fields": [
+      {
+        "key": "d.enabled",
+        "type": "boolean",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.eligible",
+        "type": "boolean",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.reason",
+        "type": "string",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.peak",
+        "type": "boolean",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.peak_ends_at",
+        "type": "string | null",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.ends_at",
+        "type": "string | null",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.next_open_at",
+        "type": "string | null",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.free_max",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.free_left",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.free_needs_watch",
+        "type": "boolean",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.gift_spins",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.gift_spins_per_topup",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.luck_per_topup",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.free_guarantee_coupon",
+        "type": "boolean",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.tickets",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.paid_max",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.paid_used",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.ten_max",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.ten_used",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.ten_price_mult",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.coins",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.bets",
+        "type": "array",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.face_free",
+        "type": "array",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.face_ticket",
+        "type": "array",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.face_paid",
+        "type": "object",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.cap_coins",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.winners_coupon",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.luck_level",
+        "type": "number",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.coupons",
+        "type": "array",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      },
+      {
+        "key": "d.prizes",
+        "type": "array",
+        "meaning": "含义及来源见独立幸运转盘 HTML 文档中的逐行中文注释"
+      }
+    ],
+    "rules": [
+      "对标是 promo_status，不是 task；本路径为我方新增适配。",
+      "enabled/eligible/peak 和 starts_at/peak_ends_at/ends_at 对应展示与开放时间，完整逻辑见独立 HTML。",
+      "本期不含心愿清单。后台配置保存到现有 admin/settings 的 topup_promo。"
+    ],
+    "callSite": "src/api/lucky.ts → getLuckyPromo",
+    "usage": "幸运转盘及下方专属模块"
+  },
+  {
+    "m": "POST",
+    "p": "/api/user/spin",
+    "rpc": "promo_spin",
+    "caller": "spinLuckyWheel",
+    "front": "免费、付费、十连、赠抽、用券按钮",
+    "use": "请求服务端抽奖，返回真实奖项，随后刷新 task 与余额。",
+    "req": {
+      "p_mode": "free",
+      "p_bet": 0
+    },
+    "res": {
+      "c": 0,
+      "m": "",
+      "d": {
+        "draws": [
+          {
+            "slot_idx": 0,
+            "prize_kind": "coins",
+            "prize_value": 0
+          }
+        ]
+      }
+    },
+    "fields": [
+      {
+        "key": "p_mode",
+        "type": "string",
+        "meaning": "free 免费 / paid 单抽 / ten 十连 / gift 赠抽 / ticket 用券"
+      },
+      {
+        "key": "p_bet",
+        "type": "integer",
+        "meaning": "免费/用券=0；单抽/十连=所选金币档位；赠抽=50，沿用对标原参数"
+      },
+      {
+        "key": "d.draws",
+        "type": "array",
+        "meaning": "服务端结果；单抽1项，十连10项；示例不是实际中奖记录"
+      },
+      {
+        "key": "d.draws[].slot_idx",
+        "type": "integer",
+        "meaning": "中奖扇区，从0开始，对应当次奖池数组"
+      },
+      {
+        "key": "d.draws[].prize_kind",
+        "type": "string",
+        "meaning": "coins/bonus_pct/vip_day/drama_ep/luck"
+      },
+      {
+        "key": "d.draws[].prize_value",
+        "type": "integer",
+        "meaning": "实际获得奖励数值"
+      }
+    ],
+    "rules": [
+      "对标 promo_spin 的 p_mode、p_bet 及 draws 字段保留原名；我方适配路径待后端实现。",
+      "结果由服务端决定；请求结束刷新 task、promo/status 和钱包，失败不自动重试抽奖。",
+      "全部接口、admin 配置和后端事务要求见 docs/lucky-wheel-api.html；页面不展示技术说明。"
+    ],
+    "backend": "待后端新增",
+    "called": true,
+    "callSite": "src/components/LuckyWheel.tsx → spinLuckyWheel → src/api/lucky.ts",
+    "usage": "福利页 · 幸运转盘"
   },
   {
     "m": "POST",
     "p": "/api/user/rewards",
     "rpc": "rewards_catalog",
     "caller": "getLuckyRewards",
-    "front": "进入福利页、重试时读取。",
-    "use": "取得福利中心的奖励配置。当前接口已通但返回 null，不生成演示奖励卡片。",
+    "front": "福利页不再调用，保留旧适配函数。",
+    "use": "奖励配置已统一合并到 user/tasks.d.rewards。",
     "req": {},
     "res": {
       "c": 0,
@@ -441,14 +800,12 @@ const welfare=[
       }
     ],
     "rules": [
-      "后端状态：已通。",
-      "已通，用户确认的真实响应为 {\"c\":0,\"m\":\"\",\"d\":null}。",
-      "上述对象字段仅为有配置时使用的原站字段映射，不把历史数值当作我们的实际配置。评论和转盘不在本期契约内。"
+      "本次福利页不调用此接口；不要求通过此接口补齐页面数据。"
     ],
     "backend": "已通",
-    "called": true,
+    "called": false,
     "callSite": "src/pages/user/Lucky.tsx → getLuckyRewards → src/api/lucky.ts",
-    "usage": "福利页 · 福利中心奖励卡片"
+    "usage": "旧接口 · 福利页已停用"
   },
   {
     "m": "POST",
@@ -1256,7 +1613,7 @@ const welfare=[
     "p": "/api/user/level",
     "rpc": "my_level_status",
     "caller": "getLuckyLevel",
-    "front": "福利页“等级进度”按钮 / 等级奖励卡片打开弹窗时。",
+    "front": "升级奖励卡片和入口已按用户要求移除。",
     "use": "查询当前账号经验和等级进度。",
     "req": {},
     "res": {
@@ -1292,14 +1649,12 @@ const welfare=[
       }
     ],
     "rules": [
-      "后端状态：待后端新增。路径为本次拟定的我方接口，原站流程依据见展开后的参考调用；示例不是线上返回。",
-      "原站返回数组首项；我方约定返回对象，前端同时兼容原始数组。",
-      "升级金币由服务端自动入账，页面不另造未核实的等级领奖操作。"
+      "福利页不再展示升级奖励，也不调用本接口。"
     ],
     "backend": "待后端新增",
-    "called": true,
+    "called": false,
     "callSite": "src/components/LuckyAccountDialogs.tsx → getLuckyLevel → src/api/lucky.ts",
-    "usage": "福利页 · 等级进度弹窗"
+    "usage": "福利页已移除"
   }
 ];
 const creator=[
@@ -1333,7 +1688,7 @@ const creator=[
 {"m":"POST","p":"/api/commission/upload?id={commissionId}&filename={filename}","rpc":"参考媒体接口 /commission/upload","caller":"uploadDelivery","front":"我的订单 → 里程碑交付时先上传文件。","use":"取得交付文件 filePath，供 deliver_milestone 提交。","req":{"query":{"id":"uuid","filename":"delivery.mp4"},"body":"<binary File>"},"res":{"filePath":"commission/uuid/delivery.mp4"},"rules":["id 来自当前定制订单；Authorization 必填；HTTP Body 为二进制","响应直接返回 camelCase filePath；前端兼容原参考的 file_path；上传失败不调用 deliver"],"called":true,"callSite":"src/components/CreatorWorkspace.tsx → creatorApi.uploadDelivery"}
 ];
 const affiliate=[
-{"m":"POST","p":"/api/user/affiliate","rpc":"my_affiliate_eligibility","front":"进入 /affiliate 时调用","use":"获取推广资格进度和自动开通状态。","req":{},"res":{"c":0,"m":"","d":{"gateNetUsdCents":20000,"gatePayers":5,"invitedCount":0,"invitedCents":0,"payers":0,"state":"in_progress"}},"rules":["请求体为空对象；登录身份从 Authorization 获取","payers / gatePayers：名下付费人数 / 人数门槛","invitedCount：已邀请用户数","invitedCents：名下用户充值净额，单位人民币分","gateNetUsdCents：充值净额门槛，保留后端字段名，实际单位人民币分；20000 显示为 ¥200.00","state：in_progress 未达标 / active 已自动开通；没有申请和审核流程","达到充值净额与付费人数条件后，由后端自动升级为 active","当前实际响应未包含 referralCode / referralUrl，不编造推广链接"],"called":true,"callSite":"src/api/affiliate.ts → getAffiliateEligibility → src/pages/user/AffiliateProgram.tsx"},
+{"m":"POST","p":"/api/user/affiliate","rpc":"my_affiliate_eligibility","front":"个人中心邀请卡片与推广页共用；进入、聚焦、奖励刷新与重试时读取","use":"统一获取邀请奖励配置、充值和有效邀请任务进度、推广资格状态","req":{},"res":{"c":0,"m":"","d":{"gateNetUsdCents":20000,"gatePayers":5,"invitedCount":0,"invitedCents":0,"payers":0,"state":"in_progress","gateAccountDays":0,"accountDays":0,"onceInviteReward":0,"inviteDepositRate":0.15,"inviteDepositReward":0,"inviteTaskReward":0,"registerReward":0}},"rules":["请求体为空对象；登录身份从 Authorization 获取","payers / gatePayers：名下付费人数 / 人数门槛","invitedCount：已邀请用户数","invitedCents：名下用户充值净额，单位人民币分","gateNetUsdCents：充值净额门槛，保留后端字段名，实际单位人民币分；20000 显示为 ¥200.00","state：in_progress 未达标 / active 已自动开通；没有申请和审核流程","达到充值净额与付费人数条件后，由后端自动升级为 active","onceInviteReward=邀请一人金币奖励；inviteDepositRate=有效邀请充值奖励比例（0.15=15%）；inviteTaskReward=任务奖励金币。","registerReward单独展示注册奖励，不假定为被邀请好友奖励。","任务同时检查充值、有效邀请人数以及大于0的账号天数门槛；条件达成不代表奖励已发放。","可选earnedCoins / pendingCoins用于真实到账统计；缺失时不从奖励配置推算。分享码缺失使用现有UID分享链接。"],"called":true,"callSite":"src/api/affiliate.ts → getAffiliateEligibility；src/api/invite.ts → getInviteInfo → InviteCard"},
 {"m":"POST","p":"/api/user/stat","rpc":"推广统计","front":"推广赚现金 /affiliate：进入真实推广后台或点击“推广后台”预览时调用；成功展示接口数据，失败时预览模式才回退演示数据。","use":"一次取得推广统计；income 用于收入区域，stat 用于最近 30 天统计区域。","req":{},"res":{"c":0,"m":"","d":{"income":{"status":"active","activatedAt":"2026-10-19T06:00:00Z","shareBps":1500,"referralCode":"ABC123","referralUrl":"https://example.com/?ref=ABC123","invitedCount":0,"totalEarnedCents":0,"pendingCents":0,"availableCents":0,"reversedCents":0,"paidOutCents":0,"earnings":[{"id":"earning_001","orderDate":"2026-10-19T06:00:00Z","amountCents":150,"entryStatus":"pending","availableAt":"2026-10-26T06:00:00Z"}]},"stat":{"holdDays":7,"summary":{"totalClicks":0,"totalDevices":0,"totalSignups":0,"totalPayers":0,"totalCommissionMicros":0},"daily":[{"dt":"2026-10-19","clicks":0,"devices":0,"signups":0,"payers":0,"commissionMicros":0}]} }},"rules":["请求体为空对象；登录身份从 Authorization 获取","d.income 只用于推广收入卡片与最近佣金记录","d.stat 只用于最近 30 天推广统计","页面只调用一次本接口，不再请求 affiliate/summary 和 affiliate/funnel","推广后台预览也会发起真实请求；请求失败时才显示演示数据并保留错误提示"],"called":true,"callSite":"src/api/affiliate.ts → getAffiliateStatistics → src/components/AffiliateDashboard.tsx → /affiliate"},
 {"m":"POST","p":"/api/affiliate/referral/claim","rpc":"claim_referral","front":"读取 ?ref=CODE 并在本地暂存；用户登录或注册成功后提交，推广码由后端校验并绑定。","use":"受邀用户登录或注册成功后，将当前用户永久归因给推广码所属用户。","req":{"code":"ABC123","deviceId":"7cbde11a-0e55-4cab-8419-d8f779f73947"},"res":{"data":{"claimed":true,"restricted":false,"rewardMode":"cash","inviteeCoins":0},"error":null},"rules":["需要登录；当前用户从 Authorization 获取","首次有效归因后永久不变，重复调用必须幂等","禁止自己邀请自己、覆盖已有邀请人和同设备批量注册","rewardMode：cash / coins；邀请人为 active 推广伙伴时使用 cash","建议错误码：INVALID_REFERRAL_CODE / SELF_REFERRAL / ALREADY_ATTRIBUTED","后续有效付费必须以服务端归因关系计算佣金，不能信任前端传入邀请人或金额"],"called":true,"callSite":"src/api/affiliate.ts → claimAffiliateReferral（页面 /creator、/affiliate 或全站推广归因触发）"}
 ];

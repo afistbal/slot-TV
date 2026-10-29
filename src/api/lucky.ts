@@ -1,7 +1,8 @@
 import { movieCoverUrl } from '@/lib/movieCoverUrl';
 import { api, formatApiFailure } from '@/api';
-import { camelLuckyPayload, decodeLuckyCatalog, decodeLuckyTasks, luckyClaimableBadge } from '@/lib/luckyPageData';
+import { camelLuckyPayload, decodeLuckyTaskContent, decodeLuckyTasks, luckyClaimableBadge } from '@/lib/luckyPageData';
 import { useLuckyStore } from '@/stores/lucky';
+import type { LuckySpinDraw, LuckySpinMode, LuckyWheelState } from '@/lib/luckyWheel';
 
 export type LuckyIconName = 'bell' | 'check' | 'check-circle' | 'external' | 'flame' | 'gift' | 'play' | 'send' | 'share' | 'star' | 'trending' | 'user' | 'sparkle' | 'chevron-right' | 'close' | 'clock' | 'help-circle' | 'coin';
 export type LuckyTask = { key: string; icon: LuckyIconName; title: string; description?: string; coins: number; done: boolean; earned?: number; ready?: boolean; xUsed?: boolean; action: 'claim' | 'go' | 'external' | 'push' | 'linkx' | 'telegram'; to?: string };
@@ -13,9 +14,9 @@ export type LuckyPageData = {
     coins?: number; promo: { enabled: boolean; eligible: boolean; reason: string; nextOpenAt: string | null };
     daily: { earned: number; total: number; restricted?: boolean; tasks: LuckyTask[] };
     newcomer: { total: number; tasks: LuckyTask[] }; rewards: LuckyRewardCard[];
-    checkin?: LuckyCheckin; watchStreak?: LuckyWatchStreak;
+    checkin?: LuckyCheckin; watchStreak?: LuckyWatchStreak; wheel?: LuckyWheelState;
 };
-export type LuckyPageResult = { data: LuckyPageData; demo: boolean; error?: string; notice?: string; pendingSchema?: boolean; rawResponses?: { tasks?: unknown; rewards?: unknown } };
+export type LuckyPageResult = { data: LuckyPageData; demo: boolean; error?: string; notice?: string; pendingSchema?: boolean; rawResponses?: { tasks?: unknown; promo?: unknown; rewards?: unknown } };
 export type LuckyClaimResult = { coins?: number; already?: boolean; notYet?: boolean; restricted?: boolean; xUsed?: boolean; streak?: number; milestoneCoins?: number; pending?: boolean };
 export type LuckySocialActionKind = 'x-oauth' | 'x-follow' | 'telegram-bind' | 'telegram-channel';
 export type LuckyTaskAction = { url: string; kind: LuckySocialActionKind };
@@ -28,7 +29,7 @@ export type LuckySocialConfig = { xUrl: string; xHandle?: string; tgChannelJoinU
 // Backend implementation contracts approved by the user; these are our planned
 // REST adapters, NOT purported original chunlou REST endpoints. All use POST.
 export const luckyRoutes = {
-    tasks: 'user/tasks', rewards: 'user/rewards', coin: 'user/coin', checkin: 'user/checkin', signin: 'user/signin',
+    promo: 'user/promo/status', spin: 'user/spin', tasks: 'user/tasks', rewards: 'user/rewards', coin: 'user/coin', checkin: 'user/checkin', signin: 'user/signin',
     watchStreak: 'user/watch/streak', ratingQuota: 'user/rating/quota',
     ratingCandidates: 'movie/history', rate: 'user/rate', like: 'user/like', pushConfig: 'user/push/config',
     pushSubscribe: 'user/push/subscribe', socialConfig: 'user/social/config',
@@ -54,6 +55,8 @@ function invalidateLucky() {
     taskCache = undefined;
     taskFlight = undefined;
     pageCache = undefined;
+    promoCache = undefined;
+    promoFlight = undefined;
     useLuckyStore.getState().invalidate();
 }
 export function withoutLuckyComments(data: LuckyPageData): LuckyPageData {
@@ -70,7 +73,11 @@ let taskFlight: { session: string; promise: Promise<unknown> } | undefined;
 let rewardsCache: { session: string; at: number; data?: unknown; error?: unknown } | undefined;
 let rewardsFlight: { session: string; promise: Promise<unknown> } | undefined;
 let pageCache: { session: string; locale: string; result: LuckyPageResult } | undefined;
+let promoCache: { session: string; at: number; data: unknown } | undefined;
+let promoFlight: { session: string; promise: Promise<unknown> } | undefined;
 const session = () => typeof localStorage === 'undefined' ? '' : localStorage.getItem('token') ?? '';
+// Temporarily hide the wheel: keep its implementation for later, without loading its API.
+const luckyWheelTemporarilyHidden = true;
 export function getLuckyTasks(force = false): Promise<unknown> {
     const key = session();
     const generation = taskGeneration;
@@ -114,15 +121,34 @@ export function getLuckyRewards(force = false): Promise<unknown> {
     rewardsFlight = { session: key, promise };
     return promise;
 }
+/** The benchmark queries promo_status separately from my_daily_tasks. */
+export function getLuckyPromo(force = false): Promise<unknown> {
+    if (luckyWheelTemporarilyHidden) return Promise.resolve(undefined);
+    const key = session(), generation = taskGeneration;
+    if (!force && promoCache?.session === key && Date.now() - promoCache.at < 30000) return Promise.resolve(promoCache.data);
+    if (promoFlight?.session === key) return promoFlight.promise;
+    const promise = luckyRequest<unknown>(luckyRoutes.promo, {}, true).then(data => {
+        if (key === session()) {
+            if (generation !== taskGeneration) return getLuckyPromo();
+            const value = record(data);
+            if (data != null && (typeof value.enabled !== 'boolean' || typeof value.eligible !== 'boolean')) throw new Error('活动状态返回结构无效');
+            promoCache = { session: key, at: Date.now(), data: value };
+        }
+        return data;
+    }).finally(() => { if (promoFlight?.promise === promise) promoFlight = undefined; });
+    promoFlight = { session: key, promise };
+    return promise;
+}
 export function getCachedLuckyPage(locale = 'zh-CN'): LuckyPageResult | undefined {
     const key = session();
     const cached = pageCache?.session === key && pageCache.locale === locale ? pageCache.result : undefined;
     const stored = useLuckyStore.getState();
     if (stored.tasks === undefined || stored.tasksSession !== key) return cached;
     try {
-        const tasks = decodeLuckyTasks(stored.tasks, locale);
-        if (cached) return { ...cached, data: { ...cached.data, ...tasks }, rawResponses: { ...cached.rawResponses, tasks: stored.tasks } };
-        return { data: { ...tasks, ...decodeLuckyCatalog(undefined, locale) }, demo: false, rawResponses: { tasks: stored.tasks } };
+        const content = decodeLuckyTaskContent(stored.tasks, locale);
+        const promo = decodeLuckyTaskContent({ promo: promoCache?.session === key ? promoCache.data : undefined }, locale);
+        const data = { ...decodeLuckyTasks(stored.tasks, locale), ...content, promo: promo.promo, wheel: promo.wheel };
+        return { data, demo: false, rawResponses: { tasks: stored.tasks } };
     } catch {
         return cached;
     }
@@ -140,44 +166,47 @@ export async function getLuckyLevel(): Promise<LuckyLevel> {
     const data = Array.isArray(raw) ? raw[0] : raw;
     return valid(luckyRoutes.level, data, Boolean(data) && isCount(data?.xp) && isCount(data?.level) && isCount(data?.currNeed) && (data?.nextNeed === null || isCount(data?.nextNeed)));
 }
-export async function getLuckyPage(createDemo: () => LuckyPageData, locale = 'zh-CN', force = false): Promise<LuckyPageResult> {
-    const key = session();
-    const generation = taskGeneration;
-    const tasksPromise = Promise.resolve().then(() => getLuckyTasks(force));
-    const rewardsPromise = Promise.resolve().then(() => getLuckyRewards(force));
-    const tasks = await tasksPromise.then(
-        value => ({ status: 'fulfilled', value } as const),
-        reason => ({ status: 'rejected', reason } as const),
-    );
-    const rewards = await Promise.race([
-        rewardsPromise.then(
-            value => ({ pending: false, result: { status: 'fulfilled', value } as const } as const),
-            reason => ({ pending: false, result: { status: 'rejected', reason } as const } as const),
-        ),
-        pause(180).then(() => ({ pending: true } as const)),
-    ]);
-    if (rewards.pending) {
-        void rewardsPromise.finally(() => {
-            if (key === session()) useLuckyStore.getState().invalidate();
-        }).catch(() => undefined);
-    }
-    const rawResponses: { tasks?: unknown; rewards?: unknown } = {};
-    if (tasks.status === 'fulfilled') rawResponses.tasks = tasks.value;
-    if (!rewards.pending && rewards.result.status === 'fulfilled') rawResponses.rewards = rewards.result.value;
-    const settled = rewards.pending ? [tasks] : [tasks, rewards.result];
-    const errors = settled.flatMap(result => result.status === 'rejected' ? [result.reason instanceof Error ? result.reason.message : String(result.reason)] : []);
+export async function getLuckyPage(_createDemo: () => LuckyPageData, locale = 'zh-CN', force = false): Promise<LuckyPageResult> {
+    const key = session(), generation = taskGeneration;
     try {
-        if (tasks.status === 'rejected') throw tasks.reason;
-        const data: LuckyPageData = { ...decodeLuckyTasks(tasks.value, locale), ...decodeLuckyCatalog(rawResponses.rewards, locale) };
-        const result = { data, demo: false, error: errors.join('\n') || undefined, rawResponses,
-            notice: !rewards.pending && rawResponses.rewards == null ? '奖励配置暂未返回，任务进度已按真实数据展示。' : undefined };
+        const [tasksResult, promoResult] = await Promise.allSettled([getLuckyTasks(force), getLuckyPromo(force)]);
+        if (tasksResult.status === 'rejected') throw tasksResult.reason;
+        const tasks = tasksResult.value;
+        const status = promoResult.status === 'fulfilled' ? promoResult.value : undefined;
+        const promo = decodeLuckyTaskContent({ promo: status }, locale);
+        const result: LuckyPageResult = { data: { ...decodeLuckyTasks(tasks, locale), ...decodeLuckyTaskContent(tasks, locale), promo: promo.promo, wheel: promo.wheel }, demo: false,
+            error: promoResult.status === 'rejected' ? String(promoResult.reason instanceof Error ? promoResult.reason.message : promoResult.reason) : undefined, rawResponses: { tasks, promo: status } };
         if (key === session() && generation === taskGeneration) pageCache = { session: key, locale, result };
         return result;
     } catch (reason) {
-        const message = reason instanceof Error ? reason.message : String(reason);
-        return { data: withoutLuckyComments(createDemo()), demo: true, error: [...new Set([...errors, message])].join('\n'), rawResponses };
+        const empty = { tasks: [], once: [], total: 0, earned: 0, once_total: 0 };
+        return { data: { ...decodeLuckyTasks(empty, locale), ...decodeLuckyTaskContent(empty, locale) }, demo: true, error: reason instanceof Error ? reason.message : String(reason) };
     }
 }
+
+/** Our draw adapter preserves the benchmark promo_spin parameter names. Results are server-authoritative. */
+export async function spinLuckyWheel(mode: LuckySpinMode, bet: number): Promise<LuckySpinDraw[]> {
+    if (!['free', 'paid', 'ten', 'gift', 'ticket'].includes(mode) || !Number.isSafeInteger(bet) || bet < 0 || (mode === 'free' || mode === 'ticket' ? bet !== 0 : bet <= 0)) throw new Error('抽奖参数无效');
+    const key = session();
+    let result: Record<string, unknown>;
+    try {
+        result = record(await luckyRequest(luckyRoutes.spin, { p_mode: mode, p_bet: bet }));
+    } catch (error) {
+        if (key === session()) invalidateLucky();
+        throw error;
+    }
+    if (key !== session()) throw new Error('账号已切换，请重新打开福利页');
+    const raw = result.draws;
+    // Refresh quotas/balance even if a successful response has an invalid result payload.
+    invalidateLucky();
+    if (!Array.isArray(raw) || raw.length !== (mode === 'ten' ? 10 : 1)) throw new Error('抽奖结果格式无效，请刷新查看最新记录');
+    return raw.map(value => {
+        const draw = record(value);
+        if (!isCount(draw.slotIdx) || typeof draw.prizeKind !== 'string' || !isCount(draw.prizeValue)) throw new Error('抽奖结果格式无效，请刷新查看最新记录');
+        return { slotIdx: draw.slotIdx, prizeKind: draw.prizeKind, prizeValue: draw.prizeValue };
+    });
+}
+
 function claimResult(path: string, data: unknown): LuckyClaimResult {
     if (data == null) return {};
     const value = record(data);

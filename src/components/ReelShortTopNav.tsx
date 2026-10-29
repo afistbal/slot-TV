@@ -731,7 +731,8 @@ export function ReelShortTopNav({
   const feedLabel = isChinese ? (isTraditionalChinese ? '刷劇' : '刷剧') : intl.formatMessage({ id: 'for_you', defaultMessage: 'For You' });
   const browseLabel = isChinese ? (isTraditionalChinese ? '劇庫' : '剧库') : intl.formatMessage({ id: 'nav_categories', defaultMessage: 'Browse' });
   const searchLabel = isChinese ? (isTraditionalChinese ? '尋劇' : '寻剧') : intl.formatMessage({ id: 'nav_search_label', defaultMessage: 'Search' });
-  const coinBalance = userStore.signed ? Math.max(0, userStore.balance) : 0;
+  const coinBalance = userStore.signed ? (userStore.balance >= 0 ? userStore.balance : null) : 0;
+  const coinBalanceLabel = coinBalance === null ? '—' : intl.formatNumber(coinBalance);
   const feedActive = location.pathname.startsWith(FORYOU_PATH) || location.pathname.startsWith('/video/');
   const browseActive = location.pathname === '/' || location.pathname.startsWith('/categories') || location.pathname.startsWith('/drama/');
 
@@ -850,7 +851,7 @@ export function ReelShortTopNav({
         <div className="reelshort-topnav__right">
           <div className="reelshort-topnav__actions">
             {showRightActions ? <Link to="/profile?tab=topup" className="reelshort-topnav__benchmark-wallet reelshort-topnav__mobile-wallet" aria-label={intl.formatMessage({ id: 'top_up' })}>
-              <Coins aria-hidden /><span>{intl.formatNumber(coinBalance)}</span>
+              <Coins aria-hidden /><span>{coinBalanceLabel}</span>
             </Link> : null}
             {showRightActions && showSearch ? <div className="reelshort-topnav__search"><TopNavSearchEntry /></div> : null}
             {showRightActions ? <TopNavInstallEntry /> : null}
@@ -982,7 +983,7 @@ export function ReelShortTopNav({
                 ) : null}
                 <Link to="/profile?tab=topup" className="reelshort-topnav__benchmark-wallet" aria-label={intl.formatMessage({ id: 'top_up' })}>
                   <Coins aria-hidden />
-                  <span>{coinBalance.toLocaleString()}</span>
+                  <span>{coinBalanceLabel}</span>
                 </Link>
                 {showProfile ? <NavProfileAvatar /> : null}
               </div>

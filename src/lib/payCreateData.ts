@@ -1,5 +1,6 @@
 import { fbAttributionForPayCreate } from '@/lib/fbAttribution';
 import { reportPayLog } from '@/lib/payLog';
+import { PAYMENT_CURRENCY } from '@/lib/paymentCurrency';
 
 export type PayCreateRequest = {
     payment: number;
@@ -14,6 +15,7 @@ export function buildPayCreateData(data: PayCreateRequest): Record<string, unkno
     const payload: Record<string, unknown> = {
         ...data,
         ...fbAttributionForPayCreate(),
+        currency: PAYMENT_CURRENCY,
     };
     if (data.discount_type == null) {
         delete payload.discount_type;

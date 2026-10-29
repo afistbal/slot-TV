@@ -1,7 +1,7 @@
 import { openSharePoster } from '@/stores/sharePoster';
 import { useEffect, useState } from 'react';
 import { useIntl } from 'react-intl';
-import { affiliateErrorMessage, getAffiliateStatistics, type AffiliateFunnel, type AffiliateSummary } from '@/api/affiliate';
+import { getAffiliateStatistics, type AffiliateFunnel, type AffiliateSummary } from '@/api/affiliate';
 import { ProgramIcon } from '@/components/ProgramIcon';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { buildAffiliateShareUrl } from '@/lib/shareUrls';
@@ -10,7 +10,6 @@ import { useUserStore } from '@/stores/user';
 type DashboardData = {
     summary: AffiliateSummary | null;
     funnel: AffiliateFunnel | null;
-    errors: string[];
 };
 
 const AFFILIATE_DASHBOARD_CACHE_PREFIX = 'yogo:affiliate-dashboard:v1:';
@@ -47,7 +46,7 @@ function emptyAffiliateFunnel(): AffiliateFunnel {
 }
 
 function emptyDashboardData(uid: string): DashboardData {
-    return { summary: emptyAffiliateSummary(uid), funnel: emptyAffiliateFunnel(), errors: [] };
+    return { summary: emptyAffiliateSummary(uid), funnel: emptyAffiliateFunnel() };
 }
 
 function readDashboardCache(uid: string): DashboardData | null {
@@ -55,7 +54,7 @@ function readDashboardCache(uid: string): DashboardData | null {
     try {
         const cached = JSON.parse(localStorage.getItem(`${AFFILIATE_DASHBOARD_CACHE_PREFIX}${uid}`) ?? 'null') as Partial<DashboardData> | null;
         if (!cached?.summary || !cached.funnel) return null;
-        return { summary: cached.summary, funnel: cached.funnel, errors: [] };
+        return { summary: cached.summary, funnel: cached.funnel };
     } catch {
         return null;
     }
@@ -77,7 +76,6 @@ export function AffiliateDashboard({ sessionReady, isActive }: { sessionReady: b
     const uid = useUserStore((store) => getUserUidForDisplay(store.info));
     const [data, setData] = useState<DashboardData>(() => readDashboardCache(uid) ?? emptyDashboardData(uid));
     const [loading, setLoading] = useState(false);
-    const [revision, setRevision] = useState(0);
 
     useEffect(() => {
         if (!sessionReady) return;
@@ -90,18 +88,16 @@ export function AffiliateDashboard({ sessionReady, isActive }: { sessionReady: b
             setData({
                 summary: result.income,
                 funnel: result.stat,
-                errors: [],
             });
             setLoading(false);
-        }).catch((error) => {
+        }).catch(() => {
             if (cancelled) return;
-            setData((current) => ({ ...current, errors: [affiliateErrorMessage(error)] }));
             setLoading(false);
         });
         return () => { cancelled = true; };
-    }, [sessionReady, revision, uid]);
+    }, [sessionReady, uid]);
 
-    const { summary, funnel, errors } = data;
+    const { summary, funnel } = data;
     const referralUrl = buildAffiliateShareUrl(uid);
     const money = (value: number | undefined) => `¥${(Number(value ?? 0) / 100).toFixed(2)}`;
     const earnings = Array.isArray(summary?.earnings) ? summary.earnings : [];
@@ -117,11 +113,6 @@ export function AffiliateDashboard({ sessionReady, isActive }: { sessionReady: b
             <div><h2>{t('affiliate_dashboard_title')}</h2><p>{t('affiliate_dashboard_desc')}</p></div>
             <span className={`creator-program__status-badge${isActive ? ' creator-program__status-badge--approved' : ''}`}><ProgramIcon name={isActive ? 'checkCircle' : 'clock'} />{t(isActive ? 'affiliate_active_title' : 'affiliate_progress_badge')}</span>
         </header>
-        {errors.length ? <div className="affiliate-reference__refresh-note" role="status">
-            <span>{w('数据刷新失败，当前展示上次数据', '資料重新整理失敗，目前顯示上次資料')}</span>
-            <button type="button" disabled={loading} onClick={() => setRevision((value) => value + 1)}>{w('重试', '重試')}</button>
-            {errors.map((error) => <small key={error}>{error}</small>)}
-        </div> : null}
         {summary ? <>
             <div className="creator-dashboard__stats">
                 <article><span>{t('affiliate_total_commission')}</span><strong>{money(summary.totalEarnedCents)}</strong><small>{t('affiliate_all_time')}</small></article>

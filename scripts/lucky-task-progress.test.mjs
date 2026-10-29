@@ -8,7 +8,11 @@ const compiled = ts.transpileModule(readFileSync(new URL('../src/lib/luckyPageDa
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const exports = {};
-vm.runInNewContext(compiled, { exports });
+const wheel = {};
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/lib/luckyWheel.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText, { exports: wheel });
+vm.runInNewContext(compiled, { exports, require: () => wheel });
 const decode = (tasks, earned = 0) => exports.decodeLuckyTasks({ tasks, earned, total: 50, once: [], once_total: 0 }).daily;
 
 test('claimed check-in contributes to progress even when the summary is still zero', () => {

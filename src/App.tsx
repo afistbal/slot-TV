@@ -41,6 +41,8 @@ import { ReelShortBasicsSpin } from "./components/ReelShortBasicsSpin";
 import { PcLoginDialog } from './pages/user/Login';
 
 import { isIosLikeDevice } from "./lib/isIosLikeDevice";
+import { isStandaloneDisplay } from './lib/isStandaloneDisplay';
+import { shouldShowAndroidAddHomeFab } from './lib/shouldShowAndroidAddHomeFab';
 import { installUserRouteIntentPrefetch, scheduleSecondaryUserRoutesPrefetch } from "./lib/prefetchSecondaryUserRoutes";
 import { BRAND_DISPLAY_NAME } from "./constants/brand";
 import { syncLuckyPushSubscription } from './lib/luckyPushSubscription';
@@ -129,6 +131,7 @@ const UserWallet = lazy(() => import('./pages/user/Wallet'));
 const UserDetail = lazy(() => import('./pages/user/UserDetail'));
 const UserTopUpRoute = lazy(() => import('./components/TopUpRoute'));
 const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
+const UserAndroidAddHomeGuide = lazy(() => import('./pages/user/AndroidAddHomeGuide'));
 const CreatorProgram = lazy(() => import('./pages/user/CreatorProgram'));
 const AffiliateProgram = lazy(() => import('./pages/user/AffiliateProgram'));
 const Lucky = lazy(() => import('./pages/user/Lucky'));
@@ -363,7 +366,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'profile',
-                element: lazyRoute(UserProfile),
+                element: <RequireAccountRoute>{lazyRoute(UserProfile)}</RequireAccountRoute>,
             },
             {
                 path: 'creator',
@@ -460,6 +463,10 @@ const router = createBrowserRouter([
                 element: lazyRoute(UserIosAddHomeGuide),
             },
             {
+                path: 'android-add-home',
+                element: lazyRoute(UserAndroidAddHomeGuide),
+            },
+            {
                 path: 'pay/:id',
                 element: <Navigate to="/shopping" replace />,
             },
@@ -511,6 +518,7 @@ function AppContent() {
     const [sessionError, setSessionError] = useState('');
     const [sessionRetry, setSessionRetry] = useState(0);
     const [install, setInstall] = useState(0);
+    const [installed, setInstalled] = useState(isStandaloneDisplay);
     const [messages, setMessages] = useState<TIntlMessages>(getInitialIntlMessages);
     const downloadTrackedRef = useRef(false);
     /** 避免 StrictMode 双调用时旧 `loadData` 回写 config / 抢跑会话 */
@@ -562,13 +570,22 @@ function AppContent() {
 
     async function handleExecuteInstall() {
         const promptEvent = installPrompt.current;
-        if (!promptEvent) return;
-        await promptEvent.prompt();
-        const { outcome } = await promptEvent.userChoice;
+        if (!promptEvent) {
+            if (shouldShowAndroidAddHomeFab()) void router.navigate('/page/android-add-home');
+            return;
+        }
+        // Each browser event can only be prompted once, including after dismissal.
         installPrompt.current = null;
         setInstall(0);
-        if (outcome === 'accepted') {
-            trackDownloadOnce();
+        try {
+            await promptEvent.prompt();
+            const { outcome } = await promptEvent.userChoice;
+            if (outcome === 'accepted') {
+                setInstalled(true);
+                trackDownloadOnce();
+            }
+        } catch {
+            if (shouldShowAndroidAddHomeFab()) void router.navigate('/page/android-add-home');
         }
     }
 
@@ -662,6 +679,7 @@ function AppContent() {
         const installedListener = () => {
             installPrompt.current = null;
             setInstall(0);
+            setInstalled(true);
             trackDownloadOnce();
         };
 
@@ -840,7 +858,10 @@ function AppContent() {
         matchPath({ path: '/foryou', end: true }, pathname) != null ||
         matchPath({ path: '/for-you', end: true }, pathname) != null;
     const showInstallPrompt =
-        install > 0 &&
+        (install > 0 || shouldShowAndroidAddHomeFab()) &&
+        !installed &&
+        !isStandaloneDisplay() &&
+        !(window as Window & { flutter_inappwebview?: unknown }).flutter_inappwebview &&
         import.meta.env.VITE_PLATFORM !== 'tiktok' &&
         !isIosLikeDevice() &&
         !isShoppingRoute &&

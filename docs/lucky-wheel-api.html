@@ -1,0 +1,203 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>幸运转盘接口文档</title><style>
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f4f6f9;color:#263245;font:14px/1.75 system-ui,"Microsoft YaHei",sans-serif}.toolbar{position:sticky;top:0;z-index:2;background:#fffffff5;border-bottom:1px solid #dfe5ee;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}.toolbar strong{font-size:14px}button{border:0;background:#225fc4;color:white;padding:8px 15px;border-radius:6px;cursor:pointer;font:inherit;font-size:12px}main{max-width:1050px;margin:24px auto;padding:0 20px 60px}h1{font-size:25px;margin:20px 0 10px;color:#152a49}h2{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:17px;margin:0 0 20px;padding-bottom:14px;border-bottom:1px solid #e2e7ef}h2 code{font-family:Consolas,monospace;font-size:16px}.purpose{font-size:14px;color:#607087}h3{font-size:14px;margin:22px 0 8px}p{margin:10px 0;overflow-wrap:anywhere}.api{padding:24px;background:white;border:1px solid #dfe5ee;border-radius:10px;margin-top:20px;scroll-margin-top:75px}.method{font-size:12px;padding:3px 7px;border-radius:4px;background:#e5efff;color:#1e5ba9}.method.get{background:#e7f6ed;color:#27744b}nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}nav a{color:#2a598e;border:1px solid #d6e1f0;border-radius:6px;padding:5px 10px;text-decoration:none;background:white}.table{overflow:auto}table{width:100%;border-collapse:collapse;border-color:#dce3ed;font-size:12px;line-height:1.65}td,th{text-align:left;vertical-align:top;border-color:#dce3ed}th{background:#f1f5fb}.code{position:relative;background:#f7f9fc;border:1px solid #e0e6ef;border-radius:7px;margin:8px 0 16px;padding-top:35px}.code button{position:absolute;right:8px;top:7px;padding:3px 10px;background:#e6edf8;color:#245295}.code pre{margin:0;padding:10px 16px 16px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.85 Consolas,monospace}#status{color:#276448;font-size:12px;margin-left:10px}@media(max-width:700px){main{padding:0 10px 40px}.api{padding:16px}.toolbar{padding:10px;flex-wrap:wrap}.toolbar strong{display:none}h2 code{font-size:14px}h1{font-size:23px}}@media print{.toolbar,nav,.code button{display:none}body{background:white}main{max-width:none;margin:0;padding:0}.api{border:0;padding:0;break-before:auto}.code{padding-top:0}table,pre{break-inside:avoid}}
+</style></head><body><div class="toolbar"><strong>YogoShort · API</strong><div><button type="button" id="copy-all">复制全文到钉钉</button><span id="status" role="status"></span></div></div><main><nav><a href="#api-1">查询转盘</a><a href="#api-2">执行抽奖</a><a href="#api-3">读取转盘配置</a><a href="#api-4">保存转盘配置</a><a href="#api-5">统一失败返回</a></nav><article id="document"><h1>幸运转盘接口文档</h1>
+<p>基础地址：https://i.yogoshort.com/api。用户接口沿用现有登录验证，管理接口沿用 admin 权限验证。统一返回 c、m、d；c=0 成功，非 0 失败。</p>
+<p>转盘查询、抽奖是新增接口，待后端实现；不使用 user/tasks。以下 JSON 为结构示例，未配置数值默认 0。福利任务和福利卡片继续使用原 user/tasks 接口。</p>
+<section class="api" id="api-1"><h2><span class="method post">POST</span><code>/api/user/promo/status</code><span class="purpose">查询转盘</span></h2>
+<h3>请求参数</h3>
+<div class="code"><button type="button" data-copy>复制请求</button><pre>{}</pre></div>
+<h3>返回数据</h3>
+<div class="code"><button type="button" data-copy>复制返回</button><pre>{
+  &quot;c&quot;: 0, // 0 成功，非 0 失败
+  &quot;m&quot;: &quot;&quot;, // 错误提示
+  &quot;d&quot;: {
+    &quot;enabled&quot;: false, // 活动总开关
+    &quot;eligible&quot;: false, // 当前账号是否有参与资格，由服务端计算
+    &quot;reason&quot;: &quot;no_week&quot;, // no_week 无活动 / disabled 已关闭 / holdout 无资格
+    &quot;peak&quot;: false, // true 免费及付费阶段；false 仅可用券
+    &quot;peak_ends_at&quot;: null, // 免费、付费、赠抽阶段结束时间，带时区 ISO 格式
+    &quot;ends_at&quot;: null, // 全部活动结束时间，带时区 ISO 格式
+    &quot;next_open_at&quot;: null, // 下次开放提示时间，无则 null
+    &quot;free_max&quot;: 0, // 本期免费次数上限
+    &quot;free_left&quot;: 0, // 当前账号剩余免费次数
+    &quot;free_needs_watch&quot;: false, // 下次免费抽是否需要先看剧
+    &quot;gift_spins&quot;: 0, // 当前账号剩余充值赠抽次数
+    &quot;gift_spins_per_topup&quot;: 0, // 每次有效充值赠抽次数，用于规则展示
+    &quot;luck_per_topup&quot;: 0, // 每次有效充值增加的好运值，用于规则展示
+    &quot;free_guarantee_coupon&quot;: false, // 本期免费次数内是否必得充值券
+    &quot;tickets&quot;: 0, // 当前账号剩余抽奖券
+    &quot;paid_max&quot;: 0, // 本期付费总抽数上限
+    &quot;paid_used&quot;: 0, // 当前账号已用付费抽数，十连计 10 次
+    &quot;ten_max&quot;: 0, // 本期十连组数上限
+    &quot;ten_used&quot;: 0, // 当前账号已用十连组数
+    &quot;ten_price_mult&quot;: 0, // 十连价格倍率，总价=round(档位×倍率)
+    &quot;coins&quot;: 0, // 当前账号可用金币余额
+    &quot;bets&quot;: [], // 可选金币档位，正整数数组
+    &quot;face_free&quot;: [], // 免费奖池，奖项结构见下
+    &quot;face_ticket&quot;: [], // 用券奖池，奖项结构同上
+    &quot;face_paid&quot;: {}, // 档位金额字符串→奖项数组，赠抽使用 50 档
+    &quot;cap_coins&quot;: 0, // 每张充值券最多加赠金币
+    &quot;winners_coupon&quot;: 0, // 本期抽中充值券的人数
+    &quot;luck_level&quot;: 0, // 当前账号好运等级
+    &quot;coupons&quot;: [], // 当前账号充值券，列表项结构见下
+    &quot;prizes&quot;: [] // 当前账号最近 100 条中奖记录，按时间倒序，列表项结构见下
+  }
+}</pre></div>
+<h3>face_free、face_ticket、face_paid 奖项</h3>
+<div class="code"><button type="button" data-copy>复制 JSON</button><pre>{
+  &quot;kind&quot;: &quot;coins&quot;, // coins 金币 / bonus_pct 充值加赠百分比 / vip_day VIP天数 / luck 好运值
+  &quot;v&quot;: 0, // 固定奖励数值；可选，有 v 时优先使用 v
+  &quot;mult&quot;: 0 // 金币倍率；可选，无 v 时金币数=round(mult×档位)
+}</pre></div>
+<h3>coupons 列表项</h3>
+<div class="code"><button type="button" data-copy>复制 JSON</button><pre>{
+  &quot;id&quot;: &quot;&quot;, // 充值券 ID
+  &quot;pct&quot;: 0, // 加赠百分数，15 表示 15%
+  &quot;cap&quot;: 0, // 本券最多加赠金币
+  &quot;expires_at&quot;: null // 券过期时间，实际发券必须返回有效时间
+}</pre></div>
+<h3>prizes 列表项</h3>
+<div class="code"><button type="button" data-copy>复制 JSON</button><pre>{
+  &quot;id&quot;: &quot;&quot;, // 抽奖记录 ID
+  &quot;prize_kind&quot;: &quot;coins&quot;, // 奖励类型，同 kind
+  &quot;prize_value&quot;: 0, // 实际奖励数值
+  &quot;created_at&quot;: null // 中奖时间，带时区 ISO 格式
+}</pre></div>
+<h3>展示和开放规则</h3>
+<p>活动时间和资格从本接口获取。enabled=true 且 eligible=true 才允许抽奖；peak=false 时只允许 ticket 模式。当前前端临时保留禁用转盘预览，暂不做提示卡与转盘互斥。</p>
+<p>服务端按后台 starts_at、peak_ends_at、ends_at 计算状态：开始前和全部结束后 eligible=false；开始至 peak_ends_at 为 peak=true；peak_ends_at 至 ends_at 为 peak=false。账号还须通过服务端资格校验，不能只依据时间开放。</p>
+<p>页面取值：奖池用 face_*；充值券用 coupons；好运等级用 luck_level；本期记录用 prizes；抽奖说明用各次数、档位和充值赠抽配置。心愿清单暂不接入。</p>
+</section>
+<section class="api" id="api-2"><h2><span class="method post">POST</span><code>/api/user/spin</code><span class="purpose">执行抽奖</span></h2>
+<h3>请求参数</h3>
+<div class="code"><button type="button" data-copy>复制请求</button><pre>{
+  &quot;p_mode&quot;: &quot;free&quot;, // free 免费 / paid 单抽 / ten 十连 / gift 充值赠抽 / ticket 用券
+  &quot;p_bet&quot;: 0 // free、ticket 传 0；paid、ten 传所选金币档位；gift 传 50
+}</pre></div>
+<p>p_mode、p_bet 沿用对标 promo_spin 的原参数名。</p>
+<h3>返回数据</h3>
+<div class="code"><button type="button" data-copy>复制返回</button><pre>{
+  &quot;c&quot;: 0, // 0 成功，非 0 失败
+  &quot;m&quot;: &quot;&quot;, // 错误提示
+  &quot;d&quot;: {
+    &quot;draws&quot;: [ // 单抽返回 1 项，十连返回 10 项
+      {
+        &quot;slot_idx&quot;: 0, // 当次奖池数组下标，从 0 开始
+        &quot;prize_kind&quot;: &quot;coins&quot;, // 实际奖励类型
+        &quot;prize_value&quot;: 0 // 实际奖励数值
+      }
+    ]
+  }
+}</pre></div>
+<h3>扣费和次数</h3>
+<div class="table"><table border="1" cellpadding="8" cellspacing="0"><tr><th>p_mode</th><th>扣除</th><th>条件</th></tr><tr><td>free</td><td>免费次数 1</td><td>peak=true，免费次数及观看条件满足</td></tr><tr><td>gift</td><td>赠抽次数 1</td><td>peak=true，赠抽次数足够，使用 50 档奖池</td></tr><tr><td>paid</td><td>档位金币，付费抽数 1</td><td>peak=true，档位有效，金币和次数足够</td></tr><tr><td>ten</td><td>round(档位×ten_price_mult) 金币，付费抽数 10，十连组数 1</td><td>peak=true，金币、付费抽数及十连额度足够</td></tr><tr><td>ticket</td><td>抽奖券 1</td><td>活动有效且券足够，使用用券奖池</td></tr></table></div>
+<p>资格、扣费、扣次、随机结果、保底和发奖由服务端在同一事务完成，失败全部回滚。支持现有请求幂等机制。前端只按 slot_idx 转动；结束后刷新活动、任务和余额，失败不自动重发抽奖请求。</p>
+</section>
+<section class="api" id="api-3"><h2><span class="method get">GET</span><code>/api/admin/settings</code><span class="purpose">读取转盘配置</span></h2>
+<h3>请求参数</h3>
+<p>无。复用现有基础配置列表接口，读取 key=topup_promo 的记录。</p>
+<h3>返回数据</h3>
+<div class="code"><button type="button" data-copy>复制返回</button><pre>{
+  &quot;c&quot;: 0, // 0 成功，非 0 失败
+  &quot;m&quot;: &quot;&quot;, // 错误提示
+  &quot;d&quot;: [
+    {
+      &quot;id&quot;: 0, // 设置记录 ID，编辑时原样传回真实值
+      &quot;key&quot;: &quot;topup_promo&quot;, // 转盘配置键
+      &quot;name&quot;: &quot;幸运转盘&quot;, // 配置名称
+      &quot;value&quot;: { // 完整配置，字段与下方保存接口的 value 相同
+        &quot;enabled&quot;: false, // 总开关
+        &quot;starts_at&quot;: null, // 活动开始时间
+        &quot;peak_ends_at&quot;: null, // 免费、付费阶段结束时间
+        &quot;ends_at&quot;: null, // 全部活动结束时间
+        &quot;next_open_at&quot;: null, // 下次开放提示时间
+        &quot;free_max&quot;: 0, // 每期免费次数
+        &quot;free_watch_min_sec&quot;: 0, // 后续免费抽每次需新增的观看秒数
+        &quot;paid_max&quot;: 0, // 每期付费总抽数
+        &quot;ten_max&quot;: 0, // 每期十连组数
+        &quot;ten_price_mult&quot;: 0, // 十连价格倍率
+        &quot;bets&quot;: [], // 单抽金币档位
+        &quot;gift_spins_per_topup&quot;: 0, // 每次有效充值赠抽次数
+        &quot;luck_per_topup&quot;: 0, // 每次有效充值增加好运值
+        &quot;ticket_daily_cap&quot;: 0, // 每日互动掉券上限
+        &quot;coupon_valid_hours&quot;: 0, // 充值券有效小时数
+        &quot;cap_coins&quot;: 0, // 每张券最多加赠金币
+        &quot;luck_guarantee_threshold&quot;: 0, // 好运保底门槛，0 关闭
+        &quot;free_guarantee_coupon&quot;: false, // 免费抽是否必得券
+        &quot;ten_guarantee&quot;: null, // 十连保底规则，null 关闭
+        &quot;face_free&quot;: [], // 免费奖池
+        &quot;face_ticket&quot;: [], // 用券奖池
+        &quot;face_paid&quot;: {} // 档位金额字符串→付费奖池
+      }
+    }
+  ]
+}</pre></div>
+<p>找不到配置时，列表中不返回此记录；前端使用关闭及 0 值初始状态。兼容现有 value 为 JSON 字符串的情况，保存时保持读取到的类型。</p>
+</section>
+<section class="api" id="api-4"><h2><span class="method post">POST</span><code>/api/admin/settings</code><span class="purpose">保存转盘配置</span></h2>
+<h3>请求参数</h3>
+<div class="code"><button type="button" data-copy>复制请求</button><pre>{
+  &quot;id&quot;: 0, // 编辑时传真实记录 ID；新增时不传本字段
+  &quot;key&quot;: &quot;topup_promo&quot;, // 转盘配置键
+  &quot;name&quot;: &quot;幸运转盘&quot;, // 配置名称
+  &quot;value&quot;: {
+    &quot;enabled&quot;: false, // 活动总开关
+    &quot;starts_at&quot;: null, // 开始时间，带时区 ISO 格式
+    &quot;peak_ends_at&quot;: null, // 免费、付费、赠抽阶段结束时间
+    &quot;ends_at&quot;: null, // 用券尾期结束时间
+    &quot;next_open_at&quot;: null, // 下次开放提示时间
+    &quot;free_max&quot;: 0, // 每期免费次数
+    &quot;free_watch_min_sec&quot;: 0, // 首次免费后，每次解锁需新增的观看秒数
+    &quot;paid_max&quot;: 0, // 每期付费总抽数，十连占 10 次
+    &quot;ten_max&quot;: 0, // 每期十连组数
+    &quot;ten_price_mult&quot;: 0, // 十连价格倍率，0 禁用，最大 10
+    &quot;bets&quot;: [], // 不重复的正整数金币档位
+    &quot;gift_spins_per_topup&quot;: 0, // 每次有效充值赠抽次数
+    &quot;luck_per_topup&quot;: 0, // 每次有效充值增加好运值
+    &quot;ticket_daily_cap&quot;: 0, // 每日互动掉券上限
+    &quot;coupon_valid_hours&quot;: 0, // 中奖充值券有效小时数
+    &quot;cap_coins&quot;: 0, // 每张券最多加赠金币
+    &quot;luck_guarantee_threshold&quot;: 0, // 好运保底门槛，0 关闭
+    &quot;free_guarantee_coupon&quot;: false, // 本期免费次数内必得充值券
+    &quot;ten_guarantee&quot;: null, // {kind: 奖励类型, v: 最低数值}；null 关闭
+    &quot;face_free&quot;: [], // 免费奖池，每项带服务端权重，结构见下
+    &quot;face_ticket&quot;: [], // 用券奖池，结构同上
+    &quot;face_paid&quot;: {} // 档位金额字符串→奖项数组，赠抽启用时须有 50 档
+  }
+}</pre></div>
+<h3>管理端奖项结构</h3>
+<div class="code"><button type="button" data-copy>复制 JSON</button><pre>{
+  &quot;kind&quot;: &quot;coins&quot;, // coins 金币 / bonus_pct 充值加赠% / vip_day VIP天数 / luck 好运值
+  &quot;v&quot;: 0, // 固定奖励数值，可选
+  &quot;mult&quot;: 0, // 金币倍率，可选；有 v 优先使用 v
+  &quot;weight&quot;: 0 // 服务端相对权重，0 不会抽中；不可下发到用户接口
+}</pre></div>
+<h3>返回数据</h3>
+<div class="code"><button type="button" data-copy>复制返回</button><pre>{
+  &quot;c&quot;: 0, // 0 成功，非 0 失败
+  &quot;m&quot;: &quot;&quot;, // 错误提示
+  &quot;d&quot;: null // 保存结果沿用现有格式，前端会重新 GET 核对配置
+}</pre></div>
+<p>后台入口：配置管理 → 基础配置后的「转盘配置」。开启前校验 starts_at&lt;peak_ends_at≤ends_at；有效奖池 2～24 项且正权重之和大于 0；十连保底须能在当前池内满足；启用券奖励必须配置有效期和加赠上限。保存不直接发奖，不把权重传给用户端。</p>
+</section>
+<section class="api" id="api-5"><h2>统一失败返回</h2>
+<div class="code"><button type="button" data-copy>复制 JSON</button><pre>{
+  &quot;c&quot;: 1, // 非 0 表示失败，具体错误码沿用项目约定
+  &quot;m&quot;: &quot;金币不足&quot;, // 可展示的业务错误提示
+  &quot;d&quot;: null // 失败时无中奖结果
+}</pre></div>
+</section></article></main><script>
+const documentText="# 幸运转盘接口文档\n\n基础地址：https://i.yogoshort.com/api。用户接口沿用现有登录验证，管理接口沿用 admin 权限验证。统一返回 c、m、d；c=0 成功，非 0 失败。\n\n转盘查询、抽奖是新增接口，待后端实现；不使用 user/tasks。以下 JSON 为结构示例，未配置数值默认 0。福利任务和福利卡片继续使用原 user/tasks 接口。\n\n## POST /api/user/promo/status · 查询转盘\n\n### 请求参数\n\n```json\n{}\n```\n\n### 返回数据\n\n```jsonc\n{\n  \"c\": 0, // 0 成功，非 0 失败\n  \"m\": \"\", // 错误提示\n  \"d\": {\n    \"enabled\": false, // 活动总开关\n    \"eligible\": false, // 当前账号是否有参与资格，由服务端计算\n    \"reason\": \"no_week\", // no_week 无活动 / disabled 已关闭 / holdout 无资格\n    \"peak\": false, // true 免费及付费阶段；false 仅可用券\n    \"peak_ends_at\": null, // 免费、付费、赠抽阶段结束时间，带时区 ISO 格式\n    \"ends_at\": null, // 全部活动结束时间，带时区 ISO 格式\n    \"next_open_at\": null, // 下次开放提示时间，无则 null\n    \"free_max\": 0, // 本期免费次数上限\n    \"free_left\": 0, // 当前账号剩余免费次数\n    \"free_needs_watch\": false, // 下次免费抽是否需要先看剧\n    \"gift_spins\": 0, // 当前账号剩余充值赠抽次数\n    \"gift_spins_per_topup\": 0, // 每次有效充值赠抽次数，用于规则展示\n    \"luck_per_topup\": 0, // 每次有效充值增加的好运值，用于规则展示\n    \"free_guarantee_coupon\": false, // 本期免费次数内是否必得充值券\n    \"tickets\": 0, // 当前账号剩余抽奖券\n    \"paid_max\": 0, // 本期付费总抽数上限\n    \"paid_used\": 0, // 当前账号已用付费抽数，十连计 10 次\n    \"ten_max\": 0, // 本期十连组数上限\n    \"ten_used\": 0, // 当前账号已用十连组数\n    \"ten_price_mult\": 0, // 十连价格倍率，总价=round(档位×倍率)\n    \"coins\": 0, // 当前账号可用金币余额\n    \"bets\": [], // 可选金币档位，正整数数组\n    \"face_free\": [], // 免费奖池，奖项结构见下\n    \"face_ticket\": [], // 用券奖池，奖项结构同上\n    \"face_paid\": {}, // 档位金额字符串→奖项数组，赠抽使用 50 档\n    \"cap_coins\": 0, // 每张充值券最多加赠金币\n    \"winners_coupon\": 0, // 本期抽中充值券的人数\n    \"luck_level\": 0, // 当前账号好运等级\n    \"coupons\": [], // 当前账号充值券，列表项结构见下\n    \"prizes\": [] // 当前账号最近 100 条中奖记录，按时间倒序，列表项结构见下\n  }\n}\n```\n\n### face_free、face_ticket、face_paid 奖项\n\n```jsonc\n{\n  \"kind\": \"coins\", // coins 金币 / bonus_pct 充值加赠百分比 / vip_day VIP天数 / luck 好运值\n  \"v\": 0, // 固定奖励数值；可选，有 v 时优先使用 v\n  \"mult\": 0 // 金币倍率；可选，无 v 时金币数=round(mult×档位)\n}\n```\n\n### coupons 列表项\n\n```jsonc\n{\n  \"id\": \"\", // 充值券 ID\n  \"pct\": 0, // 加赠百分数，15 表示 15%\n  \"cap\": 0, // 本券最多加赠金币\n  \"expires_at\": null // 券过期时间，实际发券必须返回有效时间\n}\n```\n\n### prizes 列表项\n\n```jsonc\n{\n  \"id\": \"\", // 抽奖记录 ID\n  \"prize_kind\": \"coins\", // 奖励类型，同 kind\n  \"prize_value\": 0, // 实际奖励数值\n  \"created_at\": null // 中奖时间，带时区 ISO 格式\n}\n```\n\n### 展示和开放规则\n\n活动时间和资格从本接口获取。enabled=true 且 eligible=true 才允许抽奖；peak=false 时只允许 ticket 模式。当前前端临时保留禁用转盘预览，暂不做提示卡与转盘互斥。\n\n服务端按后台 starts_at、peak_ends_at、ends_at 计算状态：开始前和全部结束后 eligible=false；开始至 peak_ends_at 为 peak=true；peak_ends_at 至 ends_at 为 peak=false。账号还须通过服务端资格校验，不能只依据时间开放。\n\n页面取值：奖池用 face_*；充值券用 coupons；好运等级用 luck_level；本期记录用 prizes；抽奖说明用各次数、档位和充值赠抽配置。心愿清单暂不接入。\n\n## POST /api/user/spin · 执行抽奖\n\n### 请求参数\n\n```jsonc\n{\n  \"p_mode\": \"free\", // free 免费 / paid 单抽 / ten 十连 / gift 充值赠抽 / ticket 用券\n  \"p_bet\": 0 // free、ticket 传 0；paid、ten 传所选金币档位；gift 传 50\n}\n```\n\np_mode、p_bet 沿用对标 promo_spin 的原参数名。\n\n### 返回数据\n\n```jsonc\n{\n  \"c\": 0, // 0 成功，非 0 失败\n  \"m\": \"\", // 错误提示\n  \"d\": {\n    \"draws\": [ // 单抽返回 1 项，十连返回 10 项\n      {\n        \"slot_idx\": 0, // 当次奖池数组下标，从 0 开始\n        \"prize_kind\": \"coins\", // 实际奖励类型\n        \"prize_value\": 0 // 实际奖励数值\n      }\n    ]\n  }\n}\n```\n\n### 扣费和次数\n\n| p_mode | 扣除 | 条件 |\n| --- | --- | --- |\n| free | 免费次数 1 | peak=true，免费次数及观看条件满足 |\n| gift | 赠抽次数 1 | peak=true，赠抽次数足够，使用 50 档奖池 |\n| paid | 档位金币，付费抽数 1 | peak=true，档位有效，金币和次数足够 |\n| ten | round(档位×ten_price_mult) 金币，付费抽数 10，十连组数 1 | peak=true，金币、付费抽数及十连额度足够 |\n| ticket | 抽奖券 1 | 活动有效且券足够，使用用券奖池 |\n\n资格、扣费、扣次、随机结果、保底和发奖由服务端在同一事务完成，失败全部回滚。支持现有请求幂等机制。前端只按 slot_idx 转动；结束后刷新活动、任务和余额，失败不自动重发抽奖请求。\n\n## GET /api/admin/settings · 读取转盘配置\n\n### 请求参数\n\n无。复用现有基础配置列表接口，读取 key=topup_promo 的记录。\n\n### 返回数据\n\n```jsonc\n{\n  \"c\": 0, // 0 成功，非 0 失败\n  \"m\": \"\", // 错误提示\n  \"d\": [\n    {\n      \"id\": 0, // 设置记录 ID，编辑时原样传回真实值\n      \"key\": \"topup_promo\", // 转盘配置键\n      \"name\": \"幸运转盘\", // 配置名称\n      \"value\": { // 完整配置，字段与下方保存接口的 value 相同\n        \"enabled\": false, // 总开关\n        \"starts_at\": null, // 活动开始时间\n        \"peak_ends_at\": null, // 免费、付费阶段结束时间\n        \"ends_at\": null, // 全部活动结束时间\n        \"next_open_at\": null, // 下次开放提示时间\n        \"free_max\": 0, // 每期免费次数\n        \"free_watch_min_sec\": 0, // 后续免费抽每次需新增的观看秒数\n        \"paid_max\": 0, // 每期付费总抽数\n        \"ten_max\": 0, // 每期十连组数\n        \"ten_price_mult\": 0, // 十连价格倍率\n        \"bets\": [], // 单抽金币档位\n        \"gift_spins_per_topup\": 0, // 每次有效充值赠抽次数\n        \"luck_per_topup\": 0, // 每次有效充值增加好运值\n        \"ticket_daily_cap\": 0, // 每日互动掉券上限\n        \"coupon_valid_hours\": 0, // 充值券有效小时数\n        \"cap_coins\": 0, // 每张券最多加赠金币\n        \"luck_guarantee_threshold\": 0, // 好运保底门槛，0 关闭\n        \"free_guarantee_coupon\": false, // 免费抽是否必得券\n        \"ten_guarantee\": null, // 十连保底规则，null 关闭\n        \"face_free\": [], // 免费奖池\n        \"face_ticket\": [], // 用券奖池\n        \"face_paid\": {} // 档位金额字符串→付费奖池\n      }\n    }\n  ]\n}\n```\n\n找不到配置时，列表中不返回此记录；前端使用关闭及 0 值初始状态。兼容现有 value 为 JSON 字符串的情况，保存时保持读取到的类型。\n\n## POST /api/admin/settings · 保存转盘配置\n\n### 请求参数\n\n```jsonc\n{\n  \"id\": 0, // 编辑时传真实记录 ID；新增时不传本字段\n  \"key\": \"topup_promo\", // 转盘配置键\n  \"name\": \"幸运转盘\", // 配置名称\n  \"value\": {\n    \"enabled\": false, // 活动总开关\n    \"starts_at\": null, // 开始时间，带时区 ISO 格式\n    \"peak_ends_at\": null, // 免费、付费、赠抽阶段结束时间\n    \"ends_at\": null, // 用券尾期结束时间\n    \"next_open_at\": null, // 下次开放提示时间\n    \"free_max\": 0, // 每期免费次数\n    \"free_watch_min_sec\": 0, // 首次免费后，每次解锁需新增的观看秒数\n    \"paid_max\": 0, // 每期付费总抽数，十连占 10 次\n    \"ten_max\": 0, // 每期十连组数\n    \"ten_price_mult\": 0, // 十连价格倍率，0 禁用，最大 10\n    \"bets\": [], // 不重复的正整数金币档位\n    \"gift_spins_per_topup\": 0, // 每次有效充值赠抽次数\n    \"luck_per_topup\": 0, // 每次有效充值增加好运值\n    \"ticket_daily_cap\": 0, // 每日互动掉券上限\n    \"coupon_valid_hours\": 0, // 中奖充值券有效小时数\n    \"cap_coins\": 0, // 每张券最多加赠金币\n    \"luck_guarantee_threshold\": 0, // 好运保底门槛，0 关闭\n    \"free_guarantee_coupon\": false, // 本期免费次数内必得充值券\n    \"ten_guarantee\": null, // {kind: 奖励类型, v: 最低数值}；null 关闭\n    \"face_free\": [], // 免费奖池，每项带服务端权重，结构见下\n    \"face_ticket\": [], // 用券奖池，结构同上\n    \"face_paid\": {} // 档位金额字符串→奖项数组，赠抽启用时须有 50 档\n  }\n}\n```\n\n### 管理端奖项结构\n\n```jsonc\n{\n  \"kind\": \"coins\", // coins 金币 / bonus_pct 充值加赠% / vip_day VIP天数 / luck 好运值\n  \"v\": 0, // 固定奖励数值，可选\n  \"mult\": 0, // 金币倍率，可选；有 v 优先使用 v\n  \"weight\": 0 // 服务端相对权重，0 不会抽中；不可下发到用户接口\n}\n```\n\n### 返回数据\n\n```jsonc\n{\n  \"c\": 0, // 0 成功，非 0 失败\n  \"m\": \"\", // 错误提示\n  \"d\": null // 保存结果沿用现有格式，前端会重新 GET 核对配置\n}\n```\n\n后台入口：配置管理 → 基础配置后的「转盘配置」。开启前校验 starts_at\u003cpeak_ends_at≤ends_at；有效奖池 2～24 项且正权重之和大于 0；十连保底须能在当前池内满足；启用券奖励必须配置有效期和加赠上限。保存不直接发奖，不把权重传给用户端。\n\n## 统一失败返回\n\n```jsonc\n{\n  \"c\": 1, // 非 0 表示失败，具体错误码沿用项目约定\n  \"m\": \"金币不足\", // 可展示的业务错误提示\n  \"d\": null // 失败时无中奖结果\n}\n```\n";
+function copied(){document.getElementById('status').textContent='已复制，可粘贴到钉钉';}
+async function copy(text,element,rich){
+  if(rich&&navigator.clipboard?.write&&typeof ClipboardItem!=='undefined'){
+    try{await navigator.clipboard.write([new ClipboardItem({'text/plain':new Blob([text],{type:'text/plain'}),'text/html':new Blob([rich],{type:'text/html'})})]);copied();return;}catch{}
+  }
+  if(navigator.clipboard?.writeText){try{await navigator.clipboard.writeText(text);copied();return;}catch{}}
+  const previous=document.activeElement;const input=document.createElement('textarea');input.value=text;input.setAttribute('readonly','');input.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(input);input.focus();input.select();input.setSelectionRange(0,input.value.length);
+  let done=false;try{done=document.execCommand('copy');}catch{}input.remove();previous?.focus?.();if(done){copied();return;}
+  const range=document.createRange();range.selectNodeContents(element);const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);document.getElementById('status').textContent='已选中，请按 Ctrl+C 复制';
+}
+document.querySelectorAll('[data-copy]').forEach(button=>button.addEventListener('click',()=>{const pre=button.parentElement.querySelector('pre');copy(pre.textContent,pre);}));
+document.getElementById('copy-all').addEventListener('click',()=>{const article=document.getElementById('document');const clone=article.cloneNode(true);clone.querySelectorAll('button').forEach(b=>b.remove());clone.querySelectorAll('pre').forEach(p=>p.setAttribute('style','white-space:pre-wrap;font:12px/1.8 Consolas,monospace;background:#f7f9fc;padding:12px'));copy(documentText,article,clone.outerHTML);});
+</script></body></html>

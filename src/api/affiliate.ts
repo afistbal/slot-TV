@@ -13,6 +13,15 @@ export type AffiliateEligibility = {
     gateNetUsdCents: number;
     referralCode?: string;
     referralUrl?: string;
+    gateAccountDays?: number;
+    accountDays?: number;
+    onceInviteReward?: number;
+    inviteDepositRate?: number;
+    inviteDepositReward?: number;
+    inviteTaskReward?: number;
+    registerReward?: number;
+    earnedCoins?: number;
+    pendingCoins?: number;
 };
 
 export type AffiliateEarning = {
@@ -117,7 +126,7 @@ async function affiliateRequest<T>(
         method: 'post',
         data,
         loading: false,
-        toastOnError: false,
+        toastOnError: path === 'user/affiliate',
     });
     if (result.c !== 0) {
         throw new AffiliateApiError(method, path, result as IResult<unknown>);
@@ -125,8 +134,15 @@ async function affiliateRequest<T>(
     return result.d;
 }
 
+let eligibilityFlight: { token: string; promise: Promise<AffiliateEligibility> } | undefined;
+
 export function getAffiliateEligibility(): Promise<AffiliateEligibility> {
-    return affiliateRequest('POST', 'user/affiliate');
+    const token = localStorage.getItem('token') ?? '';
+    if (eligibilityFlight?.token === token) return eligibilityFlight.promise;
+    const promise = affiliateRequest<AffiliateEligibility>('POST', 'user/affiliate', {})
+        .finally(() => { if (eligibilityFlight?.promise === promise) eligibilityFlight = undefined; });
+    eligibilityFlight = { token, promise };
+    return promise;
 }
 
 export function getAffiliateStatistics(): Promise<AffiliateStatistics> {

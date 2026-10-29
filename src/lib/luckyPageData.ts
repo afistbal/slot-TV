@@ -1,4 +1,5 @@
 import type { LuckyPageData, LuckyRewardCard, LuckyTask } from '@/api/lucky';
+import { decodeLuckyWheel } from '@/lib/luckyWheel';
 
 type RecordValue = Record<string, unknown>;
 const object = (value: unknown): RecordValue => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : {};
@@ -101,33 +102,46 @@ export function luckyClaimableBadge(value: unknown): number | null {
 }
 
 // The benchmark header badge is a compact welfare reminder, not a count of
-// every ready task. Our current product has check-in but no wheel/wish prizes.
+// every ready task. Keep check-in badge behavior independent of the wheel.
 export const luckyCheckinBadge = luckyClaimableBadge;
 
-export function decodeLuckyCatalog(value: unknown, locale = 'zh-CN'): Pick<LuckyPageData, 'promo' | 'rewards'> {
-    const catalog = object(camelLuckyPayload(value));
-    const promo = object(catalog.promo);
-    const rewards: LuckyRewardCard[] = [];
+/** Cards come from user/tasks; callers pass the independent promo_status payload separately. */
+export function decodeLuckyTaskContent(value: unknown, locale = 'zh-CN'): Pick<LuckyPageData, 'promo' | 'rewards' | 'wheel'> {
+    const data = object(camelLuckyPayload(value));
+    const catalog = object(data.rewards ?? data.catalog ?? data);
+    const promo = object(data.promo);
+    const task = (key: string) => list(data.tasks).map(object).find(row => row.key === key) ?? {};
     const checkin = object(catalog.checkin);
-    const checkinRewards = list(checkin.rewards).filter((n): n is number => typeof n === 'number' && Number.isSafeInteger(n) && n >= 0);
-    if (checkinRewards.length) {
-        const milestones = object(checkin.milestones);
-        const days = Math.max(0, ...Object.keys(milestones).map(Number).filter(Number.isFinite));
-        const extra = days > 0 ? w(locale, `，签满 ${days} 天再送 ${count(milestones[String(days)])} 币`, `，簽滿 ${days} 天再送 ${count(milestones[String(days)])} 幣`) : '';
-        rewards.push({ key: 'checkin', icon: 'check-circle', title: 'lucky_center_checkin', description: w(locale, `每天 ${Math.min(...checkinRewards)}–${Math.max(...checkinRewards)} 币${extra}`, `每天 ${Math.min(...checkinRewards)}–${Math.max(...checkinRewards)} 幣${extra}`), to: '/lucky#daily' });
-    }
+    const checkinRewards = list(checkin.rewards).filter(isCount).map(count);
+    const dailyCheckin = count(task('checkin').cap);
+    const min = checkinRewards.length ? Math.min(...checkinRewards) : dailyCheckin;
+    const max = checkinRewards.length ? Math.max(...checkinRewards) : dailyCheckin;
+    const milestone = (value: unknown) => {
+        const rows = object(value);
+        const day = Math.max(0, ...Object.keys(rows).map(Number).filter(n => Number.isSafeInteger(n) && n >= 0));
+        return { day, coins: count(rows[String(day)]) };
+    };
+    const checkinExtra = milestone(checkin.milestones);
     const streak = object(catalog.watchStreak);
-    if (streak.enabled !== false && Object.keys(object(streak.rewards)).length) {
-        const milestones = object(streak.rewards);
-        const days = Math.max(0, ...Object.keys(milestones).map(Number).filter(Number.isFinite));
-        rewards.push({ key: 'streak', icon: 'flame', title: 'lucky_center_streak', description: w(locale, `每天 +${count(streak.dailyBase)} 币，连看 ${days} 天最高再送 ${count(milestones[String(days)])} 币`, `每天 +${count(streak.dailyBase)} 幣，連看 ${days} 天最高再送 ${count(milestones[String(days)])} 幣`), to: '/foryou' });
-    }
+    const streakExtra = milestone(streak.rewards);
     const referral = object(catalog.referral);
-    if (referral.enabled !== false && typeof referral.signupInviter === 'number') rewards.push({ key: 'invite', icon: 'user', title: 'lucky_center_invite', description: w(locale, `好友注册你得 ${count(referral.signupInviter)} 币，好友充值再得 ${finite(referral.purchasePct)}%`, `好友註冊你得 ${count(referral.signupInviter)} 幣，好友充值再得 ${finite(referral.purchasePct)}%`), to: '/affiliate' });
-    if (typeof referral.dailyShare === 'number') rewards.push({ key: 'share', icon: 'share', title: 'lucky_center_share', description: w(locale, `每天 +${count(referral.dailyShare)} 币`, `每天 +${count(referral.dailyShare)} 幣`), to: '/foryou' });
     const rating = object(catalog.rating);
-    if (typeof rating.reward === 'number') rewards.push({ key: 'rating', icon: 'star', title: 'lucky_center_rating', description: w(locale, `看过的剧可评分，每部 +${count(rating.reward)} 币，每天最多 ${count(rating.dailyCap)} 部`, `看過的劇可評分，每部 +${count(rating.reward)} 幣，每天最多 ${count(rating.dailyCap)} 部`), to: '/profile?tab=history' });
-    const levels = object(catalog.levels);
-    if (Object.keys(levels).length) rewards.push({ key: 'level', icon: 'trending', title: 'lucky_center_level', description: w(locale, `升到 Lv${Math.max(0, ...Object.keys(levels).map(Number).filter(Number.isFinite))} 累计送 ${Object.values(levels).reduce<number>((sum, value) => sum + count(value), 0)} 币`, `升到 Lv${Math.max(0, ...Object.keys(levels).map(Number).filter(Number.isFinite))} 累計送 ${Object.values(levels).reduce<number>((sum, value) => sum + count(value), 0)} 幣`), to: '/profile' });
-    return { promo: { enabled: promo.enabled === true, eligible: false, reason: value == null ? 'unconfigured' : 'catalog_only', nextOpenAt: typeof promo.nextOpenAt === 'string' ? promo.nextOpenAt : null }, rewards };
+    const tickets = object(catalog.tickets);
+    const rewards: LuckyRewardCard[] = [
+        { key: 'tickets', icon: 'gift', title: 'lucky_center_tickets', description: w(locale, '收藏、点赞等互动有机会掉落抽奖券，每天最多 ' + count(tickets.dailyCap) + ' 张', '收藏、按讚等互動有機會掉落抽獎券，每天最多 ' + count(tickets.dailyCap) + ' 張'), to: '/foryou' },
+        { key: 'checkin', icon: 'check-circle', title: 'lucky_center_checkin', description: w(locale, '每天 ' + min + '–' + max + ' 币，签满 ' + checkinExtra.day + ' 天再送 ' + checkinExtra.coins + ' 币', '每天 ' + min + '–' + max + ' 幣，簽滿 ' + checkinExtra.day + ' 天再送 ' + checkinExtra.coins + ' 幣'), to: '/lucky#daily' },
+        { key: 'streak', icon: 'flame', title: 'lucky_center_streak', description: w(locale, '每天 +' + count(streak.dailyBase ?? task('streak').cap) + ' 币，连看 ' + streakExtra.day + ' 天最高再送 ' + streakExtra.coins + ' 币', '每天 +' + count(streak.dailyBase ?? task('streak').cap) + ' 幣，連看 ' + streakExtra.day + ' 天最高再送 ' + streakExtra.coins + ' 幣'), to: '/foryou' },
+        { key: 'invite', icon: 'user', title: 'lucky_center_invite', description: w(locale, '邀请好友可得 ' + count(referral.signupInviter) + ' 币，好友充值再得 ' + finite(referral.purchasePct) + '%', '邀請好友可得 ' + count(referral.signupInviter) + ' 幣，好友儲值再得 ' + finite(referral.purchasePct) + '%'), to: '/affiliate' },
+        { key: 'share', icon: 'share', title: 'lucky_center_share', description: w(locale, '每天 +' + count(referral.dailyShare ?? task('share').cap) + ' 币', '每天 +' + count(referral.dailyShare ?? task('share').cap) + ' 幣'), to: '/foryou' },
+        { key: 'rating', icon: 'star', title: 'lucky_center_rating', description: w(locale, '看过的剧可评分，每部 +' + count(rating.reward) + ' 币，每天最多 ' + count(rating.dailyCap) + ' 部', '看過的劇可評分，每部 +' + count(rating.reward) + ' 幣，每天最多 ' + count(rating.dailyCap) + ' 部'), to: '/lucky?rate=1' },
+    ];
+    return {
+        promo: { enabled: promo.enabled === true, eligible: promo.eligible === true, reason: typeof promo.reason === 'string' ? promo.reason : 'unconfigured', nextOpenAt: typeof promo.nextOpenAt === 'string' ? promo.nextOpenAt : null },
+        rewards, wheel: decodeLuckyWheel(promo),
+    };
+}
+
+/** Legacy decoder retained for callers outside the welfare page. */
+export function decodeLuckyCatalog(value: unknown, locale = 'zh-CN') {
+    return decodeLuckyTaskContent({ rewards: value }, locale);
 }

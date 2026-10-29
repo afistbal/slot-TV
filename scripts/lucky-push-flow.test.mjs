@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-const sources = Object.fromEntries(['lib/luckyPageData.ts', 'api/lucky.ts', 'lib/luckyPushSubscription.ts', 'pages/user/Lucky.tsx'].map(path => [path,
+const sources = Object.fromEntries(['lib/luckyWheel.ts', 'lib/luckyPageData.ts', 'api/lucky.ts', 'lib/luckyPushSubscription.ts', 'pages/user/Lucky.tsx'].map(path => [path,
     ts.transpileModule(readFileSync(new URL('../src/' + path, import.meta.url), 'utf8'), {
         compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
     }).outputText,
@@ -74,6 +74,7 @@ async function setup({ ready = true, saveFails = false, configFailures = 0 } = {
         } });
         return exports;
     }
+    dependencies['@/lib/luckyWheel'] = load('lib/luckyWheel.ts');
     dependencies['@/lib/luckyPageData'] = load('lib/luckyPageData.ts');
     const api = dependencies['@/api/lucky'] = load('api/lucky.ts');
     dependencies['@/lib/luckyPushSubscription'] = load('lib/luckyPushSubscription.ts');
@@ -88,7 +89,7 @@ async function setup({ ready = true, saveFails = false, configFailures = 0 } = {
         '@/stores/root': { useRootStore: selector => selector({ sessionBootstrapReady: true }) },
         '@/data/luckyDemo': {},
     });
-    for (const name of ['LuckyAccountDialogs', 'LuckyRatingSheet', 'LuckyIcon', 'ReelShortFooter', 'ReelShortTopNav']) dependencies['@/components/' + name] = { [name]: () => null };
+    for (const name of ['LuckyWheel', 'LuckyRatingSheet', 'LuckyIcon', 'ReelShortFooter', 'ReelShortTopNav']) dependencies['@/components/' + name] = { [name]: () => null };
     const tree = load('pages/user/Lucky.tsx').default();
     function find(node, predicate) {
         if (!node || typeof node !== 'object') return;

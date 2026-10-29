@@ -37,6 +37,7 @@ import { ProfilePcMyListPane, type ProfileMyListSubTab } from '@/pages/user/Prof
 import { PcLoginDialog } from '@/pages/user/Login';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
 import ProfileDashboard from '@/pages/user/ProfileDashboard';
+import { InviteCard } from '@/components/InviteCard';
 import { LanguageDialog } from '@/components/LanguageDialog';
 import '@/styles/profile-reelshort.scss';
 import '@/styles/reelshort-dashboard-pc-mirror.scss';
@@ -724,6 +725,7 @@ function LegacyProfilePanel() {
                             ? loginCardSigned
                             : loginCardGuest}
                         {h5MyAccountCard}
+                        <InviteCard className="rs-profile__invite-card" />
                         {h5QuickGrid}
                         <ReelShortFooter
                             dockAboveBottomTab

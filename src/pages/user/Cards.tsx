@@ -7,6 +7,7 @@ import {
 } from "@/lib/airwallexShoppingWalletEmbedSingleton";
 import { isApplePlatform } from "@/lib/isApplePlatform";
 import { buildPayCreateData } from "@/lib/payCreateData";
+import { isPaymentCurrency, PAYMENT_CURRENCY } from '@/lib/paymentCurrency';
 import { cn } from "@/lib/utils";
 import type { createElement as airwallexCreateElement, ElementTypes, Payment } from "@airwallex/components-sdk";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -135,10 +136,15 @@ export function Cards({
       }
 
       const d = result.d;
+      if (!isPaymentCurrency(d['currency'])) {
+        cardDbg('pay/create currency must be USD');
+        setShowIncomplete(true);
+        return;
+      }
       const intent_id = d["pi"] as string;
       const client_secret = d["client_secret"] as string;
       const customer_id = d["customer_id"] as string;
-      const currency = (d["currency"] as string) || "USD";
+      const currency = PAYMENT_CURRENCY;
       const env = d["env"] as "prod" | "demo";
       const redirectSuccessUrl = (d["success_url"] as string) || "";
       const redirectFailUrl = (d["fail_url"] as string) || "";

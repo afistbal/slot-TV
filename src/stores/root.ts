@@ -9,6 +9,7 @@ localStorage.setItem('locale', initialLocale);
 interface IRoot {
     locale: string,
     theme: TTheme,
+    /** Install entry visibility: native prompt when available, otherwise Android manual guide. */
     showInstallPrompt: boolean,
     /** `config` 完成后即渲染路由；此标记在 `login/token` 或 `login/anonymous` 成功后再为 true，供首页等依赖会话的请求 */
     sessionBootstrapReady: boolean,

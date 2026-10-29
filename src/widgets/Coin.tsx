@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { api, type TData } from '@/api';
 import { buildPayCreateData } from '@/lib/payCreateData';
+import { isPaymentCurrency, PAYMENT_CURRENCY } from '@/lib/paymentCurrency';
 import Loader from '@/components/Loader';
 import {
     buildProductPixelPayload,
@@ -56,6 +57,11 @@ export default function Coin({
             return;
         }
 
+        if (!isPaymentCurrency(result.d['currency'])) {
+            toast.error(intl.formatMessage({ id: 'payment_currency_mismatch' }));
+            return;
+        }
+
         const { init } = await import('@airwallex/components-sdk');
         const { payments } = await init({
             locale: 'en',
@@ -76,7 +82,7 @@ export default function Coin({
         const data = buildProductPixelPayload({
             id: current,
             price: p?.price ?? 0,
-            currency: result.d['currency'] as string,
+            currency: PAYMENT_CURRENCY,
             name: p?.name,
         });
         trackFbAddToCart(data, sn || undefined);
@@ -92,7 +98,7 @@ export default function Coin({
             intent_id: result.d['pi'] as string,
             customer_id: result.d['customer_id'] as string,
             client_secret: result.d['client_secret'] as string,
-            currency: result.d['currency'] as string,
+            currency: PAYMENT_CURRENCY,
             successUrl: result.d['success_url'] as string,
             failUrl: result.d['fail_url'] as string,
             methods: ['card', 'googlepay', 'applepay'],

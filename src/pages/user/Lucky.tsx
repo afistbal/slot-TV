@@ -3,7 +3,6 @@ import { useIntl } from 'react-intl';
 import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import { claimLuckyTask, finishLuckyExternalTask, getCachedLuckyPage, getLuckyPage, getLuckyPushConfig, getLuckyTaskAction, type LuckyPageData, type LuckySocialActionKind, type LuckyTask } from '@/api/lucky';
-import { LuckyAccountDialogs } from '@/components/LuckyAccountDialogs';
 import { LuckyRatingSheet } from '@/components/LuckyRatingSheet';
 import { LuckyIcon } from '@/components/LuckyIcon';
 import { ReelShortFooter } from '@/components/ReelShortFooter';
@@ -74,10 +73,10 @@ export default function Lucky() {
     const dataRef = useRef<LuckyPageData | null>(initialData);
     const [data, setData] = useState<LuckyPageData | null>(initialData);
     const [loading, setLoading] = useState(!preview && !initialResult);
-    const [accountDialog, setAccountDialog] = useState<'level' | null>(null);
     const revision = useLuckyStore(store => store.revision);
     const progressError = useLuckyStore(store => store.progressError);
     const [taskError, setTaskError] = useState('');
+    const [queryError, setQueryError] = useState(initialResult?.error ?? '');
     const [demo, setDemo] = useState(preview || Boolean(initialResult?.demo));
     const [busy, setBusy] = useState('');
     const [pushProgress, setPushProgress] = useState<LuckyPushProgress | null>(null);
@@ -91,7 +90,7 @@ export default function Lucky() {
         if (!silent && !dataRef.current) setLoading(true);
         const result = await getLuckyPage(createLuckyDemoData, intl.locale, force);
         if (!activeRef.current || loadSequence !== loadSequenceRef.current || sessionToken !== localStorage.getItem('token')) return;
-        dataRef.current = result.data; setData(result.data); setDemo(result.demo); setLoading(false);
+        dataRef.current = result.data; setData(result.data); setDemo(result.demo); setQueryError(result.error ?? ''); setLoading(false);
     }, [preview, intl.locale]);
 
     useEffect(() => {
@@ -219,6 +218,7 @@ export default function Lucky() {
                     <h1>{closed ? w('幸运充值日暂未开启', '幸運充值日暫未開啟') : w('福利中心')}</h1>
                     <p>{closed ? w('开启时站内信通知你，日常福利照常领', '開啟時站內信通知你，日常福利照常領') : label('lucky_subtitle')}</p>
                     {closed && data.promo.nextOpenAt ? <small>{w('下次开启：', '下次開啟：')}{new Date(data.promo.nextOpenAt).toLocaleString(intl.locale)}</small> : null}
+                    {queryError ? <p>{w('活动状态暂未更新', '活動狀態暫未更新')} <button type="button" className="lucky-task__button" onClick={() => void load(true, true)}>{w('重试', '重試')}</button></p> : null}
                 </section>
                 <section id="daily" ref={dailyRef} className="lucky-daily lucky-panel">
                     <h2 className="lucky-section-title"><LuckyIcon name="gift" size={18} />{label('lucky_daily_title')}</h2>
@@ -233,9 +233,9 @@ export default function Lucky() {
                         {data.newcomer.tasks.length ? <div className="lucky-newcomer"><div className="lucky-newcomer__head"><h3>{label('lucky_newcomer_title')}</h3><span>{intl.formatMessage({ id: 'lucky_newcomer_once' }, { coins: data.newcomer.total })}</span></div><TaskRows rows={data.newcomer.tasks} busy={busy} onAction={(task) => void handleTask(task)} label={label} /></div> : null}
                     </>}
                 </section>
-                {data.rewards.length ? <section className="lucky-center lucky-panel"><div className="lucky-center__head"><h2>{label('lucky_center_title')}</h2><LuckyIcon name="gift" size={22} /></div><div className="lucky-center__grid">{data.rewards.map((card) => <button key={card.key} type="button" onClick={() => card.key === 'level' ? setAccountDialog('level') : visit(card.to)}><span className="lucky-center__icon"><LuckyIcon name={card.icon} size={18} /></span><strong>{label(card.title)}</strong><p>{label(card.description)}</p><em>{label('lucky_complete')}<LuckyIcon name="chevron-right" size={12} /></em></button>)}</div></section> : null}
+                {data.rewards.length ? <section className="lucky-center lucky-panel"><div className="lucky-center__head"><h2>{label('lucky_center_title')}</h2><LuckyIcon name="gift" size={22} /></div><div className="lucky-center__grid">{data.rewards.filter(card => card.key !== 'level').map((card) => <button key={card.key} type="button" onClick={() => visit(card.to)}><span className="lucky-center__icon"><LuckyIcon name={card.icon} size={18} /></span><strong>{label(card.title)}</strong><p>{label(card.description)}</p><em>{label('lucky_complete')}<LuckyIcon name="chevron-right" size={12} /></em></button>)}</div></section> : null}
             </> : null}
         </main>
         <ReelShortFooter dockAboveBottomTab />
-    </div><LuckyRatingSheet open={ratingOpen} demo={demo || loading || !data} onClose={() => setRatingOpen(false)} onRated={() => void load(true, true)} /><LuckyAccountDialogs kind={accountDialog} demo={demo || loading || !data} onClose={() => setAccountDialog(null)} /></div>;
+    </div><LuckyRatingSheet open={ratingOpen} demo={demo || loading || !data} onClose={() => setRatingOpen(false)} onRated={() => void load(true, true)} /></div>;
 }

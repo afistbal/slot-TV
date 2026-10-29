@@ -3,6 +3,7 @@ const ACCOUNT_PROTECTED_FIRST_SEGMENTS = new Set([
     'creator',
     'lucky',
     'my-list',
+    'profile',
     'search',
     'shopping',
     'tagsearch',
@@ -21,11 +22,5 @@ export function isAccountProtectedPath(pathname: string): boolean {
 }
 
 export function isAccountProtectedUrl(url: URL): boolean {
-    if (isAccountProtectedPath(url.pathname)) return true;
-    const segments = url.pathname.toLowerCase().split('/').filter(Boolean);
-    const first = LOCALE_SEGMENT.test(segments[0] ?? '') ? segments[1] : segments[0];
-    if (first !== 'profile') return false;
-
-    const tab = url.searchParams.get('tab')?.toLowerCase();
-    return tab === 'topup' || tab === 'wallet' || tab === 'mylist' || tab === 'history';
+    return isAccountProtectedPath(url.pathname);
 }

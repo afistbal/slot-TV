@@ -1,12 +1,11 @@
-import { openSharePoster } from '@/stores/sharePoster';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useSearchParams } from 'react-router';
 import { AffiliateDashboard } from '@/components/AffiliateDashboard';
+import { InviteCard } from '@/components/InviteCard';
 import { ProgramIcon } from '@/components/ProgramIcon';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import {
-    affiliateErrorMessage,
     getAffiliateEligibility,
 } from '@/api/affiliate';
 import { useRootStore } from '@/stores/root';
@@ -23,6 +22,8 @@ type AffiliateEligibility = {
     invitedCount: number;
     invitedCents: number;
     gateNetUsdCents: number;
+    accountDays: number;
+    gateAccountDays: number;
     referralCode: string;
     referralUrl: string;
 };
@@ -61,6 +62,8 @@ function normalizeAffiliate(data: unknown, uid: string): AffiliateEligibility | 
         invitedCount: numberFrom(source, 'invitedCount', 'invited_count'),
         invitedCents: numberFrom(source, 'invitedCents', 'invited_cents'),
         gateNetUsdCents: numberFrom(source, 'gateNetUsdCents', 'gate_net_usd_cents'),
+        accountDays: numberFrom(source, 'accountDays', 'account_days'),
+        gateAccountDays: numberFrom(source, 'gateAccountDays', 'gate_account_days'),
         referralCode,
         referralUrl: buildAffiliateShareUrl(uid),
     };
@@ -74,6 +77,8 @@ function emptyAffiliateEligibility(uid: string): AffiliateEligibility {
         invitedCount: 0,
         invitedCents: 0,
         gateNetUsdCents: 0,
+        accountDays: 0,
+        gateAccountDays: 0,
         referralCode: uid,
         referralUrl: buildAffiliateShareUrl(uid),
     };
@@ -137,15 +142,11 @@ function AffiliateExplainer() {
 function AffiliateProgress({ eligibility }: { eligibility: AffiliateEligibility }) {
     const intl = useIntl();
     const t = (id: string) => intl.formatMessage({ id });
-    const referralUrl = eligibility.referralUrl;
     const rows = [
         { label: t('affiliate_gate_revenue'), current: eligibility.invitedCents, target: eligibility.gateNetUsdCents, money: true },
         { label: t('affiliate_gate_payers'), current: eligibility.payers, target: eligibility.gatePayers, money: false },
+        ...(eligibility.gateAccountDays > 0 ? [{ label: t('invite_account_days_label'), current: eligibility.accountDays, target: eligibility.gateAccountDays, money: false }] : []),
     ];
-
-    function copyLink() {
-        if (referralUrl) openSharePoster({ url: referralUrl, title: '邀请好友，一起看精彩短剧', inviteCode: new URL(referralUrl).searchParams.get('ref') || undefined });
-    }
 
     return (
         <div className="affiliate-reference__progress">
@@ -161,11 +162,7 @@ function AffiliateProgress({ eligibility }: { eligibility: AffiliateEligibility 
                 </div>
                 <small>{intl.formatMessage({ id: 'affiliate_invited_so_far' }, { count: eligibility.invitedCount })}</small>
             </section>
-            <section className="affiliate-reference__coin-mode">
-                <h3>{t('affiliate_coin_mode_title')}</h3>
-                <p>{t('affiliate_coin_mode_desc')}</p>
-                <div><input value={referralUrl} readOnly /><button type="button" className="creator-program__button" disabled={!referralUrl} onClick={() => void copyLink()}>分享海报</button></div>
-            </section>
+            <InviteCard affiliate />
         </div>
     );
 }
@@ -178,8 +175,6 @@ export default function AffiliateProgram() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [searchParams, setSearchParams] = useSearchParams();
     const [eligibility, setEligibility] = useState<AffiliateEligibility>(() => readAffiliateEligibilityCache(uid) ?? emptyAffiliateEligibility(uid));
-    const [requestState, setRequestState] = useState<'loading' | 'ready' | 'error'>('loading');
-    const [requestError, setRequestError] = useState('');
     const state = eligibility.state;
     const dashboardOpen = searchParams.get('view') === 'dashboard';
 
@@ -192,17 +187,13 @@ export default function AffiliateProgram() {
     }
 
     const loadAffiliate = useCallback(async () => {
-        setRequestState('loading');
         try {
             const normalized = normalizeAffiliate(await getAffiliateEligibility(), uid);
             if (!normalized) throw new Error('POST /api/user/affiliate：200 · 返回数据格式无效');
             setEligibility(normalized);
             writeAffiliateEligibilityCache(uid, normalized);
-            setRequestError('');
-            setRequestState('ready');
-        } catch (error) {
-            setRequestError(affiliateErrorMessage(error));
-            setRequestState('error');
+        } catch {
+            // Keep the current snapshot; request errors do not add page content.
         }
     }, [uid]);
 
@@ -228,7 +219,6 @@ export default function AffiliateProgram() {
                         </div>
                         <p>{t('affiliate_subtitle')}</p>
                     </header>
-                    {requestState === 'error' ? <div className="affiliate-reference__refresh-note" role="status"><span>数据刷新失败，当前展示上次数据</span><button type="button" onClick={() => void loadAffiliate()}>重试</button><small>{requestError}</small></div> : null}
                     {!dashboardOpen && state === 'in_progress' ? <AffiliateProgress eligibility={eligibility} /> : null}
                     {dashboardOpen || state === 'active' ? <AffiliateDashboard sessionReady={sessionBootstrapReady} isActive={state === 'active'} /> : null}
                     {!dashboardOpen ? <AffiliateExplainer /> : null}

@@ -6,7 +6,6 @@ import {
     Crown,
     Gift,
     Globe2,
-    Grid2X2,
     History,
     Home,
     Search,
@@ -23,6 +22,8 @@ import { APP_LANGUAGES } from '@/constants/appLanguages';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { FORYOU_PATH } from '@/constants/foryouRoute';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
+import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
+import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import {
     BRAND_DISPLAY_NAME,
     BRAND_TOPNAV_WORDMARK_HEIGHT,
@@ -100,6 +101,8 @@ export function ReelShortNavDrawer({
     const requireAccount = useRequireAccount();
     const pathname = location.pathname;
     const closeDrawer = () => onOpenChange(false);
+    const addHomePath = isIosLikeDevice() ? '/page/ios-add-home' : '/page/android-add-home';
+    const showAddHomeEntry = rootStore.showInstallPrompt || shouldShowIosAddHomeFab();
 
     function selectLocale(code: string) {
         if (rootStore.locale === code) return;
@@ -164,14 +167,6 @@ export function ReelShortNavDrawer({
                             >
                                 <FormattedMessage id="for_you" defaultMessage="For You" />
                             </DrawerItem>
-                            <DrawerItem
-                                to="/categories"
-                                icon={Grid2X2}
-                                active={pathname.startsWith('/categories') || pathname.startsWith('/drama/')}
-                                onClick={closeDrawer}
-                            >
-                                <FormattedMessage id="nav_categories" defaultMessage="Browse" />
-                            </DrawerItem>
                             <DrawerItem to="/search" icon={Search} active={pathname.startsWith('/search')} onClick={closeDrawer}>
                                 <FormattedMessage id="nav_search_label" defaultMessage="Search" />
                             </DrawerItem>
@@ -232,14 +227,21 @@ export function ReelShortNavDrawer({
                             >
                                 <FormattedMessage id="my_list" />
                             </DrawerItem>
-                            <DrawerItem
-                                to="/page/ios-add-home"
+                            {showAddHomeEntry ? <DrawerItem
+                                to={addHomePath}
                                 icon={Smartphone}
-                                active={pathname === '/page/ios-add-home'}
-                                onClick={closeDrawer}
+                                active={pathname === addHomePath}
+                                onClick={(event) => {
+                                    const installButton = document.querySelector<HTMLButtonElement>('.pwa-install-open-btn');
+                                    if (addHomePath === '/page/android-add-home' && installButton) {
+                                        event.preventDefault();
+                                        installButton.click();
+                                    }
+                                    closeDrawer();
+                                }}
                             >
                                 <FormattedMessage id="add_desktop_short" />
-                            </DrawerItem>
+                            </DrawerItem> : null}
                             <DrawerItem to="/profile" icon={UserRound} active={pathname.startsWith('/profile')} onClick={closeDrawer}>
                                 <FormattedMessage id="nav_personal_center" />
                             </DrawerItem>

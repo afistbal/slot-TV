@@ -158,10 +158,10 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
             </div>
             {selected ? <>
                 <button type="button" className="top-up-dialog__back" onClick={() => setSelected(null)}><ChevronLeft size={16} />{label('返回套餐', 'Back to packages')}</button>
-                <div className="top-up-dialog__summary">{selected.type === 2 ? `${number(selected.coin)} ${label('金币', 'coins')}` : membershipName(selected)} · ¥{selected.price}</div>
+                <div className="top-up-dialog__summary">{selected.type === 2 ? `${number(selected.coin)} ${label('金币', 'coins')}` : membershipName(selected)} · ${selected.price}</div>
                 {payState === 'idle' || payState === 'processing' || payState === 'checking' ? <div className="rs-shopping top-up-dialog__checkout">
                     <RadixRcShoppingPaySection key={paySeed} walletProductId={selected.id} checkoutTargetProductId={selected.id}
-                        checkoutFrom={productFrom} checkoutProductMeta={selected} paySessionSeed={paySeed} expectedCurrency="CNY" onPayStateChange={setPayState} />
+                        checkoutFrom={productFrom} checkoutProductMeta={selected} paySessionSeed={paySeed} onPayStateChange={setPayState} />
                     {payState !== 'idle' ? <p role="status">{label('正在确认支付结果…', 'Confirming payment…')}</p> : null}
                 </div> : <div className="top-up-dialog__status" role="status">
                     {payState === 'success' ? <><ShieldCheck size={36} /><p>{label('支付成功', 'Payment successful')}</p></> : <>
@@ -175,7 +175,7 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
                     <button type="button" role="tab" id={`${panelId}-vip-tab`} aria-selected={tab === 'vip'} aria-controls={`${panelId}-products`} onClick={() => setTab('vip')}>{label('开通会员', 'Membership')}</button>
                 </div>
                 <div id={`${panelId}-products`} className="top-up-dialog__list" role="tabpanel" aria-labelledby={`${panelId}-${tab}-tab`}>
-                    {referenceCoins ? <div className="top-up-dialog__banner">{label('首充双倍 · 仅首单一次 · 基础金币 ×2（限 ¥', 'First top-up double · First order only · Base coins ×2 (up to ¥')}{number(0)}{label(' 及以下档位）', ' packs)')}</div> : null}
+                    {referenceCoins ? <div className="top-up-dialog__banner">{label('首充双倍 · 仅首单一次 · 基础金币 ×2（限 $', 'First top-up double · First order only · Base coins ×2 (up to $')}{number(0)}{label(' 及以下档位）', ' packs)')}</div> : null}
                     {tab === 'vip' ? <>
                         <div className="top-up-dialog__banner">{referenceMemberships ? label('会员每月到账金币 · 解锁会员专享剧 · 评论区专属身份', 'Monthly member coins · Member-only dramas · Exclusive comment identity') : label('会员专享权益', 'Member benefits')}</div>
                         <div className="top-up-dialog__tabs top-up-dialog__period" aria-label={label('会员周期', 'Membership period')}>
@@ -196,7 +196,7 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
                                     {referenceMemberships && product.days !== undefined && activePeriod === 'monthly' ? <small>{number(product.days)}{label(' 天有效', ' days valid')}</small> : null}
                                     {referenceCoins ? <small className="top-up-dialog__bonus">{label('含送', 'Includes bonus ')}{number(bonus)}</small> : bonus > 0 ? <small>+{number(bonus)} {label('赠送', 'bonus')}</small> : null}
                                 </span>{referenceCoins && (index === 1 || index === 2) ? <span className="top-up-dialog__note top-up-dialog__note--coins">{label('仅金币，不含会员', 'Coins only, membership not included')}</span> : null}</span>
-                                <span className="top-up-dialog__price"><strong>¥{product.price}{referenceMemberships ? <small>{periodSuffix(product)}</small> : null}</strong><span className={`top-up-dialog__tag${referenceCoins ? ' top-up-dialog__tag--coins' : ''}${tab === 'vip' ? ' top-up-dialog__tag--vip' : ''}`}>{tab === 'coins' ? referenceCoins ? label('购买金币', 'Buy coins') : label('金币', 'Coins') : referenceMemberships ? label('开通会员', 'Join membership') : 'VIP'}</span></span>
+                                <span className="top-up-dialog__price"><strong>${product.price}{referenceMemberships ? <small>{periodSuffix(product)}</small> : null}</strong><span className={`top-up-dialog__tag${referenceCoins ? ' top-up-dialog__tag--coins' : ''}${tab === 'vip' ? ' top-up-dialog__tag--vip' : ''}`}>{tab === 'coins' ? referenceCoins ? label('购买金币', 'Buy coins') : label('金币', 'Coins') : referenceMemberships ? label('开通会员', 'Join membership') : 'VIP'}</span></span>
                             </span>
                             {tab === 'vip' ? <>
                                 {referenceMemberships && /^(basic|standard|premium)(_annual)?$/.test(product.name) ? <>
