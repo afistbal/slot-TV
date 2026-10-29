@@ -22,7 +22,6 @@ import usePixel from '@/hooks/usePixel';
 import { LegalDocumentLink } from '@/components/LegalDocumentLink';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { cn } from '@/lib/utils';
-import { getAnonymousUniIdPayload } from '@/lib/anonymousUniIdForBinding';
 import {
     clearStoredAffiliateReferralCode,
     getRegistrationReferralPayload,
@@ -182,7 +181,7 @@ function useLoginBase(
                 data: {
                     email: normalizedEmail,
                     password: loginPassword,
-                    ...getAnonymousUniIdPayload(),
+                    anonymous_id: '',
                     ...fromSourceForLogin(),
                 },
                 loading: false,
@@ -236,7 +235,7 @@ function useLoginBase(
                 method: 'post',
                 data: {
                     uid: detail.uid,
-                    ...getAnonymousUniIdPayload(),
+                    anonymous_id: '',
                     ...fromSourceForLogin(),
                 },
                 loading: false,
@@ -308,7 +307,7 @@ function useLoginBase(
                     name: result.user.displayName || '',
                     email: result.user.email,
                     provider: 'google',
-                    ...getAnonymousUniIdPayload(),
+                    anonymous_id: '',
                     ...fromSourceForLogin(),
                 },
                 loading: false,
