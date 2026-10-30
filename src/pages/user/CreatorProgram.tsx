@@ -639,8 +639,6 @@ export default function CreatorProgram() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [application, setApplication] = useState<CreatorApplication | null>(null);
     const [dashboardData, setDashboardData] = useState<CreatorRecord>({});
-    const [requestState, setRequestState] = useState<'loading' | 'ready' | 'error'>('loading');
-    const [requestError, setRequestError] = useState('');
     const [openFaq, setOpenFaq] = useState<number | null>(0);
     const [applyOpen, setApplyOpen] = useState(() => searchParams.get('preview') === 'apply');
     const rawPreview = searchParams.get('preview');
@@ -671,20 +669,13 @@ export default function CreatorProgram() {
     const requiresLogin = !userStore.signed || userStore.isAnonymous();
 
     const loadAuthor = useCallback(async () => {
-        setRequestState('loading');
         const result = await api<unknown>('creator/dashboard', { method: 'post', loading: false, toastOnError: false });
         if (result.c !== 0 || (result.d != null && !isRecord(result.d))) {
-            setRequestError(result.c !== 0
-                ? formatApiFailure('POST', 'creator/dashboard', result)
-                : 'POST /api/creator/dashboard：200 · 返回数据格式无效');
-            setRequestState('error');
             setDashboardData((current) => Object.keys(current).length ? current : creatorDemoDashboard());
             return;
         }
         setDashboardData(isRecord(result.d) ? result.d : {});
         setApplication(normalizeAuthor(result.d));
-        setRequestError('');
-        setRequestState('ready');
     }, []);
 
     useEffect(() => {
@@ -763,10 +754,6 @@ export default function CreatorProgram() {
             <div ref={scrollRef} className="creator-program-page__scroll">
                 <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
                 <ProgramFlowPreview title={t('program_preview_title')} hint={t('program_preview_hint')} active={preview ?? status} steps={previewSteps} onSelect={selectPreview} exitLabel={t('program_preview_exit')} onExit={preview || demoMode ? () => { const next = new URLSearchParams(searchParams); next.delete('preview'); next.delete('demo'); setApplyOpen(false); setSearchParams(next, { replace: true }); } : undefined} />
-                {!preview && requestError ? <aside className="creator-program__request-notice" role="alert">
-                    <div><strong>{t('creator_status_unavailable')}</strong><p>{t('creator_status_unavailable_desc')}</p><details><summary>{t('creator_error_details')}</summary><p>{requestError}</p></details></div>
-                    <div className="creator-workspace__actions"><button type="button" className="creator-program__button creator-program__button--ghost" disabled={requestState === 'loading'} onClick={() => void loadAuthor()}>{t(requestState === 'loading' ? 'loading' : 'creator_retry')}</button>{!demoMode ? <button type="button" className="creator-program__button creator-program__button--ghost" onClick={() => { const next = new URLSearchParams(searchParams); next.set('demo', '1'); setSearchParams(next); }}>{t('creator_demo_open')}</button> : null}</div>
-                </aside> : null}
                 {status === 'pending' ? <CreatorPending /> : null}
                 {status === 'rejected' ? <CreatorRejected application={application} onReapply={() => setApplyOpen(true)} /> : null}
                 {status === 'suspended' ? <CreatorSuspended /> : null}
@@ -838,8 +825,6 @@ export default function CreatorProgram() {
                 onPreviewSubmitted={preview || demoMode ? () => selectPreview('pending') : undefined}
                 onSubmitted={(nextApplication) => {
                     setApplication(nextApplication);
-                    setRequestError('');
-                    setRequestState('ready');
                     const nextParams = new URLSearchParams(searchParams);
                     nextParams.delete('preview');
                     setSearchParams(nextParams, { replace: true });
