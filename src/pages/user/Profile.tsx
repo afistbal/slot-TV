@@ -412,12 +412,6 @@ function LegacyProfilePanel() {
     /** H5 account balance and the shared in-place recharge entry. */
     const h5MyAccountCard = (
         <div className="rs-profile__h5Account">
-            <div className="rs-profile__h5AccountHead">
-                <span className="rs-profile__h5AccountTitle">
-                    <FormattedMessage id="profile_h5_my_account" />
-                </span>
-            </div>
-            <div className="rs-profile__h5AccountDivider" aria-hidden />
             <div className="rs-profile__h5AccountBody">
                 <div className="rs-profile__h5AccountCoins">
                     <span className="rs-profile__h5AccountCoinsLabel">

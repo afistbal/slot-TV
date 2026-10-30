@@ -546,20 +546,6 @@
     height: calc(20 / 375 * var(--app-vw));
 }
 
-.rs-profile__h5AccountHead {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: calc(8 / 375 * var(--app-vw));
-}
-
-.rs-profile__h5AccountTitle {
-    font-size: calc(15 / 375 * var(--app-vw));
-    font-weight: 500;
-    font-size: 16px;
-    color: #FFFFFF;
-}
-
 .rs-profile__h5AccountDetails {
     display: inline-flex;
     align-items: center;
@@ -575,12 +561,6 @@
         height: calc(14 / 375 * var(--app-vw));
         object-fit: contain;
     }
-}
-
-.rs-profile__h5AccountDivider {
-    height: 1px;
-    margin: calc(12 / 375 * var(--app-vw)) 0;
-    background: rgba(255, 255, 255, 0.08);
 }
 
 .rs-profile__h5AccountBody {
