@@ -145,10 +145,11 @@ export function getCachedLuckyPage(locale = 'zh-CN'): LuckyPageResult | undefine
     const stored = useLuckyStore.getState();
     if (stored.tasks === undefined || stored.tasksSession !== key) return cached;
     try {
-        const content = decodeLuckyTaskContent(stored.tasks, locale);
+        const rewards = rewardsCache?.session === key && rewardsCache.error === undefined ? rewardsCache.data : undefined;
+        const content = decodeLuckyTaskContent({ rewards: rewards ?? [] }, locale);
         const promo = decodeLuckyTaskContent({ promo: promoCache?.session === key ? promoCache.data : undefined }, locale);
         const data = { ...decodeLuckyTasks(stored.tasks, locale), ...content, promo: promo.promo, wheel: promo.wheel };
-        return { data, demo: false, rawResponses: { tasks: stored.tasks } };
+        return { data, demo: false, rawResponses: { tasks: stored.tasks, rewards } };
     } catch {
         return cached;
     }
@@ -169,13 +170,14 @@ export async function getLuckyLevel(): Promise<LuckyLevel> {
 export async function getLuckyPage(_createDemo: () => LuckyPageData, locale = 'zh-CN', force = false): Promise<LuckyPageResult> {
     const key = session(), generation = taskGeneration;
     try {
-        const [tasksResult, promoResult] = await Promise.allSettled([getLuckyTasks(force), getLuckyPromo(force)]);
+        const [tasksResult, rewardsResult, promoResult] = await Promise.allSettled([getLuckyTasks(force), getLuckyRewards(force), getLuckyPromo(force)]);
         if (tasksResult.status === 'rejected') throw tasksResult.reason;
         const tasks = tasksResult.value;
+        const rewards = rewardsResult.status === 'fulfilled' ? rewardsResult.value : undefined;
         const status = promoResult.status === 'fulfilled' ? promoResult.value : undefined;
         const promo = decodeLuckyTaskContent({ promo: status }, locale);
-        const result: LuckyPageResult = { data: { ...decodeLuckyTasks(tasks, locale), ...decodeLuckyTaskContent(tasks, locale), promo: promo.promo, wheel: promo.wheel }, demo: false,
-            error: promoResult.status === 'rejected' ? String(promoResult.reason instanceof Error ? promoResult.reason.message : promoResult.reason) : undefined, rawResponses: { tasks, promo: status } };
+        const result: LuckyPageResult = { data: { ...decodeLuckyTasks(tasks, locale), ...decodeLuckyTaskContent({ rewards: rewards ?? [] }, locale), promo: promo.promo, wheel: promo.wheel }, demo: false,
+            error: promoResult.status === 'rejected' ? String(promoResult.reason instanceof Error ? promoResult.reason.message : promoResult.reason) : undefined, rawResponses: { tasks, rewards, promo: status } };
         if (key === session() && generation === taskGeneration) pageCache = { session: key, locale, result };
         return result;
     } catch (reason) {

@@ -9,6 +9,11 @@ import { LuckyIcon } from '@/components/LuckyIcon';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useConfigStore } from '@/stores/config';
 
+const taskCount = (value: unknown): number => {
+    const parsed = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+};
+
 export function LuckyRatingSheet({ open, demo, onClose, onRated }: { open: boolean; demo: boolean; onClose: () => void; onRated: () => void }) {
     const { locale } = useIntl();
     const navigate = useNavigate();
@@ -27,9 +32,12 @@ export function LuckyRatingSheet({ open, demo, onClose, onRated }: { open: boole
         setRows([]); setError(''); setQuota(null);
         if (demo) { setLoading(false); setQuota({ left: 5, reward: 3 }); return; }
         setLoading(true);
-        const tasks = camelLuckyPayload(useLuckyStore.getState().tasks) as { tasks?: Array<{ key: string; left?: number; cap?: number }> } | undefined;
+        const tasks = camelLuckyPayload(useLuckyStore.getState().tasks) as { tasks?: Array<{ key: string; left?: number | string; cap?: number | string; count?: number | string }> } | undefined;
         const ratingTask = tasks?.tasks?.find(task => task.key === 'rating');
-        const nextQuota = { left: ratingTask?.left ?? 5, reward: 3 };
+        const nextQuota = {
+            left: taskCount(ratingTask?.left ?? ratingTask?.count),
+            reward: taskCount(ratingTask?.cap),
+        };
         void getLuckyRatingCandidates(100, locale, staticBase).then((nextRows) => {
             if (cancelled) return;
             setQuota(nextQuota); setRows(Array.isArray(nextRows) ? nextRows : []);

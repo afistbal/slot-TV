@@ -43,6 +43,7 @@ function setup() {
         '@/api': { formatApiFailure: (_m, path) => 'POST ' + path + ': failed', api: async (path, options) => {
             requests.push({ path, data: options.data });
             if (path === 'user/tasks') return { c: 0, d: response };
+            if (path === 'user/rewards') return { c: 0, d: response.rewards ?? null };
             if (path === 'user/promo/status') return { c: 0, d: response.promo ?? null };
             if (path === 'user/spin') { afterSpin(); return spinResponse; }
             throw new Error('Unexpected endpoint: ' + path);
@@ -51,26 +52,59 @@ function setup() {
     return { service, requests, store, setTasks: value => { response = value; }, setSpin: value => { spinResponse = value; }, switchDuringSpin: () => { afterSpin = () => { token = 'account-b'; }; } };
 }
 
-test('hidden wheel skips promo requests while tasks still supply reward cards', async () => {
+test('welfare page calls rewards while the hidden wheel still skips promo requests', async () => {
     const s = setup();
     const result = await s.service.getLuckyPage(() => { throw new Error('No fake demo'); });
     assert.equal(result.demo, false);
-    assert.deepEqual(s.requests.map(row => row.path), ['user/tasks']);
+    assert.deepEqual(s.requests.map(row => row.path), ['user/tasks', 'user/rewards']);
     assert.equal(result.data.wheel.freeLeft, 0);
     assert.equal(result.data.wheel.enabled, false);
-    assert.deepEqual(Array.from(result.data.rewards, row => row.key), ['tickets', 'checkin', 'streak', 'invite', 'share', 'rating']);
+    assert.deepEqual(Array.from(result.data.rewards, row => row.key), ['checkin', 'streak', 'invite', 'share', 'rating']);
     assert.match(result.data.rewards.find(row => row.key === 'invite').description, /8.*12%/);
     assert.match(result.data.rewards.find(row => row.key === 'checkin').description, /5–20.*3.*25/);
     const cached = s.service.getCachedLuckyPage();
     assert.equal(cached.data.wheel.freeLeft, 0);
-    assert.equal(s.requests.length, 1);
+    assert.equal(s.requests.length, 2);
 });
 
-test('missing configuration keeps six cards with zero values and disables the wheel', () => {
+test('missing configuration keeps five requested cards with zero values and disables the wheel', () => {
     const result = data.decodeLuckyTaskContent({});
-    assert.equal(result.rewards.length, 6);
+    assert.deepEqual(Array.from(result.rewards, row => row.key), ['checkin', 'streak', 'invite', 'share', 'rating']);
     assert.equal(wheel.luckyWheelAction(result.wheel, 20), 'done');
-    assert.match(result.rewards[3].description, /0.*0%/);
+    assert.match(result.rewards.find(row => row.key === 'invite').description, /0.*0%/);
+});
+
+test('per-user task values never populate welfare cards without rewards data', () => {
+    const result = data.decodeLuckyTaskContent({
+        tasks: [{ key: 'rating', cap: '3', count: '8' }],
+    });
+    const rating = result.rewards.find(row => row.key === 'rating');
+    assert.match(rating.description, /每部 \+0 币，每天最多 0 部/);
+});
+
+test('rating welfare card prefers the rewards catalog over per-user task state', () => {
+    const result = data.decodeLuckyTaskContent({
+        tasks: [{ key: 'rating', cap: 15, count: 5 }],
+        rewards: { rating: { reward: 6, daily_cap: 9 } },
+    });
+    const rating = result.rewards.find(row => row.key === 'rating');
+    assert.match(rating.description, /每部 \+6 币，每天最多 9 部/);
+});
+
+test('flat key-based rewards response renders the five welfare cards', () => {
+    const result = data.decodeLuckyTaskContent({ rewards: [
+        { key: 'checkin', rewards: [5, 15, 30, 15, 20, 25, 60], milestones: { 30: 500 } },
+        { key: 'streak', cap: 3, milestones: { 30: 300 } },
+        { key: 'invite', cap: 80, purchase_pct: 15 },
+        { key: 'share', cap: 10 },
+        { key: 'rating', cap: 3, count: 5 },
+    ] });
+    assert.deepEqual(Array.from(result.rewards, row => row.key), ['checkin', 'streak', 'invite', 'share', 'rating']);
+    assert.match(result.rewards.find(row => row.key === 'checkin').description, /5–60.*30.*500/);
+    assert.match(result.rewards.find(row => row.key === 'streak').description, /\+3.*30.*300/);
+    assert.match(result.rewards.find(row => row.key === 'invite').description, /80.*15%/);
+    assert.match(result.rewards.find(row => row.key === 'share').description, /\+10/);
+    assert.match(result.rewards.find(row => row.key === 'rating').description, /\+3.*5/);
 });
 
 test('hidden wheel ignores promo configuration and keeps daily tasks', async () => {
