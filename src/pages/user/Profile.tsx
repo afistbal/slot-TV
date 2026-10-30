@@ -416,10 +416,6 @@ function LegacyProfilePanel() {
                 <span className="rs-profile__h5AccountTitle">
                     <FormattedMessage id="profile_h5_my_account" />
                 </span>
-                <Link to="/wallet" className="rs-profile__h5AccountDetails">
-                    <FormattedMessage id="profile_h5_details" />
-                    <img src={profileH5Assets.chevron} alt="" aria-hidden />
-                </Link>
             </div>
             <div className="rs-profile__h5AccountDivider" aria-hidden />
             <div className="rs-profile__h5AccountBody">

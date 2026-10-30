@@ -15,6 +15,7 @@ import closeIcon from '@/assets/images/icon_close.webp';
 import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from '@/constants/brand';
 import { api, report, type TData } from '@/api';
 import { useUserStore } from '@/stores/user';
+import { useAuthPromptStore } from '@/stores/authPrompt';
 import { emailVerify } from '@/utils';
 import { useLoadingStore } from '@/stores/loading';
 import { auth } from '@/firebase';
@@ -68,6 +69,8 @@ function useLoginBase(
     }
 
     function finishLogin() {
+        // Another login entry may have left the shared prompt open behind this dialog.
+        useAuthPromptStore.getState().close();
         if (isPcVariant && pcOpts?.onLoginSuccess) {
             pcOpts.onLoginSuccess();
             return;

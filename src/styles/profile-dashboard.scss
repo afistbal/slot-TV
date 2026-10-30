@@ -3,7 +3,7 @@
     display: flex;
     flex: 1 1 0%;
     min-height: 0;
-    background: #0c0d0f;
+    background: var(--app-canvas, #000000);
     color: #eceff1;
     font-size: 14px;
     line-height: 1.5;
@@ -26,16 +26,16 @@
     .me-gold { color: var(--me-gold); }
 }
 .me-page-scroll { flex: 1 1 0%; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
-.me-page-shell .reelshort-topnav { background: rgba(12,13,15,.82); border-bottom: 1px solid #ffffff12; backdrop-filter: blur(14px); }
+.me-page-shell .reelshort-topnav { background: color-mix(in srgb, var(--app-canvas, #000000) 82%, transparent); border-bottom: 1px solid #ffffff12; backdrop-filter: blur(14px); }
 .me-page { width: 100%; max-width: 1300px; margin: 0 auto; padding: 24px 16px; }
 .me-dashboard { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 .me-dashboard__account, .me-dashboard__activity { display: flex; min-width: 0; flex-direction: column; gap: 12px; }
 .me-dashboard__wide { min-width: 0; grid-column: 1 / -1; }
-.me-card { min-width: 0; padding: 16px; border: 1px solid var(--me-line); border-radius: 16px; background: #141619; }
+.me-card { min-width: 0; padding: 16px; border: 1px solid var(--me-line); border-radius: 16px; background: var(--app-surface, #222222); }
 .me-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .me-subtle { color: var(--me-muted); font-size: 12px; line-height: 1.5; }
 .me-page-shell p.me-subtle { margin-top: 4px; }
-.me-page-shell .me-btn { display: inline-flex; flex: 0 0 auto; min-height: 40px; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border: 1px solid transparent; border-radius: 12px; background: var(--me-green); color: var(--rs-brand-foreground, #2b1e00); font-size: 12px; font-weight: 700; line-height: 18px; transition: filter .15s; }
+.me-page-shell .me-btn { display: inline-flex; flex: 0 0 auto; min-height: 40px; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border: 1px solid transparent; border-radius: 12px; background: var(--rs-brand, #e8c268); color: var(--rs-brand-foreground, #2b1e00); font-size: 12px; font-weight: 700; line-height: 18px; transition: filter .15s; }
 .me-btn:hover { filter: brightness(1.08); }
 .me-page-shell .me-btn--gold { background: var(--me-gold); color: var(--rs-brand-foreground, #2b1e00); }
 .me-square { display: grid; flex: 0 0 44px; width: 44px; height: 44px; place-items: center; border: 1px solid var(--me-line); border-radius: 12px; background: transparent; color: var(--me-muted); }
@@ -46,13 +46,13 @@
 .me-user__info > strong { display: block; overflow: hidden; font-size: 17px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .me-user__info > div { display: flex; min-width: 0; align-items: center; gap: 8px; margin-top: 4px; color: var(--me-muted); font-size: 12px; }
 .me-user__actions { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--me-line); }
-.me-user__actions > * { display: flex; min-width: 0; min-height: 40px; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--me-line); border-radius: 12px; background: #1b1e22; color: var(--me-muted); font-size: 12px; font-weight: 600; }
+.me-user__actions > * { display: flex; min-width: 0; min-height: 40px; align-items: center; justify-content: center; gap: 6px; padding: 4px 8px; border: 1px solid rgba(255, 255, 255, .06); border-radius: 12px; background: rgba(255, 255, 255, .035); color: #b8b8b8; font-size: 12px; font-weight: 600; }
 .me-user__actions svg { flex: 0 0 auto; }
 .me-user__actions span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .me-page-shell .me-muted-title { color: var(--me-muted); font-size: 12px; font-weight: 400; }
 .me-balance { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--me-gold); font-size: 26px; font-weight: 800; line-height: 36px; font-variant-numeric: tabular-nums; }
 .me-assets { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--me-line); }
-.me-assets button { display: flex; flex: 1; min-width: 0; min-height: 52px; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 0; border-radius: 12px; background: #1b1e22; color: var(--me-muted); text-align: start; font-size: 11px; }
+.me-assets button { display: flex; flex: 1; min-width: 0; min-height: 52px; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .045); color: #a3a3a3; text-align: start; font-size: 11px; }
 .me-assets strong { display: block; color: #eceff1; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .me-invite { border-color: color-mix(in srgb, var(--rs-brand, #e8c268) 25%, transparent); }
 .me-invite__copy { display: flex; gap: 8px; margin-top: 12px; }
@@ -61,11 +61,11 @@
 .me-invite__stats { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 12px; color: var(--me-muted); font-size: 12px; }
 .me-invite__stats b { margin-right: 4px; font-size: 17px; font-weight: 800; }
 .me-disclosure { display: flex; width: 100%; min-height: 40px; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 8px; border: 0; border-top: 1px solid var(--me-line); background: transparent; color: var(--me-muted); font-size: 12px; }
-.me-vip { display: flex; align-items: center; gap: 12px; border-color: color-mix(in srgb, var(--rs-brand, #e8c268) 20%, transparent); background: linear-gradient(110deg,color-mix(in srgb, var(--rs-brand, #e8c268) 6%, transparent),#141619 80%); }
+.me-vip { display: flex; align-items: center; gap: 12px; border-color: color-mix(in srgb, var(--rs-brand, #e8c268) 20%, transparent); background: linear-gradient(110deg,color-mix(in srgb, var(--rs-brand, #e8c268) 6%, transparent),var(--app-surface, #222222) 80%); }
 .me-vip > div { flex: 1; min-width: 0; }
 .me-vip__crown { display: grid; flex: 0 0 40px; width: 40px; height: 40px; place-items: center; border: 1px solid color-mix(in srgb, var(--rs-brand, #e8c268) 30%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--rs-brand, #e8c268) 8%, transparent); color: var(--me-gold); }
 .me-vip h2 { font-size: 14px; font-weight: 700; }
-.me-quick { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; padding: 10px; border: 1px solid var(--me-line); border-radius: 16px; background: #141619; }
+.me-quick { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; padding: 10px; border: 1px solid var(--me-line); border-radius: 16px; background: var(--app-surface, #222222); }
 .me-quick > * { display: flex; min-width: 0; min-height: 76px; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border: 0; border-radius: 12px; background: transparent; color: #eceff1; text-align: center; font-size: 12px; font-weight: 600; line-height: 15px; }
 .me-quick > *:hover { background: #1b1e22; }
 .me-quick__icon { position: relative; display: grid; flex: 0 0 40px; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: #1b1e22; }
@@ -121,15 +121,15 @@
 .me-coinlogs b { flex-shrink: 0; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .me-placeholder { border: 1px solid #ffffff12; border-radius: 20px; background: #141619; color: #eceff1; }
 @media (min-width: 640px) {
-    .me-page { padding: 32px 24px; }
+    .me-page { max-width: 760px; padding: 24px 20px; }
     .me-dashboard { gap: 16px; }
-    .me-dashboard__account, .me-dashboard__activity { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; align-items: start; }
+    .me-dashboard__account, .me-dashboard__activity { gap: 16px; }
     .me-card { padding: 20px; }
     .me-quick { grid-template-columns: repeat(4,minmax(0,1fr)); }
     .me-library-list--posters { grid-template-columns: repeat(4,minmax(0,1fr)); }
 }
 @media (min-width: 1024px) {
-    .me-page { padding-inline: 32px; }
+    .me-page { max-width: 1300px; padding-inline: 32px; }
     .me-dashboard { display: grid; grid-template-columns: minmax(330px,380px) minmax(0,1fr); align-items: start; gap: 24px; }
     .me-dashboard__account, .me-dashboard__activity { display: flex; flex-direction: column; }
     .me-dashboard__account > *, .me-dashboard__activity > * { width: 100%; }

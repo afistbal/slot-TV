@@ -446,7 +446,7 @@
     padding: calc(16 / 375 * var(--app-vw));
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: calc(16 / 375 * var(--app-vw));
-    background: #141618;
+    background: var(--app-surface, #222222);
     box-sizing: border-box;
 }
 
