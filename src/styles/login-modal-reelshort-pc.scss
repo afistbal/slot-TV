@@ -405,3 +405,279 @@
         overflow-wrap: anywhere;
     }
 }
+
+/* 登录/注册新版：对齐深色账号卡片，第三方入口仅保留 Google。 */
+.rs-login-modal__dialog {
+    width: min(400px, calc(100% - 2rem)) !important;
+    max-width: min(400px, calc(100% - 2rem)) !important;
+    height: 626px !important;
+    min-height: 626px !important;
+    max-height: min(626px, calc(100dvh - 24px)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 14px !important;
+    background: #101214 !important;
+    box-shadow: 0 18px 64px rgba(0, 0, 0, 0.58);
+}
+
+.rs-login-modal__dialog--forgot {
+    height: 540px !important;
+    min-height: 540px !important;
+    max-height: min(540px, calc(100dvh - 24px)) !important;
+}
+
+.rs-login-modal__dialog--forgot .LoginModal_login_body__DH86w.rs-login-modal__body-panel {
+    height: 100%;
+    min-height: 0;
+}
+
+.rs-login-modal .LoginModal_login_body__DH86w.rs-login-modal__body-panel {
+    height: 100%;
+    padding: 34px 24px 28px;
+    border-radius: 14px;
+    background: #101214;
+    color: #fff;
+}
+
+.rs-login-modal .LoginModal_login_body__DH86w--email {
+    padding-top: 34px;
+}
+
+.rs-login-modal .LoginModal_close_btn__KOxVA {
+    top: 18px;
+    right: 18px;
+    color: #b7bec6;
+}
+
+.rs-login-modal__auth-title {
+    margin: 0 0 24px;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.rs-login-modal__auth-title.is-forgot {
+    margin-bottom: 6px;
+}
+
+.rs-login-modal__auth-subtitle {
+    width: 318px;
+    margin: 0 0 20px;
+    color: #c3c8ce !important;
+    opacity: 1;
+    font-size: 13px;
+    line-height: 20px;
+    text-align: center;
+}
+
+.rs-login-modal__email-fields {
+    width: 318px;
+    margin: 0;
+    gap: 12px;
+}
+
+.rs-login-modal__reset-section-title {
+    width: 100%;
+    margin: 1px 0 -2px;
+    padding-left: 9px;
+    display: flex;
+    align-items: center;
+    border-left: 2px solid var(--rs-brand);
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+}
+
+.rs-login-modal__reset-section-title--password {
+    margin-top: 6px;
+}
+
+.rs-login-modal__email-field {
+    height: 46px;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: #1a1e22;
+}
+
+.rs-login-modal__email-field:focus-within {
+    border-color: var(--rs-brand);
+    box-shadow: 0 0 0 2px var(--rs-brand-soft);
+}
+
+.rs-login-modal__email-input {
+    color: rgba(255, 255, 255, 0.94);
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.rs-login-modal__email-input::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.rs-login-modal__email-input:-webkit-autofill,
+.rs-login-modal__email-input:-webkit-autofill:hover,
+.rs-login-modal__email-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.94) !important;
+    caret-color: #fff;
+    box-shadow: 0 0 0 1000px #1a1e22 inset !important;
+}
+
+.rs-login-modal__email-send {
+    flex-shrink: 0;
+    min-width: 64px;
+    height: 32px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.rs-login-modal__email-send:disabled {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.38);
+    cursor: default;
+}
+
+.rs-login-modal__login-links {
+    width: 318px;
+    margin: 12px 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.rs-login-modal__login-links button,
+.rs-login-modal__account-switch button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #9eafc2;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.rs-login-modal__login-links button:hover,
+.rs-login-modal__account-switch button:hover {
+    color: var(--rs-brand);
+}
+
+.rs-login-modal__login-links button {
+    color: var(--rs-brand);
+}
+
+.rs-login-modal__email-submit {
+    width: 318px;
+    height: 44px;
+    margin-top: 16px;
+    border-radius: 10px;
+    border: 0;
+    background: var(--rs-brand);
+    color: var(--rs-brand-foreground);
+    box-shadow: 0 8px 20px rgb(232 194 104 / 0.16);
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.rs-login-modal__login-links + .rs-login-modal__email-submit {
+    margin-top: 0;
+}
+
+.rs-login-modal__email-submit:hover:not(:disabled) {
+    background: var(--rs-brand-hover);
+}
+
+.rs-login-modal__or {
+    width: 318px;
+    margin: 18px 0 14px;
+    color: #8a949f;
+}
+
+.rs-login-modal__or::before,
+.rs-login-modal__or::after {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.rs-login-modal .rs-login-modal__google-below {
+    width: 318px;
+    height: 46px;
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    background: #141619;
+    color: #fff;
+}
+
+.rs-login-modal .rs-login-modal__google-below:hover {
+    background: #1b1f23;
+}
+
+.rs-login-modal .rs-login-modal__google-below .LoginModal_login_text__3ZrIq {
+    margin-left: 10px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.rs-login-modal .LoginModal_protocol__jVDhl {
+    width: 318px;
+    margin-top: 24px;
+    padding-top: 0;
+    color: #7f8995;
+    font-size: 11px;
+    line-height: 17px;
+}
+
+.rs-login-modal .LoginModal_protocol__jVDhl a {
+    color: var(--rs-brand);
+    text-decoration: none;
+}
+
+.rs-login-modal__account-switch {
+    margin-top: 16px;
+    color: #9da7b2;
+    font-size: 13px;
+}
+
+.rs-login-modal__account-switch button {
+    color: var(--rs-brand);
+}
+
+@media (max-width: 767px) {
+    .rs-login-modal__dialog {
+        width: calc(100vw - 28px) !important;
+        max-width: 400px !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: calc(100dvh - 24px) !important;
+        overflow-y: auto;
+    }
+
+    .rs-login-modal .LoginModal_login_body__DH86w.rs-login-modal__body-panel {
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 32px 20px 24px !important;
+    }
+
+    .rs-login-modal .LoginModal_close_btn__KOxVA {
+        top: 14px;
+        right: 14px;
+    }
+
+    .rs-login-modal__auth-subtitle,
+    .rs-login-modal__email-fields,
+    .rs-login-modal__login-links,
+    .rs-login-modal__email-submit,
+    .rs-login-modal__or,
+    .rs-login-modal__google-below {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}

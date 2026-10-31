@@ -1,7 +1,7 @@
 import { FormattedMessage, useIntl } from 'react-intl';
 import { Navigate, useNavigate } from 'react-router';
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Loader2, X } from 'lucide-react';
@@ -34,6 +34,7 @@ import '@/styles/login-modal-reelshort-pc.scss';
 
 type PcLoginStep = 'providers' | 'email';
 type EmailAuthMode = 'login' | 'register';
+type LoginCredentialMode = 'password' | 'forgot';
 
 type LoginVariant = 'h5' | 'pc';
 
@@ -57,6 +58,23 @@ function useLoginBase(
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
+    const [loginCredentialMode, setLoginCredentialMode] = useState<LoginCredentialMode>('password');
+    const [emailCode, setEmailCode] = useState('');
+    const [emailCodeSending, setEmailCodeSending] = useState(false);
+    const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+    const [resetPassword, setResetPassword] = useState('');
+    const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+    const [mailCodeExpireAt, setMailCodeExpireAt] = useState(() => Number(localStorage.getItem('mail-code-expire') ?? 0));
+    const [countdownNow, setCountdownNow] = useState(Date.now());
+
+    const emailCodeSeconds = Math.max(0, Math.ceil((mailCodeExpireAt - countdownNow) / 1000));
+
+    useEffect(() => {
+        if (mailCodeExpireAt <= Date.now()) return;
+        setCountdownNow(Date.now());
+        const timer = window.setInterval(() => setCountdownNow(Date.now()), 1000);
+        return () => window.clearInterval(timer);
+    }, [mailCodeExpireAt]);
 
     const isPcVariant = variant === 'pc';
     const profilePathAfterLogin = isPcVariant ? '/profile?tab=topup' : '/profile';
@@ -81,6 +99,7 @@ function useLoginBase(
 
     function handleToggleEmailLogin() {
         setEmailAuthMode('login');
+        setLoginCredentialMode('password');
         if (isPcVariant) {
             setPcStep('email');
         } else {
@@ -121,6 +140,9 @@ function useLoginBase(
     async function handleRegister() {
         const normalizedEmail = email.trim().toLowerCase();
         if (!emailVerify(normalizedEmail)) return toast.error(intl.formatMessage({ id: 'invalid_email' }));
+        if (!/^\d{6}$/.test(emailCode.trim())) {
+            return toast.error(intl.formatMessage({ id: 'invalid_email_code' }));
+        }
         if (registerPassword.length < 6) {
             return toast.error(intl.formatMessage({ id: 'register_password_invalid', defaultMessage: '密码至少需要 6 位' }));
         }
@@ -136,8 +158,9 @@ function useLoginBase(
                 loading: false,
                 data: {
                     email: normalizedEmail,
+                    code: emailCode.trim(),
                     password: registerPassword,
-                    password2: registerPassword,
+                    password2: registerPasswordConfirm,
                     ...getRegistrationReferralPayload(),
                     ...fromSourceForLogin(),
                 },
@@ -170,8 +193,10 @@ function useLoginBase(
     }
 
     async function handleSubmit() {
-        const normalizedEmail = email.trim().toLowerCase();
-        if (!emailVerify(normalizedEmail)) return toast.error(intl.formatMessage({ id: 'invalid_email' }));
+        const account = email.trim();
+        if (!account) {
+            return toast.error(intl.formatMessage({ id: 'account_required', defaultMessage: '请输入账号' }));
+        }
         if (loginPassword.length < 6) {
             return toast.error(intl.formatMessage({ id: 'register_password_invalid', defaultMessage: '密码至少需要 6 位' }));
         }
@@ -182,7 +207,7 @@ function useLoginBase(
             const result = await api<{ [key: string]: unknown }>('login/email', {
                 method: 'post',
                 data: {
-                    email: normalizedEmail,
+                    email: account,
                     password: loginPassword,
                     anonymous_id: '',
                     ...fromSourceForLogin(),
@@ -212,24 +237,118 @@ function useLoginBase(
         setLoginPassword(e.currentTarget.value);
     }
 
+    function handleResetPasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setResetPassword(e.currentTarget.value);
+    }
+
+    function handleResetPasswordConfirmChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setResetPasswordConfirm(e.currentTarget.value);
+    }
+
+    function handleEmailCodeChange(e: React.ChangeEvent<HTMLInputElement>) {
+        setEmailCode(e.currentTarget.value.replace(/\D/g, '').slice(0, 6));
+    }
+
+    function handleForgotPassword() {
+        setLoginCredentialMode('forgot');
+    }
+
+    async function handleResetPassword() {
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!emailVerify(normalizedEmail)) {
+            return toast.error(intl.formatMessage({ id: 'invalid_email' }));
+        }
+        if (!/^\d{6}$/.test(emailCode.trim())) {
+            return toast.error(intl.formatMessage({ id: 'invalid_email_code' }));
+        }
+        if (resetPassword.length < 6) {
+            return toast.error(intl.formatMessage({ id: 'register_password_invalid', defaultMessage: '密码至少需要 6 位' }));
+        }
+        if (resetPassword !== resetPasswordConfirm) {
+            return toast.error(intl.formatMessage({ id: 'register_password_mismatch', defaultMessage: '两次输入的密码不一致' }));
+        }
+        if (passwordResetLoading) return;
+
+        setPasswordResetLoading(true);
+        try {
+            const result = await api('forget/password', {
+                method: 'post',
+                loading: false,
+                data: {
+                    email: normalizedEmail,
+                    code: emailCode.trim(),
+                    password: resetPassword,
+                },
+            });
+            if (result.c !== 0) return;
+
+            toast.success(intl.formatMessage({
+                id: 'password_reset_success',
+                defaultMessage: '密码重置成功，请使用新密码登录',
+            }));
+            setLoginCredentialMode('password');
+            setLoginPassword('');
+            setEmailCode('');
+            setResetPassword('');
+            setResetPasswordConfirm('');
+        } finally {
+            setPasswordResetLoading(false);
+        }
+    }
+
+    async function handleSendEmailCode() {
+        if (emailCodeSending || emailCodeSeconds > 0) return;
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!emailVerify(normalizedEmail)) {
+            return toast.error(intl.formatMessage({ id: 'invalid_email' }));
+        }
+
+        setEmailCodeSending(true);
+        try {
+            const result = await api('login/email/code', {
+                method: 'post',
+                data: {
+                    email: normalizedEmail,
+                    scene: emailAuthMode === 'register' ? 'register' : 'reset_password',
+                },
+                loading: false,
+            });
+            if (result.c !== 0) return;
+
+            const expireAt = Date.now() + 60_000;
+            localStorage.setItem('mail-code-expire', String(expireAt));
+            setCountdownNow(Date.now());
+            setMailCodeExpireAt(expireAt);
+            toast.success(intl.formatMessage({ id: 'email_code_sended' }));
+        } finally {
+            setEmailCodeSending(false);
+        }
+    }
+
     async function handleGoogleSignin() {
         try {
             loadingStore.show();
             const flutter = (window as unknown as {
-                flutter_inappwebview?: { callHandler: (name: string, ...args: unknown[]) => Promise<any> };
+                flutter_inappwebview?: { callHandler: (name: string, ...args: unknown[]) => Promise<unknown> };
             }).flutter_inappwebview;
             if (!flutter) {
                 loadingStore.hide();
                 return;
             }
             await flutter.callHandler('googleSignin');
-            let detail: {
+            const detail: {
                 uid: string;
                 avatar: string;
                 email: string;
                 name: string;
                 anonymous: boolean;
-            } = await flutter.callHandler('currentUser');
+            } = await flutter.callHandler('currentUser') as {
+                uid: string;
+                avatar: string;
+                email: string;
+                name: string;
+                anonymous: boolean;
+            };
             if (!detail.uid) {
                 loadingStore.hide();
                 return;
@@ -384,6 +503,14 @@ function useLoginBase(
         registerPassword,
         registerPasswordConfirm,
         loginPassword,
+        loginCredentialMode,
+        setLoginCredentialMode,
+        emailCode,
+        emailCodeSeconds,
+        emailCodeSending,
+        passwordResetLoading,
+        resetPassword,
+        resetPasswordConfirm,
         emailOpen,
         setEmailOpen,
         pcStep,
@@ -401,6 +528,12 @@ function useLoginBase(
         handleRegisterPasswordChange,
         handleRegisterPasswordConfirmChange,
         handleLoginPasswordChange,
+        handleResetPasswordChange,
+        handleResetPasswordConfirmChange,
+        handleEmailCodeChange,
+        handleForgotPassword,
+        handleResetPassword,
+        handleSendEmailCode,
         handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
@@ -425,6 +558,14 @@ export function PcLoginDialog({
         registerPassword,
         registerPasswordConfirm,
         loginPassword,
+        loginCredentialMode,
+        setLoginCredentialMode,
+        emailCode,
+        emailCodeSeconds,
+        emailCodeSending,
+        passwordResetLoading,
+        resetPassword,
+        resetPasswordConfirm,
         pcStep,
         handleToggleEmailLogin,
         handleOpenEmailRegister,
@@ -439,10 +580,17 @@ export function PcLoginDialog({
         handleRegisterPasswordChange,
         handleRegisterPasswordConfirmChange,
         handleLoginPasswordChange,
+        handleResetPasswordChange,
+        handleResetPasswordConfirmChange,
+        handleEmailCodeChange,
+        handleForgotPassword,
+        handleResetPassword,
+        handleSendEmailCode,
         handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
     } = useLoginBase('pc', { onRequestClose, onLoginSuccess });
+    const isForgotPassword = emailAuthMode === 'login' && loginCredentialMode === 'forgot';
 
     const protocolBlock = (
         <div className="LoginModal_protocol__jVDhl">
@@ -478,7 +626,10 @@ export function PcLoginDialog({
                 hideCloseButton
                 contentPreset="plain"
                 overlayClassName="rs-login-modal__overlay"
-                className="rs-login-modal__dialog rs-login-modal LoginModal_login_modal__oygOe"
+                className={cn(
+                    'rs-login-modal__dialog rs-login-modal LoginModal_login_modal__oygOe',
+                    isForgotPassword && 'rs-login-modal__dialog--forgot',
+                )}
                 onEscapeKeyDown={handlePcDialogEscape}
                 onPointerDownOutside={handlePcDialogOutside}
             >
@@ -567,37 +718,113 @@ export function PcLoginDialog({
                         </>
                     ) : (
                         <>
-                            <div className="rs-login-modal__auth-tabs" role="tablist">
-                                <button type="button" className={emailAuthMode === 'login' ? 'is-active' : ''} onClick={() => setEmailAuthMode('login')}>
-                                    <FormattedMessage id="login" />
-                                </button>
-                                <button type="button" className={emailAuthMode === 'register' ? 'is-active' : ''} onClick={() => setEmailAuthMode('register')}>
-                                    <FormattedMessage id="register" defaultMessage="注册" />
-                                </button>
-                            </div>
+                            <h2 className={cn('rs-login-modal__auth-title', isForgotPassword && 'is-forgot')}>
+                                {emailAuthMode === 'register'
+                                    ? <FormattedMessage id="register" defaultMessage="注册" />
+                                    : isForgotPassword
+                                        ? <FormattedMessage id="forgot_password_title" defaultMessage="忘记密码" />
+                                        : <FormattedMessage id="login" />}
+                            </h2>
+                            {isForgotPassword ? (
+                                <p className="rs-login-modal__auth-subtitle">
+                                    <FormattedMessage id="forgot_password_subtitle" defaultMessage="使用邮箱验证码验证身份并设置新密码" />
+                                </p>
+                            ) : null}
                             <div className="rs-login-modal__email-fields">
+                                {isForgotPassword ? (
+                                    <div className="rs-login-modal__reset-section-title">
+                                        <FormattedMessage id="reset_verify_email" defaultMessage="验证邮箱" />
+                                    </div>
+                                ) : null}
                                 <div className="rs-login-modal__email-field">
                                     <input
                                         className="rs-login-modal__email-input"
-                                        type="email"
+                                        type={emailAuthMode === 'login' && loginCredentialMode === 'password' ? 'text' : 'email'}
                                         value={email}
                                         onChange={handleEmailChange}
-                                        autoComplete="email"
-                                        placeholder={intl.formatMessage({ id: 'email_placeholder' })}
+                                        autoComplete={emailAuthMode === 'login' && loginCredentialMode === 'password' ? 'username' : 'email'}
+                                        placeholder={intl.formatMessage(emailAuthMode === 'login' && loginCredentialMode === 'password'
+                                            ? { id: 'account_placeholder', defaultMessage: '请输入邮箱或账号' }
+                                            : { id: 'email_placeholder' })}
                                         maxLength={30}
                                     />
                                 </div>
-                                {emailAuthMode === 'login' ? <div className="rs-login-modal__email-field">
-                                    <input
-                                        className="rs-login-modal__email-input"
-                                        type="password"
-                                        value={loginPassword}
-                                        onChange={handleLoginPasswordChange}
-                                        autoComplete="current-password"
-                                        placeholder={intl.formatMessage({ id: 'password_placeholder', defaultMessage: '请输入密码' })}
-                                        maxLength={72}
-                                    />
-                                </div> : (
+                                {emailAuthMode === 'register' ? (
+                                    <div className="rs-login-modal__email-field rs-login-modal__code-field">
+                                        <input
+                                            className="rs-login-modal__email-input"
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={emailCode}
+                                            onChange={handleEmailCodeChange}
+                                            autoComplete="one-time-code"
+                                            placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                                            maxLength={6}
+                                        />
+                                        <button type="button" className="rs-login-modal__email-send" onClick={() => void handleSendEmailCode()} disabled={emailCodeSending || emailCodeSeconds > 0}>
+                                            {emailCodeSending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : emailCodeSeconds > 0 ? `${emailCodeSeconds}s` : <FormattedMessage id="send_code" />}
+                                        </button>
+                                    </div>
+                                ) : null}
+                                {isForgotPassword ? (
+                                    <>
+                                        <div className="rs-login-modal__email-field rs-login-modal__code-field">
+                                            <input
+                                                className="rs-login-modal__email-input"
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={emailCode}
+                                                onChange={handleEmailCodeChange}
+                                                autoComplete="one-time-code"
+                                                placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                                                maxLength={6}
+                                            />
+                                            <button type="button" className="rs-login-modal__email-send" onClick={() => void handleSendEmailCode()} disabled={emailCodeSending || emailCodeSeconds > 0}>
+                                                {emailCodeSending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : emailCodeSeconds > 0 ? `${emailCodeSeconds}s` : <FormattedMessage id="send_code" />}
+                                            </button>
+                                        </div>
+                                        <div className="rs-login-modal__reset-section-title rs-login-modal__reset-section-title--password">
+                                            <FormattedMessage id="reset_set_password" defaultMessage="设置新密码" />
+                                        </div>
+                                        <div className="rs-login-modal__email-field">
+                                            <input
+                                                className="rs-login-modal__email-input"
+                                                type="password"
+                                                value={resetPassword}
+                                                onChange={handleResetPasswordChange}
+                                                autoComplete="new-password"
+                                                placeholder={intl.formatMessage({ id: 'reset_password_placeholder', defaultMessage: '请输入新密码（至少 6 位）' })}
+                                                maxLength={72}
+                                            />
+                                        </div>
+                                        <div className="rs-login-modal__email-field">
+                                            <input
+                                                className="rs-login-modal__email-input"
+                                                type="password"
+                                                value={resetPasswordConfirm}
+                                                onChange={handleResetPasswordConfirmChange}
+                                                autoComplete="new-password"
+                                                placeholder={intl.formatMessage({ id: 'reset_password_confirm_placeholder', defaultMessage: '请再次输入新密码' })}
+                                                maxLength={72}
+                                            />
+                                        </div>
+                                    </>
+                                ) : null}
+                                {emailAuthMode === 'login' ? (
+                                    loginCredentialMode === 'forgot' ? null : (
+                                        <div className="rs-login-modal__email-field">
+                                            <input
+                                                className="rs-login-modal__email-input"
+                                                type="password"
+                                                value={loginPassword}
+                                                onChange={handleLoginPasswordChange}
+                                                autoComplete="current-password"
+                                                placeholder={intl.formatMessage({ id: 'password_placeholder', defaultMessage: '请输入密码' })}
+                                                maxLength={72}
+                                            />
+                                        </div>
+                                    )
+                                ) : (
                                     <div className="rs-login-modal__email-field">
                                         <input
                                             className="rs-login-modal__email-input"
@@ -624,38 +851,60 @@ export function PcLoginDialog({
                                     </div>
                                 ) : null}
                             </div>
+                            {emailAuthMode === 'login' && !isForgotPassword ? (
+                                <div className="rs-login-modal__login-links">
+                                    <button type="button" onClick={handleForgotPassword}>
+                                        <FormattedMessage id="forgot_password" defaultMessage="忘记密码？" />
+                                    </button>
+                                </div>
+                            ) : null}
                             <button
                                 type="button"
                                 className="rs-login-modal__email-submit inline-flex items-center justify-center gap-2"
-                                disabled={emailSubmitLoading || registerSubmitLoading}
-                                aria-busy={emailSubmitLoading || registerSubmitLoading}
-                                onClick={() => void (emailAuthMode === 'login' ? handleSubmit() : handleRegister())}
+                                disabled={emailSubmitLoading || registerSubmitLoading || passwordResetLoading}
+                                aria-busy={emailSubmitLoading || registerSubmitLoading || passwordResetLoading}
+                                onClick={() => void (isForgotPassword ? handleResetPassword() : emailAuthMode === 'login' ? handleSubmit() : handleRegister())}
                             >
-                                {emailSubmitLoading || registerSubmitLoading ? (
+                                {emailSubmitLoading || registerSubmitLoading || passwordResetLoading ? (
                                     <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
                                 ) : null}
-                                {emailAuthMode === 'login' ? <FormattedMessage id="login" /> : <FormattedMessage id="register" defaultMessage="注册" />}
+                                {emailAuthMode === 'register'
+                                    ? <FormattedMessage id="register" defaultMessage="注册" />
+                                    : isForgotPassword
+                                        ? <FormattedMessage id="reset_password" defaultMessage="重置密码" />
+                                        : <FormattedMessage id="login" />}
                             </button>
-                            <div className="rs-login-modal__or"><span>{intl.formatMessage({ id: 'or', defaultMessage: '或' })}</span></div>
-                            <button
-                                type="button"
-                                className={cn(
-                                    'LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google rs-login-modal__google-below',
-                                    oauthPopupLoading && 'pointer-events-none opacity-60',
-                                )}
-                                disabled={oauthPopupLoading}
-                                aria-busy={oauthPopupLoading}
-                                onClick={
-                                    (window as unknown as { flutter_inappwebview?: unknown })
-                                        .flutter_inappwebview !== undefined
-                                        ? handleGoogleSignin
-                                        : () => void handleGoogleSigninPopup()
-                                }
-                            >
-                                <div className="LoginModal_login_icon__Huj9u"><img src={loginPcGoogle} alt="" /></div>
-                                <div className="LoginModal_login_text__3ZrIq"><FormattedMessage id="login_google" /></div>
-                            </button>
-                            {protocolBlock}
+                            {!isForgotPassword ? (
+                                <>
+                                    <div className="rs-login-modal__or"><span>{intl.formatMessage({ id: 'or', defaultMessage: '或' })}</span></div>
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            'LoginModal_login_btn_item__FxNs7 LoginModal_login_btn_item__FxNs7--google rs-login-modal__google-below',
+                                            oauthPopupLoading && 'pointer-events-none opacity-60',
+                                        )}
+                                        disabled={oauthPopupLoading}
+                                        aria-busy={oauthPopupLoading}
+                                        onClick={
+                                            (window as unknown as { flutter_inappwebview?: unknown })
+                                                .flutter_inappwebview !== undefined
+                                                ? handleGoogleSignin
+                                                : () => void handleGoogleSigninPopup()
+                                        }
+                                    >
+                                        <div className="LoginModal_login_icon__Huj9u"><img src={loginPcGoogle} alt="" /></div>
+                                        <div className="LoginModal_login_text__3ZrIq"><FormattedMessage id="login_google" /></div>
+                                    </button>
+                                    {protocolBlock}
+                                </>
+                            ) : null}
+                            <div className="rs-login-modal__account-switch">
+                                {emailAuthMode === 'register'
+                                    ? <><FormattedMessage id="already_have_account" defaultMessage="已有账号？" /> <button type="button" onClick={() => { setEmailAuthMode('login'); setLoginCredentialMode('password'); }}><FormattedMessage id="login" /></button></>
+                                    : isForgotPassword
+                                        ? <><FormattedMessage id="remembered_password" defaultMessage="想起密码了？" /> <button type="button" onClick={() => setLoginCredentialMode('password')}><FormattedMessage id="back_to_login" defaultMessage="返回登录" /></button></>
+                                        : <><FormattedMessage id="no_account" defaultMessage="还没有账号？" /> <button type="button" onClick={() => setEmailAuthMode('register')}><FormattedMessage id="register" defaultMessage="注册" /></button></>}
+                            </div>
                         </>
                     )}
                 </div>
@@ -675,6 +924,14 @@ export default function Component() {
         registerPassword,
         registerPasswordConfirm,
         loginPassword,
+        loginCredentialMode,
+        setLoginCredentialMode,
+        emailCode,
+        emailCodeSeconds,
+        emailCodeSending,
+        passwordResetLoading,
+        resetPassword,
+        resetPasswordConfirm,
         handleSubmit,
         emailSubmitLoading,
         registerSubmitLoading,
@@ -683,10 +940,17 @@ export default function Component() {
         handleRegisterPasswordChange,
         handleRegisterPasswordConfirmChange,
         handleLoginPasswordChange,
+        handleResetPasswordChange,
+        handleResetPasswordConfirmChange,
+        handleEmailCodeChange,
+        handleForgotPassword,
+        handleResetPassword,
+        handleSendEmailCode,
         handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
     } = useLoginBase('h5');
+    const isForgotPassword = emailAuthMode === 'login' && loginCredentialMode === 'forgot';
 
     if (isPc) {
         return <Navigate to="/profile" replace state={{ openPcLogin: true }} />;
@@ -707,95 +971,172 @@ export default function Component() {
                 </button>
 
                 <div className="LoginPage_login_body___4R_e rs-login__body">
-                    <div className="LoginPage_logo__mi0_p rs-login__logoWrap">
-                        <img src={BRAND_LOGO_SRC} alt="" />
-                    </div>
-                    <div className="LoginPage_title__cjdzC rs-login__title">{BRAND_DISPLAY_NAME}</div>
-                    <p className="LoginPage_text__J0MII rs-login__subtitle">
-                        <FormattedMessage id="welcome_to_site" values={{ site: BRAND_DISPLAY_NAME }} />
-                    </p>
+                    <h1 className={cn('rs-login__authTitle', isForgotPassword && 'is-forgot')}>
+                        {emailAuthMode === 'register'
+                            ? <FormattedMessage id="register" defaultMessage="注册" />
+                            : isForgotPassword
+                                ? <FormattedMessage id="forgot_password_title" defaultMessage="忘记密码" />
+                                : <FormattedMessage id="login" />}
+                    </h1>
+                    {isForgotPassword ? (
+                        <p className="rs-login__authSubtitle">
+                            <FormattedMessage id="forgot_password_subtitle" defaultMessage="使用邮箱验证码验证身份并设置新密码" />
+                        </p>
+                    ) : null}
 
                     <div className="rs-login__inlineAuth">
-                        <div className="rs-login__authTabs" role="tablist">
-                            <button type="button" className={emailAuthMode === 'login' ? 'is-active' : ''} onClick={() => setEmailAuthMode('login')}>
-                                <FormattedMessage id="login" />
-                            </button>
-                            <button type="button" className={emailAuthMode === 'register' ? 'is-active' : ''} onClick={() => setEmailAuthMode('register')}>
-                                <FormattedMessage id="register" defaultMessage="注册" />
-                            </button>
-                        </div>
-                        <div className="rs-login__drawerField">
-                            <input onChange={handleEmailChange} value={email} type="email" autoFocus maxLength={30} className="rs-login__drawerInput" placeholder={intl.formatMessage({ id: 'email_placeholder' })} />
-                        </div>
+                        {isForgotPassword ? (
+                            <div className="rs-login__resetSectionTitle">
+                                <FormattedMessage id="reset_verify_email" defaultMessage="验证邮箱" />
+                            </div>
+                        ) : null}
                         <div className="rs-login__drawerField">
                             <input
-                                onChange={emailAuthMode === 'login' ? handleLoginPasswordChange : handleRegisterPasswordChange}
-                                value={emailAuthMode === 'login' ? loginPassword : registerPassword}
-                                type="password"
-                                autoComplete={emailAuthMode === 'login' ? 'current-password' : 'new-password'}
-                                maxLength={72}
+                                onChange={handleEmailChange}
+                                value={email}
+                                type={emailAuthMode === 'login' && loginCredentialMode === 'password' ? 'text' : 'email'}
+                                autoComplete={emailAuthMode === 'login' && loginCredentialMode === 'password' ? 'username' : 'email'}
+                                autoFocus
+                                maxLength={30}
                                 className="rs-login__drawerInput"
-                                placeholder={intl.formatMessage({ id: emailAuthMode === 'login' ? 'password_placeholder' : 'register_password_placeholder', defaultMessage: emailAuthMode === 'login' ? '请输入密码' : '请输入密码（至少 6 位）' })}
+                                placeholder={intl.formatMessage(emailAuthMode === 'login' && loginCredentialMode === 'password'
+                                    ? { id: 'account_placeholder', defaultMessage: '请输入邮箱或账号' }
+                                    : { id: 'email_placeholder' })}
                             />
                         </div>
+                        {emailAuthMode === 'register' ? (
+                            <div className="rs-login__drawerField rs-login__codeField">
+                                <input
+                                    onChange={handleEmailCodeChange}
+                                    value={emailCode}
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="one-time-code"
+                                    maxLength={6}
+                                    className="rs-login__drawerInput"
+                                    placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                                />
+                                <button type="button" className="rs-login__drawerSend" onClick={() => void handleSendEmailCode()} disabled={emailCodeSending || emailCodeSeconds > 0}>
+                                    {emailCodeSending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : emailCodeSeconds > 0 ? `${emailCodeSeconds}s` : <FormattedMessage id="send_code" />}
+                                </button>
+                            </div>
+                        ) : null}
+                        {isForgotPassword ? (
+                            <>
+                                <div className="rs-login__drawerField rs-login__codeField">
+                                    <input
+                                        onChange={handleEmailCodeChange}
+                                        value={emailCode}
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
+                                        maxLength={6}
+                                        className="rs-login__drawerInput"
+                                        placeholder={intl.formatMessage({ id: 'code_placeholder' })}
+                                    />
+                                    <button type="button" className="rs-login__drawerSend" onClick={() => void handleSendEmailCode()} disabled={emailCodeSending || emailCodeSeconds > 0}>
+                                        {emailCodeSending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : emailCodeSeconds > 0 ? `${emailCodeSeconds}s` : <FormattedMessage id="send_code" />}
+                                    </button>
+                                </div>
+                                <div className="rs-login__resetSectionTitle rs-login__resetSectionTitle--password">
+                                    <FormattedMessage id="reset_set_password" defaultMessage="设置新密码" />
+                                </div>
+                                <div className="rs-login__drawerField">
+                                    <input
+                                        onChange={handleResetPasswordChange}
+                                        value={resetPassword}
+                                        type="password"
+                                        autoComplete="new-password"
+                                        maxLength={72}
+                                        className="rs-login__drawerInput"
+                                        placeholder={intl.formatMessage({ id: 'reset_password_placeholder', defaultMessage: '请输入新密码（至少 6 位）' })}
+                                    />
+                                </div>
+                                <div className="rs-login__drawerField">
+                                    <input
+                                        onChange={handleResetPasswordConfirmChange}
+                                        value={resetPasswordConfirm}
+                                        type="password"
+                                        autoComplete="new-password"
+                                        maxLength={72}
+                                        className="rs-login__drawerInput"
+                                        placeholder={intl.formatMessage({ id: 'reset_password_confirm_placeholder', defaultMessage: '请再次输入新密码' })}
+                                    />
+                                </div>
+                            </>
+                        ) : null}
+                        {isForgotPassword ? null : (
+                            <div className="rs-login__drawerField">
+                                <input
+                                    onChange={emailAuthMode === 'login' ? handleLoginPasswordChange : handleRegisterPasswordChange}
+                                    value={emailAuthMode === 'login' ? loginPassword : registerPassword}
+                                    type="password"
+                                    autoComplete={emailAuthMode === 'login' ? 'current-password' : 'new-password'}
+                                    maxLength={72}
+                                    className="rs-login__drawerInput"
+                                    placeholder={intl.formatMessage({ id: emailAuthMode === 'login' ? 'password_placeholder' : 'register_password_placeholder', defaultMessage: emailAuthMode === 'login' ? '请输入密码' : '请输入密码（至少 6 位）' })}
+                                />
+                            </div>
+                        )}
                         {emailAuthMode === 'register' ? (
                             <div className="rs-login__drawerField">
                                 <input onChange={handleRegisterPasswordConfirmChange} value={registerPasswordConfirm} type="password" autoComplete="new-password" maxLength={72} className="rs-login__drawerInput" placeholder="请再次输入密码" />
                             </div>
                         ) : null}
-                        <Button className="rs-login__submit" onClick={() => void (emailAuthMode === 'login' ? handleSubmit() : handleRegister())} disabled={emailSubmitLoading || registerSubmitLoading}>
-                            {emailSubmitLoading || registerSubmitLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden /> : null}
-                            {emailAuthMode === 'login' ? <FormattedMessage id="login" /> : <FormattedMessage id="register" defaultMessage="注册" />}
+                        {emailAuthMode === 'login' && !isForgotPassword ? (
+                            <div className="rs-login__loginLinks">
+                                <button type="button" onClick={handleForgotPassword}>
+                                    <FormattedMessage id="forgot_password" defaultMessage="忘记密码？" />
+                                </button>
+                            </div>
+                        ) : null}
+                        <Button className="rs-login__submit" onClick={() => void (isForgotPassword ? handleResetPassword() : emailAuthMode === 'login' ? handleSubmit() : handleRegister())} disabled={emailSubmitLoading || registerSubmitLoading || passwordResetLoading}>
+                            {emailSubmitLoading || registerSubmitLoading || passwordResetLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden /> : null}
+                            {emailAuthMode === 'register'
+                                ? <FormattedMessage id="register" defaultMessage="注册" />
+                                : isForgotPassword
+                                    ? <FormattedMessage id="reset_password" defaultMessage="重置密码" />
+                                    : <FormattedMessage id="login" />}
                         </Button>
-                        <div className="rs-login__divider"><span>或</span></div>
-                        <div
-                            id="google"
-                            className={cn(
-                                'LoginPage_login_btn_item__OkeV1 rs-login__btn',
-                                oauthPopupLoading && 'pointer-events-none opacity-60',
-                            )}
-                            role="button"
-                            tabIndex={oauthPopupLoading ? -1 : 0}
-                            onClick={() => {
-                                if (oauthPopupLoading) {
-                                    return;
-                                }
-                                if (
-                                    (window as unknown as { flutter_inappwebview?: unknown })
-                                        .flutter_inappwebview !== undefined
-                                ) {
-                                    void handleGoogleSignin();
-                                } else {
-                                    void handleGoogleSigninPopup();
-                                }
-                            }}
-                            onKeyDown={(e) => {
-                                if (oauthPopupLoading) {
-                                    return;
-                                }
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    if (
-                                        (window as unknown as { flutter_inappwebview?: unknown })
-                                            .flutter_inappwebview !== undefined
-                                    ) {
-                                        void handleGoogleSignin();
-                                    } else {
-                                        void handleGoogleSigninPopup();
-                                    }
-                                }
-                            }}
-                        >
-                            <div className="LoginPage_login_icon__XK3jz">
-                                <img src={google} alt="" />
-                            </div>
-                            <div className="LoginPage_login_text__NWSSM">
-                                <FormattedMessage id="login_google" />
-                            </div>
-                        </div>
+                        {!isForgotPassword ? (
+                            <>
+                                <div className="rs-login__divider"><span>或</span></div>
+                                <div
+                                    id="google"
+                                    className={cn(
+                                        'LoginPage_login_btn_item__OkeV1 rs-login__btn',
+                                        oauthPopupLoading && 'pointer-events-none opacity-60',
+                                    )}
+                                    role="button"
+                                    tabIndex={oauthPopupLoading ? -1 : 0}
+                                    onClick={() => {
+                                        if (oauthPopupLoading) return;
+                                        if ((window as unknown as { flutter_inappwebview?: unknown }).flutter_inappwebview !== undefined) {
+                                            void handleGoogleSignin();
+                                        } else {
+                                            void handleGoogleSigninPopup();
+                                        }
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (oauthPopupLoading) return;
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            if ((window as unknown as { flutter_inappwebview?: unknown }).flutter_inappwebview !== undefined) {
+                                                void handleGoogleSignin();
+                                            } else {
+                                                void handleGoogleSigninPopup();
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <div className="LoginPage_login_icon__XK3jz"><img src={google} alt="" /></div>
+                                    <div className="LoginPage_login_text__NWSSM"><FormattedMessage id="login_google" /></div>
+                                </div>
+                            </>
+                        ) : null}
                     </div>
 
-                    <div className="LoginPage_protocol__aQxLZ rs-login__protocol">
+                    {!isForgotPassword ? <div className="LoginPage_protocol__aQxLZ rs-login__protocol">
                         <FormattedMessage
                             id="protocol"
                             values={{
@@ -811,6 +1152,13 @@ export default function Component() {
                                 ),
                             }}
                         />
+                    </div> : null}
+                    <div className="rs-login__accountSwitch">
+                        {emailAuthMode === 'register'
+                            ? <><FormattedMessage id="already_have_account" defaultMessage="已有账号？" /> <button type="button" onClick={() => { setEmailAuthMode('login'); setLoginCredentialMode('password'); }}><FormattedMessage id="login" /></button></>
+                            : isForgotPassword
+                                ? <><FormattedMessage id="remembered_password" defaultMessage="想起密码了？" /> <button type="button" onClick={() => setLoginCredentialMode('password')}><FormattedMessage id="back_to_login" defaultMessage="返回登录" /></button></>
+                                : <><FormattedMessage id="no_account" defaultMessage="还没有账号？" /> <button type="button" onClick={() => setEmailAuthMode('register')}><FormattedMessage id="register" defaultMessage="注册" /></button></>}
                     </div>
                 </div>
             </div>
