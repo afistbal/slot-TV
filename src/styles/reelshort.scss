@@ -309,6 +309,30 @@ button.reelshort-topnav__benchmark-logo:hover {
     border-color: rgba(212, 168, 83, 0.45);
 }
 
+.reelshort-topnav__login-button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-width: 58px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: var(--rs-brand-gradient);
+    padding: 0 15px;
+    color: var(--rs-brand-foreground);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 5px 16px rgb(124 77 31 / 18%), inset 0 1px 0 rgb(255 255 255 / 28%);
+    transition: filter .18s ease, transform .14s ease;
+}
+
+.reelshort-topnav__login-button:hover { filter: brightness(1.045); }
+.reelshort-topnav__login-button:active { transform: scale(.97); }
+.reelshort-topnav__login-button:focus-visible { outline: 2px solid #f5c87f; outline-offset: 2px; }
+
 @media (max-width: 399px) {
     .reelshort-topnav__benchmark-row {
         gap: 3px;
@@ -409,6 +433,13 @@ button.reelshort-topnav__benchmark-logo:hover {
         width: 30px;
         height: 30px;
         flex: 0 0 30px;
+    }
+
+    .reelshort-topnav__login-button {
+        min-width: 54px;
+        height: 32px;
+        padding: 0 13px;
+        font-size: 12px;
     }
 
     .reelshort-topnav__profile-name {

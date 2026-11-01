@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>充值中心样式提案</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,"Microsoft YaHei",system-ui,sans-serif;background:#090a0c;color:#f5f5f5}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -20%,#322717 0,transparent 40%),#090a0c;padding:28px 16px 48px}
+    button{font:inherit}.review{width:min(100%,760px);margin:auto}.review__head{text-align:center;margin-bottom:18px}.review__head h1{font-size:24px;margin:0 0 8px}.review__head p{margin:0;color:#8f949b;font-size:13px}
+    .picker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px auto 20px;padding:5px;border:1px solid #27292d;border-radius:16px;background:#131416}
+    .picker button{min-height:48px;border:0;border-radius:12px;background:transparent;color:#8d9298;cursor:pointer;font-weight:700}.picker button[aria-selected="true"]{background:linear-gradient(135deg,#f3d084,#c88f35);color:#271a0b;box-shadow:0 7px 18px #a66e2826}
+    .stage{display:none}.stage.is-active{display:block}.sheet{position:relative;overflow:hidden;border:1px solid #303238;border-radius:24px;background:#1e2022;box-shadow:0 25px 70px #0009}.handle{width:46px;height:4px;border-radius:99px;background:#55585c;margin:10px auto 4px}.shell{padding:12px 20px 22px}.top{display:flex;justify-content:space-between;align-items:start}.title h2{margin:0;font-size:20px}.balance{display:flex;align-items:center;gap:5px;margin-top:5px;color:#d8ad5c;font-size:12px}.coin{display:inline-grid;width:14px;height:14px;place-items:center;border-radius:50%;background:linear-gradient(135deg,#ffd66c,#c9871d);color:#47300a;font:900 9px/1 Arial}.close{border:0;background:transparent;color:#7e848b;font-size:26px;line-height:1}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:18px;padding:4px;border-radius:13px;background:#181a1d;border:1px solid #2c2f33}.tabs button{display:grid;min-height:42px;place-items:center;border:0;border-radius:10px;background:transparent;color:#81868d;font-size:14px;font-weight:700;cursor:pointer}.tabs .active{color:#24180a;background:linear-gradient(135deg,#f4d287,#ce963e)}
+    .tab-panel{display:none}.tab-panel.is-active{display:block}.note{margin:12px 0;padding:9px 12px;border-radius:11px;color:#d9af62;background:#30291f;border:1px solid #745a2b;text-align:center;font-size:12px;font-weight:700}.period{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:0 0 10px;padding:4px;border:1px solid #2e3135;border-radius:12px;background:#181a1d}.period span{display:grid;min-height:34px;place-items:center;border-radius:9px;color:#7f858c;font-size:12px;font-weight:700}.period .active{background:#24272b;color:#f0c66e}.period b{color:#d7a74d;font-size:10px}.v1 .seal,.v2 .seal{display:inline-grid;min-width:38px;height:24px;padding:0 7px;place-items:center;border:1px solid #9b7130;border-radius:8px;background:#2d261c;color:#e5b75d;font-size:9px;font-weight:900;letter-spacing:.5px}.v2 .ticket>.seal{height:42px;margin:5px auto 10px;border-radius:12px;font-size:11px}.foot{text-align:center;color:#676d74;font-size:11px;margin:18px 0 0}.demo{position:absolute;right:12px;top:12px;padding:4px 8px;border-radius:999px;background:#ffffff10;color:#858a90;font-size:10px}
+    .buy{border:0;border-radius:9px;padding:8px 13px;background:linear-gradient(135deg,#f2cf82,#cb9138);color:#32210c;font-size:12px;font-weight:800;white-space:nowrap}
+    /* 1 精致金边 */
+    .v1 .packages{display:grid;gap:10px}.v1 .pack{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border:1px solid #303237;border-radius:14px;background:#202225}.v1 .pack.featured{border-color:#c18c38;box-shadow:inset 0 0 0 1px #c18c3833}.v1 .amount{display:flex;align-items:center;gap:9px;color:#e3b65f;font-weight:800}.v1 .amount .coin{width:22px;height:22px;font-size:12px}.v1 .desc{margin:5px 0 0 31px;color:#777d84;font-size:11px}.v1 .price{text-align:right}.v1 .price strong{display:block;margin-bottom:7px;font-size:15px}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#d6a64f;color:#3d280b;font-size:10px;font-weight:800}
+    /* 2 金币卡券 */
+    .v2.sheet{background:linear-gradient(180deg,#181a1d,#121315)}.v2 .note{background:linear-gradient(90deg,#2d2519,#24201a)}.v2 .packages{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.v2 .ticket{position:relative;min-height:178px;padding:17px 12px 12px;border:1px solid #32353a;border-radius:18px;background:linear-gradient(160deg,#24272b,#191b1e);text-align:center}.v2 .ticket.featured{transform:translateY(-3px);border-color:#e1b358;background:linear-gradient(160deg,#32291b,#1a1c1f);box-shadow:0 12px 24px #0005}.v2 .ticket .coin{width:42px;height:42px;margin:5px auto 10px;font-size:20px;box-shadow:0 6px 18px #bd7a2455}.v2 .ticket h3{margin:0;color:#f0c66e;font-size:18px}.v2 .ticket p{min-height:30px;margin:6px 0 11px;color:#747a82;font-size:10px}.v2 .ticket strong{display:block;margin-bottom:8px}.v2 .ticket .buy{width:100%}.v2 .ribbon{position:absolute;top:-8px;left:50%;transform:translateX(-50%);white-space:nowrap}
+    /* 3 金库尊享 */
+    .v3.sheet{background:radial-gradient(circle at 85% 5%,#58411c55,transparent 34%),linear-gradient(180deg,#222326,#151618)}.v3 .vault{display:flex;align-items:center;justify-content:space-between;margin:14px 0;padding:17px;border:1px solid #6c532c;border-radius:16px;background:linear-gradient(110deg,#352c20,#1d1f22 70%)}.v3 .vault small{display:block;color:#9d875d;font-size:11px}.v3 .vault strong{display:block;margin-top:4px;color:#f3cc77;font-size:25px}.v3 .vaultIcon{display:grid;width:56px;height:56px;place-items:center;border:1px solid #a87a31;border-radius:50%;background:radial-gradient(circle,#f4cc73 0 10%,#3b2d18 11% 45%,#17191c 46%);color:#d8a84f;font-size:20px}.v3 .packages{display:grid;gap:9px}.v3 .bar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:11px 13px;border:1px solid #303339;border-radius:13px;background:#1c1e21}.v3 .bar.featured{border-color:#bd8735;background:linear-gradient(90deg,#2c251b,#1c1e21)}.v3 .seal{display:grid;width:38px;height:38px;place-items:center;border-radius:12px;background:#2e261b;color:#e1b45e;font-weight:900}.v3 .bar h3{margin:0;color:#e9c471;font-size:14px}.v3 .bar p{margin:3px 0 0;color:#747a82;font-size:10px}.v3 .pay{text-align:right}.v3 .pay strong{display:block;margin-bottom:5px}
+    .choice{margin-top:14px;text-align:center;color:#d5aa5d;font-size:13px;font-weight:700}
+    @media(max-width:560px){body{padding:12px 8px 30px}.review__head h1{font-size:20px}.picker button{font-size:12px}.shell{padding:10px 14px 18px}.v2 .packages{gap:6px}.v2 .ticket{padding-inline:7px}.v2 .ticket h3{font-size:15px}.buy{padding-inline:9px}.title h2{font-size:18px}}
+  </style>
+</head>
+<body>
+  <main class="review">
+    <header class="review__head"><h1>充值中心 · 3 版视觉方案</h1><p>每版均可切换金币充值与开通会员；套餐金额为视觉示意</p></header>
+    <div class="picker" role="tablist">
+      <button role="tab" aria-selected="true" data-target="v1">1 精致金边</button>
+      <button role="tab" aria-selected="false" data-target="v2">2 金币卡券</button>
+      <button role="tab" aria-selected="false" data-target="v3">3 金库尊享</button>
+    </div>
+
+    <section id="v1" class="stage is-active"><div class="sheet v1"><div class="handle"></div><span class="demo">视觉示意</span><div class="shell">
+      <div class="top"><div class="title"><h2>充值中心</h2><div class="balance"><i class="coin">C</i>余额 25 金币</div></div><button class="close">×</button></div>
+      <div class="tabs" role="tablist"><button class="active" role="tab" aria-selected="true" data-plan-tab="coins">金币充值</button><button role="tab" aria-selected="false" data-plan-tab="vip">开通会员</button></div>
+      <div class="tab-panel is-active" data-plan-panel="coins"><div class="note">首充双倍 · 仅首单一次 · 基础金币 ×2</div><div class="packages">
+        <div class="pack"><div><div class="amount"><i class="coin">C</i>金币小包</div><p class="desc">纯金币充值，不含会员权益</p></div><div class="price"><strong>示意价 A</strong><button class="buy">购买金币</button></div></div>
+        <div class="pack featured"><div><div class="amount"><i class="coin">C</i>金币畅享包 <b class="badge">最受欢迎</b></div><p class="desc">赠送金币信息随接口展示</p></div><div class="price"><strong>示意价 B</strong><button class="buy">购买金币</button></div></div>
+        <div class="pack"><div><div class="amount"><i class="coin">C</i>金币豪华包</div><p class="desc">纯金币充值，不含会员权益</p></div><div class="price"><strong>示意价 C</strong><button class="buy">购买金币</button></div></div>
+      </div><p class="foot">支付宝 / 微信支付 / 银行卡 · 安全支付</p></div>
+      <div class="tab-panel" data-plan-panel="vip"><div class="note">会员每月到账金币 · 解锁会员专享剧 · 评论区专属身份</div><div class="period"><span class="active">月付</span><span>年付 <b>省 20%</b></span></div><div class="packages">
+        <div class="pack"><div><div class="amount"><span class="seal">VIP</span>基础月卡</div><p class="desc">每月到账金币 · 可看会员专享剧</p></div><div class="price"><strong>示意价 A</strong><button class="buy">开通会员</button></div></div>
+        <div class="pack featured"><div><div class="amount"><span class="seal">VIP</span>标准月卡 <b class="badge">最受欢迎</b></div><p class="desc">每月到账金币 · 解锁更多会员权益</p></div><div class="price"><strong>示意价 B</strong><button class="buy">开通会员</button></div></div>
+        <div class="pack"><div><div class="amount"><span class="seal">VIP</span>尊享月卡</div><p class="desc">尊享会员权益 · 套餐信息以接口为准</p></div><div class="price"><strong>示意价 C</strong><button class="buy">开通会员</button></div></div>
+      </div><p class="foot">支付宝 / 微信支付 / 银行卡 · 安全支付</p></div><p class="choice">方案 1：最接近现有结构，细节更精致</p>
+    </div></div></section>
+
+    <section id="v2" class="stage"><div class="sheet v2"><div class="handle"></div><span class="demo">视觉示意</span><div class="shell">
+      <div class="top"><div class="title"><h2>充值中心</h2><div class="balance"><i class="coin">C</i>余额 25 金币</div></div><button class="close">×</button></div>
+      <div class="tabs" role="tablist"><button class="active" role="tab" aria-selected="true" data-plan-tab="coins">金币充值</button><button role="tab" aria-selected="false" data-plan-tab="vip">开通会员</button></div>
+      <div class="tab-panel is-active" data-plan-panel="coins"><div class="note">首充双倍 · 充值越多，奖励越丰厚</div><div class="packages">
+        <div class="ticket"><i class="coin">C</i><h3>金币小包</h3><p>轻量补充金币</p><strong>示意价 A</strong><button class="buy">购买</button></div>
+        <div class="ticket featured"><b class="ribbon badge">最受欢迎</b><i class="coin">C</i><h3>金币畅享包</h3><p>额外赠送以接口为准</p><strong>示意价 B</strong><button class="buy">购买</button></div>
+        <div class="ticket"><i class="coin">C</i><h3>金币豪华包</h3><p>适合连续追剧</p><strong>示意价 C</strong><button class="buy">购买</button></div>
+      </div><p class="foot">安全支付 · 即时到账</p></div>
+      <div class="tab-panel" data-plan-panel="vip"><div class="note">会员每月到账金币 · 解锁会员专享剧 · 评论区专属身份</div><div class="period"><span class="active">月付</span><span>年付 <b>省 20%</b></span></div><div class="packages">
+        <div class="ticket"><span class="seal">VIP</span><h3>基础月卡</h3><p>每月到账金币 · 会员专享剧</p><strong>示意价 A</strong><button class="buy">开通会员</button></div>
+        <div class="ticket featured"><b class="ribbon badge">最受欢迎</b><span class="seal">VIP</span><h3>标准月卡</h3><p>更多金币与会员权益</p><strong>示意价 B</strong><button class="buy">开通会员</button></div>
+        <div class="ticket"><span class="seal">VIP</span><h3>尊享月卡</h3><p>尊享权益以接口为准</p><strong>示意价 C</strong><button class="buy">开通会员</button></div>
+      </div><p class="foot">安全支付 · 即时到账</p></div><p class="choice">方案 2：套餐对比最直观，选择效率最高</p>
+    </div></div></section>
+
+    <section id="v3" class="stage"><div class="sheet v3"><div class="handle"></div><span class="demo">视觉示意</span><div class="shell">
+      <div class="top"><div class="title"><h2>金币金库</h2><div class="balance">充值中心 · 安全支付</div></div><button class="close">×</button></div>
+      <div class="vault"><div><small>我的金币余额</small><strong>25</strong></div><div class="vaultIcon">C</div></div>
+      <div class="tabs" role="tablist"><button class="active" role="tab" aria-selected="true" data-plan-tab="coins">金币充值</button><button role="tab" aria-selected="false" data-plan-tab="vip">开通会员</button></div>
+      <div class="tab-panel is-active" data-plan-panel="coins"><div class="note">首充双倍 · 基础金币 ×2</div><div class="packages">
+        <div class="bar"><span class="seal">C</span><div><h3>金币小包</h3><p>纯金币充值 · 即时到账</p></div><div class="pay"><strong>示意价 A</strong><button class="buy">购买</button></div></div>
+        <div class="bar featured"><span class="seal">C</span><div><h3>金币畅享包 <b class="badge">推荐</b></h3><p>赠送信息由接口动态展示</p></div><div class="pay"><strong>示意价 B</strong><button class="buy">购买</button></div></div>
+        <div class="bar"><span class="seal">C</span><div><h3>金币豪华包</h3><p>适合高频追剧用户</p></div><div class="pay"><strong>示意价 C</strong><button class="buy">购买</button></div></div>
+      </div><p class="foot">支付宝 / 微信支付 / 银行卡</p></div>
+      <div class="tab-panel" data-plan-panel="vip"><div class="note">会员每月到账金币 · 解锁会员专享剧 · 评论区专属身份</div><div class="period"><span class="active">月付</span><span>年付 <b>省 20%</b></span></div><div class="packages">
+        <div class="bar"><span class="seal">VIP</span><div><h3>基础月卡</h3><p>每月到账金币 · 可看会员专享剧</p></div><div class="pay"><strong>示意价 A</strong><button class="buy">开通会员</button></div></div>
+        <div class="bar featured"><span class="seal">VIP</span><div><h3>标准月卡 <b class="badge">推荐</b></h3><p>更多金币与会员权益</p></div><div class="pay"><strong>示意价 B</strong><button class="buy">开通会员</button></div></div>
+        <div class="bar"><span class="seal">VIP</span><div><h3>尊享月卡</h3><p>尊享权益以接口为准</p></div><div class="pay"><strong>示意价 C</strong><button class="buy">开通会员</button></div></div>
+      </div><p class="foot">支付宝 / 微信支付 / 银行卡</p></div><p class="choice">方案 3：品牌感最强，更像高级金币商城</p>
+    </div></div></section>
+  </main>
+  <script>
+    const buttons=[...document.querySelectorAll('.picker button')];
+    buttons.forEach(button=>button.addEventListener('click',()=>{
+      buttons.forEach(item=>item.setAttribute('aria-selected',String(item===button)));
+      document.querySelectorAll('.stage').forEach(stage=>stage.classList.toggle('is-active',stage.id===button.dataset.target));
+    }));
+    document.querySelectorAll('.stage').forEach(stage=>{
+      const planTabs=[...stage.querySelectorAll('[data-plan-tab]')];
+      planTabs.forEach(tab=>tab.addEventListener('click',()=>{
+        planTabs.forEach(item=>{
+          item.classList.toggle('active',item===tab);
+          item.setAttribute('aria-selected',String(item===tab));
+        });
+        stage.querySelectorAll('[data-plan-panel]').forEach(panel=>panel.classList.toggle('is-active',panel.dataset.planPanel===tab.dataset.planTab));
+      }));
+    });
+  </script>
+</body>
+</html>

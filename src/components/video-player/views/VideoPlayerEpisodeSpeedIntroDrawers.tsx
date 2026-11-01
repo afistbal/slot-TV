@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
@@ -57,6 +57,9 @@ type Props = {
     maxTags?: number;
     /** 分集格锁角标；未传则沿用 info 列表 vip/locked */
     resolveEpisodeCellLocked?: (row: IPlayerData['episodes'][number]) => boolean;
+    ratingScore?: number;
+    ratingSubmitting?: boolean;
+    onRate?: (score: number) => void;
     /** PC：倍速底栏挂到 9:16 视频舞台，宽度与视频一致 */
     videoStageRef?: RefObject<HTMLElement | null>;
     anchorSpeedDrawerToVideoStage?: boolean;
@@ -85,6 +88,9 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
     tagsFromBackendOnly = false,
     maxTags,
     resolveEpisodeCellLocked,
+    ratingScore = 0,
+    ratingSubmitting = false,
+    onRate,
     videoStageRef,
     anchorSpeedDrawerToVideoStage = false,
 }: Props) {
@@ -127,8 +133,11 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                         aria-describedby="video-h5-episode-grid"
                     >
                         <DrawerTitle className="video-h5-drawer__title video-h5-drawer__title--episode">
-                            <div className="video-h5-drawer__titleText">
-                                <FormattedMessage id="episode" />
+                            <div className="video-h5-drawer__episodeHeading">
+                                <div className="video-h5-drawer__titleText">{data.info.title}</div>
+                                <div className="video-h5-drawer__episodeMeta">
+                                    共 {episodeCount} 集 · 正在看 EP.{String(currentEpisodeNo).padStart(2, '0')}
+                                </div>
                             </div>
                             <div
                                 className="video-h5-drawer__close"
@@ -144,6 +153,27 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                                 <X aria-hidden />
                             </div>
                         </DrawerTitle>
+                        {onRate ? (
+                            <div className="video-h5-drawer__rating">
+                                <span>给这部剧打分</span>
+                                <div role="radiogroup" aria-label="给这部剧打分">
+                                    {[1, 2, 3, 4, 5].map((score) => (
+                                        <button
+                                            key={score}
+                                            type="button"
+                                            disabled={ratingSubmitting}
+                                            aria-label={`${score} 星`}
+                                            aria-checked={ratingScore >= score}
+                                            role="radio"
+                                            className={cn(ratingScore >= score && 'is-active')}
+                                            onClick={() => onRate(score)}
+                                        >
+                                            <Star />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
                         {episodeTabRanges.length > 1 ? (
                             <div className="video-h5-drawer__episodeTabs" role="tablist">
                                 {episodeTabRanges.map((r, idx) => (

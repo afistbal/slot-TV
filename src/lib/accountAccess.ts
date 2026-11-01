@@ -5,6 +5,7 @@ const ACCOUNT_PROTECTED_FIRST_SEGMENTS = new Set([
     'my-list',
     'profile',
     'search',
+    'settings',
     'shopping',
     'tagsearch',
     'wallet',

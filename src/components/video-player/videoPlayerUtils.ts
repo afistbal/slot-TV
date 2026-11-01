@@ -31,13 +31,10 @@ export function getTagDisplayText(tag: {
     return name || uid || '-';
 }
 
-/** 侧栏收藏数展示：`0` 显示为 `1K`，避免 `0K` */
-export function formatFavoriteCountK(favorite: number | undefined): string {
-    const n = Number(favorite ?? 0);
-    if (!Number.isFinite(n) || n <= 0) {
-        return '1K';
-    }
-    return `${n}K`;
+/** 侧栏互动数严格展示后端整数，不擅自追加 K 等单位。 */
+export function formatSideActionCount(value: number | undefined): string {
+    const n = Number(value ?? 0);
+    return Number.isFinite(n) && n > 0 ? String(Math.trunc(n)) : '0';
 }
 
 export function canNavigateBack() {

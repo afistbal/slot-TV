@@ -21,7 +21,6 @@ import {
     type VideoPlayerVipCommerceHandle,
 } from '@/components/video-player/VideoPlayerVipCommerce';
 import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
-import { VideoPlayerRatingDialog } from '@/components/video-player/VideoPlayerRatingDialog';
 import { VideoPlayerPcBackBar } from '@/components/video-player/VideoPlayerPcBackBar';
 import { VideoPlayerPcEpisodeNav } from '@/components/video-player/VideoPlayerPcEpisodeNav';
 // Legacy cold-unmute overlay import, currently disabled:
@@ -64,6 +63,7 @@ import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { fetchVDemoActiveEpisode } from './fetchVDemoEpisode';
 import { resolveVDemoShellEpisode, useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
+import { VideoPlayerQuickActions } from '@/components/video-player/VideoPlayerQuickActions';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
 type VDemoPcPlayerShellProps = {
@@ -136,7 +136,7 @@ export function VDemoPcPlayerShell({
         dramaId: data.info.id,
         initialLiked: data.info.is_like === true,
         initialLikeCount: data.info.like,
-        initialRatingScore: data.info.my_rating,
+        initialRatingScore: data.info.my_rating ?? data.info.myRating ?? data.info.rating ?? data.info.score,
     });
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
@@ -303,7 +303,7 @@ export function VDemoPcPlayerShell({
             }
 
             const attempt = ++navigationAttemptRef.current;
-            void fetchVDemoActiveEpisode(row.id, false)
+            void fetchVDemoActiveEpisode(row.id)
                 .then((detail) => {
                     if (attempt !== navigationAttemptRef.current) {
                         return;
@@ -468,14 +468,22 @@ export function VDemoPcPlayerShell({
                             onNextEpisode={handleFeedNext}
                             onPlaybackModeChange={handleForyouResume}
                             controlsTopContent={
-                                <FeedPlayerBottomInfo
-                                    title={data.info.title}
-                                    introduction={data.info.introduction}
-                                    episodeNo={episodeNo}
-                                    tags={data.tags}
-                                    maxTags={FORYOU_MAX_VISIBLE_TAGS}
-                                    onOpenIntroduction={openPcIntroDrawer}
-                                />
+                                <>
+                                    <FeedPlayerBottomInfo
+                                        title={data.info.title}
+                                        introduction={data.info.introduction}
+                                        episodeNo={episodeNo}
+                                        tags={data.tags}
+                                        maxTags={FORYOU_MAX_VISIBLE_TAGS}
+                                        onOpenIntroduction={openPcIntroDrawer}
+                                    />
+                                    <VideoPlayerQuickActions
+                                        episodeNo={episodeNo}
+                                        episodeCount={data.episodes.length}
+                                        onEpisodes={openPcEpisodeDrawer}
+                                        onShare={() => void handleShareAction('link')}
+                                    />
+                                </>
                             }
                             isItemLocked={isFeedItemLocked}
                             onIncomingIndex={handleIncomingIndex}
@@ -508,13 +516,10 @@ export function VDemoPcPlayerShell({
                             likeCount={engagement.count}
                             ratingScore={engagement.ratingScore}
                             ambient={ambientEnabled}
-                            showEpisodeList
                             onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
                             onFavoriteClick={handleToggleFavorite}
                             onLikeClick={engagement.handleToggleLike}
-                            onRatingClick={() => engagement.setRatingOpen(true)}
                             onAmbientClick={toggleAmbient}
-                            onEpisodeListClick={openPcEpisodeDrawer}
                             onShareClick={() => void handleShareAction('link')}
                         />
                     ) : null}
@@ -552,6 +557,9 @@ export function VDemoPcPlayerShell({
                             filteredEpisodes={filteredEpisodes}
                             onSelectEpisodeByListIndex={handleSelectEpisodeByListIndex}
                             resolveEpisodeCellLocked={resolveEpisodeCellLocked}
+                            ratingScore={engagement.ratingScore}
+                            ratingSubmitting={engagement.ratingSubmitting}
+                            onRate={(score) => void engagement.handleSubmitRating(score)}
                         />
                         <VideoPlayerPcEpisodeNav
                             hasPrev={hasPrev}
@@ -583,15 +591,6 @@ export function VDemoPcPlayerShell({
                 introduction={data.info.introduction ?? ''}
                 onShareAction={handleShareAction}
                 onCopyEmbedCode={handleCopyEmbedCode}
-            />
-            <VideoPlayerRatingDialog
-                open={engagement.ratingOpen}
-                title={data.info.title}
-                score={engagement.ratingScore}
-                variant="pc"
-                submitting={engagement.ratingSubmitting}
-                onOpenChange={engagement.setRatingOpen}
-                onSubmit={(score) => void engagement.handleSubmitRating(score)}
             />
         </div>
     );

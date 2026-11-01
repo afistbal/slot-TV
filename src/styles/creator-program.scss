@@ -162,7 +162,7 @@
 
 .program-flow-preview__steps button.is-active i {
     border-color: transparent;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     box-shadow: 0 0 0 5px var(--rs-brand-soft);
     color: var(--rs-brand-foreground);
 }
@@ -263,7 +263,7 @@
     gap: 8px;
     border: 1px solid transparent;
     border-radius: 12px;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     padding: 0 20px;
     color: var(--rs-brand-foreground);
     font-size: 14px;
@@ -316,7 +316,7 @@
 .creator-program__hero-orb--one {
     top: 0;
     left: 8%;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
 }
 
 .creator-program__hero-orb--two {
@@ -2230,7 +2230,7 @@
 .affiliate-reference .creator-program__button {
     min-height: 40px;
     border-radius: 10px;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     padding: 0 20px;
     color: var(--rs-brand-foreground);
     box-shadow: none;
@@ -2696,7 +2696,7 @@
 }
 
 .creator-program .creator-program__button {
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
     box-shadow: none;
 }
@@ -2710,7 +2710,8 @@
 .creator-program .creator-program__button--gold {
     min-height: 56px;
     border-color: transparent;
-    background: var(--program-accent);
+    background: var(--rs-brand-gradient);
+    color: var(--rs-brand-foreground);
     padding: 0 48px;
     color: var(--rs-brand-foreground);
     font-size: 16px;

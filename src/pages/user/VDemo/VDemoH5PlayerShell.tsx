@@ -21,7 +21,6 @@ import { VideoPlayerH5BackBar } from '@/components/video-player/VideoPlayerH5Bac
 // Legacy cold-unmute overlay import, currently disabled:
 // import { VideoPlayerH5ColdUnmuteOverlay } from '@/components/video-player/VideoPlayerH5ColdUnmuteOverlay';
 import { VideoPlayerLockOverlay } from '@/components/video-player/VideoPlayerLockOverlay';
-import { VideoPlayerRatingDialog } from '@/components/video-player/VideoPlayerRatingDialog';
 import { VideoPlayerSideActions } from '@/components/video-player/VideoPlayerSideActions';
 import { VideoPlayerAmbientLayer } from '@/components/video-player/VideoPlayerAmbient';
 import { useVideoPlayerAmbient } from '@/components/video-player/useVideoPlayerAmbient';
@@ -50,6 +49,7 @@ import type { VDemoPlayerData } from './fetchVDemoMovieInfo';
 import { fetchVDemoActiveEpisode } from './fetchVDemoEpisode';
 import { resolveVDemoShellEpisode, useVDemoActiveEpisode } from './vDemoShellEpisode';
 import { applyVDemoEpisodeUnlock, isVDemoEpisodeLocked, resolveVDemoDrawerEpisodeLocked } from './vDemoUnlock';
+import { VideoPlayerQuickActions } from '@/components/video-player/VideoPlayerQuickActions';
 import { useVDemoForyouResumeHandler } from './vDemoForyouResume';
 
 type VDemoH5PlayerShellProps = {
@@ -121,7 +121,7 @@ export function VDemoH5PlayerShell({
         dramaId: data.info.id,
         initialLiked: data.info.is_like === true,
         initialLikeCount: data.info.like,
-        initialRatingScore: data.info.my_rating,
+        initialRatingScore: data.info.my_rating ?? data.info.myRating ?? data.info.rating ?? data.info.score,
     });
     const [introductionOpen, setIntroductionOpen] = useState(false);
     const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
@@ -195,7 +195,7 @@ export function VDemoH5PlayerShell({
             }
 
             const attempt = ++navigationAttemptRef.current;
-            void fetchVDemoActiveEpisode(row.id, false)
+            void fetchVDemoActiveEpisode(row.id)
                 .then((detail) => {
                     if (attempt !== navigationAttemptRef.current) {
                         return;
@@ -281,14 +281,22 @@ export function VDemoH5PlayerShell({
                 onNextEpisode={handleFeedNext}
                 onPlaybackModeChange={handleForyouResume}
                 controlsTopContent={
-                    <FeedPlayerBottomInfo
-                        title={data.info.title}
-                        introduction={data.info.introduction}
-                        episodeNo={episodeNo}
-                        tags={data.tags}
-                        maxTags={FORYOU_MAX_VISIBLE_TAGS}
-                        onOpenIntroduction={() => setIntroductionOpen(true)}
-                    />
+                    <>
+                        <FeedPlayerBottomInfo
+                            title={data.info.title}
+                            introduction={data.info.introduction}
+                            episodeNo={episodeNo}
+                            tags={data.tags}
+                            maxTags={FORYOU_MAX_VISIBLE_TAGS}
+                            onOpenIntroduction={() => setIntroductionOpen(true)}
+                        />
+                        <VideoPlayerQuickActions
+                            episodeNo={episodeNo}
+                            episodeCount={data.episodes.length}
+                            onEpisodes={() => setEpisodeDrawerOpen(true)}
+                            onShare={() => void handleShareAction('link')}
+                        />
+                    </>
                 }
                 isItemLocked={isFeedItemLocked}
                 onIncomingIndex={handleIncomingIndex}
@@ -324,13 +332,10 @@ export function VDemoH5PlayerShell({
                     likeCount={engagement.count}
                     ratingScore={engagement.ratingScore}
                     ambient={ambientEnabled}
-                    showEpisodeList
                     onVipClick={(ev) => vipCommerceRef.current?.toggleVip(ev)}
                     onFavoriteClick={handleToggleFavorite}
                     onLikeClick={engagement.handleToggleLike}
-                    onRatingClick={() => engagement.setRatingOpen(true)}
                     onAmbientClick={toggleAmbient}
-                    onEpisodeListClick={() => setEpisodeDrawerOpen(true)}
                     onShareClick={() => void handleShareAction('link')}
                 />
             </div>
@@ -370,15 +375,9 @@ export function VDemoH5PlayerShell({
                 tagsFromBackendOnly
                 maxTags={FORYOU_MAX_VISIBLE_TAGS}
                 resolveEpisodeCellLocked={resolveEpisodeCellLocked}
-            />
-            <VideoPlayerRatingDialog
-                open={engagement.ratingOpen}
-                title={data.info.title}
-                score={engagement.ratingScore}
-                variant="h5"
-                submitting={engagement.ratingSubmitting}
-                onOpenChange={engagement.setRatingOpen}
-                onSubmit={(score) => void engagement.handleSubmitRating(score)}
+                ratingScore={engagement.ratingScore}
+                ratingSubmitting={engagement.ratingSubmitting}
+                onRate={(score) => void engagement.handleSubmitRating(score)}
             />
         </div>
     );

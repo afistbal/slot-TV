@@ -2,17 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { getLuckyRatingCandidates, submitLuckyRating, type LuckyRatingCandidate, type LuckyRatingQuota } from '@/api/lucky';
-import { useLuckyStore } from '@/stores/lucky';
-import { camelLuckyPayload } from '@/lib/luckyPageData';
+import { getLuckyRatingCandidates, getLuckyRatingQuota, submitLuckyRating, type LuckyRatingCandidate, type LuckyRatingQuota } from '@/api/lucky';
 import { LuckyIcon } from '@/components/LuckyIcon';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useConfigStore } from '@/stores/config';
-
-const taskCount = (value: unknown): number => {
-    const parsed = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
-    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
-};
 
 export function LuckyRatingSheet({ open, demo, onClose, onRated }: { open: boolean; demo: boolean; onClose: () => void; onRated: () => void }) {
     const { locale } = useIntl();
@@ -32,13 +25,7 @@ export function LuckyRatingSheet({ open, demo, onClose, onRated }: { open: boole
         setRows([]); setError(''); setQuota(null);
         if (demo) { setLoading(false); setQuota({ left: 5, reward: 3 }); return; }
         setLoading(true);
-        const tasks = camelLuckyPayload(useLuckyStore.getState().tasks) as { tasks?: Array<{ key: string; left?: number | string; cap?: number | string; count?: number | string }> } | undefined;
-        const ratingTask = tasks?.tasks?.find(task => task.key === 'rating');
-        const nextQuota = {
-            left: taskCount(ratingTask?.left ?? ratingTask?.count),
-            reward: taskCount(ratingTask?.cap),
-        };
-        void getLuckyRatingCandidates(100, locale, staticBase).then((nextRows) => {
+        void Promise.all([getLuckyRatingCandidates(100, locale, staticBase), getLuckyRatingQuota().catch(() => ({ left: 0, reward: 0 }))]).then(([nextRows, nextQuota]) => {
             if (cancelled) return;
             setQuota(nextQuota); setRows(Array.isArray(nextRows) ? nextRows : []);
         }).catch((reason) => { if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (!cancelled) setLoading(false); });
@@ -46,7 +33,7 @@ export function LuckyRatingSheet({ open, demo, onClose, onRated }: { open: boole
     }, [open, demo, revision, locale, staticBase]);
 
     async function rate(row: LuckyRatingCandidate, score: number) {
-        if (busyRef.current || demo || row.myRating || !quota || quota.left <= 0) return;
+        if (busyRef.current || demo || row.myRating) return;
         busyRef.current = true; setBusy(row.dramaId); setError('');
         try {
             const result = await submitLuckyRating(row.dramaId, score);
@@ -59,12 +46,12 @@ export function LuckyRatingSheet({ open, demo, onClose, onRated }: { open: boole
     }
 
     return <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}><DialogContent contentPreset="plain" hideCloseButton className="lucky-rating-sheet" overlayClassName="lucky-rating-overlay">
-        <header><div><DialogTitle>{w('待评分', '待評分')}</DialogTitle><DialogDescription>{!quota ? w('看过的剧点星即评', '看過的劇點星即評') : quota.left === 0 ? w('今日评分奖励额度已用完', '今日評分獎勵額度已用完') : w(`看过的剧点星即评，每部 +${quota.reward} 币 · 今天还能评 ${quota.left} 部`, `看過的劇點星即評，每部 +${quota.reward} 幣 · 今天還能評 ${quota.left} 部`)}</DialogDescription></div><button type="button" aria-label={w('关闭', '關閉')} className="lucky-rating-close" onClick={onClose}><LuckyIcon name="close" size={18} /></button></header>
+        <header><div><DialogTitle>{w('待评分', '待評分')}</DialogTitle><DialogDescription>{!quota ? w('正在读取今日评分奖励', '正在讀取今日評分獎勵') : quota.left === 0 ? w('今日评分奖励已领完，仍可继续评分', '今日評分獎勵已領完，仍可繼續評分') : w(`看过的剧点星即评，每部 +${quota.reward} 币 · 还有 ${quota.left} 部可得奖励`, `看過的劇點星即評，每部 +${quota.reward} 幣 · 還有 ${quota.left} 部可得獎勵`)}</DialogDescription></div><button type="button" aria-label={w('关闭', '關閉')} className="lucky-rating-close" onClick={onClose}><LuckyIcon name="close" size={18} /></button></header>
         {demo ? <p className="lucky-restricted">{w('演示预览，不提交真实评分。', '示範預覽，不提交真實評分。')}</p> : null}
         {error ? <div className="lucky-rating-error" role="alert"><p>{error}</p><button type="button" className="lucky-task__button" onClick={() => setRevision((value) => value + 1)}>{w('重试', '重試')}</button></div> : null}
         {loading ? <div className="lucky-rating-loading" role="status" aria-label={w('加载中', '載入中')}><span className="lucky-rating-spinner" aria-hidden="true" /><span className="sr-only">{w('加载中…', '載入中…')}</span></div> : rows.length ? <ul className="lucky-rating-list">{rows.map((row) => <li key={row.dramaId}>
             <button type="button" className="lucky-rating-cover" aria-label={row.title} onClick={() => { onClose(); navigate(`/foryou?dramaId=${encodeURIComponent(row.dramaId)}`); }}>{row.coverUrl ? <img src={row.coverUrl} alt="" /> : <LuckyIcon name="play" size={22} />}</button>
-            <div><strong>{row.title}</strong><small>{w(`已观看 ${row.epsWatched} 集`, `已觀看 ${row.epsWatched} 集`)}</small><div className={`lucky-rating-stars${row.myRating ? ' is-rated' : ''}`}>{[1, 2, 3, 4, 5].map((score) => <button type="button" key={score} className={(row.myRating ?? 0) >= score ? 'is-active' : ''} aria-label={`${score} ${w('星', '星')}`} disabled={demo || Boolean(busy) || Boolean(row.myRating) || !quota || quota.left === 0} onClick={() => void rate(row, score)}><LuckyIcon name="star" size={22} filled={(row.myRating ?? 0) >= score} /></button>)}{row.myRating ? <span>{w('已评', '已評')}</span> : null}</div></div>
+            <div><strong>{row.title}</strong><small>{w(`已观看 ${row.epsWatched} 集`, `已觀看 ${row.epsWatched} 集`)}</small><div className={`lucky-rating-stars${row.myRating ? ' is-rated' : ''}`}>{[1, 2, 3, 4, 5].map((score) => <button type="button" key={score} className={(row.myRating ?? 0) >= score ? 'is-active' : ''} aria-label={`${score} ${w('星', '星')}`} disabled={demo || Boolean(busy) || Boolean(row.myRating)} onClick={() => void rate(row, score)}><LuckyIcon name="star" size={22} filled={(row.myRating ?? 0) >= score} /></button>)}{row.myRating ? <span>{w('已评', '已評')}</span> : null}</div></div>
         </li>)}</ul> : !error ? <div className="lucky-rating-empty"><LuckyIcon name="star" size={24} /><p>{w('看过 2 集以上的剧会出现在这里，先去刷几集吧', '看過 2 集以上的劇會出現在這裡，先去刷幾集吧')}</p><button type="button" className="lucky-task__button is-claim" onClick={() => { onClose(); navigate('/foryou'); }}>{w('去刷剧', '去刷劇')}</button></div> : null}
     </DialogContent></Dialog>;
 }

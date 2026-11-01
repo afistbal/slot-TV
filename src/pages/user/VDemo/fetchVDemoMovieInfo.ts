@@ -12,6 +12,9 @@ export type VDemoPlayerData = IPlayerData & {
         like?: number;
         is_like?: boolean;
         my_rating?: number;
+        myRating?: number;
+        rating?: number;
+        score?: number;
     };
     episodes: Array<{
         id: number;

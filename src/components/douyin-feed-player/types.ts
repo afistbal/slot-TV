@@ -6,6 +6,8 @@ export type DouyinFeedVideoItem = {
     /** 业务集数，用于播放心跳上报。 */
     episode?: number;
     url: string;
+    /** 视频比例留白使用的低亮度模糊背景；主体视频仍保持 contain。 */
+    posterUrl?: string;
     /** VTT 路径（必填字段；空字符串 = 本条无字幕） */
     subtitle: string;
 };

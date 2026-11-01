@@ -39,6 +39,7 @@ export async function syncVDemoOnActiveIndex(
 
 export function buildVDemoFeedItems(
     episodes: IPlayerData['episodes'],
+    posterUrl = '',
 ): DouyinFeedVideoItem[] {
     return episodes.map((row) => {
         const locked = resolveVDemoRowLocked(row);
@@ -51,6 +52,7 @@ export function buildVDemoFeedItems(
             id: row.id,
             episode: Number(row.episode),
             url: locked ? '' : video,
+            posterUrl,
             subtitle,
         };
     });
@@ -71,6 +73,7 @@ export function areVDemoFeedItemsEqual(
             left.id !== right.id ||
             left.episode !== right.episode ||
             left.url !== right.url ||
+            (left.posterUrl ?? '') !== (right.posterUrl ?? '') ||
             (left.subtitle ?? '') !== (right.subtitle ?? '')
         ) {
             return false;

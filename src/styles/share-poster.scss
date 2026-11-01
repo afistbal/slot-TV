@@ -7,7 +7,48 @@
 .share-poster-status > button { color: var(--rs-brand-hover); }
 .share-poster-actions { display: flex; width: 100%; gap: 8px; flex-shrink: 0; }
 .share-poster-actions button { display: flex; flex: 1; align-items: center; justify-content: center; gap: 5px; min-height: 44px; padding: 10px 6px; border: 1px solid #ffffff30; border-radius: 999px; background: #24262be6; color: #fff; font-size: 12px; font-weight: 650; cursor: pointer; white-space: nowrap; }
-.share-poster-actions button.is-primary { border-color: transparent; background: var(--rs-brand); color: var(--rs-brand-foreground); }
+.share-poster-actions button.is-primary { border-color: transparent; background: var(--rs-brand-gradient); color: var(--rs-brand-foreground); }
 .share-poster-actions button:disabled { opacity: .45; cursor: wait; }
 .share-poster-actions svg { width: 15px; height: 15px; }
 .share-poster-close { display: grid; width: 40px; height: 40px; flex-shrink: 0; place-items: center; border: 1px solid #ffffff40; border-radius: 50%; background: #191b22; color: #fff; cursor: pointer; }
+
+.share-invite-dialog[data-slot='dialog-content'] {
+    width: min(380px, 92vw);
+    padding: 28px;
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 22px;
+    background: #141619;
+    box-shadow: 0 28px 90px rgb(0 0 0 / 62%);
+    color: #f7f7f5;
+    text-align: center;
+}
+.share-invite-dialog__close { position: absolute; top: 14px; right: 14px; display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #8f949c; cursor: pointer; }
+.share-invite-dialog__close svg { width: 18px; height: 18px; }
+.share-invite-dialog__icon { display: grid; width: 58px; height: 58px; margin: 0 auto 16px; place-items: center; border: 1px solid rgb(232 198 99 / 58%); border-radius: 50%; background: rgb(232 198 99 / 8%); color: #e8c663; }
+.share-invite-dialog__icon svg { width: 27px; height: 27px; }
+.share-invite-dialog h2 { margin: 0; font-size: 18px; font-weight: 750; line-height: 1.35; }
+.share-invite-dialog__drama { max-width: 280px; margin: 6px auto 16px; overflow: hidden; color: #8d929a; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.share-invite-dialog__benefits { display: grid; gap: 10px; text-align: left; }
+.share-invite-dialog__benefits > div { display: flex; min-height: 58px; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid rgb(255 255 255 / 9%); border-radius: 12px; background: #1a1d21; }
+.share-invite-dialog__benefits > div.is-highlight { border-color: rgb(231 196 96 / 46%); background: rgb(231 196 96 / 7%); }
+.share-invite-dialog__benefits svg { width: 17px; height: 17px; flex: 0 0 auto; color: #e7c35c; }
+.share-invite-dialog__benefits span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.share-invite-dialog__benefits b { color: #f0f0ed; font-size: 12px; font-weight: 650; line-height: 1.45; }
+.share-invite-dialog__benefits small { color: #8d929a; font-size: 11px; line-height: 1.45; }
+.share-invite-dialog__benefits > div.is-compact { min-height: auto; padding: 2px 4px; border: 0; background: transparent; }
+.share-invite-dialog__benefits > div.is-compact b { color: #92979f; font-size: 11px; font-weight: 500; }
+.share-invite-dialog__benefits > div.is-empty,
+.share-invite-dialog__benefits > div.is-loading { justify-content: center; border-style: dashed; color: #8d929a; text-align: center; }
+.share-invite-dialog__benefits > div.is-empty span,
+.share-invite-dialog__benefits > div.is-loading span { align-items: center; }
+.share-invite-dialog__benefits > div.is-loading svg { color: #e7c35c; }
+.share-invite-dialog__primary,
+.share-invite-dialog__secondary { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; font-size: 14px; font-weight: 750; cursor: pointer; }
+.share-invite-dialog__primary { margin-top: 18px; border: 0; background: linear-gradient(135deg, #f1d374, #d9aa3d); box-shadow: 0 10px 26px rgb(218 171 61 / 20%); color: #17130a; }
+.share-invite-dialog__secondary { margin-top: 10px; border: 1px solid rgb(255 255 255 / 12%); background: transparent; color: #f1f1ef; }
+.share-invite-dialog__primary svg,
+.share-invite-dialog__secondary svg { width: 16px; height: 16px; }
+.share-invite-dialog__later { margin-top: 15px; border: 0; background: transparent; color: #747982; font-size: 13px; cursor: pointer; }
+@media (max-width: 767px) {
+    .share-invite-dialog[data-slot='dialog-content'] { padding: 24px 20px 20px; border-radius: 20px; }
+}

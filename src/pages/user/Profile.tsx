@@ -8,12 +8,13 @@ import {
     LogIn,
     LogOut,
     Share2,
+    Settings,
     Sparkles,
-    UserRound,
     WalletCards,
 } from 'lucide-react';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 import iconHead from '@/assets/images/icon_head.739421aa.png';
+import customerServiceChatIcon from '@/assets/icons/customer-service-chat.svg';
 import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import { profileH5Assets, profilePcMenuAssets } from '@/constants/profileAssets';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -288,9 +289,17 @@ function LegacyProfilePanel() {
                         </div>
                     </div>
                 </Link>
+                <Link
+                    to="/page/feedback"
+                    className="rs-profile__supportEntry"
+                    aria-label={intl.formatMessage({ id: 'feedback_help' })}
+                    title={intl.formatMessage({ id: 'feedback_help' })}
+                >
+                    <img src={customerServiceChatIcon} alt="" aria-hidden />
+                </Link>
             </div>
             <div className="rs-profile__h5ProfileActions">
-                <Link to="/user/detail"><UserRound aria-hidden /><span><FormattedMessage id="user_detail" /></span></Link>
+                <Link to="/settings"><Settings aria-hidden /><span><FormattedMessage id="settings" /></span></Link>
                 <button type="button" aria-haspopup="dialog" onClick={() => setLanguageOpen(true)}><Globe2 aria-hidden /><span><FormattedMessage id="language" /></span></button>
                 <button type="button" onClick={() => void handleLogout()}><LogOut aria-hidden /><span><FormattedMessage id="logout" /></span></button>
             </div>

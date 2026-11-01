@@ -117,12 +117,6 @@ function AffiliateExplainer() {
         { title: t('affiliate_step_commission'), desc: t('affiliate_step_commission_desc') },
         { title: t('affiliate_step_withdraw'), desc: t('affiliate_step_withdraw_desc') },
     ];
-    const rules = [
-        { title: t('affiliate_rule_real'), desc: t('affiliate_rule_real_desc') },
-        { title: t('affiliate_rule_binding'), desc: t('affiliate_rule_binding_desc') },
-        { title: t('affiliate_rule_settlement'), desc: t('affiliate_rule_settlement_desc') },
-    ];
-
     return (
         <div className="affiliate-reference__explainer">
             <section className="affiliate-program__highlights">
@@ -134,7 +128,10 @@ function AffiliateExplainer() {
                     {steps.map((step, index) => <div key={step.title}><b>{index + 1}</b><p><strong>{step.title}</strong> {step.desc}</p></div>)}
                 </div>
             </section>
-            <section className="affiliate-reference__rules"><h3>{t('affiliate_rules_title')}</h3>{rules.map((rule) => <p key={rule.title}><strong>{rule.title}</strong> {rule.desc}</p>)}</section>
+            <section className="affiliate-reference__coin-mode">
+                <h3>{t('affiliate_coin_mode_title')}</h3>
+                <p>{t('affiliate_coin_mode_desc')}</p>
+            </section>
         </div>
     );
 }

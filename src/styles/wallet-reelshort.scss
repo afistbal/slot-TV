@@ -87,7 +87,7 @@
     height: calc(36 / 375 * var(--app-vw));
     padding: 0 calc(16 / 375 * var(--app-vw));
     border-radius: calc(4 / 375 * var(--app-vw));
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
     font-size: calc(14 / 375 * var(--app-vw));
     font-weight: 600;

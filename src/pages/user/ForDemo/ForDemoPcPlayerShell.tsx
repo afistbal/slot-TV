@@ -1,6 +1,7 @@
 import {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
     type MouseEvent,
@@ -18,7 +19,6 @@ import {
     VideoPlayerPcEpisodeNav,
     // VideoPlayerPcUnmuteOverlay, // Legacy cold-unmute overlay, currently disabled.
     VideoPlayerSideActions,
-    VideoPlayerRatingDialog,
     VideoPlayerAmbientLayer,
     useVideoPlayerAmbient,
     // useFeedPlayerColdUnmuteVisible, // Legacy cold-unmute hook, currently disabled.
@@ -33,9 +33,10 @@ import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { useUserStore } from '@/stores/user';
 import { resolveVideoFavorite, setVideoFavoriteOverride } from '@/stores/videoFavorite';
 import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForDemo/lib/foryouFeedUtils';
-import { navigateFromForDemoWatchFull } from '@/pages/user/ForDemo/lib/foryouNavigateToVideo';
+import { navigateFromForyouToVideo } from '@/pages/user/ForDemo/lib/foryouNavigateToVideo';
 import {
     ForYouPlayerPcCommerceDialogs,
+    ForYouPlayerPcEpisodeDrawer,
     ForYouPlayerPcIntroDrawer,
     useForYouPlayerShare,
 } from '@/components/foryou-feed/forYouPlayerOverlays';
@@ -49,6 +50,8 @@ import {
 import { usePcPlayerRightRailAlign } from '@/components/video-player/usePcPlayerRightRailAlign';
 import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
+import { buildPcEpisodeTabRanges, pcEpisodeTabIndexForEpisodeNo } from '@/components/video-player/videoPlayerPcEpisodeTabs';
+import { fetchVDemoMovieInfo, type VDemoPlayerData } from '@/pages/user/VDemo/fetchVDemoMovieInfo';
 
 import { ForDemoFeedControlsTop } from './ForDemoFeedControlsTop';
 import { useForDemoEngagement } from './useForDemoEngagement';
@@ -89,10 +92,12 @@ export function ForDemoPcPlayerShell({
     const navigate = useNavigate();
     const requireAccount = useRequireAccount();
     const userStore = useUserStore();
-    const data = buildPlayerDataFromFeedItem(feedItem);
+    const baseData = buildPlayerDataFromFeedItem(feedItem);
+    const [episodeData, setEpisodeData] = useState<VDemoPlayerData | null>(null);
+    const data = episodeData ?? baseData;
     const episode = buildEpisodeFromFeedItem(feedItem);
-    const episodeNo = feedItem.episode ?? 1;
-    const feedEpisodeTotal = feedItem.episodes ?? 0;
+    const episodeNo = episode.episode;
+    const feedEpisodeTotal = episodeData?.episodes.length ?? feedItem.episodes ?? 0;
     const { ambientEnabled, toggleAmbient } = useVideoPlayerAmbient();
     const engagement = useForDemoEngagement(feedItem);
     const activePlayerItemId = playerItems[activeIndex]?.id ?? foryouFeedItemKey(feedItem);
@@ -103,6 +108,13 @@ export function ForDemoPcPlayerShell({
     const [pcDrawerPanel, setPcDrawerPanel] = useState<PcDrawerPanel>(null);
     const [pcDrawerEntered, setPcDrawerEntered] = useState(false);
     const [pcStageShiftPx, setPcStageShiftPx] = useState(0);
+    const maxEpisode = Math.max(1, ...data.episodes.map((row) => row.episode));
+    const tabRanges = useMemo(() => buildPcEpisodeTabRanges(maxEpisode), [maxEpisode]);
+    const [desktopEpisodeTab, setDesktopEpisodeTab] = useState(0);
+    const filteredEpisodes = useMemo(() => {
+        const range = tabRanges[desktopEpisodeTab] ?? { start: 1, end: maxEpisode };
+        return data.episodes.filter((row) => row.episode >= range.start && row.episode <= range.end);
+    }, [data.episodes, desktopEpisodeTab, maxEpisode, tabRanges]);
     const pcDrawerClosingRef = useRef(false);
     const prevListLengthRef = useRef(listLength);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
@@ -137,6 +149,16 @@ export function ForDemoPcPlayerShell({
     useEffect(() => {
         setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
     }, [data.info.id, data.info.is_favorite, feedItem.ep_id]);
+
+    useEffect(() => {
+        setEpisodeData(null);
+        setPcDrawerPanel(null);
+        setDesktopEpisodeTab(0);
+    }, [feedItem.id, feedItem.ep_id]);
+
+    useEffect(() => {
+        setDesktopEpisodeTab(pcEpisodeTabIndexForEpisodeNo(episodeNo, tabRanges));
+    }, [episodeNo, tabRanges]);
 
     useEffect(() => {
         if (listLength <= prevListLengthRef.current) {
@@ -181,6 +203,27 @@ export function ForDemoPcPlayerShell({
         [beginClosePcDrawer, pcDrawerPanel],
     );
 
+    const loadEpisodeData = useCallback(async () => {
+        const result = await fetchVDemoMovieInfo(feedItem.id);
+        if (result.ok) {
+            setEpisodeData(result.data);
+        }
+    }, [feedItem.id]);
+
+    const openPcEpisodeDrawer = useCallback(
+        (ev?: MouseEvent) => {
+            ev?.stopPropagation();
+            if (pcDrawerPanel === 'episodes') {
+                beginClosePcDrawer();
+                return;
+            }
+            pcDrawerClosingRef.current = false;
+            setPcDrawerPanel('episodes');
+            void loadEpisodeData();
+        },
+        [beginClosePcDrawer, loadEpisodeData, pcDrawerPanel],
+    );
+
     const handleToggleFavorite = useCallback(() => {
         if (!requireAccount()) return;
         setFavorite((prev) => {
@@ -222,12 +265,24 @@ export function ForDemoPcPlayerShell({
     }, [activeIndex, hasMore, onLoadMore, playerItems.length]);
 
     const handleWatchFullSeries = useCallback(() => {
-        navigateFromForDemoWatchFull(navigate, feedItem, activeIndex);
-    }, [activeIndex, feedItem, navigate]);
+        openPcEpisodeDrawer();
+    }, [openPcEpisodeDrawer]);
 
     const handleWatchFullSeriesIntent = useCallback(() => {
         prewarmForyouVideoEntry(feedItem);
-    }, [feedItem]);
+        void loadEpisodeData();
+    }, [feedItem, loadEpisodeData]);
+
+    const handleSelectEpisodeByListIndex = useCallback((index: number) => {
+        const row = data.episodes[index];
+        if (!row) return;
+        beginClosePcDrawer();
+        navigateFromForyouToVideo(navigate, {
+            ...feedItem,
+            ep_id: row.id,
+            episode: row.episode,
+        }, 0, activeIndex);
+    }, [activeIndex, beginClosePcDrawer, data.episodes, feedItem, navigate]);
 
     /* Legacy cold-unmute overlay wiring is intentionally disabled, not deleted.
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
@@ -347,6 +402,7 @@ export function ForDemoPcPlayerShell({
                                     onOpenIntroduction={openPcIntroDrawer}
                                     onWatchFullSeries={handleWatchFullSeries}
                                     onWatchFullSeriesIntent={handleWatchFullSeriesIntent}
+                                    onShare={() => void handleShareAction('link')}
                                 />
                             }
                         />
@@ -369,12 +425,10 @@ export function ForDemoPcPlayerShell({
                             favoriteCount={data.info.favorite}
                             liked={engagement.liked}
                             likeCount={engagement.count}
-                            ratingScore={engagement.ratingScore}
                             ambient={ambientEnabled}
                             onVipClick={handleToggleVip}
                             onFavoriteClick={handleToggleFavorite}
                             onLikeClick={engagement.handleToggleLike}
-                            onRatingClick={() => setTimeout(() => engagement.setRatingOpen(true), 0)}
                             onAmbientClick={toggleAmbient}
                             onShareClick={() => void handleShareAction('link')}
                         />
@@ -399,6 +453,23 @@ export function ForDemoPcPlayerShell({
                             tagsFromBackendOnly
                             maxTags={FORYOU_MAX_VISIBLE_TAGS}
                         />
+                        <ForYouPlayerPcEpisodeDrawer
+                            open={pcDrawerPanel === 'episodes'}
+                            entered={pcDrawerEntered && pcDrawerPanel === 'episodes'}
+                            onClose={closePcDrawer}
+                            anchorRef={videoStageRef}
+                            currentEpisodeNo={episodeNo}
+                            data={data}
+                            viewerIsVip={userStore.isVIP()}
+                            tabRanges={tabRanges}
+                            activeTab={desktopEpisodeTab}
+                            onSelectEpisodeTab={setDesktopEpisodeTab}
+                            filteredEpisodes={filteredEpisodes}
+                            onSelectEpisodeByListIndex={(index) => void handleSelectEpisodeByListIndex(index)}
+                            ratingScore={engagement.ratingScore}
+                            ratingSubmitting={engagement.ratingSubmitting}
+                            onRate={(score) => void engagement.handleSubmitRating(score)}
+                        />
                         <VideoPlayerPcEpisodeNav
                             hasPrev={hasPrev}
                             hasNext={hasNext || hasMore}
@@ -422,15 +493,6 @@ export function ForDemoPcPlayerShell({
                 introduction={data.info.introduction ?? ''}
                 onShareAction={handleShareAction}
                 onCopyEmbedCode={handleCopyEmbedCode}
-            />
-            <VideoPlayerRatingDialog
-                open={engagement.ratingOpen}
-                title={data.info.title}
-                score={engagement.ratingScore}
-                variant="pc"
-                submitting={engagement.ratingSubmitting}
-                onOpenChange={engagement.setRatingOpen}
-                onSubmit={engagement.handleSubmitRating}
             />
         </div>
     );

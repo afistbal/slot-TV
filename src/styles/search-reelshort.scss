@@ -155,7 +155,7 @@
         place-items: center;
         border: 0;
         border-radius: 11px;
-        background: var(--rs-brand);
+        background: var(--rs-brand-gradient);
         padding: 0;
         color: var(--rs-brand-foreground, #fff);
         cursor: pointer;
@@ -202,7 +202,7 @@
         @media (max-width: 767px) {
             .rs-search-page__tag--active {
                 border-color: transparent !important;
-                background: var(--rs-brand) !important;
+                background: var(--rs-brand-gradient) !important;
                 color: var(--rs-brand-foreground) !important;
                 font-weight: 700;
             }
@@ -260,7 +260,7 @@
 
         &--active {
             border-color: transparent;
-            background: var(--rs-brand);
+            background: var(--rs-brand-gradient);
             color: var(--rs-brand-foreground);
             font-weight: 700;
         }
@@ -694,7 +694,7 @@
 
         .rs-search-page__tag--active {
             border-color: transparent !important;
-            background: var(--rs-brand) !important;
+            background: var(--rs-brand-gradient) !important;
             color: var(--rs-brand-foreground) !important;
             font-weight: 700;
         }

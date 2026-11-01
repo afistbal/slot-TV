@@ -3,10 +3,10 @@
 // Match the benchmark welfare palette: champagne gold for rewards/actions and
 // emerald green for completed states.
 .lucky-page, .lucky-rating-sheet {
-    --lucky-accent: #e8c268;
-    --lucky-accent-soft: rgba(232, 194, 104, .12);
-    --lucky-accent-line: rgba(232, 194, 104, .35);
-    --lucky-on-accent: #2b1e00;
+    --lucky-accent: var(--rs-brand);
+    --lucky-accent-soft: var(--rs-brand-soft);
+    --lucky-accent-line: var(--rs-brand-line);
+    --lucky-on-accent: var(--rs-brand-foreground);
     --lucky-success: #2ee59d;
     --lucky-success-soft: #0a3d29;
     --lucky-success-line: rgba(46, 229, 157, .35);
@@ -55,7 +55,7 @@
 .lucky-task--done .lucky-task__copy small b { color: var(--lucky-success); }
 .lucky-task__done { flex-shrink: 0; color: var(--lucky-success); font-size: 11px; font-weight: 600; }
 .lucky-task__button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; height: 28px; border: 1px solid var(--lucky-accent-line); border-radius: 12px; background: transparent; padding: 0 10px; color: var(--lucky-accent); font: inherit; font-size: 11px; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; }
-.lucky-task__button.is-claim { border-color: transparent; background: var(--lucky-accent); color: var(--lucky-on-accent); box-shadow: 0 4px 18px rgba(232, 194, 104, .2); }
+.lucky-task__button.is-claim { border-color: transparent; background: var(--rs-brand-gradient); color: var(--lucky-on-accent); box-shadow: 0 4px 18px rgba(232, 194, 104, .2); }
 .lucky-task__button:disabled { cursor: wait; opacity: .5; }
 .lucky-newcomer { margin-top: 16px; border-top: 1px solid var(--lucky-line); padding-top: 12px; }
 .lucky-newcomer__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 12px; margin-bottom: 8px; }
@@ -105,7 +105,7 @@
 @media (min-width: 1536px) { .lucky-page__main { max-width: 1280px; } }
 @media (hover: hover) {
     .lucky-task__button:hover:not(:disabled) { border-color: rgba(232, 194, 104, .6); background: rgba(232, 194, 104, .09); }
-    .lucky-task__button.is-claim:hover:not(:disabled) { background: #f0cf7c; box-shadow: 0 8px 26px rgba(232, 194, 104, .32); }
+    .lucky-task__button.is-claim:hover:not(:disabled) { background: var(--rs-brand-gradient); filter: brightness(1.04); box-shadow: 0 8px 26px rgba(232, 194, 104, .32); }
     .lucky-center__grid > button:hover { border-color: rgba(232, 194, 104, .5); background: rgba(232, 194, 104, .06); }
 }
 .lucky-page button:focus-visible, .lucky-rating-sheet button:focus-visible { outline: 2px solid #e8c268; outline-offset: 3px; }
@@ -138,6 +138,6 @@
 .lucky-rating-empty > .lucky-local-icon { box-sizing: content-box; padding: 12px; border-radius: 50%; background: #e9c3611a; color: #e9c361; }
 .lucky-rating-empty p { margin: 4px 0 0; font-size: 14px; }
 .lucky-rating-empty small { font-size: 12px; }
-.lucky-rating-empty button.lucky-task__button { margin-top: 8px; height: 40px; padding: 0 22px; border: 0; border-radius: 12px; background: #e9c361; color: #241e0e; font-size: 14px; font-weight: 700; box-shadow: 0 6px 20px #e9c36126; }
+.lucky-rating-empty button.lucky-task__button { margin-top: 8px; height: 40px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--rs-brand-gradient); color: var(--rs-brand-foreground); font-size: 14px; font-weight: 700; box-shadow: 0 6px 20px #e9c36126; }
 @media (max-width: 639px) { .lucky-rating-sheet[data-slot='dialog-content'] { top: auto; right: 0; bottom: 0; left: 0; width: 100%; max-width: none; transform: none; translate: none; border-bottom: 0; border-radius: 24px 24px 0 0; padding-inline: 16px; } }
 @media (prefers-reduced-motion: reduce) { .lucky-page *, .lucky-rating-sheet * { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

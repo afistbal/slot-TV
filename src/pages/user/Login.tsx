@@ -1,5 +1,5 @@
 import { FormattedMessage, useIntl } from 'react-intl';
-import { Navigate, useNavigate } from 'react-router';
+import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -40,14 +40,15 @@ type LoginVariant = 'h5' | 'pc';
 
 function useLoginBase(
     variant: LoginVariant,
-    pcOpts?: { onRequestClose: () => void; onLoginSuccess?: () => void },
+    opts?: { onRequestClose?: () => void; onLoginSuccess?: () => void; initialCredentialMode?: LoginCredentialMode },
 ) {
     const intl = useIntl();
     const pixel = usePixel();
     const userStore = useUserStore();
     const loadingStore = useLoadingStore();
     const navigate = useNavigate();
-    const [emailOpen, setEmailOpen] = useState(false);
+    const initialForgotPassword = opts?.initialCredentialMode === 'forgot';
+    const [emailOpen, setEmailOpen] = useState(initialForgotPassword);
     const [pcStep, setPcStep] = useState<PcLoginStep>(variant === 'pc' ? 'email' : 'providers');
     const [emailSubmitLoading, setEmailSubmitLoading] = useState(false);
     const [registerSubmitLoading, setRegisterSubmitLoading] = useState(false);
@@ -58,7 +59,7 @@ function useLoginBase(
     const [registerPassword, setRegisterPassword] = useState('');
     const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
-    const [loginCredentialMode, setLoginCredentialMode] = useState<LoginCredentialMode>('password');
+    const [loginCredentialMode, setLoginCredentialMode] = useState<LoginCredentialMode>(initialForgotPassword ? 'forgot' : 'password');
     const [emailCode, setEmailCode] = useState('');
     const [emailCodeSending, setEmailCodeSending] = useState(false);
     const [passwordResetLoading, setPasswordResetLoading] = useState(false);
@@ -81,16 +82,16 @@ function useLoginBase(
 
     /** PC：`PcLoginDialog` 由父级 state 控制；登录成功若已在 `/profile?tab=topup`，仅 navigate 不会关弹窗 */
     function closePcLoginModal() {
-        if (isPcVariant && pcOpts) {
-            pcOpts.onRequestClose();
+        if (isPcVariant && opts?.onRequestClose) {
+            opts.onRequestClose();
         }
     }
 
     function finishLogin() {
         // Another login entry may have left the shared prompt open behind this dialog.
         useAuthPromptStore.getState().close();
-        if (isPcVariant && pcOpts?.onLoginSuccess) {
-            pcOpts.onLoginSuccess();
+        if (isPcVariant && opts?.onLoginSuccess) {
+            opts.onLoginSuccess();
             return;
         }
         closePcLoginModal();
@@ -179,8 +180,8 @@ function useLoginBase(
         if (next) {
             return;
         }
-        if (isPcVariant && pcOpts) {
-            pcOpts.onRequestClose();
+        if (isPcVariant && opts?.onRequestClose) {
+            opts.onRequestClose();
         }
     }
 
@@ -544,10 +545,12 @@ export function PcLoginDialog({
     open,
     onOpenChange,
     onLoginSuccess,
+    initialCredentialMode = 'password',
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onLoginSuccess?: () => void;
+    initialCredentialMode?: LoginCredentialMode;
 }) {
     const onRequestClose = () => onOpenChange(false);
     const {
@@ -589,7 +592,7 @@ export function PcLoginDialog({
         handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
-    } = useLoginBase('pc', { onRequestClose, onLoginSuccess });
+    } = useLoginBase('pc', { onRequestClose, onLoginSuccess, initialCredentialMode });
     const isForgotPassword = emailAuthMode === 'login' && loginCredentialMode === 'forgot';
 
     const protocolBlock = (
@@ -914,6 +917,7 @@ export function PcLoginDialog({
 }
 
 export default function Component() {
+    const [searchParams] = useSearchParams();
     const isPc = useMinWidth768();
     const navigate = useNavigate();
     const {
@@ -949,7 +953,9 @@ export default function Component() {
         handleRegister,
         handleGoogleSignin,
         handleGoogleSigninPopup,
-    } = useLoginBase('h5');
+    } = useLoginBase('h5', {
+        initialCredentialMode: searchParams.get('mode') === 'reset' ? 'forgot' : 'password',
+    });
     const isForgotPassword = emailAuthMode === 'login' && loginCredentialMode === 'forgot';
 
     if (isPc) {

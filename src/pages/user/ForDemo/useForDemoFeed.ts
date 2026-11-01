@@ -11,6 +11,7 @@ import { foryouFeedItemKey, mergeForyouFeedItems } from '@/pages/user/ForDemo/li
 import { ensureForyouMediaPreconnect, resolveFeedVideoUrl } from '@/pages/user/ForDemo/lib/foryouFeedMedia';
 import { getForyouFeedAudienceKey, useForyouFeedStore } from '@/stores/foryouFeed';
 import type { IForYouFeedItem, IForYouListPayload } from '@/types/foryouFeed';
+import { movieCoverUrl } from '@/lib/movieCoverUrl';
 
 function inferHasMore(payload: IForYouListPayload): boolean {
     return payload.has_more === true;
@@ -24,6 +25,7 @@ function mapRowsToPlayerItems(rows: IForYouFeedItem[], staticBase: string): Douy
             id: `${foryouFeedItemKey(row)}#${index}`,
             episode: row.episode ?? 1,
             url: url ?? '',
+            posterUrl: movieCoverUrl(row, staticBase, { fallbackId: row.id }) ?? '',
             subtitle: row.subtitle != null ? String(row.subtitle) : '',
         };
     });

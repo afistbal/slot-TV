@@ -1,5 +1,4 @@
 import type { MouseEvent } from 'react';
-import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 
 import Forward from '@/components/Forward';
@@ -57,42 +56,25 @@ export function FeedPlayerBottomInfo({
             <div className="video-player-h5-title-row">
                 <span className="video-player-h5-title">{title}</span>
                 <Forward className="video-player-h5-title-chevron w-4 h-4 shrink-0" />
+                {epLabel != null ? (
+                    <span className="video-player-h5-episode-badge">
+                        EP.{String(epLabel).padStart(2, '0')} · 免费试看
+                    </span>
+                ) : null}
             </div>
             <div className="video-player-h5-desc">
-                {epLabel != null ? (
-                    <>
-                        <span className="video-player-h5-ep">
-                            <FormattedMessage id="wallet_episode_short" values={{ n: epLabel }} />
-                        </span>
-                        <span className="video-player-h5-desc-sep" aria-hidden="true">
-                            {' | '}
-                        </span>
-                    </>
-                ) : null}
-                <span className="video-player-h5-desc-text">
-                    {introText ? introText : <FormattedMessage id="no_introduction_available" />}
-                </span>
+                {visibleTags.map((tag) => (
+                    <Link
+                        key={tag.unique_id}
+                        to={videoIntroTagSearchPath(tag)}
+                        className="video-player-h5-tag"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        #{getBackendTagDisplayText(tag)}
+                    </Link>
+                ))}
+                {introText ? <span className="video-player-h5-desc-text">· {introText}</span> : null}
             </div>
-            {visibleTags.length > 0 ? (
-                <div
-                    className="video-player-h5-tags swiper-no-swiping"
-                    onClick={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                    onTouchMove={(e) => e.stopPropagation()}
-                    onWheel={(e) => e.stopPropagation()}
-                >
-                    {visibleTags.map((tag) => (
-                        <Link
-                            key={tag.unique_id}
-                            to={videoIntroTagSearchPath(tag)}
-                            className="video-player-h5-tag"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {getBackendTagDisplayText(tag)}
-                        </Link>
-                    ))}
-                </div>
-            ) : null}
         </div>
     );
 }

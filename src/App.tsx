@@ -129,6 +129,7 @@ const UserSearch = lazy(() => import('./pages/user/Search'));
 const UserMyBalance = lazy(() => import('./pages/user/MyBanlance'));
 const UserWallet = lazy(() => import('./pages/user/Wallet'));
 const UserDetail = lazy(() => import('./pages/user/UserDetail'));
+const UserSettings = lazy(() => import('./pages/user/Settings'));
 const UserTopUpRoute = lazy(() => import('./components/TopUpRoute'));
 const UserIosAddHomeGuide = lazy(() => import('./pages/user/IosAddHomeGuide'));
 const UserAndroidAddHomeGuide = lazy(() => import('./pages/user/AndroidAddHomeGuide'));
@@ -396,6 +397,10 @@ const router = createBrowserRouter([
             {
                 path: 'user/detail',
                 element: lazyRoute(UserDetail),
+            },
+            {
+                path: 'settings',
+                element: <RequireAccountRoute>{lazyRoute(UserSettings)}</RequireAccountRoute>,
             },
             {
                 path: 'radix-rc',

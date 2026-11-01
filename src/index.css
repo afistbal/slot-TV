@@ -70,6 +70,12 @@ body,
     background-color: var(--app-canvas);
 }
 
+/* 品牌金色实体控件统一使用浅金渐变；纯文字/描边仍使用 --rs-brand 保证暗色背景对比度。 */
+.bg-\[var\(--rs-brand\)\] {
+    background-color: var(--rs-brand);
+    background-image: var(--rs-brand-gradient);
+}
+
 img {
     display: block;
     pointer-events: none;
@@ -218,11 +224,12 @@ video::cue {
     --app-canvas: #000000;
     --app-surface: #222222;
     --app-overlay: rgb(0 0 0 / 0.75);
-    --rs-brand: #e8c268;
-    --rs-brand-hover: #f0cf7c;
-    --rs-brand-soft: rgb(232 194 104 / 0.12);
-    --rs-brand-line: rgb(232 194 104 / 0.35);
-    --rs-brand-foreground: #2b1e00;
+    --rs-brand: #e7b25f;
+    --rs-brand-hover: #f5c87f;
+    --rs-brand-gradient: linear-gradient(0deg, #f5c87f 0%, #e7b25f 100%);
+    --rs-brand-soft: rgb(231 178 95 / 0.12);
+    --rs-brand-line: rgb(231 178 95 / 0.35);
+    --rs-brand-foreground: #653e26;
     --rs-success: #2ee59d;
     --background: var(--app-canvas);
     --foreground: #fafafa;
@@ -231,7 +238,7 @@ video::cue {
     --popover: var(--app-surface);
     --popover-foreground: #fafafa;
     --primary: var(--rs-brand);
-    --primary-foreground: var(--app-canvas);
+    --primary-foreground: var(--rs-brand-foreground);
     --secondary: rgb(255 255 255 / 0.08);
     --secondary-foreground: #fafafa;
     --muted: rgb(255 255 255 / 0.08);

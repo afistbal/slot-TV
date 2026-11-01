@@ -12,7 +12,23 @@
     user-select: none;
 }
 
+.douyin-player-slot__backdrop {
+    position: absolute;
+    inset: -10%;
+    z-index: 0;
+    display: block;
+    width: 120%;
+    height: 120%;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+    filter: blur(42px) brightness(0.35) saturate(0.88);
+    transform: scale(1.2);
+    transform-origin: center;
+}
+
 .douyin-player-slot__stage {
+    z-index: 1;
     flex-shrink: 0;
     position: relative;
 }
@@ -63,6 +79,13 @@
     width: 100%;
     height: 100%;
     background: #000;
+}
+
+/** 有环境背景时只让视频画面本身显示，contain 留白透出模糊封面。 */
+.douyin-player-slot--has-backdrop .douyin-player-slot__stage,
+.douyin-player-slot--has-backdrop .douyin-player-slot__mount,
+.douyin-player-slot--has-backdrop .douyin-player-slot__mount .xgplayer {
+    background: transparent !important;
 }
 
 /* 兜底：禁用 xgplayer 内置 start 大三角（已 ignores + 自定义 FeedCenterPlayButton） */
@@ -161,15 +184,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 100px;
-    height: 42px;
-    padding: 0 18px;
+    min-width: 78px;
+    height: 34px;
+    padding: 0 12px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
     background: rgba(16, 16, 16, 0.88);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
     color: rgba(255, 255, 255, 0.94);
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1;
     pointer-events: none;
@@ -180,7 +203,7 @@
 
 .douyin-player-slot__speeding strong {
     color: #e5bd62;
-    font-size: 17px;
+    font-size: 13px;
 }
 
 .douyin-player-slot__landscape-fullscreen {

@@ -10,7 +10,6 @@ import {
 import {
     // VideoPlayerH5ColdUnmuteOverlay, // Legacy cold-unmute overlay, currently disabled.
     VideoPlayerSideActions,
-    VideoPlayerRatingDialog,
     VideoPlayerAmbientLayer,
     useVideoPlayerAmbient,
     // useFeedPlayerColdUnmuteVisible, // Legacy cold-unmute hook, currently disabled.
@@ -22,7 +21,7 @@ import { useForyouFeedStore } from '@/stores/foryouFeed';
 import { useUserStore } from '@/stores/user';
 import { resolveVideoFavorite, setVideoFavoriteOverride } from '@/stores/videoFavorite';
 import { buildPlayerDataFromFeedItem, buildEpisodeFromFeedItem } from '@/pages/user/ForDemo/lib/foryouFeedUtils';
-import { navigateFromForDemoWatchFull } from '@/pages/user/ForDemo/lib/foryouNavigateToVideo';
+import { navigateFromForyouToVideo } from '@/pages/user/ForDemo/lib/foryouNavigateToVideo';
 import {
     ForYouPlayerEpisodeSpeedIntroDrawers,
     ForYouPlayerH5CommerceDrawers,
@@ -34,6 +33,7 @@ import { useReportEpProgressAt5s } from '@/hooks/useReportEpProgressAt5s';
 import { useRequireAccount } from '@/hooks/useRequireAccount';
 import { cn } from '@/lib/utils';
 import type { IForYouFeedItem } from '@/types/foryouFeed';
+import { fetchVDemoMovieInfo, type VDemoPlayerData } from '@/pages/user/VDemo/fetchVDemoMovieInfo';
 
 import { ForDemoFeedBackTopbar } from './ForDemoFeedBackTopbar';
 import { foryouFeedItemKey } from './lib/foryouFeedMerge';
@@ -71,10 +71,12 @@ export function ForDemoH5PlayerShell({
     const navigate = useNavigate();
     const requireAccount = useRequireAccount();
     const userStore = useUserStore();
-    const data = buildPlayerDataFromFeedItem(feedItem);
+    const baseData = buildPlayerDataFromFeedItem(feedItem);
+    const [episodeData, setEpisodeData] = useState<VDemoPlayerData | null>(null);
+    const data = episodeData ?? baseData;
     const episode = buildEpisodeFromFeedItem(feedItem);
-    const episodeNo = feedItem.episode ?? 1;
-    const feedEpisodeTotal = feedItem.episodes ?? 0;
+    const episodeNo = episode.episode;
+    const feedEpisodeTotal = episodeData?.episodes.length ?? feedItem.episodes ?? 0;
     const prevListLengthRef = useRef(listLength);
     const feedNavigateRef = useRef<DouyinFeedNavigateHandle | null>(null);
     const { ambientEnabled, toggleAmbient } = useVideoPlayerAmbient();
@@ -86,6 +88,7 @@ export function ForDemoH5PlayerShell({
     );
     const [vip, setVip] = useState(false);
     const [introductionOpen, setIntroductionOpen] = useState(false);
+    const [episodeDrawerOpen, setEpisodeDrawerOpen] = useState(false);
     const [isFullscreenUi, setIsFullscreenUi] = useState(false);
     const episodeRef = useRef<HTMLDivElement>(null);
 
@@ -113,6 +116,11 @@ export function ForDemoH5PlayerShell({
     useEffect(() => {
         setFavorite(resolveVideoFavorite(data.info.id, data.info.is_favorite === 1));
     }, [data.info.id, data.info.is_favorite, feedItem.ep_id]);
+
+    useEffect(() => {
+        setEpisodeData(null);
+        setEpisodeDrawerOpen(false);
+    }, [feedItem.id, feedItem.ep_id]);
 
     useEffect(() => {
         if (listLength <= prevListLengthRef.current) {
@@ -161,13 +169,33 @@ export function ForDemoH5PlayerShell({
         }
     }, [activeIndex, hasMore, onLoadMore, playerItems.length]);
 
+    const loadEpisodeData = useCallback(async () => {
+        const result = await fetchVDemoMovieInfo(feedItem.id);
+        if (result.ok) {
+            setEpisodeData(result.data);
+        }
+    }, [feedItem.id]);
+
     const handleWatchFullSeries = useCallback(() => {
-        navigateFromForDemoWatchFull(navigate, feedItem, activeIndex);
-    }, [activeIndex, feedItem, navigate]);
+        setEpisodeDrawerOpen(true);
+        void loadEpisodeData();
+    }, [loadEpisodeData]);
 
     const handleWatchFullSeriesIntent = useCallback(() => {
         prewarmForyouVideoEntry(feedItem);
-    }, [feedItem]);
+        void loadEpisodeData();
+    }, [feedItem, loadEpisodeData]);
+
+    const handleSelectEpisodeIndex = useCallback((index: number) => {
+        const row = data.episodes[index];
+        if (!row) return;
+        setEpisodeDrawerOpen(false);
+        navigateFromForyouToVideo(navigate, {
+            ...feedItem,
+            ep_id: row.id,
+            episode: row.episode,
+        }, 0, activeIndex);
+    }, [activeIndex, data.episodes, feedItem, navigate]);
 
     /* Legacy cold-unmute overlay wiring is intentionally disabled, not deleted.
     const coldUnmuteVisible = useFeedPlayerColdUnmuteVisible(activeIndex);
@@ -206,6 +234,7 @@ export function ForDemoH5PlayerShell({
                         onOpenIntroduction={() => setIntroductionOpen(true)}
                         onWatchFullSeries={handleWatchFullSeries}
                         onWatchFullSeriesIntent={handleWatchFullSeriesIntent}
+                        onShare={() => void handleShareAction('link')}
                     />
                 }
             />
@@ -233,12 +262,10 @@ export function ForDemoH5PlayerShell({
                     favoriteCount={data.info.favorite}
                     liked={engagement.liked}
                     likeCount={engagement.count}
-                    ratingScore={engagement.ratingScore}
                     ambient={ambientEnabled}
                     onVipClick={handleToggleVip}
                     onFavoriteClick={handleToggleFavorite}
                     onLikeClick={engagement.handleToggleLike}
-                    onRatingClick={() => setTimeout(() => engagement.setRatingOpen(true), 0)}
                     onAmbientClick={toggleAmbient}
                     onShareClick={() => void handleShareAction('link')}
                 />
@@ -263,27 +290,20 @@ export function ForDemoH5PlayerShell({
                 episodeIndex={0}
                 staticBase={staticBase}
                 viewerIsVip={userStore.isVIP()}
-                episodeStatus={false}
-                onToggleEpisodeDrawer={() => undefined}
+                episodeStatus={episodeDrawerOpen}
+                onToggleEpisodeDrawer={() => setEpisodeDrawerOpen((open) => !open)}
                 episode={episode}
                 episodeRef={episodeRef}
-                onSelectEpisodeIndex={() => undefined}
+                onSelectEpisodeIndex={(index) => void handleSelectEpisodeIndex(index)}
                 hideSpeedDrawer
                 introduction={introductionOpen}
                 onIntroductionOpenChange={(open) => setIntroductionOpen(open ?? false)}
                 onCloseIntroductionLinks={() => setIntroductionOpen(false)}
-                hideEpisodeDrawer
                 tagsFromBackendOnly
                 maxTags={FORYOU_MAX_VISIBLE_TAGS}
-            />
-            <VideoPlayerRatingDialog
-                open={engagement.ratingOpen}
-                title={data.info.title}
-                score={engagement.ratingScore}
-                variant="h5"
-                submitting={engagement.ratingSubmitting}
-                onOpenChange={engagement.setRatingOpen}
-                onSubmit={engagement.handleSubmitRating}
+                ratingScore={engagement.ratingScore}
+                ratingSubmitting={engagement.ratingSubmitting}
+                onRate={(score) => void engagement.handleSubmitRating(score)}
             />
         </div>
     );

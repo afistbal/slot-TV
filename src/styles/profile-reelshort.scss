@@ -53,6 +53,30 @@
     color: inherit;
 }
 
+.rs-profile__supportEntry {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    place-items: center;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.rs-profile__supportEntry img {
+    display: block;
+    width: 30px;
+    height: 30px;
+}
+
+.rs-profile__supportEntry:active {
+    transform: scale(0.96);
+    background: rgba(242, 198, 94, 0.08);
+}
+
 .rs-profile__h5ProfileActions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -175,7 +199,7 @@
     margin: 0 16px;
     border-radius: 12px;
     padding: 16px;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     position: relative;
     display: flex;
     align-items: center;
@@ -280,7 +304,7 @@
     padding: 0 calc(16 / 375 * var(--app-vw));
     border: none;
     border-radius: calc(4 / 375 * var(--app-vw));
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
     font-size: calc(14 / 375 * var(--app-vw));
     font-weight: 600;
@@ -607,7 +631,7 @@
     padding: 0 calc(16 / 375 * var(--app-vw));
     border: 0;
     border-radius: calc(18 / 375 * var(--app-vw));
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
     font-size: calc(14 / 375 * var(--app-vw));
     cursor: pointer;

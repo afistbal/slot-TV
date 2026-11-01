@@ -16,13 +16,10 @@ import { resolveSubscriptionPeriod } from '@/lib/subscriptionPlanRenewText';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import RadixRcShoppingPaySection from '@/pages/user/RadixRcShoppingPaySection';
 import { toast } from 'sonner';
+import { LegacyCoinIcon as CoinIcon } from '@/components/LegacyCoinIcon';
 import '@/styles/shopping-reelshort.scss';
 import '@/styles/checkout-reelshort.scss';
 import '@/styles/top-up-dialog.scss';
-
-function CoinIcon({ size = 16 }: { size?: number }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="12" cy="12" r="9" /><rect x="9" y="9" width="6" height="6" rx="1" /></svg>;
-}
 
 type TopUpPanelProps = {
     onClose?: () => void;
@@ -123,11 +120,6 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
         return value === 'weekly' ? label('/周', '/week') : value === 'monthly' ? label('/月', '/month') : value === 'annual' ? label('/年', '/year') : value === 'daily' ? label('/日', '/day') : '';
     };
     const number = (value: number | undefined) => intl.formatNumber(Number.isFinite(value) ? value! : 0);
-    const annualSavings = Math.max(0, ...membershipDisplayRows(products, 'monthly').filter(product => !product.preview).map(monthly => {
-        const annual = membershipDisplayRows(products, 'annual').find(product => !product.preview && product.name === `${monthly.name}_annual`);
-        const monthlyPrice = Number(monthly.price) * 12;
-        return annual && monthlyPrice > 0 ? Math.max(0, Math.round((1 - Number(annual.price) / monthlyPrice) * 100)) : 0;
-    }));
     const title = label('充值中心', 'Top Up');
     const membershipName = (product: TopUpDisplayProduct) => {
         if (referenceMemberships && /^(basic|standard|premium)(_annual)?$/.test(product.name)) {
@@ -164,7 +156,7 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
                         checkoutFrom={productFrom} checkoutProductMeta={selected} paySessionSeed={paySeed} onPayStateChange={setPayState} />
                     {payState !== 'idle' ? <p role="status">{label('正在确认支付结果…', 'Confirming payment…')}</p> : null}
                 </div> : <div className="top-up-dialog__status" role="status">
-                    {payState === 'success' ? <><ShieldCheck size={36} /><p>{label('支付成功', 'Payment successful')}</p></> : <>
+                    {payState === 'success' ? <><ShieldCheck size={36} /><p>{selected.type === 2 ? label('充值成功', 'Top-up successful') : label('会员开通成功', 'Membership activated')}</p></> : <>
                         <p>{label('支付未完成，请重试', 'Payment incomplete. Please retry.')}</p>
                         <button type="button" onClick={() => { setPaySeed(seed => seed + 1); setPayState('idle'); }}>{label('重试', 'Retry')}</button>
                     </>}
@@ -175,11 +167,11 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
                     <button type="button" role="tab" id={`${panelId}-vip-tab`} aria-selected={tab === 'vip'} aria-controls={`${panelId}-products`} onClick={() => setTab('vip')}>{label('开通会员', 'Membership')}</button>
                 </div>
                 <div id={`${panelId}-products`} className="top-up-dialog__list" role="tabpanel" aria-labelledby={`${panelId}-${tab}-tab`}>
-                    {referenceCoins ? <div className="top-up-dialog__banner">{label('首充双倍 · 仅首单一次 · 基础金币 ×2（限 $', 'First top-up double · First order only · Base coins ×2 (up to $')}{number(0)}{label(' 及以下档位）', ' packs)')}</div> : null}
+                    {referenceCoins ? <div className="top-up-dialog__banner">{label('首充双倍 · 仅首单一次 · 基础金币 ×2', 'First top-up double · First order only · Base coins ×2')}</div> : null}
                     {tab === 'vip' ? <>
                         <div className="top-up-dialog__banner">{referenceMemberships ? label('会员每月到账金币 · 解锁会员专享剧 · 评论区专属身份', 'Monthly member coins · Member-only dramas · Exclusive comment identity') : label('会员专享权益', 'Member benefits')}</div>
                         <div className="top-up-dialog__tabs top-up-dialog__period" aria-label={label('会员周期', 'Membership period')}>
-                            {periods.map(value => <button key={value} type="button" aria-pressed={activePeriod === value} onClick={() => setPeriod(value)}>{periodLabel(value)}{value === 'annual' ? <small className="top-up-dialog__saving">{label('省', 'Save ')}{number(annualSavings)}%</small> : null}</button>)}
+                            {periods.map(value => <button key={value} type="button" aria-pressed={activePeriod === value} onClick={() => setPeriod(value)}>{periodLabel(value)}{value === 'annual' ? <small className="top-up-dialog__saving">{label('省20%', 'Save 20%')}</small> : null}</button>)}
                         </div>
                     </> : null}
                     {rows.length === 0 ? <p className="top-up-dialog__empty">{!ready ? label('正在连接，请稍候…', 'Connecting, please wait…') : label('暂无可购买套餐', 'No packages available yet')}</p> : null}
@@ -187,15 +179,15 @@ export function TopUpPanel({ onClose, embedded = false, initialTab = 'coins', pr
                         const baseCoins = Number(product.coin) || 0;
                         const bonus = Math.max(0, Math.round(baseCoins * (Number.parseFloat(product.bouns ?? '0') || 0)));
                         const featured = referenceCoins ? index === 2 : product.name === 'standard' || product.name === 'standard_annual';
-                        return <button type="button" key={product.id} disabled={referenceMemberships && product.preview} className={`top-up-dialog__product${referenceCoins ? ' top-up-dialog__product--coins' : ''}${referenceMemberships ? ' top-up-dialog__product--membership' : ''}${featured && !referenceCoins ? ' top-up-dialog__product--featured' : ''}`} onClick={() => selectProduct(product)}>
+                        return <button type="button" key={product.id} disabled={referenceMemberships && product.preview} className={`top-up-dialog__product${referenceCoins ? ' top-up-dialog__product--coins' : ''}${referenceMemberships ? ' top-up-dialog__product--membership' : ''}${featured ? ' top-up-dialog__product--featured' : ''}`} onClick={() => selectProduct(product)}>
                             {referenceMemberships && product.preview ? <span className="top-up-dialog__badge top-up-dialog__badge--unavailable"><Ban size={11} />{label('暂无', 'Unavailable')}</span> : null}
                             {featured ? <span className={`top-up-dialog__badge${referenceCoins ? ' top-up-dialog__badge--coins' : ''}${referenceMemberships && product.preview ? ' top-up-dialog__badge--afterUnavailable' : ''}`}>{referenceMemberships || referenceCoins ? label('最受欢迎', 'Most popular') : label('推荐', 'Recommended')}</span> : null}
                             <span className="top-up-dialog__productRow">
                                 <span className="top-up-dialog__coinDescription"><span className="top-up-dialog__amount">{tab === 'coins' ? <CoinIcon /> : <Crown size={16} />}
                                     {tab === 'coins' ? `${number(baseCoins + bonus)} ${label('金币', 'coins')}` : membershipName(product)}
                                     {referenceMemberships && product.days !== undefined && activePeriod === 'monthly' ? <small>{number(product.days)}{label(' 天有效', ' days valid')}</small> : null}
-                                    {referenceCoins ? <small className="top-up-dialog__bonus">{label('含送', 'Includes bonus ')}{number(bonus)}</small> : bonus > 0 ? <small>+{number(bonus)} {label('赠送', 'bonus')}</small> : null}
-                                </span>{referenceCoins && (index === 1 || index === 2) ? <span className="top-up-dialog__note top-up-dialog__note--coins">{label('仅金币，不含会员', 'Coins only, membership not included')}</span> : null}</span>
+                                    {referenceCoins && bonus > 0 ? <small className="top-up-dialog__bonus">{label('含送', 'Includes bonus ')}{number(bonus)}</small> : bonus > 0 ? <small>{label('含送', 'Includes bonus ')}{number(bonus)}</small> : null}
+                                </span>{referenceCoins ? <span className="top-up-dialog__note top-up-dialog__note--coins">{label('仅金币，不含会员', 'Coins only · Membership not included')}</span> : null}</span>
                                 <span className="top-up-dialog__price"><strong>${product.price}{referenceMemberships ? <small>{periodSuffix(product)}</small> : null}</strong><span className={`top-up-dialog__tag${referenceCoins ? ' top-up-dialog__tag--coins' : ''}${tab === 'vip' ? ' top-up-dialog__tag--vip' : ''}`}>{tab === 'coins' ? referenceCoins ? label('购买金币', 'Buy coins') : label('金币', 'Coins') : referenceMemberships ? label('开通会员', 'Join membership') : 'VIP'}</span></span>
                             </span>
                             {tab === 'vip' ? <>

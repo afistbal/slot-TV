@@ -239,11 +239,23 @@ export function DouyinPlayerSlot({
     return (
         <div
             ref={surfaceRef}
-            className="douyin-player-slot"
+            className={cn(
+                'douyin-player-slot',
+                slot.item.posterUrl && 'douyin-player-slot--has-backdrop',
+            )}
             data-index={slot.index}
             data-active={slot.isActive ? 'true' : 'false'}
             {...attrs}
         >
+            {slot.item.posterUrl ? (
+                <img
+                    className="douyin-player-slot__backdrop"
+                    src={slot.item.posterUrl}
+                    alt=""
+                    draggable={false}
+                    aria-hidden="true"
+                />
+            ) : null}
             {slot.shouldInitPlayer ? (
                 <div
                     className={stageClassName}

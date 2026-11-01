@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router';
 import { resolveForyouIncomingResumeSec } from '@/constants/foryouRoute';
 import { buildVDemoPath } from '@/constants/vDemoRoute';
 import { type DouyinFeedVideoItem } from '@/components/douyin-feed-player';
+import { resolveVideoPosterUrl } from '@/components/video-player/videoPlayerShareUrl';
 // Legacy cold-unmute navigation type, currently disabled:
 // import { type FeedNavigateDirection } from '@/components/douyin-feed-player';
 import { writeMutedPreference } from '@/components/douyin-feed-player/controls/mutePreference';
@@ -99,6 +100,7 @@ export default function VDemoPage() {
     movieIdRef.current = movieId;
     const viewerIsVipRef = useRef(viewerIsVip);
     viewerIsVipRef.current = viewerIsVip;
+    const posterUrlRef = useRef('');
     const activeIndexRef = useRef(0);
     const foryouResumeResolvedRef = useRef(false);
     /** 仅首进读一次；切集 replace 导航会清空 location.state，不能放进 effect 依赖 */
@@ -127,7 +129,7 @@ export default function VDemoPage() {
 
     const refreshItemsIfChanged = useCallback(() => {
         setItems((prev) => {
-            const next = buildVDemoFeedItems(episodesRef.current);
+            const next = buildVDemoFeedItems(episodesRef.current, posterUrlRef.current);
             return areVDemoFeedItemsEqual(prev, next) ? prev : next;
         });
     }, []);
@@ -197,6 +199,7 @@ export default function VDemoPage() {
             }
 
             const sortedEpisodes = result.data.episodes ?? [];
+            const posterUrl = resolveVideoPosterUrl(staticBase, result.data.info, movieId);
             const infoPlay = Number(result.data.info.play);
             const startEpisodeNo = urlEpisode ?? (infoPlay > 0 ? infoPlay : 1);
             const startIndex = resolveInitialEpisodeIndex(sortedEpisodes, startEpisodeNo);
@@ -219,10 +222,11 @@ export default function VDemoPage() {
             setActiveIndex(startIndex);
             activeIndexRef.current = startIndex;
             episodesRef.current = sortedEpisodes;
+            posterUrlRef.current = posterUrl;
             /* Legacy cold landing index, currently disabled:
                useForDemoColdUnmuteStore.getState().setColdLandingIndex(startIndex);
             */
-            setItems(buildVDemoFeedItems(sortedEpisodes));
+            setItems(buildVDemoFeedItems(sortedEpisodes, posterUrl));
             setLoading(false);
 
             void syncVDemoOnActiveIndex(
@@ -251,7 +255,7 @@ export default function VDemoPage() {
         return () => {
             cancelled = true;
         };
-    }, [movieId, sessionBootstrapReady]);
+    }, [movieId, sessionBootstrapReady, staticBase]);
 
     const applyIndexSideEffects = useCallback(
         (index: number) => {

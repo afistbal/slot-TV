@@ -38,7 +38,8 @@ import { prefetchLuckyRouteChunk, prefetchSearchRouteChunk } from '@/lib/prefetc
 import { shouldShowIosAddHomeFab } from '@/lib/shouldShowIosAddHomeFab';
 import usePixel from '@/hooks/usePixel';
 
-import { Bell, ChevronLeft, ChevronRight, Coins, Gift, Search, Sparkles } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, Gift, Search, Sparkles } from 'lucide-react';
+import { LegacyCoinIcon as Coins } from '@/components/LegacyCoinIcon';
 
 /** ReelShort 首页同款汉堡图标（与镜像 HTML 内联 SVG 一致） */
 export function ReelShortMenuIcon({ className }: { className?: string }) {
@@ -606,6 +607,24 @@ function NavProfileAvatar() {
 
   const isDesktop = useMinWidth768();
   const profileEntryHref = '/profile';
+
+  if (!isSignedUser) {
+    return (
+      <button
+        type="button"
+        className="reelshort-topnav__login-button"
+        onClick={() => {
+          if (isDesktop) {
+            navigate('/profile', { state: { openPcLogin: true } });
+          } else {
+            navigate('/page/login');
+          }
+        }}
+      >
+        <FormattedMessage id="login" />
+      </button>
+    );
+  }
 
   const avatarNode = hasPhoto ? (
     <img

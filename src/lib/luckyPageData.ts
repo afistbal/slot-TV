@@ -74,8 +74,10 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
         if (hiddenNewcomerTaskKeys.has(key)) continue;
         const row = once.get(key);
         if (!row || count(row.coins) <= 0) continue;
+        const ready = row.ready === true;
         newcomers.push({ key, icon, title, description, coins: count(row.coins), done: row.done === true,
-            ready: row.ready === true, xUsed: row.xUsed === true, action: key !== 'push_on' && row.ready === true ? 'claim' : action });
+            ready, subscribed: row.subscribed === true, xUsed: row.xUsed === true,
+            action: key === 'push_on' && ready ? 'claim' : key !== 'push_on' && ready ? 'claim' : action });
     }
     // A task can report credited coins before the aggregate catches up. Keep
     // the summary at least as high as the actual visible task credits, without
@@ -99,6 +101,36 @@ export function luckyClaimableBadge(value: unknown): number | null {
     if (data.restricted === true) return 0;
     const checkin = data.tasks.map(object).find(row => row.key === 'checkin');
     return checkin && checkin.done !== true && count(checkin.cap) > 0 && checkin.needsWatch !== true ? 1 : 0;
+}
+
+export type LuckyReferralBenefits = {
+    dailyShare: number | null;
+    signupInviter: number | null;
+    signupInvitee: number | null;
+    purchasePct: number | null;
+};
+
+const optionalAmount = (value: unknown): number | null => {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = numeric(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+/** Share modal amounts come from user/rewards; absent fields stay absent. */
+export function decodeLuckyReferralBenefits(value: unknown): LuckyReferralBenefits {
+    const data = object(camelLuckyPayload(value));
+    const rows = list(data.rewards).map(object);
+    const catalog = Array.isArray(data.rewards) ? object(data.catalog) : object(data.rewards ?? data.catalog ?? data);
+    const referral = object(catalog.referral ?? data.referral);
+    const invite = rows.find(row => row.key === 'invite') ?? object(catalog.invite);
+    const share = rows.find(row => row.key === 'share') ?? object(catalog.share);
+    const pick = (...values: unknown[]) => values.find(item => item !== undefined && item !== null);
+    return {
+        dailyShare: optionalAmount(pick(share.cap, share.dailyShare, referral.dailyShare)),
+        signupInviter: optionalAmount(pick(invite.cap, invite.signupInviter, referral.signupInviter)),
+        signupInvitee: optionalAmount(pick(invite.signupInvitee, referral.signupInvitee)),
+        purchasePct: optionalAmount(pick(invite.purchasePct, referral.purchasePct)),
+    };
 }
 
 // The benchmark header badge is a compact welfare reminder, not a count of

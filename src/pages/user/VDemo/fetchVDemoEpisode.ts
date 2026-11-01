@@ -29,7 +29,6 @@ export function clearVDemoActiveEpisodeCache(): void {
 /** 每次 active 都请求；仅合并进行中的同 id 请求 */
 export async function fetchVDemoActiveEpisode(
     episodeRowId: number,
-    viewerIsVip: boolean,
 ): Promise<IPlayerEpisode | null> {
     const nid = Number(episodeRowId);
     if (!Number.isFinite(nid) || nid <= 0) {
@@ -41,7 +40,8 @@ export async function fetchVDemoActiveEpisode(
         return existing;
     }
 
-    const autoUnlock = viewerIsVip ? 0 : 1;
+    // 进入付费集只查询状态，不在后台静默扣币；用户确认后再由解锁弹窗提交 auto_unlock=1。
+    const autoUnlock = 0;
     const task = (async (): Promise<IPlayerEpisode | null> => {
         try {
             const result = await api<IPlayerEpisode>('movie/episode', {

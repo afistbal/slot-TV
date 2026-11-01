@@ -1,5 +1,7 @@
 import {
     forwardRef,
+    lazy,
+    Suspense,
     useCallback,
     useEffect,
     useImperativeHandle,
@@ -10,7 +12,10 @@ import {
 import type { ShareAction } from './videoPlayerConstants';
 import { VideoPlayerH5CommerceDrawers } from '@/components/video-player/VideoPlayerH5CommerceDrawers';
 import { VideoPlayerPcCommerceDialogs } from '@/components/video-player/VideoPlayerPcCommerceDialogs';
+import { VideoEpisodeUnlockDialog } from '@/components/video-player/VideoEpisodeUnlockDialog';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
+
+const TopUpModal = lazy(() => import('@/components/TopUpDialog').then(module => ({ default: module.TopUpModal })));
 
 export type VideoPlayerVipCommerceHandle = {
     openVip: () => void;
@@ -73,6 +78,7 @@ export const VideoPlayerVipCommerce = forwardRef<
     ref,
 ) {
     const [vip, setVip] = useState(false);
+    const [topUpTab, setTopUpTab] = useState<'coins' | 'vip' | null>(null);
 
 
     const openVip = useCallback(() => {
@@ -103,6 +109,7 @@ export const VideoPlayerVipCommerce = forwardRef<
 
     useEffect(() => {
         setVip(false);
+        setTopUpTab(null);
     }, [episodeRowId]);
 
     /** 非 VIP 且 locked 时自动弹出 rs-shopping；VIP 或解锁后关闭；关闭购买面板时直接退出 */
@@ -123,12 +130,41 @@ export const VideoPlayerVipCommerce = forwardRef<
     );
 
     const vipHeaderEpisodeUnlockCoins = episode?.unlock_coins;
+    const unlockLayer = (
+        <>
+            <VideoEpisodeUnlockDialog
+                open={vip}
+                onOpenChange={setVip}
+                title={title}
+                episodeRowId={episodeRowId}
+                episode={episode}
+                onUnlocked={handlePaySuccess}
+                onTopUp={(tab) => {
+                    setVip(false);
+                    setTopUpTab(tab);
+                }}
+            />
+            {topUpTab ? (
+                <Suspense fallback={null}>
+                    <TopUpModal
+                        open
+                        onOpenChange={(open) => { if (!open) setTopUpTab(null); }}
+                        initialTab={topUpTab}
+                        productFrom="video"
+                        episodeRowId={episodeRowId}
+                        onPaySuccessEpisodeDetail={handlePaySuccess}
+                    />
+                </Suspense>
+            ) : null}
+        </>
+    );
     if (variant === 'pc') {
         return (
             <>
+                {unlockLayer}
                 <VideoPlayerPcCommerceDialogs
-                    vip={vip}
-                    onVipOpenChange={setVip}
+                    vip={false}
+                    onVipOpenChange={() => undefined}
                     onVipEmbedClose={closeVip}
                     embedVideoEpisodeRowId={episodeRowId}
                     onEmbedPaySuccessEpisodeDetail={handlePaySuccess}
@@ -150,9 +186,10 @@ export const VideoPlayerVipCommerce = forwardRef<
 
     return (
         <>
+            {unlockLayer}
             <VideoPlayerH5CommerceDrawers
-                vip={vip}
-                onVipOpenChange={setVip}
+                vip={false}
+                onVipOpenChange={() => undefined}
                 onVipEmbedClose={closeVip}
                 embedVideoEpisodeRowId={episodeRowId}
                 onEmbedPaySuccessEpisodeDetail={handlePaySuccess}

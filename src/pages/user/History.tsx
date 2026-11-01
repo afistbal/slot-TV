@@ -108,7 +108,7 @@ export default function Component({ variant = 'row' }: HistoryProps) {
         const dramaId = String(row['movie_id'] ?? '').trim();
         if (!dramaId) return null;
         const stored = ratedScores[dramaId];
-        const fromApi = Number(row['my_rating'] ?? row['rating'] ?? 0);
+        const fromApi = Number(row['my_rating'] ?? row['myRating'] ?? row['rating'] ?? row['score'] ?? 0);
         const current = stored ?? (Number.isInteger(fromApi) && fromApi >= 1 && fromApi <= 5 ? fromApi : 0);
         const locked = current > 0;
         return (

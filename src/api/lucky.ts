@@ -5,7 +5,7 @@ import { useLuckyStore } from '@/stores/lucky';
 import type { LuckySpinDraw, LuckySpinMode, LuckyWheelState } from '@/lib/luckyWheel';
 
 export type LuckyIconName = 'bell' | 'check' | 'check-circle' | 'external' | 'flame' | 'gift' | 'play' | 'send' | 'share' | 'star' | 'trending' | 'user' | 'sparkle' | 'chevron-right' | 'close' | 'clock' | 'help-circle' | 'coin';
-export type LuckyTask = { key: string; icon: LuckyIconName; title: string; description?: string; coins: number; done: boolean; earned?: number; ready?: boolean; xUsed?: boolean; action: 'claim' | 'go' | 'external' | 'push' | 'linkx' | 'telegram'; to?: string };
+export type LuckyTask = { key: string; icon: LuckyIconName; title: string; description?: string; coins: number; done: boolean; earned?: number; ready?: boolean; subscribed?: boolean; xUsed?: boolean; action: 'claim' | 'go' | 'external' | 'push' | 'linkx' | 'telegram'; to?: string };
 export type LuckyRewardCard = { key: string; icon: LuckyIconName; title: string; description: string; to: string };
 export type LuckyCheckin = { today: boolean; streak: number; rewards: number[]; multiplier: number; restricted?: boolean; milestonePendingCoins?: number };
 export type LuckyWatchStreak = { currentStreak: number; bestStreak: number; dailyBase: number; nextAnchor: number | null; nextAnchorReward: number };
@@ -23,7 +23,7 @@ export type LuckyTaskAction = { url: string; kind: LuckySocialActionKind };
 export type LuckyRatingQuota = { left: number; reward: number };
 export type LuckyRatingCandidate = { dramaId: string; title: string; coverUrl: string; epsWatched: number; myRating?: number };
 export type LuckyRatingResult = number | undefined;
-export type LuckyCoinType = 'watchMore' | 'shareOnce' | 'sendComment' | 'watchRate' | 'watchMovie' | 'bindX' | 'subTel' | 'checkTel';
+export type LuckyCoinType = 'watchMore' | 'shareOnce' | 'sendComment' | 'watchRate' | 'watchMovie' | 'pushOn' | 'bindX' | 'subTel' | 'checkTel';
 export type LuckySocialConfig = { xUrl: string; xHandle?: string; tgChannelJoinUrl: string; tgChannel?: string; tgBotUrl: string; telegramLinked?: boolean };
 
 // Backend implementation contracts approved by the user; these are our planned
@@ -32,12 +32,16 @@ export const luckyRoutes = {
     promo: 'user/promo/status', spin: 'user/spin', tasks: 'user/tasks', rewards: 'user/rewards', coin: 'user/coin', checkin: 'user/checkin', signin: 'user/signin',
     watchStreak: 'user/watch/streak', ratingQuota: 'user/rating/quota',
     ratingCandidates: 'movie/history', rate: 'user/rate', like: 'user/like', pushConfig: 'user/push/config',
-    pushSubscribe: 'user/push/subscribe', socialConfig: 'user/social/config',
+    pushSubscribe: 'user/push/subscribe', pushUnsubscribe: 'user/push/unsubscribe', socialConfig: 'user/social/config',
     bindX: 'user/social/x/bind', checkX: 'user/social/x/check', bindTelegram: 'user/social/telegram/bind', level: 'user/level',
 } as const;
 
 const isCount = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 const record = (value: unknown): Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+const taskCount = (value: unknown): number | null => {
+    const parsed = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+};
 function valid<T>(path: string, value: T, condition: boolean): T {
     if (!condition) throw new Error('POST /api/' + path + '：返回数据格式无效');
     return value;
@@ -236,8 +240,7 @@ export async function checkLuckyX(): Promise<{ ready: boolean; queued?: boolean 
 }
 export async function claimLuckyTask(task: Pick<LuckyTask, 'key'>): Promise<LuckyClaimResult> {
     if (task.key === 'checkin') return claimLuckySignin();
-    if (task.key === 'push_on') throw new Error('推送奖励由订阅接口自动发放，请使用开启通知操作');
-    const types: Record<string, LuckyCoinType> = { streak: 'watchMore', share: 'shareOnce', rating: 'watchRate', watch: 'watchMovie', bind_x: 'bindX', join_tg: 'subTel' };
+    const types: Record<string, LuckyCoinType> = { streak: 'watchMore', share: 'shareOnce', rating: 'watchRate', watch: 'watchMovie', push_on: 'pushOn', bind_x: 'bindX', join_tg: 'subTel' };
     const type = types[task.key];
     if (!type) throw new Error(task.key === 'follow_x' ? '关注 X 暂未提供对应的领奖 type，不能当作绑定 X 领奖' : '该任务不能直接领取奖励');
     return getLuckyCoins(type);
@@ -293,39 +296,61 @@ export async function finishLuckyExternalTask(key: string): Promise<void> {
     if (key === 'join_tg') { await pause(2500); await getLuckyCoins('checkTel'); }
     await getLuckyTasks(true);
 }
-export async function getLuckyRatingQuota(): Promise<LuckyRatingQuota> {
-    const data = await luckyRequest<LuckyRatingQuota>(luckyRoutes.ratingQuota);
-    return valid(luckyRoutes.ratingQuota, data, isCount(data.left) && isCount(data.reward));
+export function luckyRatingQuotaFromTasks(value: unknown): LuckyRatingQuota | null {
+    const data = record(camelLuckyPayload(value));
+    if (!Array.isArray(data.tasks)) return null;
+    const row = data.tasks.map(record).find(task => task.key === 'rating');
+    if (!row) return null;
+    const left = taskCount(row.left);
+    const reward = taskCount(row.cap);
+    return left === null || reward === null ? null : { left, reward };
+}
+export async function getLuckyRatingQuota(force = false): Promise<LuckyRatingQuota> {
+    const quota = luckyRatingQuotaFromTasks(await getLuckyTasks(force));
+    if (!quota) throw new Error('POST /api/user/tasks：缺少有效的评分次数');
+    return quota;
 }
 export async function getLuckyRatingCandidates(limit = 100, locale = 'zh-CN', staticBase = ''): Promise<LuckyRatingCandidate[]> {
     if (!Number.isInteger(limit) || limit < 1) throw new Error('limit 必须为正整数');
-    const payload = await luckyRequest<unknown>(luckyRoutes.ratingCandidates, { score: 0 });
+    const payload = await luckyRequest<unknown>(luckyRoutes.ratingCandidates, { page: 1, size: 5, score: 0 });
     const container = record(payload);
     const data = Array.isArray(payload) ? payload : container.data;
     if (!Array.isArray(data)) throw new Error('POST /api/' + luckyRoutes.ratingCandidates + '：返回列表格式无效');
-    return data.slice(0, limit).map(raw => {
+    return data.map(raw => {
         const row = record(raw); const titles = record(row.titleI18n);
         const id = row.movieId ?? row.dramaId;
         if ((typeof id !== 'string' || !id.trim()) && (typeof id !== 'number' || !Number.isSafeInteger(id))) throw new Error('候选作品缺少 dramaId');
         const title = typeof row.title === 'string' && row.title.trim()
             ? row.title
             : titles[locale] ?? titles['zh-CN'] ?? titles.zh ?? titles.en ?? Object.values(titles)[0];
-        const watched = Number(row.epsWatched ?? row.currentEpisode ?? row.episode ?? row.ep ?? row.lastEpisode ?? 0);
+        const progress = record(row.progress);
+        const watched = Number(row.epsWatched ?? row.currentEpisode ?? row.episode ?? row.ep ?? row.lastEpisode ?? progress.epNo ?? 0);
         if (typeof title !== 'string' || !isCount(watched)) throw new Error('候选作品缺少 title 或观看集数');
         const cover = row.coverPath ?? row.image ?? row.cover;
         const path = typeof cover === 'string' ? cover : '';
         const coverUrl = movieCoverUrl({ ...row, image: path, movie_id: id }, staticBase) ?? '';
         const currentRating = row.myRating ?? row.score ?? row.rating;
         return { dramaId: String(id), title, coverUrl, epsWatched: watched, myRating: isCount(currentRating) && currentRating <= 5 ? currentRating : 0 };
-    });
+    }).filter(row => !row.myRating).slice(0, limit);
 }
 export async function submitLuckyRating(dramaId: string, score: number): Promise<LuckyRatingResult> {
     if (!dramaId.trim()) throw new Error('dramaId 必填，必须来自当前剧');
-    if (!Number.isInteger(score) || score < 1 || score > 5) throw new Error('评分必须为 1–5 的整数');
+    if (!Number.isInteger(score) || score < 1 || score > 5) throw new Error('请选择有效星级');
+    const quota = await getLuckyRatingQuota(true).catch(() => null);
     await luckyRequest(luckyRoutes.rate, { dramaId: dramaId.trim(), score }, true);
-    const result = await getLuckyCoins('watchRate');
-    if (result.notYet || result.restricted || result.xUsed) throw new Error('评分已提交，评分奖励暂不可领取');
-    return result.coins;
+    if (!quota || quota.left <= 0) {
+        await getLuckyTasks(true).catch(() => undefined);
+        return undefined;
+    }
+    try {
+        const result = await getLuckyCoins('watchRate');
+        if (result.notYet || result.restricted || result.xUsed) return undefined;
+        return result.coins;
+    } catch {
+        return undefined;
+    } finally {
+        await getLuckyTasks(true).catch(() => undefined);
+    }
 }
 export async function toggleDramaLike(dramaId: number): Promise<{ liked?: boolean; count?: number }> {
     if (!Number.isSafeInteger(dramaId) || dramaId <= 0) throw new Error('dramaId 必须是当前剧的实际 ID');
@@ -358,9 +383,13 @@ export async function saveLuckyPushSubscription(subscription: PushSubscription):
     const result = claimResult(luckyRoutes.pushSubscribe, await luckyRequest(luckyRoutes.pushSubscribe, { endpoint: data.endpoint, keys: { p256dh: data.keys.p256dh, auth: data.keys.auth }, userAgent: navigator.userAgent }, true));
     if (result.restricted) throw new Error('当前账号暂不能开启推送奖励');
     if (result.notYet || result.pending) throw new Error('推送订阅尚未完成，请稍后重试');
-    // The subscribe endpoint awards the one-time bonus itself. Refresh a ready
-    // but unclaimed snapshot as well; never send a separate coin request.
-    const tasks = record(useLuckyStore.getState().tasks);
-    const pushTask = Array.isArray(tasks.once) ? tasks.once.map(record).find(task => task.key === 'push_on') : undefined;
-    if (!Array.isArray(tasks.once) || (pushTask && pushTask.done !== true)) invalidateLucky();
+    // 订阅完成只代表任务 ready；奖励由用户随后点击“领取”单独发放。
+    invalidateLucky();
+}
+
+export async function removeLuckyPushSubscription(endpoint: string): Promise<void> {
+    const normalizedEndpoint = endpoint.trim();
+    if (!normalizedEndpoint) throw new Error('浏览器未返回有效的推送订阅地址');
+    await luckyRequest(luckyRoutes.pushUnsubscribe, { endpoint: normalizedEndpoint }, true);
+    invalidateLucky();
 }

@@ -148,7 +148,7 @@ export default function DramaDetail() {
                 setFavoriteCount(Math.max(0, Number(next.info.favorite ?? 0)));
                 setLiked(readBoolean(rawInfo, ['is_like', 'liked', 'isLike']));
                 setLikeCount(readCount(rawInfo, ['like', 'likes', 'like_count', 'likeCount']));
-                setRatingScore(readCount(rawInfo, ['my_rating', 'myRating']));
+                setRatingScore(readCount(rawInfo, ['my_rating', 'myRating', 'rating', 'score']));
             })
             .catch((reason: unknown) => {
                 if (!cancelled) setError(reason instanceof Error ? reason.message : '详情加载失败');
@@ -329,10 +329,11 @@ export default function DramaDetail() {
                                         {favorite ? '已收藏' : '收藏'}
                                     </button>
                                     <button type="button" className={cn('drama-detail__action-btn', ratingScore > 0 && 'is-rated')} onClick={() => {
-                                        if (requireAccount()) setRatingOpen(true);
+                                        if (!requireAccount() || ratingScore > 0) return;
+                                        setRatingOpen(true);
                                     }}>
                                         <Star aria-hidden fill={ratingScore > 0 ? 'currentColor' : 'none'} />
-                                        {ratingScore > 0 ? `${ratingScore} 分` : '打分'}
+                                        {ratingScore > 0 ? '已评分' : '评分'}
                                     </button>
                                     <button type="button" className="drama-detail__action-btn" onClick={() => void handleShare()}>
                                         <Share2 aria-hidden />分享

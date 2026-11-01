@@ -100,13 +100,23 @@
     font-weight: 600;
 }
 
+.video-h5-drawer__episodeHeading { flex: 1 1 auto; min-width: 0; text-align: left; }
+.video-h5-drawer__episodeMeta { margin-top: 5px; color: rgb(255 255 255 / 48%); font-size: 12px; font-weight: 500; }
+.video-h5-drawer__rating { display: flex; align-items: center; gap: 10px; padding: 14px 20px 2px; color: #f3f3f1; font-size: 13px; font-weight: 700; }
+.video-h5-drawer__rating > div { display: flex; gap: 7px; }
+.video-h5-drawer__rating button { display: grid; width: 25px; height: 25px; place-items: center; padding: 0; border: 0; background: transparent; color: rgb(232 198 99 / 56%); cursor: pointer; }
+.video-h5-drawer__rating button svg { width: 21px; height: 21px; stroke-width: 1.8; }
+.video-h5-drawer__rating button.is-active { color: #e8c663; }
+.video-h5-drawer__rating button.is-active svg { fill: #e8c663; }
+.video-h5-drawer__rating button:disabled { cursor: wait; opacity: .62; }
+
 .video-h5-drawer__episodeTabs {
     display: flex;
     flex-shrink: 0;
     align-items: flex-end;
     gap: 24px;
     margin: 0;
-    padding: 16px 20px 0;
+    padding: 14px 20px 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }

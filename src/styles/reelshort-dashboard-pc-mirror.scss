@@ -478,12 +478,12 @@
     font-family: inherit;
     color: var(--rs-brand-foreground);
     text-decoration: none;
-    background-color: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
 .rs-profile__pc-aside .rs-profile__pc-accountBalance__topUp:hover {
-    background-color: var(--rs-brand-hover);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
 }
 

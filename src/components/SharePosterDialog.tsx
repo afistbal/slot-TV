@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { Copy, Download, Loader2, Share2, X } from 'lucide-react';
+import { ArrowUpRight, Copy, Crown, Download, Heart, Loader2, Share2, X } from 'lucide-react';
+import { LegacyCoinIcon as Coins } from '@/components/LegacyCoinIcon';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { BRAND_DISPLAY_NAME, BRAND_TOPNAV_WORDMARK_SRC } from '@/constants/brand';
 import { useSharePosterStore, type SharePosterData } from '@/stores/sharePoster';
-import { claimLuckyDailyShare } from '@/api/lucky';
+import { claimLuckyDailyShare, getLuckyRewards } from '@/api/lucky';
+import { getInviteInfo } from '@/api/invite';
+import { decodeLuckyReferralBenefits, type LuckyReferralBenefits } from '@/lib/luckyPageData';
 import { skipRemoteApi } from '@/env';
 import '@/styles/share-poster.scss';
 
@@ -73,10 +76,12 @@ export function SharePosterDialog() {
     const [poster, setPoster] = useState<{ url: string; file: File } | null>(null);
     const [error, setError] = useState('');
     const [revision, setRevision] = useState(0);
+    const [benefits, setBenefits] = useState<LuckyReferralBenefits | null>(null);
+    const [benefitsLoading, setBenefitsLoading] = useState(false);
     const rewarded = useRef(false);
     useEffect(() => {
         setPoster(null); setError(''); rewarded.current = false;
-        if (!data) return;
+        if (!data || data.reward) return;
         let cancelled = false; let objectUrl = '';
         void renderPoster(data).then(blob => {
             if (cancelled) return;
@@ -85,6 +90,30 @@ export function SharePosterDialog() {
         }).catch(reason => { if (!cancelled) setError(reason instanceof Error ? reason.message : '海报生成失败'); });
         return () => { cancelled = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
     }, [data, revision]);
+    useEffect(() => {
+        if (!data?.reward) {
+            setBenefits(null);
+            setBenefitsLoading(false);
+            return;
+        }
+        let active = true;
+        setBenefits(null);
+        setBenefitsLoading(true);
+        void Promise.allSettled([getLuckyRewards(), getInviteInfo()]).then(([rewardsResult, inviteResult]) => {
+            if (!active) return;
+            const configured = rewardsResult.status === 'fulfilled'
+                ? decodeLuckyReferralBenefits(rewardsResult.value)
+                : { dailyShare: null, signupInviter: null, signupInvitee: null, purchasePct: null };
+            const invite = inviteResult.status === 'fulfilled' ? inviteResult.value : null;
+            setBenefits({
+                dailyShare: configured.dailyShare,
+                signupInviter: configured.signupInviter ?? invite?.config.signupInviter ?? null,
+                signupInvitee: configured.signupInvitee ?? invite?.config.signupInvitee ?? null,
+                purchasePct: configured.purchasePct ?? invite?.config.purchasePct ?? null,
+            });
+        }).finally(() => { if (active) setBenefitsLoading(false); });
+        return () => { active = false; };
+    }, [data]);
     async function onShared() {
         if (!data?.reward || rewarded.current || skipRemoteApi) return;
         rewarded.current = true;
@@ -101,25 +130,66 @@ export function SharePosterDialog() {
         const anchor = document.createElement('a'); anchor.href = poster.url; anchor.download = poster.file.name; anchor.click();
         toast.success('已下载海报；手机也可长按图片保存');
     }
-    async function share() {
+    async function sharePoster() {
         if (!poster || !data) return;
         if (!navigator.canShare?.({ files: [poster.file] })) { toast.info('当前浏览器不支持分享图片，请保存海报后分享'); return; }
         try { await navigator.share({ files: [poster.file], title: data.title }); void onShared(); }
         catch (reason) { if (!(reason instanceof Error && reason.name === 'AbortError')) toast.error('分享失败，请保存海报后重试'); }
     }
+    async function shareLink() {
+        if (!data) return;
+        if (!navigator.share) {
+            await copy();
+            return;
+        }
+        try {
+            await navigator.share({ title: data.title, text: `一起看《${data.title}》`, url: data.url });
+            void onShared();
+        } catch (reason) {
+            if (!(reason instanceof Error && reason.name === 'AbortError')) await copy();
+        }
+    }
+    const signupInviter = benefits?.signupInviter ?? 0;
+    const signupInvitee = benefits?.signupInvitee ?? 0;
+    const purchasePct = benefits?.purchasePct ?? 0;
+    const dailyShare = benefits?.dailyShare ?? 0;
+    const hasSignupReward = signupInviter > 0 || signupInvitee > 0;
+    const amountText = (value: number) => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value);
+    const signupCopy = signupInviter > 0 && signupInvitee > 0
+        ? `好友用你的链接注册：TA 得 ${amountText(signupInvitee)} 金币见面礼；TA 看满 1 分钟，你得 ${amountText(signupInviter)} 金币`
+        : signupInviter > 0
+            ? `好友用你的链接注册并看满 1 分钟，你得 ${amountText(signupInviter)} 金币`
+            : `好友用你的链接注册，TA 得 ${amountText(signupInvitee)} 金币见面礼`;
     return <Dialog open={Boolean(data)} onOpenChange={open => { if (!open) close(); }}>
-        <DialogContent contentPreset="plain" hideCloseButton className="share-poster-dialog" overlayClassName="share-poster-overlay">
-            <DialogTitle className="sr-only">分享海报</DialogTitle>
-            <DialogDescription className="sr-only">保存或分享带二维码的海报，也可以复制链接</DialogDescription>
-            <div className="share-poster-preview">
-                {poster ? <img src={poster.url} alt={`${data?.title ?? ''}分享海报，含观看二维码`} /> : error ? <div className="share-poster-status" role="alert"><p>{error}</p><button onClick={() => setRevision(value => value + 1)}>重新生成</button></div> : <div className="share-poster-status" role="status"><Loader2 className="animate-spin" /><p>正在生成分享海报…</p></div>}
-            </div>
-            <div className="share-poster-actions">
-                <button disabled={!poster} onClick={save}><Download />保存海报</button>
-                <button className="is-primary" disabled={!poster} onClick={() => void share()}><Share2 />分享海报</button>
-                <button onClick={() => void copy()}><Copy />复制链接</button>
-            </div>
-            <button className="share-poster-close" aria-label="关闭分享海报" onClick={close}><X /></button>
+        <DialogContent contentPreset="plain" hideCloseButton className={data?.reward ? 'share-invite-dialog' : 'share-poster-dialog'} overlayClassName="share-poster-overlay">
+            <DialogTitle className="sr-only">{data?.reward ? '邀请好友一起看' : '分享海报'}</DialogTitle>
+            <DialogDescription className="sr-only">{data?.reward ? '发送邀请链接给好友' : '保存或分享带二维码的海报，也可以复制链接'}</DialogDescription>
+            {data?.reward ? <>
+                <button className="share-invite-dialog__close" aria-label="关闭" onClick={close}><X /></button>
+                <div className="share-invite-dialog__icon"><ArrowUpRight /></div>
+                <h2>邀请好友一起看</h2>
+                <p className="share-invite-dialog__drama">《{data.title}》</p>
+                <div className="share-invite-dialog__benefits">
+                    {hasSignupReward ? <div className="is-highlight"><Heart /><span><b>{signupCopy}</b></span></div> : null}
+                    {purchasePct > 0 ? <div><Crown /><span><b>好友每次充值/开会员，你都得 {amountText(purchasePct)}% 返币（终身）</b></span></div> : null}
+                    {dailyShare > 0 ? <div className="is-compact"><Coins /><span><b>每日首次分享 +{amountText(dailyShare)} 金币</b></span></div> : null}
+                    {!benefitsLoading && !hasSignupReward && purchasePct <= 0 && dailyShare <= 0 ? <div className="is-empty"><span><b>奖励配置暂未返回</b><small>邀请链接仍可正常分享</small></span></div> : null}
+                    {benefitsLoading ? <div className="is-loading"><Loader2 className="animate-spin" /><span><b>正在读取邀请奖励…</b></span></div> : null}
+                </div>
+                <button className="share-invite-dialog__primary" onClick={() => void shareLink()}><ArrowUpRight />发给好友</button>
+                <button className="share-invite-dialog__secondary" onClick={() => void copy()}><Copy />复制邀请链接</button>
+                <button className="share-invite-dialog__later" onClick={close}>下次再说</button>
+            </> : <>
+                <div className="share-poster-preview">
+                    {poster ? <img src={poster.url} alt={`${data?.title ?? ''}分享海报，含观看二维码`} /> : error ? <div className="share-poster-status" role="alert"><p>{error}</p><button onClick={() => setRevision(value => value + 1)}>重新生成</button></div> : <div className="share-poster-status" role="status"><Loader2 className="animate-spin" /><p>正在生成分享海报…</p></div>}
+                </div>
+                <div className="share-poster-actions">
+                    <button disabled={!poster} onClick={save}><Download />保存海报</button>
+                    <button className="is-primary" disabled={!poster} onClick={() => void sharePoster()}><Share2 />分享海报</button>
+                    <button onClick={() => void copy()}><Copy />复制链接</button>
+                </div>
+                <button className="share-poster-close" aria-label="关闭分享海报" onClick={close}><X /></button>
+            </>}
         </DialogContent>
     </Dialog>;
 }

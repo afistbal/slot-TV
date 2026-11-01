@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useIntl } from 'react-intl';
 import { useNavigate } from 'react-router';
-import { Clock, Coins, Gift, HelpCircle, Layers3, LoaderCircle, Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { Clock, Gift, HelpCircle, Layers3, LoaderCircle, Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { LegacyCoinIcon as Coins } from '@/components/LegacyCoinIcon';
 import { spinLuckyWheel } from '@/api/lucky';
 import { decodeLuckyWheel, luckyPrizeLabel, luckyWheelAction, luckyWheelSegmentColor, luckyWheelSlots, type LuckySpinDraw, type LuckySpinMode, type LuckyWheelSlot, type LuckyWheelState } from '@/lib/luckyWheel';
 import { useTopUpStore } from '@/stores/topUp';

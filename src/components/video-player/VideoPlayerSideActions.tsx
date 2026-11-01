@@ -4,7 +4,7 @@ import { FormattedMessage } from 'react-intl';
 
 import shareEntryIcon from '@/assets/icons/share/share-entry.svg';
 import { cn } from '@/lib/utils';
-import { formatFavoriteCountK } from '@/components/video-player/videoPlayerUtils';
+import { formatSideActionCount } from '@/components/video-player/videoPlayerUtils';
 
 function SideActionItem({
     icon,
@@ -106,7 +106,7 @@ export function VideoPlayerSideActions({
                             aria-hidden
                         />
                     }
-                    label={likeCount > 0 ? formatFavoriteCountK(likeCount) : <FormattedMessage id="video_like" defaultMessage="点赞" />}
+                    label={likeCount > 0 ? formatSideActionCount(likeCount) : <FormattedMessage id="video_like" defaultMessage="点赞" />}
                     onClick={onLikeClick}
                     labelClassName={liked ? 'text-[#ffd000]' : 'text-white'}
                 />
@@ -122,7 +122,7 @@ export function VideoPlayerSideActions({
                             aria-hidden
                         />
                     }
-                    label={formatFavoriteCountK(favoriteCount)}
+                    label={formatSideActionCount(favoriteCount)}
                     onClick={onFavoriteClick}
                 />
             ) : null}
@@ -137,7 +137,7 @@ export function VideoPlayerSideActions({
                             aria-hidden
                         />
                     }
-                    label={ratingScore > 0 ? `${ratingScore}分` : <FormattedMessage id="video_rate" defaultMessage="打分" />}
+                    label={ratingScore > 0 ? '已评' : <FormattedMessage id="video_rate" defaultMessage="评分" />}
                     onClick={onRatingClick}
                     labelClassName={ratingScore > 0 ? 'text-[#ffd000]' : 'text-white'}
                 />
@@ -168,7 +168,7 @@ export function VideoPlayerSideActions({
             {showShareAction ? (
                 <SideActionItem
                     icon={<img src={shareEntryIcon} alt="" className="h-8 w-8" />}
-                    label={<FormattedMessage id="share" />}
+                    label={<FormattedMessage id="share" defaultMessage="分享" />}
                     onClick={showShareAction}
                 />
             ) : null}

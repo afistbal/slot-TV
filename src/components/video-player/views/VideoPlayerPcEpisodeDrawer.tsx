@@ -6,6 +6,7 @@ import type { RefObject } from 'react';
 import type { EpisodeTabRange } from '../videoPlayerPcEpisodeTabs';
 import { VideoPlayerPcDrawerCloseButton } from './VideoPlayerPcDrawerCloseButton';
 import { VideoPlayerPcRightDrawer } from './VideoPlayerPcRightDrawer';
+import { Star } from 'lucide-react';
 
 export type VideoPlayerPcEpisodeDrawerProps = {
     open: boolean;
@@ -22,6 +23,9 @@ export type VideoPlayerPcEpisodeDrawerProps = {
     onSelectEpisodeByListIndex: (listIndex: number) => void;
     /** 分集格锁角标；未传则沿用 info 列表 vip/locked */
     resolveEpisodeCellLocked?: (row: IPlayerData['episodes'][number]) => boolean;
+    ratingScore?: number;
+    ratingSubmitting?: boolean;
+    onRate?: (score: number) => void;
 };
 
 export function VideoPlayerPcEpisodeDrawer({
@@ -38,6 +42,9 @@ export function VideoPlayerPcEpisodeDrawer({
     filteredEpisodes,
     onSelectEpisodeByListIndex,
     resolveEpisodeCellLocked,
+    ratingScore = 0,
+    ratingSubmitting = false,
+    onRate,
 }: VideoPlayerPcEpisodeDrawerProps) {
     return (
         <VideoPlayerPcRightDrawer
@@ -50,6 +57,28 @@ export function VideoPlayerPcEpisodeDrawer({
             showPanelClose={false}
         >
             <div className="video-pc-episode-drawer__scroll">
+                <div className="video-pc-episode-drawer__dramaHeader">
+                    <div>
+                        <strong>{data.info.title}</strong>
+                        <small>共 {data.episodes.length} 集 · 正在看 EP.{String(currentEpisodeNo).padStart(2, '0')}</small>
+                    </div>
+                    <VideoPlayerPcDrawerCloseButton onClose={onClose} tabIndex={open ? 0 : -1} />
+                </div>
+                {onRate ? <div className="video-pc-episode-drawer__rating">
+                    <span>给这部剧打分</span>
+                    <div role="radiogroup" aria-label="给这部剧打分">
+                        {[1, 2, 3, 4, 5].map((score) => <button
+                            key={score}
+                            type="button"
+                            role="radio"
+                            aria-label={`${score} 星`}
+                            aria-checked={ratingScore >= score}
+                            disabled={ratingSubmitting}
+                            className={cn(ratingScore >= score && 'is-active')}
+                            onClick={() => onRate(score)}
+                        ><Star /></button>)}
+                    </div>
+                </div> : null}
                 <div className="video-pc-episode-drawer__header">
                     <div className="video-pc-episode-drawer__tabs">
                     {tabRanges.map((r, idx) => (
@@ -69,7 +98,6 @@ export function VideoPlayerPcEpisodeDrawer({
                         </button>
                     ))}
                     </div>
-                    <VideoPlayerPcDrawerCloseButton onClose={onClose} tabIndex={open ? 0 : -1} />
                 </div>
                 <div className="video-pc-episode-drawer__grid">
                     {filteredEpisodes.map((v) => {

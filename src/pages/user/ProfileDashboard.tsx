@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useIntl } from 'react-intl';
-import { ChevronDown, ChevronRight, Coins, Crown, Gift, Globe2, Heart, HelpCircle, History, LockKeyhole, LogIn, LogOut, Plus, Search, Settings, Sparkles, Star, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Crown, Gift, Globe2, Heart, History, LockKeyhole, LogIn, LogOut, Plus, Search, Settings, Sparkles, Star, X } from 'lucide-react';
+import customerServiceChatIcon from '@/assets/icons/customer-service-chat.svg';
+import { LegacyCoinIcon as Coins } from '@/components/LegacyCoinIcon';
 import { toast } from 'sonner';
 import { TopUpPanel } from '@/components/TopUpDialog';
 import { InviteCard } from '@/components/InviteCard';
@@ -131,7 +133,6 @@ export default function ProfileDashboard() {
         { name: text('福利', 'Rewards'), Icon: Gift, to: '/lucky', tone: 'gold', count: badge },
         { name: text('推广赚现金', 'Affiliate'), Icon: Coins, to: '/affiliate', tone: 'green' },
         { name: text('创作者中心', 'Creator'), Icon: Sparkles, to: '/creator' },
-        { name: intl.formatMessage({ id: 'feedback_help' }), Icon: HelpCircle, to: '/page/feedback' },
     ];
 
     return <div className="me-page-shell">
@@ -147,9 +148,12 @@ export default function ProfileDashboard() {
                                     {photo ? <img src={photo} alt="" referrerPolicy="no-referrer" onError={() => user.update({ avatar: '' })} /> : <span>{name.slice(0, 1).toUpperCase()}</span>}
                                 </Link>
                                 <div className="me-user__info"><strong>{name}</strong><div><span>UID: {uid || '0'}</span></div></div>
+                                <Link className="me-user__support" to="/page/feedback" aria-label={text('客服中心', 'Customer Service')} title={text('客服中心', 'Customer Service')}>
+                                    <img src={customerServiceChatIcon} alt="" aria-hidden />
+                                </Link>
                             </div>
                             <div className="me-user__actions">
-                                <Link to="/user/detail" onClick={event => { if (!requireAccount()) event.preventDefault(); }}><Settings size={15} /><span>{text('设置', 'Settings')}</span></Link>
+                                <Link to="/settings" onClick={event => { if (!requireAccount()) event.preventDefault(); }}><Settings size={15} /><span>{text('设置', 'Settings')}</span></Link>
                                 <button type="button" onClick={() => setLanguageOpen(true)} aria-haspopup="dialog"><Globe2 size={15} /><span>{APP_LANGUAGES.find(language => language.code === intl.locale)?.label ?? 'Language'}</span></button>
                                 <button type="button" onClick={() => { if (signed) void logoutToAnonymousSession(); else requestLogin(); }}>{signed ? <LogOut size={15} /> : <LogIn size={15} />}<span>{signed ? text('退出登录', 'Log out') : text('登录', 'Log in')}</span></button>
                             </div>

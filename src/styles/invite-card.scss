@@ -18,7 +18,7 @@
     &__description { margin: 6px 0 12px; font-weight: 600; overflow-wrap: anywhere; }
     &__copy { display: flex; gap: 8px; min-width: 0; }
     &__copy input { box-sizing: border-box; width: 0; min-width: 0; height: 44px; flex: 1; padding: 0 12px; border: 1px solid #ffffff12; border-radius: 12px; background: #1b1e22; color: #8b949e; font-family: monospace; font-size: 11px; }
-    &__primary { flex-shrink: 0; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--rs-brand, #e8c268); color: var(--rs-brand-foreground, #2b1e00); font-weight: 700 !important; }
+    &__primary { flex-shrink: 0; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--rs-brand-gradient); color: var(--rs-brand-foreground, #653e26); font-weight: 700 !important; }
     &__milestone { margin-top: 12px; padding: 8px 12px; border: 1px solid #e8c26840; border-radius: 12px; background: #e8c26809; }
     &__milestone > div:first-child { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; align-items: baseline; }
     &__milestone strong { color: #e8c268; font-size: 12px; }

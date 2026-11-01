@@ -1,5 +1,6 @@
 import {
     getLuckyPushConfig,
+    removeLuckyPushSubscription,
     saveLuckyPushSubscription,
 } from '@/api/lucky';
 import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
@@ -7,6 +8,7 @@ import { isIosLikeDevice } from '@/lib/isIosLikeDevice';
 const SERVICE_WORKER_READY_TIMEOUT_MS = 10_000;
 const PUSH_OPERATION_TIMEOUT_MS = 30_000;
 export type LuckyPushProgress = 'permission' | 'connection' | 'saving';
+export type LuckyPushStatus = 'enabled' | 'disabled' | 'blocked' | 'unsupported';
 
 async function pushOperation<T>(promise: Promise<T>, message: string): Promise<T> {
     let timer = 0;
@@ -123,4 +125,24 @@ export async function syncLuckyPushSubscription(
     if (missingPushFeatures().length || Notification.permission !== 'granted') return false;
     await enableLuckyPushSubscription(preferredRegistration);
     return true;
+}
+
+export async function getLuckyPushStatus(): Promise<LuckyPushStatus> {
+    if (missingPushFeatures().length) return 'unsupported';
+    if (Notification.permission === 'denied') return 'blocked';
+    const registration = await navigator.serviceWorker.getRegistration('/');
+    if (!registration) return 'disabled';
+    return await registration.pushManager.getSubscription() ? 'enabled' : 'disabled';
+}
+
+export async function disableLuckyPushSubscription(): Promise<void> {
+    ensurePushSupport();
+    const registration = await navigator.serviceWorker.getRegistration('/');
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return;
+
+    // 先让服务端停止投递，再移除浏览器订阅，避免服务端残留一个无法主动清理的 endpoint。
+    await removeLuckyPushSubscription(subscription.endpoint);
+    const removed = await subscription.unsubscribe();
+    if (!removed) throw new Error('浏览器未能关闭推送订阅，请稍后重试。');
 }

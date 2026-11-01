@@ -315,7 +315,7 @@
     margin-top: 8px;
     border: 0;
     border-radius: 24px;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
     font-size: 16px;
     font-weight: 600;
@@ -531,7 +531,7 @@
     padding: 0 10px;
     border: 0;
     border-radius: 7px;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
     font-size: 13px;
     font-weight: 600;
@@ -578,7 +578,7 @@
     margin-top: 16px;
     border-radius: 10px;
     border: 0;
-    background: var(--rs-brand);
+    background: var(--rs-brand-gradient);
     color: var(--rs-brand-foreground);
     box-shadow: 0 8px 20px rgb(232 194 104 / 0.16);
     font-size: 14px;

@@ -1,0 +1,193 @@
+.video-unlock-dialog__overlay {
+    background: rgb(2 3 4 / 80%);
+    backdrop-filter: blur(16px) saturate(75%);
+}
+
+.video-unlock-dialog[data-slot='dialog-content'] {
+    position: fixed;
+    width: min(374px, calc(100vw - 24px));
+    overflow: hidden;
+    padding: 30px 24px 21px;
+    border: 1px solid rgb(230 190 112 / 17%);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 50% -18%, rgb(225 181 96 / 13%), transparent 42%),
+        linear-gradient(160deg, #18191a 0%, #111214 48%, #0c0e10 100%);
+    box-shadow:
+        0 34px 100px rgb(0 0 0 / 72%),
+        0 0 0 1px rgb(0 0 0 / 35%),
+        inset 0 1px 0 rgb(255 255 255 / 5%);
+    color: #f2efe8;
+    text-align: center;
+}
+
+.video-unlock-dialog[data-slot='dialog-content']::before {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 112px;
+    height: 1px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(90deg, transparent, #f3d691 35%, #c9953d 65%, transparent);
+    content: '';
+    transform: translateX(-50%);
+}
+
+.video-unlock-dialog[data-slot='dialog-content']::after {
+    position: absolute;
+    inset: 1px;
+    border: 1px solid rgb(255 255 255 / 2.5%);
+    border-radius: 20px;
+    content: '';
+    pointer-events: none;
+}
+
+.video-unlock-dialog__close {
+    position: absolute;
+    z-index: 1;
+    top: 14px;
+    right: 14px;
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #777b80;
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease;
+    svg { width: 17px; height: 17px; }
+    &:hover { background: rgb(255 255 255 / 5%); color: #d9d6ce; }
+}
+
+.video-unlock-dialog__eyebrow {
+    color: #8f8b82;
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: 3.2px;
+}
+
+.video-unlock-dialog__title {
+    max-width: 300px;
+    margin: 10px auto 0;
+    color: #f5f3ed;
+    font-size: 17px;
+    font-weight: 720;
+    line-height: 1.38;
+    letter-spacing: -.15px;
+}
+
+.video-unlock-dialog__price {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    margin: 22px 0 8px;
+    color: #d9b257;
+    strong {
+        color: #edc869;
+        font-size: 42px;
+        line-height: .95;
+        font-weight: 760;
+        letter-spacing: -1.5px;
+        text-shadow: 0 8px 28px rgb(218 170 74 / 17%);
+    }
+    span { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 650; }
+    svg { width: 13px; height: 13px; }
+}
+
+.video-unlock-dialog__balance {
+    margin: 0 0 8px;
+    color: #82878d;
+    font-size: 11px;
+    b { color: #d9b45d; font-weight: 650; }
+}
+
+.video-unlock-dialog__shortage {
+    width: fit-content;
+    margin: 0 auto 14px;
+    padding: 3px 10px;
+    border: 1px solid rgb(235 105 89 / 20%);
+    border-radius: 999px;
+    background: rgb(207 68 55 / 8%);
+    color: #ed7468;
+    font-size: 11px;
+    font-weight: 650;
+}
+.video-unlock-dialog__refund { margin: 0 0 12px; color: rgb(146 150 156 / 48%); font-size: 9px; }
+
+.video-unlock-dialog__primary,
+.video-unlock-dialog__secondary,
+.video-unlock-dialog__vip {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-weight: 650;
+    cursor: pointer;
+    svg { width: 16px; height: 16px; flex: 0 0 auto; }
+}
+
+.video-unlock-dialog__primary {
+    min-height: 48px;
+    gap: 7px;
+    border: 1px solid rgb(255 230 168 / 25%);
+    background: var(--rs-brand-gradient);
+    box-shadow: 0 10px 30px rgb(167 114 33 / 19%), inset 0 1px 0 rgb(255 255 255 / 28%);
+    color: var(--rs-brand-foreground);
+    font-size: 14px;
+    transition: filter 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+    &:hover { filter: brightness(1.04); box-shadow: 0 12px 32px rgb(167 114 33 / 26%), inset 0 1px 0 rgb(255 255 255 / 30%); }
+    &:active { transform: scale(.985); }
+    &:disabled { opacity: .65; cursor: wait; }
+}
+
+.video-unlock-dialog__secondary {
+    min-height: 43px;
+    margin-top: 8px;
+    gap: 7px;
+    border: 1px solid rgb(214 171 84 / 25%);
+    background: rgb(205 156 61 / 4.5%);
+    color: #d9bb76;
+    font-size: 12px;
+    transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 120ms ease;
+    &:hover { border-color: rgb(214 171 84 / 43%); background: rgb(205 156 61 / 7%); color: #edd08c; }
+    &:active { transform: scale(.985); }
+}
+
+.video-unlock-dialog__vip {
+    position: relative;
+    min-height: 42px;
+    margin-top: 8px;
+    justify-content: flex-start;
+    gap: 9px;
+    padding: 8px 34px 8px 12px;
+    border: 1px solid rgb(255 255 255 / 7%);
+    background: rgb(255 255 255 / 2%);
+    color: #c7c3ba;
+    font-size: 11px;
+    line-height: 16px;
+    text-align: left;
+    transition: border-color 160ms ease, background-color 160ms ease, transform 120ms ease;
+    svg { color: #cda653; }
+    &::after { position: absolute; right: 14px; color: #666b71; content: '\203A'; font-size: 20px; font-weight: 300; }
+    &:hover { border-color: rgb(205 166 83 / 20%); background: rgb(255 255 255 / 3.5%); color: #e2ded5; }
+    &:active { transform: scale(.985); }
+}
+
+.video-unlock-dialog__later {
+    margin-top: 14px;
+    border: 0;
+    background: transparent;
+    color: #686d73;
+    font-size: 11px;
+    cursor: pointer;
+    transition: color 160ms ease;
+    &:hover { color: #a4a7ab; }
+}
+
+@media (max-width: 767px) {
+    .video-unlock-dialog[data-slot='dialog-content'] { padding: 29px 20px 20px; border-radius: 21px; }
+}

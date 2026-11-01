@@ -124,6 +124,7 @@ export function prefetchUserRouteForPathname(pathname: string): void {
     if (path === '/creator') return prefetchIntentModule('creator', () => import('../pages/user/CreatorProgram'));
     if (path === '/wallet') return prefetchIntentModule('wallet', () => import('../pages/user/Wallet'));
     if (path === '/user/detail') return prefetchIntentModule('user-detail', () => import('../pages/user/UserDetail'));
+    if (path === '/settings') return prefetchIntentModule('settings', () => import('../pages/user/Settings'));
     if (path.startsWith('/video/') || path.startsWith('/v-demo/')) return prefetchIntentModule('video', () => import('../pages/user/VDemo'));
     if (path.startsWith('/share/')) return prefetchIntentModule('share', () => import('../pages/user/ShareToVideoRedirect'));
     if (path === '/page/feedback') return prefetchIntentModule('feedback', () => import('../pages/user/Feedback'));
