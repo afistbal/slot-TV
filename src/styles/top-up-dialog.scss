@@ -82,6 +82,7 @@
     }
 
     .top-up-dialog--embedded .top-up-dialog__product--featured {
+        overflow: visible;
         border-color: rgba(231, 178, 95, .34);
         background: linear-gradient(100deg, rgba(231, 178, 95, .075), rgba(255, 255, 255, .018) 58%);
         box-shadow: inset 0 0 0 1px rgba(231, 178, 95, .06);
@@ -153,7 +154,7 @@
         font-size: 11px;
     }
 
-    .top-up-dialog--embedded .top-up-dialog__badge:not(.top-up-dialog__badge--inline) {
+    .top-up-dialog--embedded .top-up-dialog__badge--unavailable {
         top: 0;
         right: 0;
         left: auto;
@@ -274,7 +275,7 @@
     &__tag--coins { border-color: transparent; background: var(--rs-brand-gradient); color: var(--rs-brand-foreground); }
     &__badge { position: absolute; top: -8px; left: 12px; padding: 2px 8px; border-radius: 99px; background: var(--rs-brand-gradient); color: var(--rs-brand-foreground); font-size: 10px; font-weight: 700; }
     &__badge--coins { background: var(--rs-brand, #e8c268); }
-    &__badge--inline { position: static; display: inline-flex; min-height: 21px; align-items: center; margin-inline-start: 3px; padding: 3px 8px; border: 0; background: linear-gradient(135deg, #f1cf82, #cd963e); color: #3d280b; font-size: 10px; line-height: 1; font-weight: 800; vertical-align: middle; box-shadow: inset 0 1px rgba(255, 255, 255, .24); }
+    &__badge--featured { z-index: 2; top: -10px; right: 16px; left: auto; display: inline-flex; min-height: 20px; align-items: center; padding: 3px 8px; border: 1px solid #c99541; background: #25221d; color: #efc66f; font-size: 10px; line-height: 1; font-weight: 800; box-shadow: 0 2px 6px rgba(0, 0, 0, .28); }
     &__badge--unavailable { display: inline-flex; align-items: center; gap: 3px; background: #34383d; color: #c5cbd3; }
     &__badge--afterUnavailable { left: 72px; }
     &__perk { display: block; margin-top: 6px; color: var(--rs-brand, #e8c268); font-size: 12px; font-weight: 600; }
