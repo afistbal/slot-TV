@@ -195,7 +195,7 @@ export function VDemoH5PlayerShell({
             }
 
             const attempt = ++navigationAttemptRef.current;
-            void fetchVDemoActiveEpisode(row.id)
+            void fetchVDemoActiveEpisode(row.id, viewerIsVip)
                 .then((detail) => {
                     if (attempt !== navigationAttemptRef.current) {
                         return;

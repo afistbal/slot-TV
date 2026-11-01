@@ -1,5 +1,6 @@
 /** Fetch the active episode on every slide to refresh lock/can_unlock state. */
 import { api } from '@/api';
+import { readAutoUnlockNext } from '@/lib/autoUnlockNext';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { isEpisodeDetailLocked } from '@/components/video-player/videoPlayerUtils';
 
@@ -29,6 +30,7 @@ export function clearVDemoActiveEpisodeCache(): void {
 /** 每次 active 都请求；仅合并进行中的同 id 请求 */
 export async function fetchVDemoActiveEpisode(
     episodeRowId: number,
+    viewerIsVip: boolean,
 ): Promise<IPlayerEpisode | null> {
     const nid = Number(episodeRowId);
     if (!Number.isFinite(nid) || nid <= 0) {
@@ -40,10 +42,11 @@ export async function fetchVDemoActiveEpisode(
         return existing;
     }
 
-    // 进入付费集只查询状态，不在后台静默扣币；用户确认后再由解锁弹窗提交 auto_unlock=1。
-    const autoUnlock = 0;
     const task = (async (): Promise<IPlayerEpisode | null> => {
         try {
+            const token = localStorage.getItem('token');
+            const autoUnlock = !viewerIsVip && await readAutoUnlockNext() === true ? 1 : 0;
+            if (token !== localStorage.getItem('token')) return null;
             const result = await api<IPlayerEpisode>('movie/episode', {
                 data: {
                     id: nid,
@@ -52,7 +55,7 @@ export async function fetchVDemoActiveEpisode(
                 loading: false,
             });
 
-            if (result.c !== 0) {
+            if (token !== localStorage.getItem('token') || result.c !== 0) {
                 return null;
             }
 

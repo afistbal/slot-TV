@@ -972,5 +972,9 @@
     "android_add_home_guide_step_1": "步驟 1：開啟瀏覽器選單（通常為 ⋮、≡ 或底部選單按鈕）",
     "android_add_home_guide_step_2": "步驟 2：尋找「加入主畫面」「新增至桌面」或「安裝應用程式」；部分瀏覽器會放在「工具」或「更多」中",
     "android_add_home_guide_step_3": "步驟 3：依提示確認新增；如系統提示權限，請允許瀏覽器建立桌面捷徑",
-    "android_add_home_guide_fallback": "如果 Via 等瀏覽器的選單沒有此功能，請複製目前網站網址，用 Chrome 或 Edge 開啟後再新增。實際選單名稱及是否支援取決於瀏覽器版本與手機系統。"
+    "android_add_home_guide_fallback": "如果 Via 等瀏覽器的選單沒有此功能，請複製目前網站網址，用 Chrome 或 Edge 開啟後再新增。實際選單名稱及是否支援取決於瀏覽器版本與手機系統。",
+    "account_auto_unlock_next": "自動解鎖下一集",
+    "account_auto_unlock_description": "開啟後，觀看下一集時將自動使用金幣解鎖。",
+    "account_auto_unlock_retry": "讀取失敗，點擊重試",
+    "account_auto_unlock_save_failed": "儲存失敗，請重試"
 }

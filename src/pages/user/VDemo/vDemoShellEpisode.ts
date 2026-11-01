@@ -40,7 +40,7 @@ export function useVDemoActiveEpisode(
             return;
         }
         let cancelled = false;
-        void fetchVDemoActiveEpisode(row.id).then((ep) => {
+        void fetchVDemoActiveEpisode(row.id, viewerIsVip).then((ep) => {
             if (!cancelled && ep) {
                 syncVDemoEpisodeVideoToBatch(ep);
                 setRevision((n) => n + 1);
