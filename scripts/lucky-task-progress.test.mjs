@@ -15,16 +15,16 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/lib/luckyWhee
 vm.runInNewContext(compiled, { exports, require: () => wheel });
 const decode = (tasks, earned = 0) => exports.decodeLuckyTasks({ tasks, earned, total: 50, once: [], once_total: 0 }).daily;
 
-test('claimed check-in contributes to progress even when the summary is still zero', () => {
+test('daily progress uses the server aggregate even when a task already reports credit', () => {
     const daily = decode([{ key: 'checkin', cap: 10, earned: 10, done: true }]);
-    assert.equal(daily.earned, 10);
-    assert.equal(daily.earned / daily.total * 100, 20);
-    assert.equal(daily.total - daily.earned, 40);
+    assert.equal(daily.earned, 0);
+    assert.equal(daily.earned / daily.total * 100, 0);
+    assert.equal(daily.total - daily.earned, 50);
 });
 
-test('multiple credited rewards are added once, without adding the summary twice', () => {
+test('per-task credits never replace or add to the server aggregate', () => {
     const tasks = [{ key: 'checkin', cap: 10, earned: 10, done: true }, { key: 'share', cap: 30, earned: 5, done: false }];
-    assert.equal(decode(tasks, 0).earned, 15);
+    assert.equal(decode(tasks, 0).earned, 0);
     assert.equal(decode(tasks, 15).earned, 15);
 });
 
@@ -39,9 +39,30 @@ test('hidden comment rows do not change backend daily aggregates', () => {
     assert.equal(daily.total, 50);
 });
 
-test('numeric-string task amounts are supported and newer summary totals are retained', () => {
-    assert.equal(decode([{ key: 'checkin', cap: '10', earned: '10', done: true }], '0').earned, 10);
+test('numeric-string amounts are supported and the summary remains authoritative', () => {
+    assert.equal(decode([{ key: 'checkin', cap: '10', earned: '10', done: true }], '0').earned, 0);
     assert.equal(decode([{ key: 'checkin', cap: 10, earned: 10, done: true }], 15).earned, 15);
+});
+
+test('current API payload displays 25 / 73 while rating keeps its own earned score', () => {
+    const result = exports.decodeLuckyTasks({
+        tasks: [
+            { key: 'checkin', cap: 10, done: true, earned: 10 },
+            { key: 'streak', cap: 3, daily_cap: 3, done: false, earned: 0, ready: true },
+            { key: 'share', cap: 30, done: false, earned: 0 },
+            { key: 'comment', cap: 0, done: false, earned: 0 },
+            { key: 'rating', cap: 3, daily_cap: 15, done: true, earned: 15, left: 0 },
+            { key: 'watch', cap: 15, daily_cap: 15, done: false, earned: 0, need: 3600, sec: 31 },
+        ],
+        total: 73, earned: 25,
+        once: [{ key: 'push_on', coins: 30, done: false, ready: true }], once_total: 30,
+    });
+    const rating = result.daily.tasks.find(task => task.key === 'rating');
+    assert.equal(result.daily.earned, 25);
+    assert.equal(result.daily.total, 73);
+    assert.equal(rating.coins, 3);
+    assert.equal(rating.earned, 15);
+    assert.equal(rating.done, true);
 });
 
 test('reported daily total 48 stays 48 even when a hidden comment cap is 3', () => {

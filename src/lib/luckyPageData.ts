@@ -79,15 +79,11 @@ export function decodeLuckyTasks(value: unknown, locale = 'zh-CN'): Pick<LuckyPa
             ready, subscribed: row.subscribed === true, xUsed: row.xUsed === true,
             action: key === 'push_on' && ready ? 'claim' : key !== 'push_on' && ready ? 'claim' : action });
     }
-    // A task can report credited coins before the aggregate catches up. Keep
-    // the summary at least as high as the actual visible task credits, without
-    // counting claimable rewards or adding the aggregate a second time.
-    const creditedTaskCoins = tasks.reduce((sum, task) => sum + (task.earned ?? 0), 0);
-    // The backend owns daily aggregates; hiding a task does not mean its cap
-    // or credits were included in those aggregates. Do not subtract them again.
-    const summaryCoins = count(data.earned);
     return {
-        daily: { earned: Math.max(creditedTaskCoins, summaryCoins),
+        // Match the benchmark: the daily score is server-authoritative and is
+        // displayed directly as earned / total. Per-task earned values are only
+        // used by their own rows and must not rewrite the aggregate score.
+        daily: { earned: count(data.earned),
             total: count(data.total), restricted: data.restricted === true, tasks },
         // once_total may be zero or include disabled social tasks. This caption
         // describes the displayed tasks, including rewards already claimed.
