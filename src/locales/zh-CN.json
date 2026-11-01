@@ -972,6 +972,9 @@
     "android_add_home_guide_step_1": "步骤 1：打开浏览器菜单（通常为 ⋮、≡ 或底部菜单按钮）",
     "android_add_home_guide_step_2": "步骤 2：查找“添加到主屏幕”“添加到桌面”或“安装应用”；部分浏览器会放在“工具”或“更多”中",
     "android_add_home_guide_step_3": "步骤 3：按提示确认添加；如系统提示权限，请允许浏览器创建桌面快捷方式",
-    "android_add_home_guide_fallback": "如果 Via 等浏览器的菜单没有此功能，请复制当前网站地址，用 Chrome 或 Edge 打开后再添加。具体菜单名称和是否支持取决于浏览器版本及手机系统。"
+    "android_add_home_guide_fallback": "如果 Via 等浏览器的菜单没有此功能，请复制当前网站地址，用 Chrome 或 Edge 打开后再添加。具体菜单名称和是否支持取决于浏览器版本及手机系统。",
+    "account_auto_unlock_next": "自动解锁下一集",
+    "account_auto_unlock_description": "开启后，观看下一集时将自动使用金币解锁。",
+    "account_auto_unlock_retry": "读取失败，点击重试",
+    "account_auto_unlock_save_failed": "保存失败，请重试"
 }
-

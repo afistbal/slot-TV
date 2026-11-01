@@ -744,6 +744,43 @@
     overflow-wrap: anywhere;
 }
 
+.rs-auto-unlock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: #141619;
+    color: #eceff1;
+    font-size: 14px;
+}
+.rs-auto-unlock__copy {
+    min-width: 0;
+    p { margin: 6px 0 0; color: #9da7b2; font-size: 12px; line-height: 1.6; }
+}
+.rs-auto-unlock__retry { margin-top: 8px; padding: 0; color: var(--rs-brand); font-size: 12px; }
+.rs-auto-unlock__switch {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 26px;
+    padding: 3px;
+    border: 0;
+    border-radius: 99px;
+    background: #454b52;
+    cursor: pointer;
+    transition: background 180ms ease;
+    span { display: block; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 180ms ease; }
+    &[aria-checked='true'] { background: var(--rs-brand); span { transform: translateX(18px); background: #2b1e00; } }
+    &:disabled { opacity: 0.45; cursor: default; }
+    &:focus-visible { outline: 2px solid var(--rs-brand); outline-offset: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .rs-auto-unlock__switch, .rs-auto-unlock__switch span { transition: none; }
+}
+
 /* —— PC /profile：ReelShort dashboard 式双栏（H5 不挂这些修饰符） —— */
 .rs-profile--pc {
     /* PC 不写死 height:100%，靠 user layout flex 占满；H5 仍用 .rs-profile { height:100% } */

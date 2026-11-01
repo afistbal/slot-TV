@@ -1,5 +1,6 @@
 /** Fetch the active episode on every slide to refresh lock/can_unlock state. */
 import { api } from '@/api';
+import { readAutoUnlockNext } from '@/lib/autoUnlockNext';
 import type { IPlayerEpisode } from '@/types/videoPlayer';
 import { isEpisodeDetailLocked } from '@/components/video-player/videoPlayerUtils';
 
@@ -41,9 +42,11 @@ export async function fetchVDemoActiveEpisode(
         return existing;
     }
 
-    const autoUnlock = viewerIsVip ? 0 : 1;
     const task = (async (): Promise<IPlayerEpisode | null> => {
         try {
+            const token = localStorage.getItem('token');
+            const autoUnlock = !viewerIsVip && await readAutoUnlockNext() === true ? 1 : 0;
+            if (token !== localStorage.getItem('token')) return null;
             const result = await api<IPlayerEpisode>('movie/episode', {
                 data: {
                     id: nid,
@@ -52,7 +55,7 @@ export async function fetchVDemoActiveEpisode(
                 loading: false,
             });
 
-            if (result.c !== 0) {
+            if (token !== localStorage.getItem('token') || result.c !== 0) {
                 return null;
             }
 
