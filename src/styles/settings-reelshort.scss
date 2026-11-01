@@ -49,6 +49,36 @@
     background: transparent;
 }
 
+.rs-settings__auto-payment .rs-auto-unlock__switch {
+    position: relative;
+    width: 44px;
+    height: 25px;
+    flex-basis: 44px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #30353a;
+}
+
+.rs-settings__auto-payment .rs-auto-unlock__switch span {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 17px;
+    height: 17px;
+    background: #f4f5f6;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.4);
+}
+
+.rs-settings__auto-payment .rs-auto-unlock__switch[aria-checked='true'] {
+    border-color: var(--rs-brand);
+    background: var(--rs-brand-gradient);
+}
+
+.rs-settings__auto-payment .rs-auto-unlock__switch[aria-checked='true'] span {
+    background: #f4f5f6;
+    transform: translateX(19px);
+}
+
 .rs-settings__info-row,
 .rs-settings__action-row,
 .rs-settings__preference-row {
