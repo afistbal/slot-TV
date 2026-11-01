@@ -1,21 +1,20 @@
 import { Page } from '@/layouts/user';
 import { WalletTransactionHistory } from '@/pages/user/WalletTransactionHistory';
 
-/** H5 钱包：交易记录（无余额卡） */
+/** 钱包明细：沿用个人中心的圆角面板与交易列表样式。 */
 export default function Component() {
     return (
         <Page
             title="wallet_page_title"
-            titleClassName="border-b-0 bg-black"
-            bodyClassName="bg-app-canvas rs-wallet-page--h5"
+            titleClassName="rs-wallet-page__title"
+            bodyClassName="rs-wallet-page__body"
+            constrained
         >
-            <div className="rs-wallet-page">
-                <div className="rs-wallet-page__scroll">
-                    <div className="rs-wallet-page__inner">
-                        <WalletTransactionHistory variant="h5" />
-                    </div>
+            <main className="rs-wallet-page">
+                <div className="rs-wallet-page__inner">
+                    <WalletTransactionHistory variant="h5" />
                 </div>
-            </div>
+            </main>
         </Page>
     );
 }

@@ -4,6 +4,7 @@ import { useIntl } from 'react-intl';
 import { toast } from 'sonner';
 import { creatorApi, creatorRequest, creatorRows, creatorText, type CreatorRecord } from '@/api/creator';
 import { creatorDemoRead, isCreatorDemo } from '@/data/creatorDemo';
+import { CHINA_TIME_ZONE, formatChinaDate, formatChinaDateTime } from '@/lib/chinaDateTime';
 
 type Props = { tab: string; data: CreatorRecord; onRefresh: () => Promise<void>; canMutate: boolean };
 const money = (value: unknown) => `$${(Number(value ?? 0) / 100).toFixed(2)}`;
@@ -108,7 +109,18 @@ const fieldNames: Record<string, [string, string]> = {
 function DataList({ rows, fields }: { rows: CreatorRecord[]; fields: string[] }) {
     const w = useWords();
     if (!rows.length) return <Empty>{w('暂无记录', '暫無紀錄')}</Empty>;
-    return <div className="creator-workspace__list">{rows.map((row, index) => <dl key={id(row) || text(row.dramaId) || index}>{fields.filter((key) => row[key] != null).map((key) => <div key={key}><dt>{w(...(fieldNames[key] ?? [key, key]))}</dt><dd>{key.endsWith('Cents') || key === 'cents' ? money(row[key]) : key.endsWith('Micros') ? `$${(Number(row[key]) / 1e6).toFixed(2)}` : text(row[key])}</dd></div>)}</dl>)}</div>;
+    function displayValue(key: string, value: unknown): string {
+        if (['createdAt', 'submittedAt', 'expiresAt'].includes(key)) return formatChinaDateTime(text(value));
+        if (key === 'day' || key === 'bucket') {
+            const date = text(value);
+            // 月、年的报表分组本身已是中国日期顺序，保留其粒度。
+            return /^\d{4}(?:-\d{2})?$/.test(date) ? date : formatChinaDate(date);
+        }
+        if (key.endsWith('Cents') || key === 'cents') return money(value);
+        if (key.endsWith('Micros')) return `$${(Number(value) / 1e6).toFixed(2)}`;
+        return text(value);
+    }
+    return <div className="creator-workspace__list">{rows.map((row, index) => <dl key={id(row) || text(row.dramaId) || index}>{fields.filter((key) => row[key] != null).map((key) => <div key={key}><dt>{w(...(fieldNames[key] ?? [key, key]))}</dt><dd>{displayValue(key, row[key])}</dd></div>)}</dl>)}</div>;
 }
 
 function Products({ data, onRefresh, canMutate }: Props) {
@@ -206,7 +218,7 @@ const payoutOptions = [
 
 function Earnings({ data, canMutate, onRefresh }: Props) {
     const w = useWords(); const action = useAction(canMutate); const [quote, setQuote] = useState<CreatorRecord | null>(null);
-    const [range, setRange] = useState(() => ({ from: new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10), to: new Date().toISOString().slice(0, 10), gran: 'day', tz: Intl.DateTimeFormat().resolvedOptions().timeZone, dramaId: '' }));
+    const [range, setRange] = useState(() => ({ from: formatChinaDate(Date.now() - 29 * 86400000), to: formatChinaDate(Date.now()), gran: 'day', tz: CHINA_TIME_ZONE, dramaId: '' }));
     const report = useResource(() => creatorApi.earnings(range), JSON.stringify(range), () => creatorDemoRead('earnings', range));
     const methods = useResource(creatorApi.payoutMethods, 'methods', () => creatorDemoRead('payoutMethods')); const methodRows = creatorRows(methods.value);
     const reportData = report.value as CreatorRecord | null;

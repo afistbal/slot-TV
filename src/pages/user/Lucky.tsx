@@ -9,6 +9,7 @@ import { ReelShortFooter } from '@/components/ReelShortFooter';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
 import { createLuckyDemoData } from '@/data/luckyDemo';
 import { enableLuckyPushSubscription, type LuckyPushProgress } from '@/lib/luckyPushSubscription';
+import { formatChinaDateTime } from '@/lib/chinaDateTime';
 import { useRootStore } from '@/stores/root';
 import { useLuckyStore } from '@/stores/lucky';
 import '@/styles/lucky.scss';
@@ -213,7 +214,7 @@ export default function Lucky() {
                     <span className="lucky-closed__icon"><LuckyIcon name="sparkle" size={24} /></span>
                     <h1>{closed ? w('幸运充值日暂未开启', '幸運充值日暫未開啟') : w('福利中心')}</h1>
                     <p>{closed ? w('开启时站内信通知你，日常福利照常领', '開啟時站內信通知你，日常福利照常領') : label('lucky_subtitle')}</p>
-                    {closed && data.promo.nextOpenAt ? <small>{w('下次开启：', '下次開啟：')}{new Date(data.promo.nextOpenAt).toLocaleString(intl.locale)}</small> : null}
+                    {closed && data.promo.nextOpenAt ? <small>{w('下次开启：', '下次開啟：')}{formatChinaDateTime(data.promo.nextOpenAt)}</small> : null}
                     {queryError ? <p>{w('活动状态暂未更新', '活動狀態暫未更新')} <button type="button" className="lucky-task__button" onClick={() => void load(true, true)}>{w('重试', '重試')}</button></p> : null}
                 </section>
                 <section id="daily" ref={dailyRef} className="lucky-daily lucky-panel">

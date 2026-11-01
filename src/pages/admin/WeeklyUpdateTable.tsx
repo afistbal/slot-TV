@@ -5,19 +5,11 @@ import { Copy, Download, Eye, EyeOff, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { movieCoverImagePath, movieCoverUrl } from '@/lib/movieCoverUrl';
+import { formatChinaDateTime } from '@/lib/chinaDateTime';
 
 const COS_FALLBACK_BASE = 'https://cos.yogoshort.com';
 const CLIENT_PAGE_SIZE = 200;
 const PROXY_AGENT_STORAGE_KEY = 'weekly-update-x-proxy-agent';
-const CREATED_TIME_FORMATTER = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-});
 
 function pickText(row: TData, keys: string[], fallback = '—') {
     for (const key of keys) {
@@ -35,12 +27,7 @@ function rowTitle(row: TData): string {
 
 function formatCreatedHour(value: unknown): string {
     if (value == null || String(value).trim() === '') return '';
-    const date = new Date(String(value));
-    if (Number.isNaN(date.getTime())) return String(value);
-    const parts = Object.fromEntries(
-        CREATED_TIME_FORMATTER.formatToParts(date).map((part) => [part.type, part.value]),
-    );
-    return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+    return formatChinaDateTime(String(value), { seconds: false });
 }
 
 function joinUrl(base: string, path: string) {

@@ -4,7 +4,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-const sources = Object.fromEntries(['lib/luckyWheel.ts', 'lib/luckyPageData.ts', 'api/lucky.ts', 'lib/luckyPushSubscription.ts', 'pages/user/Lucky.tsx'].map(path => [path,
+const sources = Object.fromEntries(['lib/chinaDateTime.ts', 'lib/luckyWheel.ts', 'lib/luckyPageData.ts', 'api/lucky.ts', 'lib/luckyPushSubscription.ts', 'pages/user/Lucky.tsx'].map(path => [path,
     ts.transpileModule(readFileSync(new URL('../src/' + path, import.meta.url), 'utf8'), {
         compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
     }).outputText,
@@ -69,6 +69,7 @@ async function setup({ ready = true, saveFails = false, configFailures = 0 } = {
         const exports = {};
         vm.runInNewContext(sources[path], { ...shared, exports, require: name => {
             if (name.endsWith('.scss')) return {};
+            if (name === '@/lib/chinaDateTime') return load('lib/chinaDateTime.ts');
             assert.ok(name in dependencies, 'Missing test dependency: ' + name);
             return dependencies[name];
         } });

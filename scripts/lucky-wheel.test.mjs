@@ -16,6 +16,7 @@ function load(path, dependencies = {}, globals = {}) {
         module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
     } }).outputText, { exports, setTimeout, ...globals, require: name => {
         if (name.endsWith('.scss')) return {};
+        if (name === '@/lib/chinaDateTime') return load('lib/chinaDateTime.ts');
         assert.ok(name in dependencies, 'Missing dependency: ' + name);
         return dependencies[name];
     } });

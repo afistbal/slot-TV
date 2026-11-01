@@ -1,5 +1,6 @@
 import { Page } from '@/layouts/user';
 import { getSupportChatConfig } from '@/lib/supportChatConfig';
+import { formatChinaTime } from '@/lib/chinaDateTime';
 import { useConfigStore } from '@/stores/config';
 import agentAvatar from '@/assets/support-chat/agent.png';
 import userAvatar from '@/assets/support-chat/user.png';
@@ -71,13 +72,6 @@ function plainText(value: unknown): string {
     if (typeof value !== 'string') return '';
     const documentNode = new DOMParser().parseFromString(value, 'text/html');
     return documentNode.body.textContent ?? '';
-}
-
-function messageTime(value: ChatMessage['time'], locale: string): string {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
 }
 
 function firstString(...values: unknown[]): string {
@@ -342,10 +336,11 @@ export default function FeedbackPage({ embedded = false }: { embedded?: boolean 
             }
             resendFailedMessages();
             if (!welcomeShownRef.current) {
-                const indiaHour = Number(new Intl.DateTimeFormat('en-US', {
+                // 排班仍按客服所在地判断，消息时间的显示统一使用北京时间。
+                const indiaHour = Number(new Intl.DateTimeFormat('zh-CN', {
                     timeZone: 'Asia/Kolkata',
                     hour: '2-digit',
-                    hour12: false,
+                    hourCycle: 'h23',
                 }).format(new Date()));
                 if (indiaHour >= 23 || indiaHour < 8) {
                     addSystemMessage(t(
@@ -764,7 +759,7 @@ export default function FeedbackPage({ embedded = false }: { embedded?: boolean 
                             {message.failed ? <button type="button" className="support-chat__retry" aria-label={t('重新发送', 'Retry', '重新傳送')} onClick={() => resendMessage(message)}><RefreshCw aria-hidden /></button> : null}
                         </div>
                         <div className="support-chat__meta">
-                            <time>{messageTime(message.time, locale)}</time>
+                            <time>{formatChinaTime(message.time, '')}</time>
                             {message.pending ? <span>{t('发送中', 'Sending', '傳送中')}</span> : null}
                             {message.failed ? <span className="is-error">{t('发送失败，点击重试', 'Failed. Tap to retry.', '傳送失敗，點擊重試')}</span> : null}
                         </div>

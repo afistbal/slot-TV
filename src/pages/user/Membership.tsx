@@ -1,5 +1,6 @@
 import { Gem, X } from "lucide-react";
-import { FormattedDate, FormattedMessage, useIntl } from "react-intl";
+import { FormattedMessage, useIntl } from "react-intl";
+import { formatChinaDate } from "@/lib/chinaDateTime";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useEffect, useState } from "react";
 import MemberTerms from "@/widgets/MemberTerms";
@@ -80,12 +81,7 @@ export function MembershipInlinePanel() {
                                 <FormattedMessage id="renewal_time" />
                             </div>
                             <div className="rs-membership__value">
-                                <FormattedDate
-                                    year="numeric"
-                                    month="2-digit"
-                                    day="2-digit"
-                                    value={data!.renewal_at}
-                                />
+                                {formatChinaDate(data!.renewal_at)}
                             </div>
                         </div>
                         <div className="rs-membership__row">

@@ -2,14 +2,14 @@ import { api } from '@/api';
 import Loader from '@/components/Loader';
 import NoMore from '@/components/NoMore';
 import { enrichBalanceHistoryRows } from '@/lib/enrichBalanceHistoryRows';
+import { formatChinaDateTime } from '@/lib/chinaDateTime';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { BRAND_COIN_ICON_SRC as coinIcon } from '@/constants/brand';
 import emptyImg from '@/assets/images/empty.webp';
 import { VIDEO_FROM_HOME_STATE } from '@/constants/videoRoute';
 import iconChevron from '@/assets/images/bbd6ac50-876c-11ee-aed2-cfe3d80f70eb.png';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coins, LockKeyholeOpen, Plus } from 'lucide-react';
 import { Link } from 'react-router';
 import '@/styles/wallet-reelshort.scss';
 
@@ -39,23 +39,6 @@ type WalletTransactionHistoryProps = {
 
 const PC_PAGE_SIZE = 10;
 
-const walletTimeUsFormatter = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-});
-
-/** 钱包交易时间：美国格式，如 `05/18/2026, 01:57:24 PM` */
-function formatWalletTime(iso: string) {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return walletTimeUsFormatter.format(d);
-}
-
 function formatPriceLabel(price: IBalanceHistoryRow['price']) {
     if (price == null || price === '') return null;
     if (typeof price === 'number') {
@@ -79,30 +62,33 @@ function rechargeBaseAndBonus(row: IBalanceHistoryRow) {
 
 function RechargeCardRow({ row }: { row: IBalanceHistoryRow }) {
     const intl = useIntl();
-    const { baseCoin, bonus } = rechargeBaseAndBonus(row);
+    const { bonus } = rechargeBaseAndBonus(row);
     const priceLabel = formatPriceLabel(row.price);
 
     return (
         <li className="rs-wallet-card rs-wallet-card--recharge">
+            <span className="rs-wallet-card__icon rs-wallet-card__icon--income" aria-hidden>
+                <Plus size={14} strokeWidth={2.2} />
+            </span>
             <div className="rs-wallet-card__main">
-                <div className="rs-wallet-card__coinsLine">
-                    <img className="rs-wallet-card__coinIcon" src={coinIcon} alt="" aria-hidden />
-                    <span className="rs-wallet-card__coinAmount tabular-nums">
-                        {intl.formatNumber(baseCoin)}
-                    </span>
+                <p className="rs-wallet-card__title">
+                    <FormattedMessage id={priceLabel ? 'wallet_recharge_title' : 'wallet_income_title'} />
+                    {priceLabel ? <span className="rs-wallet-card__detail"> · {priceLabel}</span> : null}
+                </p>
+                <div className="rs-wallet-card__meta">
+                    <time className="rs-wallet-card__time" dateTime={row.created_at}>
+                        {formatChinaDateTime(row.created_at)}
+                    </time>
                     {bonus > 0 ? (
-                        <span className="rs-wallet-card__coinBonus tabular-nums">
-                            +{intl.formatNumber(bonus)}
+                        <span className="rs-wallet-card__detail">
+                            <FormattedMessage id="wallet_bonus_included" values={{ n: intl.formatNumber(bonus) }} />
                         </span>
                     ) : null}
                 </div>
-                <time className="rs-wallet-card__time" dateTime={row.created_at}>
-                    {formatWalletTime(row.created_at)}
-                </time>
             </div>
-            {priceLabel ? (
-                <div className="rs-wallet-card__price tabular-nums">{priceLabel}</div>
-            ) : null}
+            <strong className="rs-wallet-card__amount rs-wallet-card__amount--income tabular-nums">
+                +{intl.formatNumber(Math.abs(row.change))}
+            </strong>
         </li>
     );
 }
@@ -121,6 +107,9 @@ function ConsumptionCardRow({ row }: { row: IBalanceHistoryRow }) {
 
     const body = (
         <>
+            <span className="rs-wallet-card__icon" aria-hidden>
+                <LockKeyholeOpen size={14} strokeWidth={2.2} />
+            </span>
             <div className="rs-wallet-card__main">
                 <p className="rs-wallet-card__title">{title}</p>
                 {episodeNo != null ? (
@@ -135,19 +124,16 @@ function ConsumptionCardRow({ row }: { row: IBalanceHistoryRow }) {
                     </p>
                 ) : null}
                 <time className="rs-wallet-card__time" dateTime={row.created_at}>
-                    {formatWalletTime(row.created_at)}
+                    {formatChinaDateTime(row.created_at)}
                 </time>
             </div>
-            <div className="rs-wallet-card__cost">
-                <span className="rs-wallet-card__costValue tabular-nums">-{intl.formatNumber(cost)}</span>
-                <img className="rs-wallet-card__coinIcon" src={coinIcon} alt="" aria-hidden />
-            </div>
+            <strong className="rs-wallet-card__amount tabular-nums">−{intl.formatNumber(cost)}</strong>
         </>
     );
 
     if (row.movie_id != null) {
         return (
-            <li className="rs-wallet-card rs-wallet-card--consumption">
+            <li className="rs-wallet-card rs-wallet-card--consumption rs-wallet-card--linked">
                 <Link
                     to={`/video/${row.movie_id}/${row.episode_index ?? 0}`}
                     state={VIDEO_FROM_HOME_STATE}
@@ -184,7 +170,7 @@ function PcRechargeRow({ row }: { row: IBalanceHistoryRow }) {
                 ) : null}
             </span>
             <time className="rs-wallet-pcRow__time tabular-nums" dateTime={row.created_at}>
-                {formatWalletTime(row.created_at)}
+                {formatChinaDateTime(row.created_at)}
             </time>
         </li>
     );
@@ -216,7 +202,7 @@ function PcConsumptionRow({ row }: { row: IBalanceHistoryRow }) {
                 )}
             </span>
             <time className="rs-wallet-pcRow__time tabular-nums" dateTime={row.created_at}>
-                {formatWalletTime(row.created_at)}
+                {formatChinaDateTime(row.created_at)}
             </time>
             <span className="rs-wallet-pcRow__deduct tabular-nums">
                 <FormattedMessage
@@ -301,7 +287,7 @@ function WalletPcPagination({
     );
 }
 
-/** PC：ReelShort 设计稿表格；H5：充值 / 消费 Tab + 卡片 */
+/** PC 保持交易表格；独立钱包页使用个人中心风格的明细列表。 */
 export function WalletTransactionHistory({
     variant = 'h5',
     className,
@@ -350,6 +336,12 @@ export function WalletTransactionHistory({
 
     return (
         <div className={cn('rs-wallet-tx', isPc && 'rs-wallet-tx--pc', className)}>
+            {!isPc ? (
+                <div className="rs-wallet-tx__heading">
+                    <h2><Coins size={16} aria-hidden /><FormattedMessage id="wallet_history_title" /></h2>
+                    {!loading ? <span><FormattedMessage id="wallet_record_count" values={{ n: visibleRows.length }} /></span> : null}
+                </div>
+            ) : null}
             <div
                 className="rs-wallet-tx__tabs"
                 role="tablist"
@@ -392,10 +384,15 @@ export function WalletTransactionHistory({
                     </div>
                 ) : visibleRows.length === 0 ? (
                     <div className="rs-wallet-tx__empty">
-                        <img src={emptyImg} alt="" className="rs-wallet-tx__emptyImg" />
+                        {isPc ? <img src={emptyImg} alt="" className="rs-wallet-tx__emptyImg" /> : (
+                            <span className="rs-wallet-tx__emptyIcon" aria-hidden>
+                                {activeTab === 'recharge' ? <Coins size={24} /> : <LockKeyholeOpen size={24} />}
+                            </span>
+                        )}
                         <p className="rs-wallet-tx__emptyText">
-                            <FormattedMessage id="wallet_nothing_inside" />
+                            <FormattedMessage id={isPc ? 'wallet_nothing_inside' : activeTab === 'recharge' ? 'wallet_empty_income' : 'wallet_empty_consumption'} />
                         </p>
+                        {!isPc ? <p className="rs-wallet-tx__emptyHint"><FormattedMessage id={activeTab === 'recharge' ? 'wallet_empty_income_hint' : 'wallet_empty_consumption_hint'} /></p> : null}
                     </div>
                 ) : isPc ? (
                     <div

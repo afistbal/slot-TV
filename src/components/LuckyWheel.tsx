@@ -8,6 +8,7 @@ import { decodeLuckyWheel, luckyPrizeLabel, luckyWheelAction, luckyWheelSegmentC
 import { useTopUpStore } from '@/stores/topUp';
 import { useUserStore } from '@/stores/user';
 import { LuckyWheelExtras } from '@/components/LuckyWheelExtras';
+import { formatChinaDateTime } from '@/lib/chinaDateTime';
 import '@/styles/lucky-wheel.scss';
 
 const placeholderSlots: LuckyWheelSlot[] = ['coins', 'bonus_pct', 'coins', 'vip_day', 'coins', 'luck', 'coins', 'drama_ep'].map(kind => ({ kind, v: 0 }));
@@ -120,7 +121,7 @@ export function LuckyWheel({ state = decodeLuckyWheel(null), disabled = false, q
         <section className="lucky-wheel-panel lucky-panel" aria-label={w('幸运转盘', '幸運轉盤')} aria-busy={busy}>
             <header><div><span className="lucky-wheel-panel__eyebrow">{w('幸运充值日', '幸運儲值日')}</span><h2><Sparkles size={19} />{w('幸运转盘', '幸運轉盤')}</h2></div><div className="lucky-wheel-header-actions"><span>{w('抽奖券', '抽獎券')} <b>{state.tickets}</b></span><button type="button" aria-label={w(sound ? '关闭音效' : '开启音效', sound ? '關閉音效' : '開啟音效')} aria-pressed={sound} onClick={() => { setSound(!sound); localStorage.setItem('lucky:sound', sound ? '0' : '1'); }}>{sound ? <Volume2 size={17} /> : <VolumeX size={17} />}</button></div></header>
             {countdown ? <p className="lucky-wheel-countdown" role="timer"><Clock size={13} />{w(state.peak ? '距付费抽奖结束' : '距活动结束', state.peak ? '距付費抽獎結束' : '距活動結束')} {countdown}</p> : null}
-            {!state.peak ? <p className="lucky-wheel-meta">{w('本期付费抽奖已结束，仍可使用抽奖券', '本期付費抽獎已結束，仍可使用抽獎券')}{state.nextOpenAt ? ` · ${w('下次开启', '下次開啟')} ${new Date(state.nextOpenAt).toLocaleString(intl.locale)}` : ''}</p> : null}
+            {!state.peak ? <p className="lucky-wheel-meta">{w('本期付费抽奖已结束，仍可使用抽奖券', '本期付費抽獎已結束，仍可使用抽獎券')}{state.nextOpenAt ? ` · ${w('下次开启', '下次開啟')} ${formatChinaDateTime(state.nextOpenAt)}` : ''}</p> : null}
             {needsRefresh || queryError ? <p className="lucky-task-error">{w(needsRefresh ? '当前阶段已结束，请刷新活动状态' : '活动状态暂未更新，请重试', needsRefresh ? '目前階段已結束，請重新整理活動狀態' : '活動狀態暫未更新，請重試')} <button type="button" onClick={onRetry}>{w('刷新', '重新整理')}</button></p> : null}
             <div className="lucky-wheel-stage">
                 <span className="lucky-wheel-pointer" aria-hidden />

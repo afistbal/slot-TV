@@ -6,6 +6,7 @@ import { ProgramIcon } from '@/components/ProgramIcon';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
 import { buildAffiliateShareUrl } from '@/lib/shareUrls';
 import { useUserStore } from '@/stores/user';
+import { formatChinaDateTime } from '@/lib/chinaDateTime';
 
 type DashboardData = {
     summary: AffiliateSummary | null;
@@ -139,7 +140,7 @@ export function AffiliateDashboard({ sessionReady, isActive }: { sessionReady: b
         {summary ? <section className="affiliate-inline-dashboard__section">
             <h3>{w('最近佣金', '最近佣金')}</h3>
             {earnings.length ? <div className="affiliate-inline-dashboard__earnings">{earnings.map((earning) => <article key={earning.id}>
-                <div><span>{earning.orderDate}</span><small>{({ pending: w('待结算', '待結算'), available: w('可提现', '可提現'), reversed: w('已冲正', '已沖正') })[earning.entryStatus] ?? earning.entryStatus}</small></div>
+                <div><span>{formatChinaDateTime(earning.orderDate)}</span><small>{({ pending: w('待结算', '待結算'), available: w('可提现', '可提現'), reversed: w('已冲正', '已沖正') })[earning.entryStatus] ?? earning.entryStatus}</small></div>
                 <strong>{money(earning.amountCents)}</strong>
             </article>)}</div> : <p>{w('暂无佣金记录', '暫無佣金紀錄')}</p>}
         </section> : null}

@@ -357,7 +357,10 @@ function CreatorApplicationDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="creator-apply-dialog">
+            <DialogContent
+                className="creator-apply-dialog"
+                onInteractOutside={(event) => event.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle>{t('creator_apply_title')}</DialogTitle>
                     <DialogDescription>{t('creator_apply_description')}</DialogDescription>
