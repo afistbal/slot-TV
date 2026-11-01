@@ -4,6 +4,7 @@ import {
     Bell,
     BellRing,
     ChevronRight,
+    Coins,
     FileText,
     Loader2,
     LockKeyhole,
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 
 import { api, formatApiFailure } from '@/api';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { AutoUnlockNextSwitch } from '@/components/AutoUnlockNextSwitch';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import {
     disableLuckyPushSubscription,
@@ -204,6 +206,11 @@ export default function SettingsPage() {
                             {text('重置密码', 'Reset password', '重設密碼')}
                         </button>
                     </div>
+                </section>
+
+                <section className="rs-settings__card rs-settings__auto-payment">
+                    <h2><Coins aria-hidden />{text('自动付费', 'Automatic payment', '自動付費')}</h2>
+                    <AutoUnlockNextSwitch key={String(userStore.info?.id)} />
                 </section>
 
                 <section className="rs-settings__card">

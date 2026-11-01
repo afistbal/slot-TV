@@ -1,0 +1,78 @@
+.rs-auto-unlock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: #141619;
+    color: #eceff1;
+    font-size: 14px;
+}
+
+.rs-auto-unlock__copy {
+    min-width: 0;
+}
+
+.rs-auto-unlock__copy p {
+    margin: 6px 0 0;
+    color: #9da7b2;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.rs-auto-unlock__retry {
+    margin-top: 8px;
+    padding: 0;
+    color: var(--rs-brand);
+    font-size: 12px;
+}
+
+.rs-auto-unlock__switch {
+    width: 44px;
+    height: 26px;
+    flex: 0 0 44px;
+    padding: 3px;
+    border: 0;
+    border-radius: 99px;
+    background: #454b52;
+    cursor: pointer;
+    transition: background 180ms ease;
+}
+
+.rs-auto-unlock__switch span {
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 180ms ease;
+}
+
+.rs-auto-unlock__switch[aria-checked='true'] {
+    background: var(--rs-brand);
+}
+
+.rs-auto-unlock__switch[aria-checked='true'] span {
+    background: #2b1e00;
+    transform: translateX(18px);
+}
+
+.rs-auto-unlock__switch:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.rs-auto-unlock__switch:focus-visible {
+    outline: 2px solid var(--rs-brand);
+    outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rs-auto-unlock__switch,
+    .rs-auto-unlock__switch span {
+        transition: none;
+    }
+}

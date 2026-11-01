@@ -40,6 +40,15 @@
     stroke-width: 1.9;
 }
 
+.rs-settings__auto-payment .rs-auto-unlock {
+    margin: 0 18px;
+    padding: 14px 0 18px;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 0;
+    background: transparent;
+}
+
 .rs-settings__info-row,
 .rs-settings__action-row,
 .rs-settings__preference-row {
@@ -349,6 +358,11 @@
         margin-inline: 22px;
     }
 
+    .rs-settings__auto-payment .rs-auto-unlock {
+        margin-inline: 22px;
+        padding-block: 16px 20px;
+    }
+
     .rs-settings__privacy>p,
     .rs-settings__legal-links {
         padding-inline: 22px;
@@ -378,6 +392,11 @@
     .rs-settings__card>h2 svg {
         width: 16px;
         height: 16px;
+    }
+
+    .rs-settings__auto-payment .rs-auto-unlock {
+        margin-inline: 16px;
+        padding-block: 14px;
     }
 
     .rs-settings__info-row,

@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router';
 import { useMinWidth768 } from '@/hooks/useMinWidth768';
 import { Page } from '@/layouts/user';
 import { getUserUidForDisplay } from '@/lib/formatUserUniqueIdForDisplay';
-import { AutoUnlockNextSwitch } from '@/components/AutoUnlockNextSwitch';
 import '@/styles/profile-reelshort.scss';
 
 export default function Component({ embedded = false }: { embedded?: boolean } = {}) {
@@ -71,7 +70,6 @@ export default function Component({ embedded = false }: { embedded?: boolean } =
             </div>
           </div>
         </div>
-        <AutoUnlockNextSwitch key={String(userStore.info?.id)} />
       </div>
 
       <button type="button" className="rs-profile__btnLogin" onClick={handleLogout}>

@@ -3,6 +3,7 @@ import { useIntl } from 'react-intl';
 import { toast } from 'sonner';
 import { readAutoUnlockNext, saveAutoUnlockNext } from '@/lib/autoUnlockNext';
 import { useUserStore } from '@/stores/user';
+import '@/styles/auto-unlock-switch.scss';
 
 export function AutoUnlockNextSwitch() {
     const intl = useIntl();
