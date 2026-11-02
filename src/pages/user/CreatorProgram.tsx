@@ -5,7 +5,6 @@ import { useNavigate, useSearchParams } from 'react-router';
 import {
     AlertTriangle,
     BarChart3,
-    Ban,
     CheckCircle2,
     MessageCircle,
     Package,
@@ -16,9 +15,9 @@ import {
     WalletCards,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ProgramFlowPreview } from '@/components/ProgramFlowPreview';
 import { ProgramIcon, type ProgramIconName } from '@/components/ProgramIcon';
 import { ReelShortTopNav } from '@/components/ReelShortTopNav';
+import { ReelShortBasicsSpin } from '@/components/ReelShortBasicsSpin';
 import {
     Dialog,
     DialogContent,
@@ -34,9 +33,9 @@ import { useUserStore } from '@/stores/user';
 import '@/styles/creator-program.scss';
 import { CreatorWorkspace, loadCreatorWorkspace } from '@/components/CreatorWorkspace';
 import type { CreatorRecord } from '@/api/creator';
-import { creatorDemoDashboard, isCreatorDemo } from '@/data/creatorDemo';
+import { isCreatorDemo } from '@/data/creatorDemo';
 
-type CreatorStatus = 'none' | 'pending' | 'rejected' | 'suspended' | 'approved';
+type CreatorStatus = 'none' | 'pending' | 'rejected' | 'approved';
 type CreatorTab = 'dashboard' | 'feedback' | 'upload' | 'products' | 'commissions' | 'earnings' | 'licenses' | 'settings';
 
 type CreatorApplication = {
@@ -72,12 +71,13 @@ function normalizeAuthor(data: unknown): CreatorApplication | null {
     if (!isRecord(data)) return null;
     const nested = valueFrom(data, 'author', 'creator', 'application', 'data');
     const source = isRecord(nested) ? nested : data;
-    const rawStatus = String(valueFrom(source, 'status', 'state', 'applicationStatus', 'application_status') ?? 'none');
-    if (!['pending', 'rejected', 'suspended', 'approved'].includes(rawStatus)) return null;
+    const rawStatus = valueFrom(source, 'status', 'state', 'applicationStatus', 'application_status');
+    const status = rawStatus === 0 ? 'pending' : rawStatus === 1 ? 'approved' : rawStatus === 2 ? 'rejected' : null;
+    if (status === null) return null;
     const rawTools = valueFrom(source, 'tools', 'tool_list');
 
     return {
-        status: rawStatus as CreatorApplication['status'],
+        status,
         displayName: String(valueFrom(source, 'displayName', 'display_name', 'name') ?? ''),
         contact: String(valueFrom(source, 'contact', 'contact_info') ?? ''),
         intro: String(valueFrom(source, 'intro', 'introduction', 'bio') ?? ''),
@@ -258,12 +258,10 @@ function CreatorApplicationDialog({
     open,
     onOpenChange,
     onSubmitted,
-    onPreviewSubmitted,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmitted: (application: CreatorApplication) => void;
-    onPreviewSubmitted?: () => void;
 }) {
     const intl = useIntl();
     const t = (id: string) => intl.formatMessage({ id });
@@ -293,11 +291,6 @@ function CreatorApplicationDialog({
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (onPreviewSubmitted) {
-            onPreviewSubmitted();
-            onOpenChange(false);
-            return;
-        }
         const form = event.currentTarget;
         const data = new FormData(form);
         const payoutMethod = Number(data.get('payoutMethod'));
@@ -338,17 +331,17 @@ function CreatorApplicationDialog({
             return;
         }
 
-        const statusResult = await api<unknown>('creator/dashboard', {
-            method: 'post',
+        const statusResult = await api<unknown>('user/author', {
+            method: 'get',
             loading: false,
             toastOnError: false,
         });
         setSubmitting(false);
         const confirmedApplication = statusResult.c === 0 ? normalizeAuthor(statusResult.d) : null;
         if (statusResult.c !== 0) {
-            toast.error(formatApiFailure('POST', 'creator/dashboard', statusResult));
+            toast.error(formatApiFailure('GET', 'user/author', statusResult));
         } else if (!confirmedApplication) {
-            toast.error('POST /api/creator/dashboard：200 · 申请成功，但状态接口未返回 pending 状态');
+            toast.error('GET /api/user/author：200 · 申请成功，但状态接口未返回审核状态');
         }
         onSubmitted(confirmedApplication ?? application);
         onOpenChange(false);
@@ -452,23 +445,7 @@ function CreatorRejected({ application, onReapply }: { application: CreatorAppli
     );
 }
 
-function CreatorSuspended() {
-    const intl = useIntl();
-    const t = (id: string) => intl.formatMessage({ id });
-
-    return (
-        <main className="creator-program__status-shell">
-            <section className="creator-program__status-card">
-                <span className="creator-program__status-icon creator-program__status-icon--suspended"><Ban /></span>
-                <span className="creator-program__status-badge creator-program__status-badge--suspended">{t('creator_suspended_badge')}</span>
-                <h1>{t('creator_suspended_title')}</h1>
-                <p>{t('creator_suspended_description')}</p>
-            </section>
-        </main>
-    );
-}
-
-function CreatorDashboard({ application, data, demoMode = false }: { application: CreatorApplication | null; data: CreatorRecord; demoMode?: boolean }) {
+function CreatorDashboard({ application, data }: { application: CreatorApplication | null; data: CreatorRecord }) {
     const intl = useIntl();
     const t = (id: string) => intl.formatMessage({ id });
     const [dashboardSearchParams, setDashboardSearchParams] = useSearchParams();
@@ -493,7 +470,7 @@ function CreatorDashboard({ application, data, demoMode = false }: { application
     const [uploadSequence, setUploadSequence] = useState(1);
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(-1);
-    const canMutate = application?.status === 'approved' && !demoMode && !isCreatorDemo(workspace) && !dashboardSearchParams.has('preview');
+    const canMutate = application?.status === 'approved' && !isCreatorDemo(workspace);
     const tabs: Array<{ id: CreatorTab; label: string; icon: ReactNode }> = [
         { id: 'dashboard', label: t('creator_dashboard_overview'), icon: <BarChart3 /> },
         { id: 'feedback', label: t('creator_dashboard_feedback'), icon: <MessageCircle /> },
@@ -550,7 +527,7 @@ function CreatorDashboard({ application, data, demoMode = false }: { application
         <main className="creator-dashboard">
             <div className="creator-dashboard__heading">
                 <div>
-                    <span className="creator-program__status-badge creator-program__status-badge--approved"><CheckCircle2 />{t(demoMode || isCreatorDemo(workspace) ? 'creator_demo_title' : 'creator_dashboard_approved')}</span>
+                    <span className="creator-program__status-badge creator-program__status-badge--approved"><CheckCircle2 />{t(isCreatorDemo(workspace) ? 'creator_demo_title' : 'creator_dashboard_approved')}</span>
                     <h1>{t('creator_dashboard_title')}</h1>
                     <p>{application?.displayName || t('creator_dashboard_welcome')}</p>
                 </div>
@@ -639,54 +616,54 @@ export default function CreatorProgram() {
     const userStore = useUserStore();
     const sessionBootstrapReady = useRootStore((store) => store.sessionBootstrapReady);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [searchParams, setSearchParams] = useSearchParams();
     const [application, setApplication] = useState<CreatorApplication | null>(null);
     const [dashboardData, setDashboardData] = useState<CreatorRecord>({});
     const [openFaq, setOpenFaq] = useState<number | null>(0);
-    const [applyOpen, setApplyOpen] = useState(() => searchParams.get('preview') === 'apply');
-    const rawPreview = searchParams.get('preview');
-    const preview = rawPreview && ['none', 'apply', 'pending', 'rejected', 'suspended', 'approved'].includes(rawPreview) ? rawPreview : null;
-    const demoMode = searchParams.get('demo') === '1';
-    const status: CreatorStatus = demoMode ? 'approved' : preview === 'apply' || preview === 'none'
-        ? 'none'
-        : preview === 'approved' || preview === 'pending' || preview === 'rejected' || preview === 'suspended'
-        ? preview
-        : application?.status ?? 'none';
-
-    function selectPreview(nextPreview: string) {
-        const nextParams = new URLSearchParams(searchParams);
-        nextParams.delete('demo');
-        nextParams.set('preview', nextPreview);
-        setSearchParams(nextParams, { replace: true });
-        setApplyOpen(nextPreview === 'apply');
-    }
-
-    const previewSteps = [
-        { id: 'none', label: t('creator_preview_landing') },
-        { id: 'apply', label: t('creator_preview_apply') },
-        { id: 'pending', label: t('creator_preview_pending') },
-        { id: 'rejected', label: t('creator_preview_rejected') },
-        { id: 'suspended', label: t('creator_preview_suspended') },
-        { id: 'approved', label: t('creator_preview_approved') },
-    ];
+    const [applyOpen, setApplyOpen] = useState(false);
+    const [authorLoading, setAuthorLoading] = useState(true);
+    const [authorError, setAuthorError] = useState('');
+    const status: CreatorStatus | 'loading' | 'error' = !sessionBootstrapReady || authorLoading
+        ? 'loading'
+        : authorError ? 'error' : application?.status ?? 'none';
     const requiresLogin = !userStore.signed || userStore.isAnonymous();
 
-    const loadAuthor = useCallback(async () => {
-        const result = await api<unknown>('creator/dashboard', { method: 'post', loading: false, toastOnError: false });
-        if (result.c !== 0 || (result.d != null && !isRecord(result.d))) {
-            setDashboardData((current) => Object.keys(current).length ? current : creatorDemoDashboard());
-            return;
+    const loadWorkspace = useCallback(async () => {
+        try {
+            setDashboardData(await loadCreatorWorkspace());
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : String(error));
         }
-        setDashboardData(isRecord(result.d) ? result.d : {});
-        setApplication(normalizeAuthor(result.d));
     }, []);
+
+    const loadAuthor = useCallback(async () => {
+        setAuthorLoading(true);
+        setAuthorError('');
+        try {
+            const result = await api<unknown>('user/author', { method: 'get', loading: false, toastOnError: false });
+            if (result.c !== 0 || (result.d != null && !isRecord(result.d))) {
+                throw new Error(result.c !== 0
+                    ? formatApiFailure('GET', 'user/author', result)
+                    : 'GET /api/user/author：200 · 审核状态返回格式无效');
+            }
+            const nextApplication = normalizeAuthor(result.d);
+            setApplication(nextApplication);
+            setDashboardData({});
+            if (nextApplication?.status === 'approved') await loadWorkspace();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setAuthorError(message);
+            toast.error(message);
+        } finally {
+            setAuthorLoading(false);
+        }
+    }, [loadWorkspace]);
 
     useEffect(() => {
         if (sessionBootstrapReady) void loadAuthor();
     }, [loadAuthor, sessionBootstrapReady]);
 
     function startApplication() {
-        if (requiresLogin && !preview) {
+        if (requiresLogin) {
             navigate('/page/login');
             return;
         }
@@ -756,11 +733,22 @@ export default function CreatorProgram() {
         <div className="creator-program-page">
             <div ref={scrollRef} className="creator-program-page__scroll">
                 <ReelShortTopNav scrollParentRef={scrollRef} showPrimaryNav />
-                <ProgramFlowPreview title={t('program_preview_title')} hint={t('program_preview_hint')} active={preview ?? status} steps={previewSteps} onSelect={selectPreview} exitLabel={t('program_preview_exit')} onExit={preview || demoMode ? () => { const next = new URLSearchParams(searchParams); next.delete('preview'); next.delete('demo'); setApplyOpen(false); setSearchParams(next, { replace: true }); } : undefined} />
+                {status === 'loading' ? (
+                    <main className="creator-program__status-shell">
+                        <ReelShortBasicsSpin variant="inline" withOverlay={false} label={t('loading')} />
+                    </main>
+                ) : null}
+                {status === 'error' ? (
+                    <main className="creator-program__status-shell">
+                        <section className="creator-program__status-card">
+                            <p role="alert">{authorError}</p>
+                            <button className="creator-program__button" type="button" onClick={() => void loadAuthor()}>{t('creator_retry')}</button>
+                        </section>
+                    </main>
+                ) : null}
                 {status === 'pending' ? <CreatorPending /> : null}
                 {status === 'rejected' ? <CreatorRejected application={application} onReapply={() => setApplyOpen(true)} /> : null}
-                {status === 'suspended' ? <CreatorSuspended /> : null}
-                {status === 'approved' ? <CreatorDashboard key={demoMode || preview === 'approved' ? 'demo' : 'live'} application={application} data={demoMode || preview === 'approved' ? creatorDemoDashboard() : dashboardData} demoMode={demoMode || preview === 'approved'} /> : null}
+                {status === 'approved' ? <CreatorDashboard application={application} data={dashboardData} /> : null}
                 {status === 'none' ? (
                     <main className="creator-program">
                         <section className="creator-program__hero">
@@ -825,12 +813,9 @@ export default function CreatorProgram() {
             <CreatorApplicationDialog
                 open={applyOpen}
                 onOpenChange={setApplyOpen}
-                onPreviewSubmitted={preview || demoMode ? () => selectPreview('pending') : undefined}
                 onSubmitted={(nextApplication) => {
                     setApplication(nextApplication);
-                    const nextParams = new URLSearchParams(searchParams);
-                    nextParams.delete('preview');
-                    setSearchParams(nextParams, { replace: true });
+                    if (nextApplication.status === 'approved') void loadWorkspace();
                 }}
             />
         </div>

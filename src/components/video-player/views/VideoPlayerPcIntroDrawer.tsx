@@ -10,6 +10,7 @@ import type { RefObject } from 'react';
 import { getTagDisplayText } from '../videoPlayerUtils';
 import { VideoPlayerPcDrawerCloseButton } from './VideoPlayerPcDrawerCloseButton';
 import { VideoPlayerPcRightDrawer } from './VideoPlayerPcRightDrawer';
+import { VideoPlayerInlineRating } from '../VideoPlayerInlineRating';
 
 export type VideoPlayerPcIntroDrawerProps = {
     open: boolean;
@@ -23,6 +24,9 @@ export type VideoPlayerPcIntroDrawerProps = {
     tagsFromBackendOnly?: boolean;
     /** 最多展示的 tag 数量，超出截断 */
     maxTags?: number;
+    ratingScore?: number;
+    ratingSubmitting?: boolean;
+    onRate?: (score: number) => void;
 };
 
 export function VideoPlayerPcIntroDrawer({
@@ -34,6 +38,9 @@ export function VideoPlayerPcIntroDrawer({
     staticBase,
     tagsFromBackendOnly = false,
     maxTags,
+    ratingScore = 0,
+    ratingSubmitting = false,
+    onRate,
 }: VideoPlayerPcIntroDrawerProps) {
     const tagLabel = tagsFromBackendOnly ? getBackendTagDisplayText : getTagDisplayText;
     const visibleTags = maxTags != null ? data.tags.slice(0, maxTags) : data.tags;
@@ -62,6 +69,7 @@ export function VideoPlayerPcIntroDrawer({
                 <div className="video-pc-intro-drawer__title-row">
                     <h2 className="video-pc-intro-drawer__title">{data.info.title}</h2>
                 </div>
+                <VideoPlayerInlineRating score={ratingScore} submitting={ratingSubmitting} onRate={onRate} />
                 <div className="video-pc-intro-drawer__body">
                     {data.info.introduction ? (
                         <p className="video-pc-intro-drawer__desc">

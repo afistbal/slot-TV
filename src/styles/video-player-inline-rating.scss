@@ -1,0 +1,47 @@
+.video-inline-rating {
+    flex-shrink: 0;
+    margin: 12px 0;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgb(255 255 255 / 4%);
+    color: #f3f3f1;
+}
+
+.video-inline-rating__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+
+    small { color: #a3a3a3; font-size: 11px; font-weight: 400; }
+}
+
+.video-inline-rating__stars {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+
+    button {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        padding: 0;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #a3a3a3;
+        cursor: pointer;
+        transition: color .15s, background-color .15s;
+    }
+
+    svg { width: 26px; height: 26px; stroke-width: 1.8; }
+    button:not(:disabled):hover { background: var(--rs-brand-soft); color: var(--rs-brand); }
+    button:focus-visible { outline: 2px solid var(--rs-brand); outline-offset: 2px; }
+    button.is-active { color: var(--rs-brand); }
+    button.is-active svg { fill: currentColor; }
+    button:disabled { cursor: default; }
+}

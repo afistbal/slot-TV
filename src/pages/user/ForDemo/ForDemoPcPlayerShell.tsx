@@ -452,6 +452,9 @@ export function ForDemoPcPlayerShell({
                             staticBase={staticBase}
                             tagsFromBackendOnly
                             maxTags={FORYOU_MAX_VISIBLE_TAGS}
+                            ratingScore={engagement.ratingScore}
+                            ratingSubmitting={engagement.ratingSubmitting}
+                            onRate={(score) => void engagement.handleSubmitRating(score)}
                         />
                         <ForYouPlayerPcEpisodeDrawer
                             open={pcDrawerPanel === 'episodes'}

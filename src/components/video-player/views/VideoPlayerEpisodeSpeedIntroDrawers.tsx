@@ -14,6 +14,7 @@ import type { IPlayerData, IPlayerEpisode } from '@/types/videoPlayer';
 import { resolveVideoPosterUrl } from '../videoPlayerShareUrl';
 import { getTagDisplayText } from '../videoPlayerUtils';
 import { SPEED } from '../videoPlayerConstants';
+import { VideoPlayerInlineRating } from '../VideoPlayerInlineRating';
 import {
     buildEpisodeTabRanges,
     episodeTabIndexForEpisodeNo,
@@ -330,6 +331,7 @@ export function VideoPlayerEpisodeSpeedIntroDrawers({
                                 </div>
                             </div>
                             <h3 className="video-h5-drawer__introTitle">{data.info.title}</h3>
+                            <VideoPlayerInlineRating score={ratingScore} submitting={ratingSubmitting} onRate={onRate} />
                             <p id="video-h5-intro-desc" className="video-h5-drawer__introText">
                                 {data.info.introduction ? (
                                     data.info.introduction
